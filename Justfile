@@ -9,8 +9,11 @@ default:
     @printf "\033[1;36m==============================================================================\033[0m\n\n"
     @printf "\033[1;33mUSAGE:\033[0m\n"
     @printf "  just <command>\n\n"
-    @printf "\033[1;33mGLOBAL & DASHBOARD:\033[0m\n"
-    @printf "  \033[1;32mjust status\033[0m                  \033[2mPrint unified live dashboard of all GCP resources\033[0m\n\n"
+    @printf "\033[1;33mDISCOVERY & DASHBOARDS:\033[0m\n"
+    @printf "  \033[1;32mjust status\033[0m                  \033[2mPrint unified live dashboard of all GCP resources\033[0m\n"
+    @printf "  \033[1;32mjust model-list\033[0m              \033[2mList Model Registry models & reference catalog\033[0m\n"
+    @printf "  \033[1;32mjust cost-list\033[0m               \033[2mDisplay hardware pricing & sizing table in terminal\033[0m\n"
+    @printf "  \033[1;32mjust predict \"<prompt>\"\033[0m      \033[2mSend a test query to whichever endpoint is active\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI ONLINE PREDICTION (Dedicated GPU VMs):\033[0m\n"
     @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (2x NVIDIA L4)\033[0m\n"
     @printf "  \033[1;32mjust vertex-status\033[0m           \033[2mCheck deployment progress and active operations\033[0m\n"
@@ -28,9 +31,25 @@ default:
     @printf "  \033[1;32mjust tf-destroy\033[0m              \033[2mDestroy Terraform-managed infrastructure\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
+# ------------------------------------------------------------------------------
+# Discovery, State & Testing
+# ------------------------------------------------------------------------------
+
 # Print unified live state dashboard of all Vertex AI and Cloud Run resources
 status:
     @./scripts/gcp_status.sh
+
+# List registered models in Model Registry and reference hardware sizing catalog
+model-list:
+    @./scripts/model_list.sh
+
+# Display infrastructure cost and sizing matrix in terminal
+cost-list:
+    @./scripts/cost_list.sh
+
+# Query active endpoint with a test prompt (Usage: just predict "your prompt")
+predict PROMPT="Hello Gemma! Explain quantum computing in two sentences.":
+    @./scripts/predict.sh "{{PROMPT}}"
 
 # ------------------------------------------------------------------------------
 # Vertex AI Endpoints (Dedicated GPU VMs)
