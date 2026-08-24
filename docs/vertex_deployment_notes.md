@@ -17,6 +17,15 @@ just vertex-deploy
 ./scripts/vertex_deploy.sh
 ```
 
+### Check Deployment Status
+```bash
+# Using Justfile:
+just vertex-status
+
+# Or directly using the script:
+./scripts/vertex_status.sh
+```
+
 ### Undeploy the Model (Stop GPU Billing)
 Dedicated GPU endpoints do not scale to zero automatically. When testing is complete, undeploy the model to stop GPU billing immediately:
 ```bash
@@ -80,6 +89,6 @@ gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
 ## 4. Alternative: Serverless Scale-to-Zero
 
 If you need automated scale-to-zero when idle, see:
-* [`docs/cloudrun_deploy.md`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/docs/cloudrun_deploy.md) — Cloud Run GPU deployment guide.
-* [`docs/vertex_cleanup_strategies.md`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/docs/vertex_cleanup_strategies.md) — Automated Cloud Scheduler / Cloud Function shutdown patterns for Vertex AI.
-* [`docs/cost_analysis.md`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/docs/cost_analysis.md) — Detailed cost breakdown across Gemma model flavors.
+* [`docs/cloudrun_deploy.md`](docs/cloudrun_deploy.md) — Cloud Run GPU deployment guide.
+* [`docs/vertex_cleanup_strategies.md`](docs/vertex_cleanup_strategies.md) — Automated Cloud Scheduler / Cloud Function shutdown patterns for Vertex AI.
+* [`docs/cost_analysis.md`](docs/cost_analysis.md) — Detailed cost breakdown across Gemma model flavors.

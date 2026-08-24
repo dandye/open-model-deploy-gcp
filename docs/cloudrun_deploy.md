@@ -1,6 +1,6 @@
 # Deploying Gemma to Cloud Run with GPU (Scale-to-Zero)
 
-This guide covers deploying Gemma to Google Cloud Run with an NVIDIA L4 GPU to enable true **scale-to-zero** (0 instances when idle, $0 cost).
+This guide covers deploying Gemma models to Google Cloud Run with an NVIDIA L4 GPU to enable true **scale-to-zero** (0 instances when idle, $0 cost).
 
 ---
 
@@ -8,24 +8,25 @@ This guide covers deploying Gemma to Google Cloud Run with an NVIDIA L4 GPU to e
 
 Cloud Run GPU requires a quota allocation for `run.googleapis.com` in your region (`us-central1`).
 
-### Option A: Request Quota via `gcloud` CLI (Programmatic)
+### Verify Quota
+```bash
+# Check quota status using Justfile:
+just cloudrun-quota-check
 
-First, enable the Cloud Quotas API:
+# Or directly:
+./scripts/cloudrun_quota_check.sh
+```
+
+### Request Quota
+
+#### Option A: Via `gcloud` CLI / Justfile
+```bash
+just cloudrun-quota-request
+```
+Or directly:
 ```bash
 gcloud services enable cloudquotas.googleapis.com --project="dandye-0324-chronicle"
-```
 
-List available Cloud Run GPU quota metrics:
-```bash
-gcloud quotas info list \
-  --service="run.googleapis.com" \
-  --project="dandye-0324-chronicle" \
-  --filter="quotaId:gpu"
-```
-
-Submit a quota increase request for NVIDIA L4 GPUs in `us-central1`:
-```bash
-# Request 1x NVIDIA L4 GPU allocation for Cloud Run in us-central1
 gcloud quotas preferences create \
   --service="run.googleapis.com" \
   --project="dandye-0324-chronicle" \
@@ -35,37 +36,38 @@ gcloud quotas preferences create \
   --justification="Gemma model inference on Cloud Run"
 ```
 
----
-
-### Option B: Request Quota via Web Console (Fastest / UI)
-
+#### Option B: Via Web Console
 1. Open the [**Cloud Run Quotas Console**](https://console.cloud.google.com/iam-admin/quotas?project=dandye-0324-chronicle&filter=service:run.googleapis.com).
 2. Filter for:
-   - **Service**: `Cloud Run Admin API` (`run.googleapis.com`)
-   - **Metric**: `NVIDIA L4 GPUs` (or `GPUs per project region`)
-   - **Dimensions**: `us-central1`
+   * **Service**: `Cloud Run Admin API` (`run.googleapis.com`)
+   * **Metric**: `NVIDIA L4 GPUs` (or `Total Nvidia L4 GPU allocation without zonal redundancy`)
+   * **Dimensions**: `us-central1`
 3. Click **Edit Quotas**, enter `1` (or `2`), and click **Submit Request**.
-4. Quota increases are typically reviewed and approved within minutes to a few hours.
 
 ---
 
 ## 2. Deploying the Service
 
-Once quota is approved, run the deployment script:
+Once quota is approved, run the deployment:
 
 ```bash
-# Set your Hugging Face token (if using gated models)
-export HF_TOKEN="<YOUR_HF_TOKEN>"
+# Using Justfile (automatically checks quota first):
+just cloudrun-deploy
 
-# Deploy to Cloud Run
+# Or directly using the script:
 ./scripts/cloudrun_deploy.sh
+```
+
+To check service status, revisions, and URL after deployment:
+```bash
+just cloudrun-status
 ```
 
 ---
 
 ## 3. Testing the Endpoint
 
-After deployment, call the OpenAI-compatible `/v1/chat/completions` route:
+Call the OpenAI-compatible `/v1/chat/completions` route:
 
 ```bash
 SERVICE_URL=$(gcloud run services describe gemma-cloudrun-service \
@@ -81,4 +83,14 @@ curl "$SERVICE_URL/v1/chat/completions" \
       {"role": "user", "content": "Explain quantum computing in 2 sentences."}
     ]
   }'
+```
+
+---
+
+## 4. Resetting Quota (Optional)
+
+To tear down or reset the GPU quota preference back to 0:
+
+```bash
+just cloudrun-quota-reset
 ```
