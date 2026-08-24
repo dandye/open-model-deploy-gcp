@@ -1,15 +1,24 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Configuration
+# Load environment variables from .env if present
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -f "${ROOT_DIR}/.env" ]]; then
+  set -a
+  source "${ROOT_DIR}/.env"
+  set +a
+fi
+
+# Configuration with environment fallbacks
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
-REGION="us-central1"
-MODEL_ID="gemma-3-12b-it-1747240724884"
-ENDPOINT_NAME="gemma-endpoint-$(date +%Y%m%d)"
-DEPLOYMENT_DISPLAY_NAME="gemma-3-12b-deployment"
-MACHINE_TYPE="g2-standard-24"
-ACCELERATOR_TYPE="nvidia-l4"
-ACCELERATOR_COUNT="2"
+REGION="${GCP_REGION:-us-central1}"
+MODEL_ID="${VERTEX_MODEL_ID:-gemma-3-12b-it-1747240724884}"
+ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d)}"
+DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-gemma-3-12b-deployment}"
+MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-24}"
+ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-nvidia-l4}"
+ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-2}"
 
 echo "=========================================="
 echo " Vertex AI Gemma Deployment Script"

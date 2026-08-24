@@ -1,22 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Configuration
-PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
-REGION="us-central1"
-SERVICE_NAME="gemma-cloudrun-service"
-MODEL_NAME="${MODEL_NAME:-google/gemma-2-9b-it}"
-CONTAINER_IMAGE="vllm/vllm-openai:latest"
+# Load environment variables from .env if present
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [[ -f "${ROOT_DIR}/.env" ]]; then
+  set -a
+  source "${ROOT_DIR}/.env"
+  set +a
+fi
 
-# Cloud Run GPU & Hardware Allocation
-# (Cloud Run supports 1x NVIDIA L4 per instance)
-CPU="8"
-MEMORY="32Gi"
-GPU_COUNT="1"
-GPU_TYPE="nvidia-l4"
-MIN_INSTANCES="0"    # 0 = True Scale-To-Zero when idle
-MAX_INSTANCES="1"
-TIMEOUT="900"        # 15 min timeout to allow cold start weight loading
+# Configuration with environment fallbacks
+PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
+REGION="${GCP_REGION:-us-central1}"
+SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-gemma-cloudrun-service}"
+MODEL_NAME="${CLOUDRUN_MODEL_NAME:-google/gemma-2-9b-it}"
+CONTAINER_IMAGE="${CLOUDRUN_CONTAINER_IMAGE:-vllm/vllm-openai:latest}"
+
+CPU="${CLOUDRUN_CPU:-8}"
+MEMORY="${CLOUDRUN_MEMORY:-32Gi}"
+GPU_COUNT="${CLOUDRUN_GPU_COUNT:-1}"
+GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}"
+MIN_INSTANCES="${CLOUDRUN_MIN_INSTANCES:-0}"
+MAX_INSTANCES="${CLOUDRUN_MAX_INSTANCES:-1}"
+TIMEOUT="${CLOUDRUN_TIMEOUT:-900}"
+SWAP_SPACE="${CLOUDRUN_SWAP_SPACE:-4}"
+GPU_MEMORY_UTIL="${CLOUDRUN_GPU_MEMORY_UTILIZATION:-0.90}"
+MAX_MODEL_LEN="${CLOUDRUN_MAX_MODEL_LEN:-4096}"
 
 echo "=========================================="
 echo " Cloud Run Gemma Deployment (Scale-to-Zero)"
@@ -38,7 +48,7 @@ gcloud services enable \
 
 # 2. Deploy service to Cloud Run with GPU and scale-to-zero
 echo ""
-echo "Step 2/3: Deploying $SERVICE_NAME to Cloud Run with 1x NVIDIA L4..."
+echo "Step 2/3: Deploying $SERVICE_NAME to Cloud Run with ${GPU_COUNT}x ${GPU_TYPE}..."
 
 gcloud beta run deploy "$SERVICE_NAME" \
   --project="$PROJECT_ID" \
@@ -54,7 +64,7 @@ gcloud beta run deploy "$SERVICE_NAME" \
   --max-instances="$MAX_INSTANCES" \
   --timeout="${TIMEOUT}s" \
   --port=8000 \
-  --args="--model=${MODEL_NAME},--swap-space=4,--gpu-memory-utilization=0.90,--max-model-len=4096,--port=8000" \
+  --args="--model=${MODEL_NAME},--swap-space=${SWAP_SPACE},--gpu-memory-utilization=${GPU_MEMORY_UTIL},--max-model-len=${MAX_MODEL_LEN},--port=8000" \
   --set-env-vars="HF_TOKEN=${HF_TOKEN:-},VLLM_LOGGING_LEVEL=INFO" \
   --allow-unauthenticated
 
