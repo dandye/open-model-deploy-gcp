@@ -16,11 +16,11 @@ default:
     @printf "  \033[1;32mjust cost-list\033[0m               \033[2mDisplay hardware pricing & sizing table in terminal\033[0m\n"
     @printf "  \033[1;32mjust predict \"<prompt>\"\033[0m      \033[2mSend a test query to whichever endpoint is active\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI ONLINE PREDICTION (Dedicated GPU VMs):\033[0m\n"
-    @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (2x NVIDIA L4)\033[0m\n"
+    @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (checks auth first)\033[0m\n"
     @printf "  \033[1;32mjust vertex-status\033[0m           \033[2mCheck deployment progress and active operations\033[0m\n"
     @printf "  \033[1;32mjust vertex-undeploy\033[0m         \033[2mUndeploy model from endpoint (stops GPU billing)\033[0m\n\n"
     @printf "\033[1;33mCLOUD RUN WITH GPU (Serverless Scale-to-Zero):\033[0m\n"
-    @printf "  \033[1;32mjust cloudrun-deploy\033[0m         \033[2mDeploy Gemma with scale-to-zero (checks quota first)\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-deploy\033[0m         \033[2mDeploy Gemma with scale-to-zero (checks auth & quota)\033[0m\n"
     @printf "  \033[1;32mjust cloudrun-status\033[0m         \033[2mCheck Cloud Run service status and active revisions\033[0m\n"
     @printf "  \033[1;32mjust cloudrun-quota-check\033[0m    \033[2mVerify Cloud Run NVIDIA L4 GPU quota in region\033[0m\n"
     @printf "  \033[1;32mjust cloudrun-quota-request\033[0m  \033[2mRequest Cloud Run NVIDIA L4 GPU quota increase\033[0m\n"
@@ -60,8 +60,8 @@ predict PROMPT="Hello Gemma! Explain quantum computing in two sentences.":
 # Vertex AI Endpoints (Dedicated GPU VMs)
 # ------------------------------------------------------------------------------
 
-# Deploy Gemma to a Vertex AI Endpoint (g2-standard-24, 2x NVIDIA L4)
-vertex-deploy:
+# Deploy Gemma to a Vertex AI Endpoint (checks auth first)
+vertex-deploy: auth-check
     @./scripts/vertex_deploy.sh
 
 # Check Vertex AI endpoint deployment status and active operations
@@ -92,8 +92,8 @@ cloudrun-quota-request:
 cloudrun-quota-reset:
     @./scripts/cloudrun_quota_reset.sh
 
-# Deploy Gemma to Cloud Run with 1x NVIDIA L4 (checks quota first)
-cloudrun-deploy: cloudrun-quota-check
+# Deploy Gemma to Cloud Run with 1x NVIDIA L4 (checks auth & quota first)
+cloudrun-deploy: auth-check cloudrun-quota-check
     @./scripts/cloudrun_deploy.sh
 
 # ------------------------------------------------------------------------------
