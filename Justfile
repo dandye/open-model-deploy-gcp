@@ -2,9 +2,31 @@
 # Justfile: Gemma Model Deployment & Quota Management
 # ==============================================================================
 
-# Default recipe: list available commands
+# Default recipe: formatted and colorized help menu
 default:
-    @just --list
+    @printf "\033[1;36m==============================================================================\033[0m\n"
+    @printf " \033[1;37mGemma Model Deployment Manager\033[0m\n"
+    @printf "\033[1;36m==============================================================================\033[0m\n\n"
+    @printf "\033[1;33mUSAGE:\033[0m\n"
+    @printf "  just <command>\n\n"
+    @printf "\033[1;33mGLOBAL & DASHBOARD:\033[0m\n"
+    @printf "  \033[1;32mjust status\033[0m                  \033[2mPrint unified live dashboard of all GCP resources\033[0m\n\n"
+    @printf "\033[1;33mVERTEX AI ONLINE PREDICTION (Dedicated GPU VMs):\033[0m\n"
+    @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (2x NVIDIA L4)\033[0m\n"
+    @printf "  \033[1;32mjust vertex-status\033[0m           \033[2mCheck deployment progress and active operations\033[0m\n"
+    @printf "  \033[1;32mjust vertex-undeploy\033[0m         \033[2mUndeploy model from endpoint (stops GPU billing)\033[0m\n\n"
+    @printf "\033[1;33mCLOUD RUN WITH GPU (Serverless Scale-to-Zero):\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-deploy\033[0m         \033[2mDeploy Gemma with scale-to-zero (checks quota first)\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-status\033[0m         \033[2mCheck Cloud Run service status and active revisions\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-quota-check\033[0m    \033[2mVerify Cloud Run NVIDIA L4 GPU quota in region\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-quota-request\033[0m  \033[2mRequest Cloud Run NVIDIA L4 GPU quota increase\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-quota-reset\033[0m    \033[2mReset Cloud Run GPU quota preference back to 0\033[0m\n\n"
+    @printf "\033[1;33mTERRAFORM (Infrastructure as Code):\033[0m\n"
+    @printf "  \033[1;32mjust tf-init\033[0m                 \033[2mInitialize Terraform working directory\033[0m\n"
+    @printf "  \033[1;32mjust tf-plan\033[0m                 \033[2mPlan Terraform infrastructure changes\033[0m\n"
+    @printf "  \033[1;32mjust tf-apply\033[0m                \033[2mApply Terraform infrastructure changes\033[0m\n"
+    @printf "  \033[1;32mjust tf-destroy\033[0m              \033[2mDestroy Terraform-managed infrastructure\033[0m\n\n"
+    @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # Print unified live state dashboard of all Vertex AI and Cloud Run resources
 status:
