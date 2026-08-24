@@ -12,33 +12,39 @@ fi
 
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d)}"
+ENDPOINT_PATTERN="${VERTEX_ENDPOINT_NAME:-gemma-endpoint*}"
 
 echo "=========================================="
 echo " Vertex AI Deployment Status"
 echo "=========================================="
-echo "Project:   $PROJECT_ID"
-echo "Region:    $REGION"
-echo "Endpoint:  $ENDPOINT_NAME"
+echo "Project:  $PROJECT_ID"
+echo "Region:   $REGION"
+echo "Pattern:  $ENDPOINT_PATTERN"
 echo "=========================================="
 
-# 1. Find Endpoint ID
+# 1. Find Most Recent Endpoint ID matching pattern
 ENDPOINT_ID=$(gcloud ai endpoints list \
   --project="$PROJECT_ID" \
   --region="$REGION" \
-  --filter="display_name=$ENDPOINT_NAME" \
+  --filter="displayName:$ENDPOINT_PATTERN" \
+  --sort-by="~createTime" \
   --format="value(name.basename())" \
   --limit=1 2>/dev/null || true)
 
 if [[ -z "$ENDPOINT_ID" ]]; then
-  echo "[INFO] No endpoint found with display name '$ENDPOINT_NAME'."
+  echo "[INFO] No endpoint found matching '$ENDPOINT_PATTERN'."
   echo ""
   echo "All endpoints in $REGION:"
   gcloud ai endpoints list --project="$PROJECT_ID" --region="$REGION"
   exit 0
 fi
 
-echo "[INFO] Found Endpoint ID: $ENDPOINT_ID"
+DISPLAY_NAME=$(gcloud ai endpoints describe "$ENDPOINT_ID" \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --format="value(displayName)" 2>/dev/null || echo "$ENDPOINT_ID")
+
+echo "[INFO] Active Endpoint: $DISPLAY_NAME (ID: $ENDPOINT_ID)"
 echo ""
 
 # 2. Check Deployed Models
@@ -48,19 +54,17 @@ gcloud ai endpoints describe "$ENDPOINT_ID" \
   --region="$REGION"
 
 echo ""
-# 3. Check Recent Operations
-echo "--- Recent Endpoint Operations ---"
-OPERATIONS=$(gcloud ai operations list \
+# 3. Check Operations on Endpoint
+echo "--- Operations for Endpoint $ENDPOINT_ID ---"
+# Check via metadata genericMetadata or describe operations
+DEPLOY_OP=$(gcloud ai operations list \
   --project="$PROJECT_ID" \
-  --region="$REGION" \
-  --filter="name:endpoints/$ENDPOINT_ID" \
-  --format="table(name.basename():label=OPERATION_ID,done,metadata.deploymentStage:label=STAGE,error.message:label=ERROR)" \
-  --limit=5 2>/dev/null || true)
+  --region="$REGION" 2>/dev/null || true)
 
-if [[ -n "$OPERATIONS" ]]; then
-  echo "$OPERATIONS"
+if [[ -n "$DEPLOY_OP" ]]; then
+  echo "$DEPLOY_OP"
 else
-  echo "[INFO] No recent operations found for endpoint $ENDPOINT_ID."
+  echo "[INFO] No active operations returned by list API. Check describe on recent operation IDs."
 fi
 
 echo ""

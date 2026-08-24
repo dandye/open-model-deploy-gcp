@@ -104,7 +104,7 @@ echo "==========================================================================
 FOUND_ENDPOINT_ID=$(gcloud ai endpoints list \
   --project="$PROJECT_ID" \
   --region="$REGION" \
-  --filter="display_name=$VERTEX_ENDPOINT_NAME" \
+  --filter="displayName:gemma-endpoint*" --sort-by="~createTime" \
   --format="value(name.basename())" \
   --limit=1 2>/dev/null || true)
 
