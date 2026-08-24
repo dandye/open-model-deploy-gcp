@@ -12,7 +12,7 @@ fi
 
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-ENDPOINT_PATTERN="${VERTEX_ENDPOINT_NAME:-gemma-endpoint*}"
+ENDPOINT_PATTERN="${VERTEX_ENDPOINT_NAME:-gemma*}"
 
 echo "=========================================="
 echo " Vertex AI Deployment Status"

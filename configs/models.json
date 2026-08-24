@@ -37,8 +37,8 @@
     "runtime": {
       "tensorParallelSize": 1,
       "swapSpaceGb": 16,
-      "gpuMemoryUtilization": 0.90,
-      "maxModelLen": 8192,
+      "gpuMemoryUtilization": 0.95,
+      "maxModelLen": 4096,
       "extraArgs": []
     },
     "supportedTargets": ["vertex", "cloudrun"]
