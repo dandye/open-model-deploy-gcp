@@ -13,7 +13,7 @@ fi
 # Configuration with environment fallbacks
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-MODEL_ID="${VERTEX_MODEL_ID:-6586523800878186496}"
+MODEL_ID="${VERTEX_MODEL_ID:-8258458774260416512}"
 ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d-%H%M)}"
 DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-gemma-deployment}"
 MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-12}"

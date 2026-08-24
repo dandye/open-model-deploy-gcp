@@ -34,7 +34,7 @@ This document provides hardware sizing, minimum requirements, and cost estimates
 
 ## 2. Active Deployment Specification: Gemma 2 9B (`g2-standard-12`)
 
-* **Model ID**: `6586523800878186496` (`gemma-2-9b-it-model-garden`)
+* **Model ID**: `8258458774260416512` (`gemma-2-9b-it-model-garden`)
 * **Weight Source**: Google Cloud Storage (`gs://vertex-model-garden-restricted-us/gemma2/gemma-2-9b-it`)
 * **Machine Type**: `g2-standard-12` (12 vCPUs, 48 GiB Host RAM)
 * **GPU**: `1x NVIDIA L4` (24 GiB VRAM)
