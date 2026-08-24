@@ -6,6 +6,10 @@
 default:
     @just --list
 
+# Print unified live state dashboard of all Vertex AI and Cloud Run resources
+status:
+    @./scripts/gcp_status.sh
+
 # ------------------------------------------------------------------------------
 # Vertex AI Endpoints (Dedicated GPU VMs)
 # ------------------------------------------------------------------------------
@@ -25,6 +29,10 @@ vertex-undeploy:
 # ------------------------------------------------------------------------------
 # Cloud Run (Serverless GPU Scale-to-Zero)
 # ------------------------------------------------------------------------------
+
+# Check Cloud Run service status and active revisions
+cloudrun-status:
+    @./scripts/cloudrun_status.sh
 
 # Check if Cloud Run NVIDIA L4 GPU quota is active in us-central1
 cloudrun-quota-check:

@@ -48,6 +48,7 @@ This repository contains automation scripts, `Justfile` recipes, and documentati
 | Recipe | Action |
 | :--- | :--- |
 | `just` | List all available recipes with descriptions |
+| `just status` | Print unified live dashboard of all Vertex AI and Cloud Run resources |
 | `just vertex-deploy` | Deploy Gemma to Vertex AI endpoint |
 | `just vertex-status` | Check deployment status and active operations |
 | `just vertex-undeploy` | Undeploy Gemma from Vertex AI endpoint |

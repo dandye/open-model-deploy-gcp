@@ -48,6 +48,9 @@ just
 ### Vertex AI Online Prediction (Dedicated GPU VM)
 ```bash
 # Deploy model to Vertex AI endpoint
+# Print unified live state dashboard of all GCP resources
+just status
+
 just vertex-deploy
 # Check deployment status and active operations
 just vertex-status
