@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
+REGION="us-central1"
+
+echo "=========================================="
+echo " Resetting Cloud Run GPU Quota Preference"
+echo "=========================================="
+echo "Project:  $PROJECT_ID"
+echo "Region:   $REGION"
+echo "=========================================="
+
+echo "Step 1/2: Checking existing quota preferences for run.googleapis.com..."
+PREFERENCES=$(gcloud quotas preferences list \
+  --service="run.googleapis.com" \
+  --project="$PROJECT_ID" \
+  --format="value(name)" 2>/dev/null || true)
+
+if [[ -n "$PREFERENCES" ]]; then
+  echo "Found preferences to delete:"
+  for PREF in $PREFERENCES; do
+    echo "  - Deleting preference: $PREF"
+    gcloud quotas preferences delete "$PREF" \
+      --project="$PROJECT_ID" \
+      --quiet || true
+  done
+else
+  echo "No existing named preferences found."
+fi
+
+echo ""
+echo "Step 2/2: Submitting quota reset request (preferred-value=0)..."
+gcloud quotas preferences create \
+  --service="run.googleapis.com" \
+  --project="$PROJECT_ID" \
+  --quota-id="nvidia-l4-gpus-per-project-region" \
+  --dimensions="region=$REGION" \
+  --preferred-value=0 \
+  --allow-high-percentage-quota-decrease \
+  --justification="Resetting test Cloud Run GPU quota back to 0" || {
+    echo "Note: Quota limit can also be adjusted via console at:"
+    echo "  https://console.cloud.google.com/iam-admin/quotas?project=$PROJECT_ID&filter=service:run.googleapis.com"
+}
+
+echo ""
+echo "=========================================="
+echo " Quota reset submitted successfully."
+echo "=========================================="
