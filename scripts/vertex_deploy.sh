@@ -66,7 +66,13 @@ gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
   --accelerator="type=$ACCELERATOR_TYPE,count=$ACCELERATOR_COUNT" \
   --min-replica-count=1 \
   --max-replica-count=1 \
-  --traffic-split=0=100
+  --traffic-split=0=100 2>&1 | tee /tmp/vertex_deploy.log || true
+
+# Extract and save operation ID if found
+OP_ID=$(grep -oE 'Waiting for operation \[[0-9]+\]' /tmp/vertex_deploy.log | head -n 1 | grep -oE '[0-9]+' || true)
+if [[ -n "$OP_ID" ]]; then
+  echo "$OP_ID" > "${ROOT_DIR}/.vertex_active_operation"
+fi
 
 echo ""
 echo "=========================================="
