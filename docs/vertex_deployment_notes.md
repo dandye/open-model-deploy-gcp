@@ -1,3 +1,18 @@
+---
+title: "Vertex AI Gemma Deployment Guide & Troubleshooting"
+description: "Operational deployment procedures, hardware configuration, and root-cause solutions for serving Gemma on Vertex AI Online Prediction."
+type: "guide"
+tags:
+  - gemma
+  - vertex-ai
+  - online-prediction
+  - troubleshooting
+  - vllm
+  - nvidia-l4
+created: 2026-08-24
+updated: 2026-08-24
+---
+
 # Vertex AI Gemma Deployment Guide
 
 This guide documents the deployment process, hardware configuration, and troubleshooting solutions for serving Gemma models on Google Cloud Vertex AI Online Prediction.
@@ -89,6 +104,6 @@ gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
 ## 4. Alternative: Serverless Scale-to-Zero
 
 If you need automated scale-to-zero when idle, see:
-* [`docs/cloudrun_deploy.md`](docs/cloudrun_deploy.md) — Cloud Run GPU deployment guide.
-* [`docs/vertex_cleanup_strategies.md`](docs/vertex_cleanup_strategies.md) — Automated Cloud Scheduler / Cloud Function shutdown patterns for Vertex AI.
-* [`docs/cost_analysis.md`](docs/cost_analysis.md) — Detailed cost breakdown across Gemma model flavors.
+* [`docs/cloudrun_deploy.md`](cloudrun_deploy.md) — Cloud Run GPU deployment guide.
+* [`docs/vertex_cleanup_strategies.md`](vertex_cleanup_strategies.md) — Automated Cloud Scheduler / Cloud Function shutdown patterns for Vertex AI.
+* [`docs/cost_analysis.md`](cost_analysis.md) — Detailed cost breakdown across Gemma model flavors.

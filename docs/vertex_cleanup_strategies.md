@@ -1,3 +1,17 @@
+---
+title: "Vertex AI Automated Endpoint Cleanup & Cost Control"
+description: "Architectural patterns and automation strategies for scheduled wall-clock and idle shutdown of Vertex AI prediction endpoints."
+type: "architecture"
+tags:
+  - vertex-ai
+  - cost-optimization
+  - cloud-scheduler
+  - cloud-functions
+  - pubsub
+created: 2026-08-24
+updated: 2026-08-24
+---
+
 # Vertex AI Automated Endpoint Cleanup & Cost Control
 
 Vertex AI does not natively support automatic idle shutdown or "scale-to-zero" for dedicated online prediction GPU endpoints. However, you can automate resource cleanup using the following three strategies.

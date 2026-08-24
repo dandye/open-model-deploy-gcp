@@ -1,3 +1,18 @@
+---
+title: "Deploying Gemma to Cloud Run with GPU (Scale-to-Zero)"
+description: "Comprehensive guide for deploying Gemma models on Google Cloud Run with NVIDIA L4 GPUs and true serverless scale-to-zero."
+type: "guide"
+tags:
+  - gemma
+  - cloud-run
+  - serverless-gpu
+  - scale-to-zero
+  - vllm
+  - nvidia-l4
+created: 2026-08-24
+updated: 2026-08-24
+---
+
 # Deploying Gemma to Cloud Run with GPU (Scale-to-Zero)
 
 This guide covers deploying Gemma models to Google Cloud Run with an NVIDIA L4 GPU to enable true **scale-to-zero** (0 instances when idle, $0 cost).
@@ -37,7 +52,7 @@ gcloud quotas preferences create \
 ```
 
 #### Option B: Via Web Console
-1. Open the [**Cloud Run Quotas Console**](https://console.cloud.google.com/iam-admin/quotas?project=dandye-0324-chronicle&filter=service:run.googleapis.com).
+1. Open the [Cloud Run Quotas Console](https://console.cloud.google.com/iam-admin/quotas?project=dandye-0324-chronicle&filter=service:run.googleapis.com).
 2. Filter for:
    * **Service**: `Cloud Run Admin API` (`run.googleapis.com`)
    * **Metric**: `NVIDIA L4 GPUs` (or `Total Nvidia L4 GPU allocation without zonal redundancy`)

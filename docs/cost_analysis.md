@@ -1,3 +1,18 @@
+---
+title: "Gemma Model Flavors: Hardware Requirements & Cost Analysis"
+description: "Hardware sizing, memory footprints, and hourly, weekly, and monthly cost projections for Gemma models on Google Cloud."
+type: "analysis"
+tags:
+  - gemma
+  - cost-analysis
+  - hardware-sizing
+  - gcp-pricing
+  - vertex-ai
+  - vram
+created: 2026-08-24
+updated: 2026-08-24
+---
+
 # Gemma Model Flavors: Hardware Requirements & Cost Analysis
 
 This document provides hardware sizing, minimum requirements, and cost estimates (Hour, Week, Month) for deploying Gemma models on Google Cloud Vertex AI in `us-central1`.
