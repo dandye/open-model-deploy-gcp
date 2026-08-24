@@ -9,3 +9,4 @@
 *.tfstate.*
 *.tfvars
 !terraform.tfvars.example
+.vertex_active_operation
