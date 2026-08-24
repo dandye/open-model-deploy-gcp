@@ -22,6 +22,7 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 
 | Document | Type | Description |
 | :--- | :--- | :--- |
+| [`deployment_status.md`](deployment_status.md) | `guide` | Live deployment tracking, multi-model compatibility matrix & test records |
 | [`cloudrun_deploy.md`](cloudrun_deploy.md) | `guide` | Deploying Gemma to Cloud Run with NVIDIA L4 GPU & Scale-to-Zero |
 | [`cost_analysis.md`](cost_analysis.md) | `analysis` | Hardware sizing, VRAM requirements, and pricing projections |
 | [`vertex_deployment_notes.md`](vertex_deployment_notes.md) | `guide` | Vertex AI Online Prediction deployment & troubleshooting solutions |

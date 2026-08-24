@@ -1,0 +1,135 @@
+---
+title: "Gemma Model Deployment Status & Compatibility Matrix"
+description: "Comprehensive deployment status, hardware validation, live test results, and operational guidelines for Gemma 2 and Gemma 3 models on Google Cloud Platform."
+type: "guide"
+tags:
+  - gemma
+  - vertex-ai
+  - cloud-run
+  - deployment-status
+  - compatibility-matrix
+  - gpu
+created: 2026-08-24
+updated: 2026-08-24
+---
+
+# Gemma Model Deployment Status & Compatibility Matrix
+
+This document provides a live tracking matrix, hardware sizing guide, verified test records, and operational configurations for deploying Google Gemma models across Google Cloud Platform (Vertex AI Online Prediction and Cloud Run GPU).
+
+---
+
+## 1. Multi-Model Deployment Matrix
+
+The table below summarizes the catalog status, compute profile, and environment compatibility for each model variant defined in [`configs/models.json`](../configs/models.json).
+
+| Model Flavor | Generation | Parameters | Weights (BF16) | Target Machine | GPUs | TP Size | Context Len | Vertex AI | Cloud Run GPU | Validation Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `gemma-3-1b-it` | Gemma 3 | 1.0B | ~2.5 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-3-4b-it` | Gemma 3 | 4.0B | ~8.0 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-3-12b-it` | Gemma 3 (Vision) | 12.0B | ~24.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Deploying (`us-east4`) |
+| `gemma-3-27b-it` | Gemma 3 | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
+| `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
+| `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
+
+---
+
+## 2. Live Verified Deployment Records
+
+### Gemma 2 9B (`gemma-2-9b-it`)
+
+* **Deployment Environment**: Vertex AI Online Prediction
+* **Region**: `us-central1` (Iowa)
+* **Endpoint Name**: `gemma-2-9b-it-endpoint-20260824-2335`
+* **Endpoint ID**: `8720346016903069696`
+* **Model ID**: `540441301133295616`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20240922_0916_RC00`
+* **Machine Type**: `g2-standard-12` (12 vCPUs, 48 GB Host RAM, 1 x NVIDIA L4 GPU 24GB)
+* **Hourly Cost**: $0.84/hour
+* **vLLM Engine Configuration**:
+  * `gpu-memory-utilization`: `0.95`
+  * `max-model-len`: `4096`
+  * `swap-space`: `16`
+
+#### Verified Live Test Output
+
+**Prompt**:
+```text
+What is the capital of France and what is it famous for?
+```
+
+**Vertex AI Response**:
+```text
+The capital of France is **Paris**.
+
+Paris is famous for many things, including:
+
+* **The Eiffel Tower:** An iconic wrought-iron lattice tower that offers stunning views of the city.
+* **The Louvre Museum:** Home to world-renowned masterpieces such as the Mona Lisa and Venus de Milo.
+* **The Arc de Triomphe:** A triumphal arch honoring French military victories.
+* **Notre Dame Cathedral:** A magnificent Gothic cathedral that has been a symbol of Paris for centuries.
+* **The Champs-Élysées:** A grand avenue lined with shops, restaurants, and theaters.
+* **Fashion and Design:** Paris is considered a global center for fashion and design.
+* **Gastronomy:** French cuisine is world-renowned, and Paris is home to some of the best restaurants in the world.
+* **Romance:** Paris is often called the "City of Love" due to its charming atmosphere and romantic landmarks.
+* **Art and Culture:** Paris has a rich history of art and culture, and is home to many theaters, museums, and galleries.
+```
+
+---
+
+## 3. Active Parallel Deployments
+
+### Gemma 3 12B Multimodal (`gemma-3-12b-it`)
+
+* **Deployment Environment**: Vertex AI Online Prediction
+* **Region**: `us-east4` (Northern Virginia)
+* **Endpoint Name**: `gemma-3-12b-it-endpoint-20260824-2349`
+* **Endpoint ID**: `2861740695054450688`
+* **Model ID**: `8879792245360820224`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250220_0916_RC00`
+* **Machine Type**: `g2-standard-48` (48 vCPUs, 192 GB Host RAM, 4 x NVIDIA L4 GPUs 96GB total VRAM)
+* **Tensor Parallelism**: `tensor-parallel-size=4`
+* **Hourly Cost**: $3.36/hour
+* **Status**: Provisioning serving cluster / initializing vLLM container.
+
+---
+
+## 4. Key Architectural Constraints & Proven Resolutions
+
+### 1. KV Cache Exhaustion on Single L4 GPU (24GB)
+* **Symptom**: Model server exits during startup with `ValueError: The model's max seq len (8192) is larger than the maximum number of tokens that can be stored in KV cache (576)`.
+* **Root Cause**: Gemma 2 9B weights require 17.22 GB of VRAM. With the default `gpu-memory-utilization=0.90` (21.6 GB budget), only ~4.3 GB remains for KV cache and activations. An 8192 sequence length context requires more memory than available.
+* **Resolution**: 
+  1. Increase `gpu-memory-utilization` from `0.90` to `0.95` (22.8 GB budget).
+  2. Set `max-model-len` to `4096`. This frees sufficient VRAM for high-throughput batching and stable serving.
+
+### 2. Host RAM & Swap Space Configuration
+* **Symptom**: Startup failure with `ValueError: Too large swap space`.
+* **Root Cause**: Custom Model Garden container specifications must set `--swap-space` in proportion to host RAM:
+  * `<= 32 GB` Host RAM (`g2-standard-4`): `--swap-space=8`
+  * `48 GB` Host RAM (`g2-standard-12`): `--swap-space=16`
+  * `192 GB` Host RAM (`g2-standard-48`): `--swap-space=32`
+
+### 3. Container Entrypoint Wrapper
+* **Rule**: When registering Model Garden images (`pytorch-vllm-serve`), do **not** override `command` in `gcloud ai models upload`. The default Model Garden wrapper script downloads the weights from Cloud Storage and sets required environment variables before starting vLLM.
+
+---
+
+## 5. Verification & Testing Commands
+
+To test any active deployment across Vertex AI or Cloud Run:
+
+```bash
+# Query the active Gemma 2 9B endpoint
+just predict "Explain quantum computing in simple terms."
+
+# Query a specific model flavor
+just predict "What are the primary colors?" gemma-2-9b-it
+
+# Check status of all Vertex AI and Cloud Run resources
+just status
+
+# Check Vertex AI endpoints and active operations
+just vertex-status
+```

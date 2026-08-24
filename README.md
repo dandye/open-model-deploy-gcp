@@ -85,6 +85,7 @@ just predict "Why is the sky blue?"
 
 ## 4. Documentation Reference
 
+* [Model Deployment Status & Matrix](docs/deployment_status.md)
 * [Cost Analysis & Hardware Sizing](docs/cost_analysis.md)
 * [Vertex AI Deployment Guide & Lessons Learned](docs/vertex_deployment_notes.md)
 * [Cloud Run GPU Deployment Guide](docs/cloudrun_deploy.md)
