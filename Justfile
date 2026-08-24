@@ -49,3 +49,23 @@ cloudrun-quota-reset:
 # Deploy Gemma to Cloud Run with 1x NVIDIA L4 (checks quota first)
 cloudrun-deploy: cloudrun-quota-check
     @./scripts/cloudrun_deploy.sh
+
+# ------------------------------------------------------------------------------
+# Terraform Infrastructure as Code
+# ------------------------------------------------------------------------------
+
+# Initialize Terraform working directory
+tf-init:
+    @cd terraform && terraform init
+
+# Plan Terraform infrastructure changes
+tf-plan:
+    @cd terraform && terraform plan
+
+# Apply Terraform infrastructure changes
+tf-apply:
+    @cd terraform && terraform apply
+
+# Destroy Terraform-managed infrastructure
+tf-destroy:
+    @cd terraform && terraform destroy
