@@ -10,7 +10,7 @@ This repository provides two deployment architectures for Gemma models:
 
 | Mode | Target Platform | Hardware Configuration | Billing Model | Scale-to-Zero |
 | :--- | :--- | :--- | :--- | :--- |
-| **Dedicated Endpoint** | **Vertex AI Prediction** | `g2-standard-24` (2x NVIDIA L4, 96GB RAM) | Hourly while deployed (~$1.68/hr) | Manual (`vertex-undeploy`) |
+| **Dedicated Endpoint** | **Vertex AI Prediction** | `g2-standard-48` (4x NVIDIA L4, 96GB RAM) | Hourly while deployed (~$1.68/hr) | Manual (`vertex-undeploy`) |
 | **Serverless GPU** | **Cloud Run with GPU** | 1x NVIDIA L4, 8 vCPUs, 32GB RAM | Per-request seconds ($0 when idle) | Automatic (`min-instances=0`) |
 
 ---
@@ -58,7 +58,7 @@ just status
 
 ### Vertex AI Online Prediction (Dedicated GPU VM)
 ```bash
-# Deploy model to Vertex AI endpoint (g2-standard-24, 2x NVIDIA L4)
+# Deploy model to Vertex AI endpoint (g2-standard-48, 4x NVIDIA L4)
 just vertex-deploy
 
 # Check deployment progress and active operations

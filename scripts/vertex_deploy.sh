@@ -14,11 +14,11 @@ fi
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
 MODEL_ID="${VERTEX_MODEL_ID:-gemma-3-12b-it-1747240724884}"
-ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d)}"
+ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d-%H%M)}"
 DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-gemma-3-12b-deployment}"
-MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-24}"
+MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-48}"
 ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-nvidia-l4}"
-ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-2}"
+ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-4}"
 
 echo "=========================================="
 echo " Vertex AI Gemma Deployment Script"
@@ -37,7 +37,7 @@ ENDPOINT_ID=$(gcloud ai endpoints list \
   --region="$REGION" \
   --filter="display_name=$ENDPOINT_NAME" \
   --format="value(name.basename())" \
-  --limit=1)
+  --limit=1 2>/dev/null || true)
 
 if [[ -z "$ENDPOINT_ID" ]]; then
   echo "Creating new endpoint '$ENDPOINT_NAME'..."

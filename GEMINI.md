@@ -8,7 +8,7 @@ This file provides architectural context, commands, and project conventions for 
 
 This repository contains automation scripts, Terraform modules, `Justfile` recipes, and documentation for deploying Google Gemma models on Google Cloud Platform across two runtime environments:
 
-1. **Vertex AI Online Prediction**: Dedicated GPU virtual machines (`g2-standard-24`, 2x NVIDIA L4 GPUs, 96 GiB RAM) for persistent, high-throughput model serving.
+1. **Vertex AI Online Prediction**: Dedicated GPU virtual machines (`g2-standard-48`, 4x NVIDIA L4 GPUs, 96 GiB RAM) for persistent, high-throughput model serving.
 2. **Cloud Run with GPU**: Serverless containers (`1x NVIDIA L4 GPU`, `--min-instances=0`) enabling true scale-to-zero when idle ($0 idle cost).
 
 ---
@@ -16,10 +16,10 @@ This repository contains automation scripts, Terraform modules, `Justfile` recip
 ## 2. Key Architectural Constraints & Lessons Learned
 
 ### Vertex AI Prediction
-* **Swap Space & Host RAM**: Model Garden vLLM containers default to `--swap-space 64` (64 GiB host RAM). Machine types with <= 64 GB RAM (e.g., `g2-standard-4`, `g2-standard-16`) crash at startup with `ValueError: Too large swap space`. Use **`g2-standard-24`** (96 GiB RAM).
+* **Swap Space & Host RAM**: Model Garden vLLM containers default to `--swap-space 64` (64 GiB host RAM). Machine types with <= 64 GB RAM (e.g., `g2-standard-4`, `g2-standard-16`) crash at startup with `ValueError: Too large swap space`. Use **`g2-standard-48`** (96 GiB RAM).
 * **Accelerator Count Mappings**: On GCP `g2` instances:
   * `g2-standard-4`, `g2-standard-8`, `g2-standard-12`, `g2-standard-16`: Exactly **1x L4** (`count=1`).
-  * `g2-standard-24`: Exactly **2x L4** (`count=2`).
+  * `g2-standard-48`: Exactly **2x L4** (`count=2`).
   * `g2-standard-48`: Exactly **4x L4** (`count=4`).
 * **Model IDs**: `gcloud ai endpoints deploy-model` requires the **numeric/registered Model ID** from Vertex AI Model Registry (e.g. `gemma-3-12b-it-1747240724884`), not a Hugging Face URI.
 * **Billing**: Dedicated GPU endpoints do **not** support `min-replica-count=0`. To stop billing, run `./scripts/vertex_undeploy.sh` (or `just vertex-undeploy`).

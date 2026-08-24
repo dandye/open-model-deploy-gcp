@@ -56,8 +56,8 @@ just vertex-undeploy
 ## 2. Configuration & Hardware Requirements
 
 ### Gemma 12B Hardware Allocation
-* **Machine Type**: `g2-standard-24` (24 vCPUs, 96 GiB System RAM)
-* **Accelerators**: `2x NVIDIA L4` (48 GiB total VRAM)
+* **Machine Type**: `g2-standard-48` (24 vCPUs, 96 GiB System RAM)
+* **Accelerators**: `4x NVIDIA L4` (48 GiB total VRAM)
 * **Region**: `us-central1`
 
 ```bash
@@ -66,8 +66,8 @@ gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
   --region="us-central1" \
   --model="$MODEL_ID" \
   --display-name="gemma-3-12b-deployment" \
-  --machine-type="g2-standard-24" \
-  --accelerator="type=nvidia-l4,count=2" \
+  --machine-type="g2-standard-48" \
+  --accelerator="type=nvidia-l4,count=4" \
   --min-replica-count=1 \
   --max-replica-count=1 \
   --traffic-split=0=100
@@ -80,16 +80,16 @@ gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
 ### A. Swap Space & System RAM Allocation
 * **Error**: `ValueError: Too large swap space. 64.00 GiB out of the 15.62 GiB total CPU memory is allocated for the swap space.`
 * **Root Cause**: Model Garden vLLM containers default to `--swap-space 64` (64 GiB of CPU memory for KV cache offloading). Deploying on smaller VMs (like `g2-standard-4` with 16 GiB RAM or `g2-standard-16` with ~62.5 GiB usable RAM) crashes the container during memory validation.
-* **Fix**: Use `g2-standard-24` (96 GiB host RAM) to accommodate the 64 GiB swap space allocation.
+* **Fix**: Use `g2-standard-48` (96 GiB host RAM) to accommodate the 64 GiB swap space allocation.
 
 ### B. Machine Type & Accelerator Count Mappings
-* **Error**: `INVALID_ARGUMENT: The accelerator count "1" is not allowed. The allowed numbers of accelerator "NVIDIA_L4" to use with machine type "g2-standard-24" are: [2].`
+* **Error**: `INVALID_ARGUMENT: The accelerator count "1" is not allowed. The allowed numbers of accelerator "NVIDIA_L4" to use with machine type "g2-standard-48" are: [2].`
 * **Root Cause**: GCP enforces fixed GPU counts per G2 machine tier:
   * `g2-standard-4`, `g2-standard-8`, `g2-standard-12`, `g2-standard-16` $\rightarrow$ exactly **1x L4** (`count=1`)
-  * `g2-standard-24` $\rightarrow$ exactly **2x L4** (`count=2`)
+  * `g2-standard-48` $\rightarrow$ exactly **2x L4** (`count=4`)
   * `g2-standard-48` $\rightarrow$ exactly **4x L4** (`count=4`)
   * `g2-standard-96` $\rightarrow$ exactly **8x L4** (`count=8`)
-* **Fix**: Ensure `--accelerator="type=nvidia-l4,count=2"` is used when selecting `g2-standard-24`.
+* **Fix**: Ensure `--accelerator="type=nvidia-l4,count=4"` is used when selecting `g2-standard-48`.
 
 ### C. Numeric Model ID in `gcloud ai endpoints deploy-model`
 * **Error**: `ERROR: (gcloud.ai.endpoints.deploy-model) There is an error while getting the model information.`
