@@ -50,6 +50,7 @@ This repository contains automation scripts, Terraform modules, `Justfile` recip
 | :--- | :--- |
 | `just` | Display categorized, color-coded help menu |
 | `just status` | Print unified live dashboard of all Vertex AI and Cloud Run resources |
+| `just auth-check` | Verify gcloud account, project configuration & ADC token validity |
 | `just model-list` | List Model Registry models & reference hardware targets |
 | `just cost-list` | Display hardware pricing & sizing table in terminal |
 | `just predict "<prompt>"` | Send test prompt to active endpoint |

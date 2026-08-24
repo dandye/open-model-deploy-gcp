@@ -9,8 +9,9 @@ default:
     @printf "\033[1;36m==============================================================================\033[0m\n\n"
     @printf "\033[1;33mUSAGE:\033[0m\n"
     @printf "  just <command>\n\n"
-    @printf "\033[1;33mDISCOVERY & DASHBOARDS:\033[0m\n"
+    @printf "\033[1;33mDISCOVERY, AUTH & DASHBOARDS:\033[0m\n"
     @printf "  \033[1;32mjust status\033[0m                  \033[2mPrint unified live dashboard of all GCP resources\033[0m\n"
+    @printf "  \033[1;32mjust auth-check\033[0m              \033[2mVerify gcloud account, project, and ADC validity\033[0m\n"
     @printf "  \033[1;32mjust model-list\033[0m              \033[2mList Model Registry models & reference catalog\033[0m\n"
     @printf "  \033[1;32mjust cost-list\033[0m               \033[2mDisplay hardware pricing & sizing table in terminal\033[0m\n"
     @printf "  \033[1;32mjust predict \"<prompt>\"\033[0m      \033[2mSend a test query to whichever endpoint is active\033[0m\n\n"
@@ -38,6 +39,10 @@ default:
 # Print unified live state dashboard of all Vertex AI and Cloud Run resources
 status:
     @./scripts/gcp_status.sh
+
+# Verify gcloud account, project configuration, and Application Default Credentials (ADC)
+auth-check:
+    @./scripts/auth_check.sh
 
 # List registered models in Model Registry and reference hardware sizing catalog
 model-list:

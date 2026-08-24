@@ -50,6 +50,7 @@ just
 ```bash
 # Print unified live state dashboard of all Vertex AI and Cloud Run resources
 just status
+  just auth-check               Verify gcloud account, project, and ADC validity
   just model-list              List Model Registry models & reference catalog
   just cost-list               Display hardware pricing & sizing table in terminal
   just predict "<prompt>"      Send a test query to active endpoint
