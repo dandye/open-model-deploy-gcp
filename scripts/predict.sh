@@ -1,100 +1,137 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Load environment variables from .env if present
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Source environment variables if present
 if [[ -f "${ROOT_DIR}/.env" ]]; then
   set -a
   source "${ROOT_DIR}/.env"
   set +a
 fi
+source "${SCRIPT_DIR}/lib/model_catalog.sh"
 
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
 PROMPT="${1:-Hello Gemma! Explain quantum computing in two sentences.}"
-ENDPOINT_PATTERN="${VERTEX_ENDPOINT_NAME:-gemma-endpoint*}"
-CLOUDRUN_SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-gemma-cloudrun-service}"
+TARGET_MODEL="${2:-}"
 
 echo "=========================================="
 echo " Gemma Prediction Test"
 echo "=========================================="
 echo "Prompt: \"$PROMPT\""
+if [[ -n "$TARGET_MODEL" ]]; then
+  echo "Target Model: $TARGET_MODEL"
+fi
 echo "=========================================="
 
-# 1. Check if Cloud Run service is active
-SERVICE_URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_NAME" \
-  --project="$PROJECT_ID" \
-  --region="$REGION" \
-  --format="value(status.url)" 2>/dev/null || true)
-
-if [[ -n "$SERVICE_URL" ]]; then
-  echo "[TARGET] Querying Cloud Run service at $SERVICE_URL..."
-  echo ""
-  RESPONSE=$(curl -s -X POST "$SERVICE_URL/v1/chat/completions" \
-    -H "Content-Type: application/json" \
-    -d "{
-      \"model\": \"${CLOUDRUN_MODEL_NAME:-google/gemma-2-9b-it}\",
-      \"messages\": [{\"role\": \"user\", \"content\": \"$PROMPT\"}],
-      \"temperature\": 0.7,
-      \"max_tokens\": 256
-    }" 2>/dev/null || true)
-
-  if [[ -n "$RESPONSE" ]]; then
-    echo "--- Response ---"
-    echo "$RESPONSE" | grep -o '"content":"[^"]*' | sed 's/"content":"//g' || echo "$RESPONSE"
-    echo ""
-    exit 0
-  fi
-fi
-
-# 2. Check for active Vertex AI endpoint with deployed model
-ENDPOINT_ID=$(gcloud ai endpoints list \
-  --project="$PROJECT_ID" \
-  --region="$REGION" \
-  --filter="displayName:$ENDPOINT_PATTERN" \
-  --sort-by="~createTime" \
-  --format="value(name.basename())" \
-  --limit=1 2>/dev/null || true)
-
-if [[ -n "$ENDPOINT_ID" ]]; then
-  ENDPOINT_INFO=$(gcloud ai endpoints describe "$ENDPOINT_ID" \
+# 1. Check for Active Cloud Run Service
+CLOUDRUN_URL=""
+if [[ -n "$TARGET_MODEL" ]]; then
+  CLOUDRUN_SERVICE_MATCH="${TARGET_MODEL}-cloudrun"
+  CLOUDRUN_URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_MATCH" \
     --project="$PROJECT_ID" \
     --region="$REGION" \
-    --format="yaml(displayName,deployedModels)" 2>/dev/null || true)
+    --format="value(status.url)" 2>/dev/null || true)
+else
+  CLOUDRUN_URL=$(gcloud run services list \
+    --project="$PROJECT_ID" \
+    --region="$REGION" \
+    --filter="status.url:*" \
+    --format="value(status.url)" \
+    --limit=1 2>/dev/null || true)
+fi
 
-  DISPLAY_NAME=$(echo "$ENDPOINT_INFO" | grep "displayName:" | awk '{print $2}' || echo "$ENDPOINT_ID")
+if [[ -n "$CLOUDRUN_URL" ]]; then
+  echo "[TARGET] Querying Cloud Run Service ($CLOUDRUN_URL)..."
+  AUTH_TOKEN=$(gcloud auth print-identity-token 2>/dev/null || gcloud auth print-access-token)
 
-  if ! echo "$ENDPOINT_INFO" | grep -q "deployedModels:"; then
+  PAYLOAD=$(jq -n \
+    --arg model "default" \
+    --arg prompt "$PROMPT" \
+    '{
+      model: $model,
+      messages: [
+        {role: "user", content: $prompt}
+      ],
+      max_tokens: 256,
+      temperature: 0.7
+    }')
+
+  RESPONSE=$(curl -s -X POST \
+    -H "Authorization: Bearer $AUTH_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$PAYLOAD" \
+    "${CLOUDRUN_URL}/v1/chat/completions" || true)
+
+  echo ""
+  echo "--- Response ---"
+  echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
+  echo ""
+  echo "=========================================="
+  exit 0
+fi
+
+# 2. Check for Active Vertex AI Endpoint
+FILTER_PATTERN="displayName:gemma*"
+if [[ -n "$TARGET_MODEL" ]]; then
+  FILTER_PATTERN="displayName:${TARGET_MODEL}*"
+fi
+
+ENDPOINT_INFO=$(gcloud ai endpoints list \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --filter="$FILTER_PATTERN" \
+  --sort-by="~createTime" \
+  --format="value(name.basename(), displayName)" \
+  --limit=1 2>/dev/null || true)
+
+if [[ -n "$ENDPOINT_INFO" ]]; then
+  ENDPOINT_ID=$(echo "$ENDPOINT_INFO" | awk '{print $1}')
+  DISPLAY_NAME=$(echo "$ENDPOINT_INFO" | awk '{print $2}')
+
+  # Check if model is actually deployed
+  DEPLOYED_MODELS=$(gcloud ai endpoints describe "$ENDPOINT_ID" \
+    --project="$PROJECT_ID" \
+    --region="$REGION" \
+    --format="value(deployedModels)" 2>/dev/null || true)
+
+  if [[ -z "$DEPLOYED_MODELS" ]]; then
     echo "[INFO] Found Endpoint '$DISPLAY_NAME' ($ENDPOINT_ID), but the model is still deploying (no traffic split yet)."
     echo "Check deployment progress with: just vertex-status"
     exit 0
   fi
 
   echo "[TARGET] Querying Vertex AI Endpoint '$DISPLAY_NAME' ($ENDPOINT_ID)..."
-  echo ""
-  AUTH_TOKEN=$(gcloud auth print-access-token 2>/dev/null || true)
+  AUTH_TOKEN=$(gcloud auth print-access-token)
 
-  PREDICT_URL="https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/endpoints/${ENDPOINT_ID}:rawPredict"
+  PAYLOAD=$(jq -n \
+    --arg prompt "$PROMPT" \
+    '{
+      instances: [
+        {
+          prompt: $prompt,
+          max_tokens: 256,
+          temperature: 0.7
+        }
+      ]
+    }')
 
-  RESPONSE=$(curl -s -X POST "$PREDICT_URL" \
+  RESPONSE=$(curl -s -X POST \
     -H "Authorization: Bearer $AUTH_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{
-      \"model\": \"${VERTEX_MODEL_ID:-gemma-3-12b-it-1747240724884}\",
-      \"messages\": [{\"role\": \"user\", \"content\": \"$PROMPT\"}],
-      \"temperature\": 0.7,
-      \"max_tokens\": 256
-    }" 2>/dev/null || true)
+    -d "$PAYLOAD" \
+    "https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/endpoints/${ENDPOINT_ID}:predict" || true)
 
-  if [[ -n "$RESPONSE" ]]; then
-    echo "--- Response ---"
-    echo "$RESPONSE" | grep -o '"content":"[^"]*' | sed 's/"content":"//g' || echo "$RESPONSE"
-    echo ""
-    exit 0
-  fi
+  echo ""
+  echo "--- Response ---"
+  echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
+  echo ""
+  echo "=========================================="
+  exit 0
 fi
 
 echo "[ERROR] No active Vertex AI Endpoint or Cloud Run service found to query."
-echo "Deploy a model first using 'just vertex-deploy' or 'just cloudrun-deploy'."
+echo "Deploy a model first using: just vertex-deploy <model> or just cloudrun-deploy <model>"
 exit 1

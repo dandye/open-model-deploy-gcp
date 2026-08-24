@@ -1,0 +1,156 @@
+{
+  "gemma-2-2b-it": {
+    "displayName": "Gemma 2 2B Instruct",
+    "family": "gemma2",
+    "params": "2.6B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma2/gemma-2-2b-it",
+    "hfRepo": "google/gemma-2-2b-it",
+    "compute": {
+      "machineType": "g2-standard-4",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 16,
+      "hourlyCostUsd": 0.70
+    },
+    "runtime": {
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 8,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": []
+    },
+    "supportedTargets": ["vertex", "cloudrun"]
+  },
+  "gemma-2-9b-it": {
+    "displayName": "Gemma 2 9B Instruct",
+    "family": "gemma2",
+    "params": "9.2B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma2/gemma-2-9b-it",
+    "hfRepo": "google/gemma-2-9b-it",
+    "compute": {
+      "machineType": "g2-standard-12",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 48,
+      "hourlyCostUsd": 0.83
+    },
+    "runtime": {
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": []
+    },
+    "supportedTargets": ["vertex", "cloudrun"]
+  },
+  "gemma-3-1b-it": {
+    "displayName": "Gemma 3 1B Instruct",
+    "family": "gemma3",
+    "params": "1.0B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma3/gemma-3-1b-it",
+    "hfRepo": "google/gemma-3-1b-it",
+    "compute": {
+      "machineType": "g2-standard-4",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 16,
+      "hourlyCostUsd": 0.70
+    },
+    "runtime": {
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 8,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 32768,
+      "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
+    },
+    "supportedTargets": ["vertex", "cloudrun"]
+  },
+  "gemma-3-4b-it": {
+    "displayName": "Gemma 3 4B Instruct",
+    "family": "gemma3",
+    "params": "4.0B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma3/gemma-3-4b-it",
+    "hfRepo": "google/gemma-3-4b-it",
+    "compute": {
+      "machineType": "g2-standard-8",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 32,
+      "hourlyCostUsd": 0.76
+    },
+    "runtime": {
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 32768,
+      "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
+    },
+    "supportedTargets": ["vertex", "cloudrun"]
+  },
+  "gemma-3-12b-it": {
+    "displayName": "Gemma 3 12B Instruct (Multimodal)",
+    "family": "gemma3",
+    "params": "12.0B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma3/gemma-3-12b-it",
+    "hfRepo": "google/gemma-3-12b-it",
+    "compute": {
+      "machineType": "g2-standard-48",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 4,
+      "hostRamGb": 192,
+      "hourlyCostUsd": 3.36
+    },
+    "runtime": {
+      "tensorParallelSize": 4,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.95,
+      "maxModelLen": 32768,
+      "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
+    },
+    "supportedTargets": ["vertex"]
+  },
+  "gemma-2-27b-it": {
+    "displayName": "Gemma 2 27B Instruct",
+    "family": "gemma2",
+    "params": "27.2B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma2/gemma-2-27b-it",
+    "hfRepo": "google/gemma-2-27b-it",
+    "compute": {
+      "machineType": "g2-standard-48",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 4,
+      "hostRamGb": 192,
+      "hourlyCostUsd": 3.36
+    },
+    "runtime": {
+      "tensorParallelSize": 4,
+      "swapSpaceGb": 32,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": []
+    },
+    "supportedTargets": ["vertex"]
+  },
+  "gemma-3-27b-it": {
+    "displayName": "Gemma 3 27B Instruct (Multimodal)",
+    "family": "gemma3",
+    "params": "27.0B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma3/gemma-3-27b-it",
+    "hfRepo": "google/gemma-3-27b-it",
+    "compute": {
+      "machineType": "g2-standard-48",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 4,
+      "hostRamGb": 192,
+      "hourlyCostUsd": 3.36
+    },
+    "runtime": {
+      "tensorParallelSize": 4,
+      "swapSpaceGb": 32,
+      "gpuMemoryUtilization": 0.95,
+      "maxModelLen": 32768,
+      "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
+    },
+    "supportedTargets": ["vertex"]
+  }
+}

@@ -133,3 +133,9 @@ variable "allow_unauthenticated" {
   type        = bool
   default     = true
 }
+
+variable "model_flavor" {
+  description = "Gemma model flavor to deploy from configs/models.json (e.g. gemma-2-9b-it, gemma-3-12b-it)."
+  type        = string
+  default     = "gemma-2-9b-it"
+}

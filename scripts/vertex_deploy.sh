@@ -1,37 +1,57 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Load environment variables from .env if present
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Source environment and catalog library
 if [[ -f "${ROOT_DIR}/.env" ]]; then
   set -a
   source "${ROOT_DIR}/.env"
   set +a
 fi
+source "${SCRIPT_DIR}/lib/model_catalog.sh"
 
-# Configuration with environment fallbacks
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-MODEL_ID="${VERTEX_MODEL_ID:-8258458774260416512}"
-ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d-%H%M)}"
-DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-gemma-deployment}"
-MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-12}"
-ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-nvidia-l4}"
-ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-1}"
+MODEL_FLAVOR="${1:-${GEMMA_MODEL_FLAVOR:-gemma-2-9b-it}}"
 
+# Validate model exists in catalog
+if ! catalog_model_exists "$MODEL_FLAVOR"; then
+  echo "[ERROR] Model flavor '$MODEL_FLAVOR' not found in configs/models.json."
+  echo "Available flavors:"
+  catalog_list_models | sed 's/^/  - /'
+  exit 1
+fi
+
+# Retrieve compute configuration from catalog
+MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-$(catalog_get_machine_type "$MODEL_FLAVOR")}"
+ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-$(catalog_get_accelerator_type "$MODEL_FLAVOR")}"
+ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-$(catalog_get_accelerator_count "$MODEL_FLAVOR")}"
+ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-${MODEL_FLAVOR}-endpoint-$(date +%Y%m%d-%H%M)}"
+DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-${MODEL_FLAVOR}-deployment}"
+
+# Step 1: Ensure Model is Registered in Model Registry
 echo "=========================================="
 echo " Vertex AI Gemma Deployment Script"
 echo "=========================================="
 echo "Project:      $PROJECT_ID"
 echo "Region:       $REGION"
-echo "Model ID:     $MODEL_ID"
+echo "Model Flavor: $MODEL_FLAVOR"
 echo "Endpoint:     $ENDPOINT_NAME"
 echo "Machine Type: $MACHINE_TYPE ($ACCELERATOR_COUNT x $ACCELERATOR_TYPE)"
 echo "=========================================="
 
-# 1. Create or retrieve Endpoint
-echo "Step 1/2: Checking/creating Vertex AI Endpoint..."
+echo "Step 1/3: Resolving Model ID from Model Registry..."
+MODEL_ID="${VERTEX_MODEL_ID:-}"
+if [[ -z "$MODEL_ID" ]]; then
+  MODEL_ID=$("${SCRIPT_DIR}/vertex_model_register.sh" "$MODEL_FLAVOR" | tail -n 1)
+fi
+echo "Using Model ID: $MODEL_ID"
+echo ""
+
+# Step 2: Create or retrieve Endpoint
+echo "Step 2/3: Checking/creating Vertex AI Endpoint..."
 ENDPOINT_ID=$(gcloud ai endpoints list \
   --project="$PROJECT_ID" \
   --region="$REGION" \
@@ -52,9 +72,9 @@ else
   echo "Found existing Endpoint ID: $ENDPOINT_ID"
 fi
 
-# 2. Deploy Model to Endpoint
+# Step 3: Deploy Model to Endpoint
 echo ""
-echo "Step 2/2: Deploying model $MODEL_ID to endpoint $ENDPOINT_ID..."
+echo "Step 3/3: Deploying model $MODEL_ID to endpoint $ENDPOINT_ID..."
 echo "Note: Deployment typically takes 10-15 minutes to spin up GPUs and initialize the container."
 
 gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
@@ -68,7 +88,7 @@ gcloud ai endpoints deploy-model "$ENDPOINT_ID" \
   --max-replica-count=1 \
   --traffic-split=0=100 2>&1 | tee /tmp/vertex_deploy.log || true
 
-# Extract and save operation ID if found
+# Extract and save operation ID
 OP_ID=$(grep -oE 'Waiting for operation \[[0-9]+\]' /tmp/vertex_deploy.log | head -n 1 | grep -oE '[0-9]+' || true)
 if [[ -n "$OP_ID" ]]; then
   echo "$OP_ID" > "${ROOT_DIR}/.vertex_active_operation"

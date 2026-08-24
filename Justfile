@@ -5,32 +5,32 @@
 # Default recipe: formatted and colorized help menu
 default:
     @printf "\033[1;36m==============================================================================\033[0m\n"
-    @printf " \033[1;37mGemma Model Deployment Manager\033[0m\n"
+    @printf " \033[1;37mGemma Multi-Model Deployment Manager\033[0m\n"
     @printf "\033[1;36m==============================================================================\033[0m\n\n"
     @printf "\033[1;33mUSAGE:\033[0m\n"
-    @printf "  just <command>\n\n"
-    @printf "\033[1;33mDISCOVERY, AUTH & DASHBOARDS:\033[0m\n"
-    @printf "  \033[1;32mjust status\033[0m                  \033[2mPrint unified live dashboard of all GCP resources\033[0m\n"
-    @printf "  \033[1;32mjust auth-check\033[0m              \033[2mVerify gcloud account, project, and ADC validity\033[0m\n"
-    @printf "  \033[1;32mjust model-list\033[0m              \033[2mList Model Registry models & reference catalog\033[0m\n"
-    @printf "  \033[1;32mjust cost-list\033[0m               \033[2mDisplay hardware pricing & sizing table in terminal\033[0m\n"
-    @printf "  \033[1;32mjust predict \"<prompt>\"\033[0m      \033[2mSend a test query to whichever endpoint is active\033[0m\n\n"
+    @printf "  just <command> [model_flavor]\n\n"
+    @printf "\033[1;33mDISCOVERY, CATALOG & DASHBOARDS:\033[0m\n"
+    @printf "  \033[1;32mjust status\033[0m                            \033[2mPrint unified live dashboard of all GCP resources\033[0m\n"
+    @printf "  \033[1;32mjust auth-check\033[0m                        \033[2mVerify gcloud account, project, and ADC validity\033[0m\n"
+    @printf "  \033[1;32mjust model-list\033[0m                        \033[2mList models in catalog (configs/models.json) & registry\033[0m\n"
+    @printf "  \033[1;32mjust cost-list\033[0m                         \033[2mDisplay pricing and compute requirements table\033[0m\n"
+    @printf "  \033[1;32mjust predict \"<prompt>\" [model]\033[0m        \033[2mSend a test query to active endpoint\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI ONLINE PREDICTION (Dedicated GPU VMs):\033[0m\n"
-    @printf "  \033[1;32mjust vertex-register\033[0m         \033[2mRegister a custom single-GPU Gemma model in Model Registry\033[0m\n"
-    @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (1x NVIDIA L4)\033[0m\n"
-    @printf "  \033[1;32mjust vertex-status\033[0m           \033[2mCheck deployment progress and active operations\033[0m\n"
-    @printf "  \033[1;32mjust vertex-undeploy\033[0m         \033[2mUndeploy model from endpoint (stops GPU billing)\033[0m\n\n"
+    @printf "  \033[1;32mjust vertex-register [flavor]\033[0m          \033[2mRegister model in Vertex AI Model Registry\033[0m\n"
+    @printf "  \033[1;32mjust vertex-deploy [flavor]\033[0m            \033[2mDeploy model to Vertex AI endpoint (auto-sizes compute)\033[0m\n"
+    @printf "  \033[1;32mjust vertex-status\033[0m                     \033[2mCheck deployment progress and active operations\033[0m\n"
+    @printf "  \033[1;32mjust vertex-undeploy\033[0m                   \033[2mUndeploy model from endpoint (stops GPU billing)\033[0m\n\n"
     @printf "\033[1;33mCLOUD RUN WITH GPU (Serverless Scale-to-Zero):\033[0m\n"
-    @printf "  \033[1;32mjust cloudrun-deploy\033[0m         \033[2mDeploy Gemma with scale-to-zero (checks auth & quota)\033[0m\n"
-    @printf "  \033[1;32mjust cloudrun-status\033[0m         \033[2mCheck Cloud Run service status and active revisions\033[0m\n"
-    @printf "  \033[1;32mjust cloudrun-quota-check\033[0m    \033[2mVerify Cloud Run NVIDIA L4 GPU quota in region\033[0m\n"
-    @printf "  \033[1;32mjust cloudrun-quota-request\033[0m  \033[2mRequest Cloud Run NVIDIA L4 GPU quota increase\033[0m\n"
-    @printf "  \033[1;32mjust cloudrun-quota-reset\033[0m    \033[2mReset Cloud Run GPU quota preference back to 0\033[0m\n\n"
+    @printf "  \033[1;32mjust cloudrun-deploy [flavor]\033[0m          \033[2mDeploy single-GPU model with scale-to-zero\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-status\033[0m                   \033[2mCheck Cloud Run service status and active revisions\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-quota-check\033[0m              \033[2mVerify Cloud Run NVIDIA L4 GPU quota in region\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-quota-request\033[0m            \033[2mRequest Cloud Run NVIDIA L4 GPU quota increase\033[0m\n"
+    @printf "  \033[1;32mjust cloudrun-quota-reset\033[0m              \033[2mReset Cloud Run GPU quota preference back to 0\033[0m\n\n"
     @printf "\033[1;33mTERRAFORM (Infrastructure as Code):\033[0m\n"
-    @printf "  \033[1;32mjust tf-init\033[0m                 \033[2mInitialize Terraform working directory\033[0m\n"
-    @printf "  \033[1;32mjust tf-plan\033[0m                 \033[2mPlan Terraform infrastructure changes\033[0m\n"
-    @printf "  \033[1;32mjust tf-apply\033[0m                \033[2mApply Terraform infrastructure changes\033[0m\n"
-    @printf "  \033[1;32mjust tf-destroy\033[0m              \033[2mDestroy Terraform-managed infrastructure\033[0m\n\n"
+    @printf "  \033[1;32mjust tf-init\033[0m                           \033[2mInitialize Terraform working directory\033[0m\n"
+    @printf "  \033[1;32mjust tf-plan [flavor]\033[0m                  \033[2mPlan Terraform infrastructure for model flavor\033[0m\n"
+    @printf "  \033[1;32mjust tf-apply [flavor]\033[0m                 \033[2mApply Terraform infrastructure for model flavor\033[0m\n"
+    @printf "  \033[1;32mjust tf-destroy\033[0m                        \033[2mDestroy Terraform-managed infrastructure\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -53,21 +53,21 @@ model-list:
 cost-list:
     @./scripts/cost_list.sh
 
-# Query active endpoint with a test prompt (Usage: just predict "your prompt")
-predict PROMPT="Hello Gemma! Explain quantum computing in two sentences.":
-    @./scripts/predict.sh "{{PROMPT}}"
+# Query active endpoint with a test prompt (Usage: just predict "prompt" [model_flavor])
+predict PROMPT="Hello Gemma! Explain quantum computing in two sentences." MODEL="":
+    @./scripts/predict.sh "{{PROMPT}}" "{{MODEL}}"
 
 # ------------------------------------------------------------------------------
 # Vertex AI Endpoints (Dedicated GPU VMs)
 # ------------------------------------------------------------------------------
 
-# Register a single-GPU Gemma model in Vertex AI Model Registry
-vertex-register MODEL_NAME="google/gemma-2-9b-it" DISPLAY_NAME="gemma-2-9b-it-single-l4":
-    @./scripts/vertex_model_register.sh "{{MODEL_NAME}}" "{{DISPLAY_NAME}}"
+# Register a Gemma model in Vertex AI Model Registry (Usage: just vertex-register [flavor])
+vertex-register FLAVOR="gemma-2-9b-it":
+    @./scripts/vertex_model_register.sh "{{FLAVOR}}"
 
-# Deploy Gemma to a Vertex AI Endpoint (checks auth first)
-vertex-deploy: auth-check
-    @./scripts/vertex_deploy.sh
+# Deploy Gemma to a Vertex AI Endpoint (Usage: just vertex-deploy [flavor])
+vertex-deploy FLAVOR="gemma-2-9b-it": auth-check
+    @./scripts/vertex_deploy.sh "{{FLAVOR}}"
 
 # Check Vertex AI endpoint deployment status and active operations
 vertex-status:
@@ -97,9 +97,9 @@ cloudrun-quota-request:
 cloudrun-quota-reset:
     @./scripts/cloudrun_quota_reset.sh
 
-# Deploy Gemma to Cloud Run with 1x NVIDIA L4 (checks auth & quota first)
-cloudrun-deploy: auth-check cloudrun-quota-check
-    @./scripts/cloudrun_deploy.sh
+# Deploy Gemma to Cloud Run with scale-to-zero (Usage: just cloudrun-deploy [flavor])
+cloudrun-deploy FLAVOR="gemma-2-9b-it": auth-check cloudrun-quota-check
+    @./scripts/cloudrun_deploy.sh "{{FLAVOR}}"
 
 # ------------------------------------------------------------------------------
 # Terraform Infrastructure as Code
@@ -109,13 +109,13 @@ cloudrun-deploy: auth-check cloudrun-quota-check
 tf-init:
     @cd terraform && terraform init
 
-# Plan Terraform infrastructure changes
-tf-plan:
-    @cd terraform && terraform plan
+# Plan Terraform infrastructure changes for specific model flavor
+tf-plan FLAVOR="gemma-2-9b-it":
+    @cd terraform && terraform plan -var="model_flavor={{FLAVOR}}"
 
-# Apply Terraform infrastructure changes
-tf-apply:
-    @cd terraform && terraform apply
+# Apply Terraform infrastructure changes for specific model flavor
+tf-apply FLAVOR="gemma-2-9b-it":
+    @cd terraform && terraform apply -var="model_flavor={{FLAVOR}}" -auto-approve
 
 # Destroy Terraform-managed infrastructure
 tf-destroy:

@@ -1,87 +1,85 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Load environment variables from .env if present
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+# Source environment and catalog library
 if [[ -f "${ROOT_DIR}/.env" ]]; then
   set -a
   source "${ROOT_DIR}/.env"
   set +a
 fi
+source "${SCRIPT_DIR}/lib/model_catalog.sh"
 
-# Configuration with environment fallbacks
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-gemma-cloudrun-service}"
-MODEL_NAME="${CLOUDRUN_MODEL_NAME:-google/gemma-2-9b-it}"
-CONTAINER_IMAGE="${CLOUDRUN_CONTAINER_IMAGE:-vllm/vllm-openai:latest}"
-
-CPU="${CLOUDRUN_CPU:-8}"
-MEMORY="${CLOUDRUN_MEMORY:-32Gi}"
-GPU_COUNT="${CLOUDRUN_GPU_COUNT:-1}"
+MODEL_FLAVOR="${1:-${GEMMA_MODEL_FLAVOR:-gemma-2-9b-it}}"
+SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-${MODEL_FLAVOR}-cloudrun}"
 GPU_TYPE="${CLOUDRUN_GPU_TYPE:-nvidia-l4}"
+GPU_COUNT="${CLOUDRUN_GPU_COUNT:-1}"
+CPU="${CLOUDRUN_CPU:-4}"
+MEMORY="${CLOUDRUN_MEMORY:-16Gi}"
 MIN_INSTANCES="${CLOUDRUN_MIN_INSTANCES:-0}"
 MAX_INSTANCES="${CLOUDRUN_MAX_INSTANCES:-1}"
-TIMEOUT="${CLOUDRUN_TIMEOUT:-900}"
-SWAP_SPACE="${CLOUDRUN_SWAP_SPACE:-4}"
-GPU_MEMORY_UTIL="${CLOUDRUN_GPU_MEMORY_UTILIZATION:-0.90}"
-MAX_MODEL_LEN="${CLOUDRUN_MAX_MODEL_LEN:-4096}"
+
+# Validate model exists in catalog
+if ! catalog_model_exists "$MODEL_FLAVOR"; then
+  echo "[ERROR] Model flavor '$MODEL_FLAVOR' not found in configs/models.json."
+  echo "Available flavors:"
+  catalog_list_models | sed 's/^/  - /'
+  exit 1
+fi
+
+# Guard check: target support
+if ! catalog_supports_target "$MODEL_FLAVOR" "cloudrun"; then
+  echo "[ERROR] Model '$MODEL_FLAVOR' requires multiple GPUs and is not supported on Cloud Run (1x GPU limit)."
+  echo "Supported Cloud Run flavors:"
+  for k in $(catalog_list_models); do
+    if catalog_supports_target "$k" "cloudrun"; then
+      echo "  - $k"
+    fi
+  done
+  exit 1
+fi
+
+HF_REPO=$(catalog_get_hf_repo "$MODEL_FLAVOR")
+HF_TOKEN="${HF_TOKEN:-}"
 
 echo "=========================================="
 echo " Cloud Run Gemma Deployment (Scale-to-Zero)"
 echo "=========================================="
-echo "Project:        $PROJECT_ID"
-echo "Region:         $REGION"
-echo "Service:        $SERVICE_NAME"
-echo "Model:          $MODEL_NAME"
-echo "Hardware:       $CPU vCPUs, $MEMORY RAM, $GPU_COUNT x $GPU_TYPE"
-echo "Scale-to-Zero:  min-instances=$MIN_INSTANCES, max-instances=$MAX_INSTANCES"
+echo "Project:       $PROJECT_ID"
+echo "Region:        $REGION"
+echo "Model Flavor:  $MODEL_FLAVOR ($HF_REPO)"
+echo "Service:       $SERVICE_NAME"
+echo "GPU:           $GPU_COUNT x $GPU_TYPE"
+echo "Min Instances: $MIN_INSTANCES (Scale-to-zero when idle)"
 echo "=========================================="
 
-# 1. Enable required GCP services
-echo "Step 1/3: Ensuring Cloud Run & Artifact Registry APIs are enabled..."
-gcloud services enable \
-  run.googleapis.com \
-  compute.googleapis.com \
-  --project="$PROJECT_ID"
+ENV_VARS="MODEL_ID=${HF_REPO}"
+if [[ -n "$HF_TOKEN" ]]; then
+  ENV_VARS="${ENV_VARS},HF_TOKEN=${HF_TOKEN}"
+fi
 
-# 2. Deploy service to Cloud Run with GPU and scale-to-zero
-echo ""
-echo "Step 2/3: Deploying $SERVICE_NAME to Cloud Run with ${GPU_COUNT}x ${GPU_TYPE}..."
+echo "Deploying Cloud Run service..."
 
-gcloud beta run deploy "$SERVICE_NAME" \
+gcloud run deploy "$SERVICE_NAME" \
   --project="$PROJECT_ID" \
   --region="$REGION" \
-  --image="$CONTAINER_IMAGE" \
-  --cpu="$CPU" \
-  --memory="$MEMORY" \
+  --image="vllm/vllm-openai:latest" \
+  --args="--model=${HF_REPO},--tensor-parallel-size=1,--gpu-memory-utilization=0.90,--max-model-len=4096" \
+  --set-env-vars="$ENV_VARS" \
   --gpu="$GPU_COUNT" \
   --gpu-type="$GPU_TYPE" \
-  --no-cpu-throttling \
-  --execution-environment="gen2" \
+  --cpu="$CPU" \
+  --memory="$MEMORY" \
   --min-instances="$MIN_INSTANCES" \
   --max-instances="$MAX_INSTANCES" \
-  --timeout="${TIMEOUT}s" \
-  --port=8000 \
-  --args="--model=${MODEL_NAME},--swap-space=${SWAP_SPACE},--gpu-memory-utilization=${GPU_MEMORY_UTIL},--max-model-len=${MAX_MODEL_LEN},--port=8000" \
-  --set-env-vars="HF_TOKEN=${HF_TOKEN:-},VLLM_LOGGING_LEVEL=INFO" \
+  --no-cpu-throttling \
   --allow-unauthenticated
 
-# 3. Retrieve service URL
-SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
-  --project="$PROJECT_ID" \
-  --region="$REGION" \
-  --format="value(status.url)")
-
 echo ""
 echo "=========================================="
-echo " Deployment Complete!"
-echo " Service URL: $SERVICE_URL"
-echo " Scale-to-Zero: Active (0 instances running when idle)"
+echo " Cloud Run Deployment Complete!"
 echo "=========================================="
-echo ""
-echo "Test endpoint with curl:"
-echo "curl $SERVICE_URL/v1/chat/completions \\"
-echo "  -H 'Content-Type: application/json' \\"
-echo "  -d '{\"model\": \"$MODEL_NAME\", \"messages\": [{\"role\": \"user\", \"content\": \"Hello Gemma!\"}]}'"
