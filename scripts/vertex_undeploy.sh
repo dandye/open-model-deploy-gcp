@@ -22,7 +22,7 @@ echo "=========================================="
 ENDPOINT_ID=$(gcloud ai endpoints list \
   --project="$PROJECT_ID" \
   --region="$REGION" \
-  --filter="displayName=$ENDPOINT_NAME" \
+  --filter="display_name=$ENDPOINT_NAME" \
   --format="value(name.basename())" \
   --limit=1)
 
