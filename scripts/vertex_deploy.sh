@@ -13,8 +13,8 @@ fi
 source "${SCRIPT_DIR}/lib/model_catalog.sh"
 
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
-REGION="${GCP_REGION:-us-central1}"
 MODEL_FLAVOR="${1:-${GEMMA_MODEL_FLAVOR:-gemma-2-9b-it}}"
+REGION="${2:-${GCP_REGION:-us-central1}}"
 
 # Validate model exists in catalog
 if ! catalog_model_exists "$MODEL_FLAVOR"; then
@@ -45,7 +45,7 @@ echo "=========================================="
 echo "Step 1/3: Resolving Model ID from Model Registry..."
 MODEL_ID="${VERTEX_MODEL_ID:-}"
 if [[ -z "$MODEL_ID" ]]; then
-  MODEL_ID=$("${SCRIPT_DIR}/vertex_model_register.sh" "$MODEL_FLAVOR" | tail -n 1)
+  MODEL_ID=$("${SCRIPT_DIR}/vertex_model_register.sh" "$MODEL_FLAVOR" "$REGION" | tail -n 1)
 fi
 echo "Using Model ID: $MODEL_ID"
 echo ""

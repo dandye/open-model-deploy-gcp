@@ -66,8 +66,8 @@ vertex-register FLAVOR="gemma-2-9b-it":
     @./scripts/vertex_model_register.sh "{{FLAVOR}}"
 
 # Deploy Gemma to a Vertex AI Endpoint (Usage: just vertex-deploy [flavor])
-vertex-deploy FLAVOR="gemma-2-9b-it": auth-check
-    @./scripts/vertex_deploy.sh "{{FLAVOR}}"
+vertex-deploy FLAVOR="gemma-2-9b-it" REGION="": auth-check
+    @./scripts/vertex_deploy.sh "{{FLAVOR}}" "{{REGION}}"
 
 # Check Vertex AI endpoint deployment status and active operations
 vertex-status:

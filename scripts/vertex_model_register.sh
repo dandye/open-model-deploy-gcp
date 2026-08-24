@@ -13,9 +13,9 @@ fi
 source "${SCRIPT_DIR}/lib/model_catalog.sh"
 
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
-REGION="${GCP_REGION:-us-central1}"
 MODEL_FLAVOR="${1:-${GEMMA_MODEL_FLAVOR:-gemma-2-9b-it}}"
-MODEL_DISPLAY_NAME="${2:-${MODEL_FLAVOR}-model-garden}"
+REGION="${2:-${GCP_REGION:-us-central1}}"
+MODEL_DISPLAY_NAME="${3:-${MODEL_FLAVOR}-model-garden}"
 
 # Validate model exists in catalog
 if ! catalog_model_exists "$MODEL_FLAVOR"; then
@@ -25,25 +25,16 @@ if ! catalog_model_exists "$MODEL_FLAVOR"; then
   exit 1
 fi
 
-echo "=============================================================================="
-echo " Vertex AI Model Registration"
-echo "=============================================================================="
-echo "Project:      $PROJECT_ID"
-echo "Region:       $REGION"
-echo "Model Flavor: $MODEL_FLAVOR"
-echo "Display Name: $MODEL_DISPLAY_NAME"
-echo "=============================================================================="
-
-# Check if model already registered with this display name
+# Check if model already registered with this display name in the target region
 EXISTING_MODEL_ID=$(gcloud ai models list \
   --project="$PROJECT_ID" \
   --region="$REGION" \
   --filter="displayName=$MODEL_DISPLAY_NAME" \
+  --sort-by="~createTime" \
   --format="value(name.basename())" \
   --limit=1 2>/dev/null || true)
 
 if [[ -n "$EXISTING_MODEL_ID" ]]; then
-  echo "[INFO] Found existing registered Model ID: $EXISTING_MODEL_ID"
   echo "$EXISTING_MODEL_ID"
   exit 0
 fi
@@ -64,8 +55,6 @@ if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" ]]; then
   CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_ARGS_CSV}"
 fi
 
-echo "Registering Model Garden container specification..."
-
 REGISTER_OUTPUT=$(gcloud ai models upload \
   --project="$PROJECT_ID" \
   --region="$REGION" \
@@ -78,6 +67,4 @@ REGISTER_OUTPUT=$(gcloud ai models upload \
   --container-health-route="/ping" \
   --format="value(name.basename())")
 
-echo "[OK] Registered model successfully!"
-echo "Model ID: $REGISTER_OUTPUT"
 echo "$REGISTER_OUTPUT"

@@ -26,25 +26,21 @@ if [[ -n "$TARGET_MODEL" ]]; then
 fi
 echo "=========================================="
 
-# 1. Check for Active Cloud Run Service
-CLOUDRUN_URL=""
+# 1. Check for Active Cloud Run Gemma Service
+CLOUDRUN_FILTER="status.url:* AND metadata.name:*gemma*"
 if [[ -n "$TARGET_MODEL" ]]; then
-  CLOUDRUN_SERVICE_MATCH="${TARGET_MODEL}-cloudrun"
-  CLOUDRUN_URL=$(gcloud run services describe "$CLOUDRUN_SERVICE_MATCH" \
-    --project="$PROJECT_ID" \
-    --region="$REGION" \
-    --format="value(status.url)" 2>/dev/null || true)
-else
-  CLOUDRUN_URL=$(gcloud run services list \
-    --project="$PROJECT_ID" \
-    --region="$REGION" \
-    --filter="status.url:*" \
-    --format="value(status.url)" \
-    --limit=1 2>/dev/null || true)
+  CLOUDRUN_FILTER="status.url:* AND metadata.name:*${TARGET_MODEL}*"
 fi
 
+CLOUDRUN_URL=$(gcloud run services list \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --filter="$CLOUDRUN_FILTER" \
+  --format="value(status.url)" \
+  --limit=1 2>/dev/null || true)
+
 if [[ -n "$CLOUDRUN_URL" ]]; then
-  echo "[TARGET] Querying Cloud Run Service ($CLOUDRUN_URL)..."
+  echo "[TARGET] Querying Cloud Run Gemma Service ($CLOUDRUN_URL)..."
   AUTH_TOKEN=$(gcloud auth print-identity-token 2>/dev/null || gcloud auth print-access-token)
 
   PAYLOAD=$(jq -n \
@@ -73,19 +69,31 @@ if [[ -n "$CLOUDRUN_URL" ]]; then
   exit 0
 fi
 
-# 2. Check for Active Vertex AI Endpoint
-FILTER_PATTERN="displayName:gemma*"
-if [[ -n "$TARGET_MODEL" ]]; then
-  FILTER_PATTERN="displayName:${TARGET_MODEL}*"
-fi
+# 2. Check for Active Vertex AI Endpoint across regions
+VERTEX_REGIONS=("$REGION" "us-east4" "us-west1" "europe-west4")
+ENDPOINT_INFO=""
+FOUND_REGION=""
 
-ENDPOINT_INFO=$(gcloud ai endpoints list \
-  --project="$PROJECT_ID" \
-  --region="$REGION" \
-  --filter="$FILTER_PATTERN" \
-  --sort-by="~createTime" \
-  --format="value(name.basename(), displayName)" \
-  --limit=1 2>/dev/null || true)
+for r in "${VERTEX_REGIONS[@]}"; do
+  FILTER_PATTERN="displayName:gemma*"
+  if [[ -n "$TARGET_MODEL" ]]; then
+    FILTER_PATTERN="displayName:*${TARGET_MODEL}*"
+  fi
+
+  EP_RES=$(gcloud ai endpoints list \
+    --project="$PROJECT_ID" \
+    --region="$r" \
+    --filter="$FILTER_PATTERN" \
+    --sort-by="~createTime" \
+    --format="value(name.basename(), displayName)" \
+    --limit=1 2>/dev/null || true)
+
+  if [[ -n "$EP_RES" ]]; then
+    ENDPOINT_INFO="$EP_RES"
+    FOUND_REGION="$r"
+    break
+  fi
+done
 
 if [[ -n "$ENDPOINT_INFO" ]]; then
   ENDPOINT_ID=$(echo "$ENDPOINT_INFO" | awk '{print $1}')
@@ -94,39 +102,29 @@ if [[ -n "$ENDPOINT_INFO" ]]; then
   # Check if model is actually deployed
   DEPLOYED_MODELS=$(gcloud ai endpoints describe "$ENDPOINT_ID" \
     --project="$PROJECT_ID" \
-    --region="$REGION" \
+    --region="$FOUND_REGION" \
     --format="value(deployedModels)" 2>/dev/null || true)
 
   if [[ -z "$DEPLOYED_MODELS" ]]; then
-    echo "[INFO] Found Endpoint '$DISPLAY_NAME' ($ENDPOINT_ID), but the model is still deploying (no traffic split yet)."
+    echo "[INFO] Found Endpoint '$DISPLAY_NAME' ($ENDPOINT_ID in $FOUND_REGION), but the model is still deploying (no traffic split yet)."
     echo "Check deployment progress with: just vertex-status"
     exit 0
   fi
 
-  echo "[TARGET] Querying Vertex AI Endpoint '$DISPLAY_NAME' ($ENDPOINT_ID)..."
-  AUTH_TOKEN=$(gcloud auth print-access-token)
+  echo "[TARGET] Querying Vertex AI Endpoint '$DISPLAY_NAME' ($ENDPOINT_ID in $FOUND_REGION)..."
 
-  PAYLOAD=$(jq -n \
-    --arg prompt "$PROMPT" \
-    '{
-      instances: [
-        {
-          prompt: $prompt,
-          max_tokens: 256,
-          temperature: 0.7
-        }
-      ]
-    }')
-
-  RESPONSE=$(curl -s -X POST \
-    -H "Authorization: Bearer $AUTH_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "$PAYLOAD" \
-    "https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/endpoints/${ENDPOINT_ID}:predict" || true)
+  TMP_REQ=$(mktemp /tmp/gemma_req.XXXXXX.json)
+  jq -n --arg prompt "$PROMPT" \
+    '{"instances": [{"prompt": $prompt, "max_tokens": 256, "temperature": 0.7}]}' > "$TMP_REQ"
 
   echo ""
   echo "--- Response ---"
-  echo "$RESPONSE" | jq . 2>/dev/null || echo "$RESPONSE"
+  gcloud ai endpoints predict "$ENDPOINT_ID" \
+    --project="$PROJECT_ID" \
+    --region="$FOUND_REGION" \
+    --json-request="$TMP_REQ"
+  rm -f "$TMP_REQ"
+
   echo ""
   echo "=========================================="
   exit 0
