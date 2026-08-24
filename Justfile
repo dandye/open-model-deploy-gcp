@@ -14,6 +14,10 @@ default:
 vertex-deploy:
     @./scripts/vertex_deploy.sh
 
+# Check Vertex AI endpoint deployment status and active operations
+vertex-status:
+    @./scripts/vertex_status.sh
+
 # Undeploy Gemma from Vertex AI Endpoint (stops GPU billing immediately)
 vertex-undeploy:
     @./scripts/vertex_undeploy.sh

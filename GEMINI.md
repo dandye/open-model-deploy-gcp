@@ -49,6 +49,7 @@ This repository contains automation scripts, `Justfile` recipes, and documentati
 | :--- | :--- |
 | `just` | List all available recipes with descriptions |
 | `just vertex-deploy` | Deploy Gemma to Vertex AI endpoint |
+| `just vertex-status` | Check deployment status and active operations |
 | `just vertex-undeploy` | Undeploy Gemma from Vertex AI endpoint |
 | `just cloudrun-quota-check` | Verify Cloud Run GPU quota in region |
 | `just cloudrun-quota-request` | Request Cloud Run NVIDIA L4 GPU quota |

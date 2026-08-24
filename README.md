@@ -49,6 +49,9 @@ just
 ```bash
 # Deploy model to Vertex AI endpoint
 just vertex-deploy
+# Check deployment status and active operations
+just vertex-status
+
 
 # Undeploy model from Vertex AI endpoint (stops GPU billing)
 just vertex-undeploy
