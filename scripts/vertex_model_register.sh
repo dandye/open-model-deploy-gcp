@@ -12,16 +12,15 @@ fi
 
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-HF_MODEL_NAME="${1:-google/gemma-2-9b-it}"
-MODEL_DISPLAY_NAME="${2:-gemma-2-9b-it-single-l4}"
-HF_TOKEN="${HF_TOKEN:-}"
+MODEL_FLAVOR="${1:-gemma-2-9b-it}"
+MODEL_DISPLAY_NAME="${2:-gemma-2-9b-it-model-garden}"
 
 echo "=============================================================================="
-echo " Vertex AI Model Registration (Single-GPU 1x NVIDIA L4 Target)"
+echo " Vertex AI Model Registration (Google Model Garden Direct)"
 echo "=============================================================================="
 echo "Project:      $PROJECT_ID"
 echo "Region:       $REGION"
-echo "Model:        $HF_MODEL_NAME"
+echo "Model:        $MODEL_FLAVOR"
 echo "Display Name: $MODEL_DISPLAY_NAME"
 echo "=============================================================================="
 
@@ -35,7 +34,8 @@ EXISTING_MODEL_ID=$(gcloud ai models list \
 
 if [[ -n "$EXISTING_MODEL_ID" ]]; then
   echo "[INFO] Found existing registered model ID: $EXISTING_MODEL_ID"
-  echo "You can deploy it directly using:"
+  echo ""
+  echo "To deploy this model:"
   echo "  export VERTEX_MODEL_ID=\"$EXISTING_MODEL_ID\""
   echo "  export VERTEX_MACHINE_TYPE=\"g2-standard-12\""
   echo "  export VERTEX_ACCELERATOR_COUNT=\"1\""
@@ -43,14 +43,27 @@ if [[ -n "$EXISTING_MODEL_ID" ]]; then
   exit 0
 fi
 
-echo "Registering model in Vertex AI Model Registry..."
+# Determine GCS Model Garden path
+case "$MODEL_FLAVOR" in
+  gemma-2-2b-it|google/gemma-2-2b-it)
+    GCS_PATH="gs://vertex-model-garden-restricted-us/gemma2/gemma-2-2b-it"
+    TP_SIZE=1
+    ;;
+  gemma-2-9b-it|google/gemma-2-9b-it)
+    GCS_PATH="gs://vertex-model-garden-restricted-us/gemma2/gemma-2-9b-it"
+    TP_SIZE=1
+    ;;
+  gemma-3-12b-it|google/gemma-3-12b-it)
+    GCS_PATH="gs://vertex-model-garden-restricted-us/gemma3/gemma-3-12b-it"
+    TP_SIZE=4
+    ;;
+  *)
+    GCS_PATH="gs://vertex-model-garden-restricted-us/gemma2/gemma-2-9b-it"
+    TP_SIZE=1
+    ;;
+esac
 
-ENV_VARS="MODEL_ID=${HF_MODEL_NAME}"
-if [[ -n "$HF_TOKEN" ]]; then
-  ENV_VARS="${ENV_VARS},HF_TOKEN=${HF_TOKEN}"
-fi
-
-CONTAINER_ARGS="--model=${HF_MODEL_NAME},--tensor-parallel-size=1,--swap-space=8,--gpu-memory-utilization=0.90,--max-model-len=4096,--port=8080"
+echo "Uploading Model Garden container specification..."
 
 REGISTER_OUTPUT=$(gcloud ai models upload \
   --project="$PROJECT_ID" \
@@ -58,8 +71,8 @@ REGISTER_OUTPUT=$(gcloud ai models upload \
   --display-name="$MODEL_DISPLAY_NAME" \
   --container-image-uri="us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01" \
   --container-command="python,-m,vllm.entrypoints.api_server" \
-  --container-args="$CONTAINER_ARGS" \
-  --container-env-vars="$ENV_VARS" \
+  --container-args="--host=0.0.0.0,--port=8080,--model=${GCS_PATH},--tensor-parallel-size=${TP_SIZE},--swap-space=16,--gpu-memory-utilization=0.90,--max-model-len=8192,--disable-log-stats" \
+  --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL" \
   --container-ports="8080" \
   --container-predict-route="/generate" \
   --container-health-route="/ping" \
@@ -70,6 +83,4 @@ echo "Model ID: $REGISTER_OUTPUT"
 echo ""
 echo "To deploy this model:"
 echo "  export VERTEX_MODEL_ID=\"$REGISTER_OUTPUT\""
-echo "  export VERTEX_MACHINE_TYPE=\"g2-standard-12\""
-echo "  export VERTEX_ACCELERATOR_COUNT=\"1\""
 echo "  just vertex-deploy"
