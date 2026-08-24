@@ -16,7 +16,8 @@ default:
     @printf "  \033[1;32mjust cost-list\033[0m               \033[2mDisplay hardware pricing & sizing table in terminal\033[0m\n"
     @printf "  \033[1;32mjust predict \"<prompt>\"\033[0m      \033[2mSend a test query to whichever endpoint is active\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI ONLINE PREDICTION (Dedicated GPU VMs):\033[0m\n"
-    @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (checks auth first)\033[0m\n"
+    @printf "  \033[1;32mjust vertex-register\033[0m         \033[2mRegister a custom single-GPU Gemma model in Model Registry\033[0m\n"
+    @printf "  \033[1;32mjust vertex-deploy\033[0m           \033[2mDeploy Gemma to Vertex AI endpoint (1x NVIDIA L4)\033[0m\n"
     @printf "  \033[1;32mjust vertex-status\033[0m           \033[2mCheck deployment progress and active operations\033[0m\n"
     @printf "  \033[1;32mjust vertex-undeploy\033[0m         \033[2mUndeploy model from endpoint (stops GPU billing)\033[0m\n\n"
     @printf "\033[1;33mCLOUD RUN WITH GPU (Serverless Scale-to-Zero):\033[0m\n"
@@ -59,6 +60,10 @@ predict PROMPT="Hello Gemma! Explain quantum computing in two sentences.":
 # ------------------------------------------------------------------------------
 # Vertex AI Endpoints (Dedicated GPU VMs)
 # ------------------------------------------------------------------------------
+
+# Register a single-GPU Gemma model in Vertex AI Model Registry
+vertex-register MODEL_NAME="google/gemma-2-9b-it" DISPLAY_NAME="gemma-2-9b-it-single-l4":
+    @./scripts/vertex_model_register.sh "{{MODEL_NAME}}" "{{DISPLAY_NAME}}"
 
 # Deploy Gemma to a Vertex AI Endpoint (checks auth first)
 vertex-deploy: auth-check

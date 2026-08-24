@@ -13,12 +13,12 @@ fi
 # Configuration with environment fallbacks
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
-MODEL_ID="${VERTEX_MODEL_ID:-gemma-3-12b-it-1747240724884}"
+MODEL_ID="${VERTEX_MODEL_ID:-8300117070813593600}"
 ENDPOINT_NAME="${VERTEX_ENDPOINT_NAME:-gemma-endpoint-$(date +%Y%m%d-%H%M)}"
-DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-gemma-3-12b-deployment}"
-MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-48}"
+DEPLOYMENT_DISPLAY_NAME="${VERTEX_DEPLOYMENT_NAME:-gemma-deployment}"
+MACHINE_TYPE="${VERTEX_MACHINE_TYPE:-g2-standard-12}"
 ACCELERATOR_TYPE="${VERTEX_ACCELERATOR_TYPE:-nvidia-l4}"
-ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-4}"
+ACCELERATOR_COUNT="${VERTEX_ACCELERATOR_COUNT:-1}"
 
 echo "=========================================="
 echo " Vertex AI Gemma Deployment Script"
@@ -35,7 +35,8 @@ echo "Step 1/2: Checking/creating Vertex AI Endpoint..."
 ENDPOINT_ID=$(gcloud ai endpoints list \
   --project="$PROJECT_ID" \
   --region="$REGION" \
-  --filter="display_name=$ENDPOINT_NAME" \
+  --filter="displayName:$ENDPOINT_NAME" \
+  --sort-by="~createTime" \
   --format="value(name.basename())" \
   --limit=1 2>/dev/null || true)
 
