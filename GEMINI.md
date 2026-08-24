@@ -6,7 +6,7 @@ This file provides architectural context, commands, and project conventions for 
 
 ## 1. Project Overview & Architecture
 
-This repository contains automation scripts, `Justfile` recipes, and documentation for deploying Google Gemma models on Google Cloud Platform across two runtime environments:
+This repository contains automation scripts, Terraform modules, `Justfile` recipes, and documentation for deploying Google Gemma models on Google Cloud Platform across two runtime environments:
 
 1. **Vertex AI Online Prediction**: Dedicated GPU virtual machines (`g2-standard-24`, 2x NVIDIA L4 GPUs, 96 GiB RAM) for persistent, high-throughput model serving.
 2. **Cloud Run with GPU**: Serverless containers (`1x NVIDIA L4 GPU`, `--min-instances=0`) enabling true scale-to-zero when idle ($0 idle cost).
@@ -34,8 +34,9 @@ This repository contains automation scripts, `Justfile` recipes, and documentati
 ## 3. Style & Engineering Conventions
 
 * **Big-Endian Naming**: All scripts, docs, and Just recipes use category-first / big-endian naming:
-  * `vertex-deploy`, `vertex-undeploy`
-  * `cloudrun-deploy`, `cloudrun-quota-request`, `cloudrun-quota-reset`, `cloudrun-quota-check`
+  * `vertex-deploy`, `vertex-status`, `vertex-undeploy`
+  * `cloudrun-deploy`, `cloudrun-status`, `cloudrun-quota-request`, `cloudrun-quota-reset`, `cloudrun-quota-check`
+  * `tf-init`, `tf-plan`, `tf-apply`, `tf-destroy`
   * `scripts/vertex_*.sh`, `scripts/cloudrun_*.sh`
   * `docs/vertex_*.md`, `docs/cloudrun_*.md`
 * **Configuration**: Scripts must source `${ROOT_DIR}/.env` if present, with hardcoded fallback defaults for every variable.
@@ -47,15 +48,20 @@ This repository contains automation scripts, `Justfile` recipes, and documentati
 
 | Recipe | Action |
 | :--- | :--- |
-| `just` | List all available recipes with descriptions |
+| `just` | Display categorized, color-coded help menu |
 | `just status` | Print unified live dashboard of all Vertex AI and Cloud Run resources |
 | `just vertex-deploy` | Deploy Gemma to Vertex AI endpoint |
-| `just vertex-status` | Check deployment status and active operations |
+| `just vertex-status` | Check deployment progress and active operations |
 | `just vertex-undeploy` | Undeploy Gemma from Vertex AI endpoint |
+| `just cloudrun-status` | Check Cloud Run service status and active revisions |
 | `just cloudrun-quota-check` | Verify Cloud Run GPU quota in region |
 | `just cloudrun-quota-request` | Request Cloud Run NVIDIA L4 GPU quota |
 | `just cloudrun-quota-reset` | Reset Cloud Run GPU quota preference back to 0 |
 | `just cloudrun-deploy` | Deploy Gemma to Cloud Run with scale-to-zero (checks quota first) |
+| `just tf-init` | Initialize Terraform working directory |
+| `just tf-plan` | Plan Terraform infrastructure changes |
+| `just tf-apply` | Apply Terraform infrastructure changes |
+| `just tf-destroy` | Destroy Terraform-managed infrastructure |
 
 ---
 
@@ -64,4 +70,5 @@ This repository contains automation scripts, `Justfile` recipes, and documentati
 * [`Justfile`](Justfile): Command definitions.
 * [`.env.example`](.env.example): Environment variable template.
 * [`scripts/`](scripts/): Bash scripts for all operations.
-* [`docs/`](docs/): Detailed operational, architectural, and cost analysis documentation.
+* [`terraform/`](terraform/): Terraform Infrastructure-as-Code definitions.
+* [`docs/`](docs/): Operational, architectural, and cost analysis documentation.

@@ -21,6 +21,7 @@ This repository provides two deployment architectures for Gemma models:
 * Google Cloud SDK (`gcloud`) installed and authenticated
 * `just` command runner
 * Active Google Cloud project with billing enabled
+* `terraform` (optional, for Infrastructure-as-Code workflows)
 
 ### Configuration
 1. Copy the example environment configuration:
@@ -41,31 +42,37 @@ This repository provides two deployment architectures for Gemma models:
 All operations are managed through the `Justfile`:
 
 ```bash
-# List all available commands
+# Display categorized, color-coded command menu
 just
+```
+
+### Global & Dashboard
+```bash
+# Print unified live state dashboard of all Vertex AI and Cloud Run resources
+just status
 ```
 
 ### Vertex AI Online Prediction (Dedicated GPU VM)
 ```bash
-# Deploy model to Vertex AI endpoint
-# Print unified live state dashboard of all GCP resources
-just status
-
+# Deploy model to Vertex AI endpoint (g2-standard-24, 2x NVIDIA L4)
 just vertex-deploy
-# Check deployment status and active operations
+
+# Check deployment progress and active operations
 just vertex-status
 
-
-# Undeploy model from Vertex AI endpoint (stops GPU billing)
+# Undeploy model from Vertex AI endpoint (stops GPU billing immediately)
 just vertex-undeploy
 ```
 
 ### Cloud Run (Serverless Scale-to-Zero)
 ```bash
-# Check if Cloud Run GPU quota is active
+# Check Cloud Run service status and active revisions
+just cloudrun-status
+
+# Verify Cloud Run NVIDIA L4 GPU quota in region
 just cloudrun-quota-check
 
-# Request Cloud Run NVIDIA L4 GPU quota increase
+# Request Cloud Run NVIDIA L4 GPU quota increase (us-central1)
 just cloudrun-quota-request
 
 # Deploy to Cloud Run (automatically verifies quota first)
@@ -73,6 +80,21 @@ just cloudrun-deploy
 
 # Reset / Tear down Cloud Run GPU quota preference back to 0
 just cloudrun-quota-reset
+```
+
+### Terraform (Infrastructure as Code)
+```bash
+# Initialize Terraform working directory
+just tf-init
+
+# Plan Terraform infrastructure changes
+just tf-plan
+
+# Apply Terraform infrastructure changes
+just tf-apply
+
+# Destroy Terraform-managed infrastructure
+just tf-destroy
 ```
 
 ---
@@ -102,7 +124,7 @@ curl "$SERVICE_URL/v1/chat/completions" \
 
 ```text
 ├── .env.example                  # Environment configuration template
-├── GEMINI.md                     # Agent guidance & context
+├── GEMINI.md                     # Agent guidance & architectural context
 ├── Justfile                      # Command runner recipes
 ├── README.md                     # Project documentation
 ├── docs/
@@ -110,13 +132,24 @@ curl "$SERVICE_URL/v1/chat/completions" \
 │   ├── cost_analysis.md          # Hardware sizing & pricing breakdown
 │   ├── vertex_cleanup_strategies.md # Automated shutdown patterns
 │   └── vertex_deployment_notes.md# Vertex AI deployment guide & solutions
-└── scripts/
-    ├── cloudrun_deploy.sh        # Deploy to Cloud Run with GPU
-    ├── cloudrun_quota_check.sh   # Verify Cloud Run GPU quota
-    ├── cloudrun_quota_request.sh # Request Cloud Run GPU quota
-    ├── cloudrun_quota_reset.sh   # Reset Cloud Run GPU quota
-    ├── vertex_deploy.sh          # Deploy to Vertex AI endpoint
-    └── vertex_undeploy.sh        # Undeploy from Vertex AI endpoint
+├── scripts/
+│   ├── cloudrun_deploy.sh        # Deploy to Cloud Run with GPU
+│   ├── cloudrun_quota_check.sh   # Verify Cloud Run GPU quota
+│   ├── cloudrun_quota_request.sh # Request Cloud Run GPU quota
+│   ├── cloudrun_quota_reset.sh   # Reset Cloud Run GPU quota
+│   ├── cloudrun_status.sh        # Check Cloud Run service status
+│   ├── gcp_status.sh             # Unified live dashboard
+│   ├── vertex_deploy.sh          # Deploy to Vertex AI endpoint
+│   ├── vertex_status.sh          # Check Vertex AI deployment status
+│   └── vertex_undeploy.sh        # Undeploy from Vertex AI endpoint
+└── terraform/
+    ├── README.md                 # Terraform usage guide
+    ├── cloudrun.tf               # Cloud Run service & IAM resources
+    ├── outputs.tf                # Endpoint & service output definitions
+    ├── terraform.tfvars.example  # Example variable assignments
+    ├── variables.tf              # Input variable declarations
+    ├── versions.tf               # Terraform & provider requirements
+    └── vertex.tf                 # Vertex AI endpoint resources
 ```
 
 ---
@@ -124,6 +157,7 @@ curl "$SERVICE_URL/v1/chat/completions" \
 ## 6. Documentation Reference
 
 * [Cost Analysis & Hardware Sizing](docs/cost_analysis.md)
-* [Vertex AI Deployment Notes](docs/vertex_deployment_notes.md)
+* [Vertex AI Deployment Guide & Lessons Learned](docs/vertex_deployment_notes.md)
 * [Vertex AI Automated Cleanup Strategies](docs/vertex_cleanup_strategies.md)
 * [Cloud Run GPU Deployment Guide](docs/cloudrun_deploy.md)
+* [Terraform Infrastructure Guide](terraform/README.md)
