@@ -86,3 +86,65 @@ The following generation throughput and speed metrics were measured directly acr
 | **Business Hours Only (40h / week = 160h / month)** | **$132.80** | **$537.60** | **$587.20** | **$1,174.40** |
 | **Test Sessions (10h / week = 40h / month)** | **$33.20** | **$134.40** | **$146.80** | **$293.60** |
 | **Cloud Run GPU (Scale-to-Zero)** | Pay only per request second | Not supported (>1 GPU required) | Not supported (Single GPU max L4) | Not supported (Single GPU max L4) |
+
+---
+
+## 5. Lifecycle Mechanics: Startup Latency, Shutdown Economics & Fast Restart Strategies
+
+Managing serving costs across large models (such as Gemma 3 27B or Gemma 4 31B) requires balancing **idle cost elimination** against **cold startup latency**.
+
+### 5.1 The Vertex AI Online Prediction Lifecycle
+
+When a dedicated GPU endpoint is undeployed (`just vertex-undeploy`), active GPU billing stops immediately (\$0.00/hr). However, restoring the endpoint (`just vertex-deploy`) is not an instant container launch because Vertex AI completely deprovisions the underlying Google Compute Engine (GCE) hardware.
+
+Every cold deployment undergoes a 5-stage infrastructure lifecycle:
+
+```
+[1. PREPARING_MODEL] (~0.2 min)
+  └── IAM resolution, container parameter parsing, and registry lookup
+[2. CREATING_SERVING_CLUSTER] (~5.0 - 12.0 min)
+  └── Dynamic allocation of physical GCE VMs with attached GPUs (e.g. 4x NVIDIA L4)
+[3. ADDING_NODES_TO_CLUSTER] (~2.0 - 3.0 min)
+  └── Node joining to Vertex AI internal serving cluster & NVIDIA driver attachment
+[4. GETTING_CONTAINER_IMAGE] (~2.0 - 4.0 min)
+  └── Pulling multi-gigabyte vLLM Model Garden container image from Artifact Registry
+[5. CONTAINER_STARTING & WEIGHT DOWNLOAD] (~2.0 - 4.5 min)
+  └── Streaming 50+ GB weights from gs://, VRAM loading, and CUDA graph pre-compilation
+```
+
+#### Empirical Provisioning Latencies Measured on Live Hardware:
+* **Fresh Multi-GPU Allocation (`EXP-12`, 4x L4)**: **16.9 minutes**
+* **Reused Serving Cluster Pool (`EXP-13`, 4x L4)**: **7.8 minutes**
+* **Speculative Decoding Allocation (`EXP-08b`, 4x L4)**: **18.4 minutes**
+* **Single A100 80GB (`EXP-04`, 1x A100)**: **12.1 minutes**
+* **2x A100 NVLink Mesh (`EXP-07b`, 2x A100)**: **10.3 minutes**
+
+---
+
+### 5.2 Comparative Deployment Paradigms
+
+Depending on whether sub-minute cold starts or serverless scale-to-zero are required, three primary operational models exist:
+
+| Operational Pattern | Idle Hourly Cost | Cold Start Time | Supported Models | Operational Complexity |
+| :--- | :--- | :--- | :--- | :--- |
+| **Vertex AI Dedicated Endpoint** | **$0.00 / hr** (when undeployed) | **10 – 18 minutes** (full GCE cluster spin-up) | All models (1B to 31B, multi-GPU TP=2/4) | Low (Fully managed endpoint API) |
+| **Cloud Run GPU (Scale-to-Zero)** | **$0.00 / hr** (automatic when idle) | **30 – 90 seconds** (serverless microVM boot) | Single-GPU only (1B, 2B, 4B, 9B) | Minimal (Fully managed serverless) |
+| **Stopped GCE Compute Instance** | **$0.00 / hr** (pay only ~$0.04/GB/mo disk) | **~45 – 60 seconds** (cached local SSD boot) | All models (1B to 31B, multi-GPU TP=2/4) | Moderate (Self-managed VM scripts) |
+
+---
+
+### 5.3 Fast Restart Strategy for Multi-GPU Workloads
+
+For multi-GPU models that exceed Cloud Run single-GPU limits (e.g. `gemma-3-27b-it` or `gemma-4-31b-it`), running a self-managed GCE instance (`g2-standard-48` or `a2-highgpu-2g`) with stopped-state economics provides near-instant spin-up without 24/7 compute billing:
+
+1. **Pre-Cache Weights on Local Disk**: Download model weights and container images once to an attached Persistent Disk / Hyperdisk (e.g. 200 GB disk = ~\$8.00/month).
+2. **Stop Instance When Idle**:
+   ```bash
+   gcloud compute instances stop gemma-serving-node --zone=us-central1-a
+   ```
+   *Active GPU and vCPU compute billing drops to \$0.00/hr immediately.*
+3. **Fast Boot on Demand**:
+   ```bash
+   gcloud compute instances start gemma-serving-node --zone=us-central1-a
+   ```
+   *The VM boots, loads weights directly from local NVMe/SSD into VRAM, and accepts inference requests within **45 to 60 seconds**.*
