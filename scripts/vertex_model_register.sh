@@ -47,7 +47,17 @@ GPU_MEM_UTIL=$(catalog_get_gpu_mem_util "$MODEL_FLAVOR")
 MAX_LEN=$(catalog_get_max_len "$MODEL_FLAVOR")
 EXTRA_ARGS_JSON=$(catalog_get "$MODEL_FLAVOR" ".runtime.extraArgs")
 
-CONTAINER_ARGS="python,-m,vllm.entrypoints.api_server,--host=0.0.0.0,--port=8080,--model=${SOURCE_URI},--tensor-parallel-size=${TP_SIZE},--swap-space=${SWAP_SPACE},--gpu-memory-utilization=${GPU_MEM_UTIL},--max-model-len=${MAX_LEN},--disable-log-stats"
+MODEL_FAMILY=$(catalog_get_family "$MODEL_FLAVOR")
+
+CONTAINER_ARGS="python,-m,vllm.entrypoints.api_server,--host=0.0.0.0,--port=8080,--model=${SOURCE_URI},--tensor-parallel-size=${TP_SIZE},--gpu-memory-utilization=${GPU_MEM_UTIL},--max-model-len=${MAX_LEN}"
+
+if [[ -n "$SWAP_SPACE" && "$SWAP_SPACE" -gt 0 ]]; then
+  CONTAINER_ARGS="${CONTAINER_ARGS},--swap-space=${SWAP_SPACE}"
+fi
+
+if [[ "$MODEL_FAMILY" != "gemma4" ]]; then
+  CONTAINER_ARGS="${CONTAINER_ARGS},--disable-log-stats"
+fi
 
 # Append extra arguments if present
 if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" ]]; then

@@ -14,9 +14,9 @@
     },
     "runtime": {
       "tensorParallelSize": 1,
-      "swapSpaceGb": 8,
+      "swapSpaceGb": 2,
       "gpuMemoryUtilization": 0.90,
-      "maxModelLen": 8192,
+      "maxModelLen": 4096,
       "extraArgs": []
     },
     "supportedTargets": ["vertex", "cloudrun"]
@@ -58,9 +58,9 @@
     },
     "runtime": {
       "tensorParallelSize": 1,
-      "swapSpaceGb": 8,
+      "swapSpaceGb": 2,
       "gpuMemoryUtilization": 0.90,
-      "maxModelLen": 32768,
+      "maxModelLen": 8192,
       "extraArgs": []
     },
     "supportedTargets": ["vertex", "cloudrun"]
@@ -146,9 +146,9 @@
     },
     "runtime": {
       "tensorParallelSize": 4,
-      "swapSpaceGb": 32,
-      "gpuMemoryUtilization": 0.95,
-      "maxModelLen": 32768,
+      "swapSpaceGb": 4,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
       "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
     },
     "supportedTargets": ["vertex"]
@@ -169,16 +169,10 @@
     "runtime": {
       "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4",
       "tensorParallelSize": 4,
-      "swapSpaceGb": 32,
+      "swapSpaceGb": 0,
       "gpuMemoryUtilization": 0.90,
-      "maxModelLen": 16384,
-      "extraArgs": [
-        "--limit-mm-per-prompt.image=4",
-        "--limit-mm-per-prompt.video=1",
-        "--enable-auto-tool-choice",
-        "--tool-call-parser=gemma4",
-        "--reasoning-parser=gemma4"
-      ]
+      "maxModelLen": 8192,
+      "extraArgs": []
     },
     "supportedTargets": ["vertex"]
   }
