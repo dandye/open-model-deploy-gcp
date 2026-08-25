@@ -33,3 +33,4 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 | [`managed_vs_deploy.md`](managed_vs_deploy.md) | `guide` | Comparison of Model as a Service (MaaS) vs self-deployed GPU endpoints |
 | [`vertex_deployment_notes.md`](vertex_deployment_notes.md) | `guide` | Vertex AI Online Prediction deployment & troubleshooting solutions |
 | [`vertex_cleanup_strategies.md`](vertex_cleanup_strategies.md) | `architecture` | Automated scheduled and metric-based cleanup architectures |
+| [`references.md`](references.md) | `reference` | Curated external guides, Google Cloud community articles & ADK references |
