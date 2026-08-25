@@ -104,10 +104,25 @@ CONTAINER_ARGS=$(printf "^${DELIMITER}^%s" "$(IFS="$DELIMITER"; echo "${ARGS_ARR
 
 CONTAINER_IMAGE=$(catalog_get_container_image "$MODEL_FLAVOR")
 
+MODEL_DESC="${4:-${VERTEX_MODEL_DESCRIPTION:-}}"
+if [[ -z "$MODEL_DESC" ]]; then
+  MODEL_NAME=$(catalog_get_display_name "$MODEL_FLAVOR")
+  MACHINE_TYPE=$(catalog_get_machine_type "$MODEL_FLAVOR")
+  ACC_TYPE=$(catalog_get_accelerator_type "$MODEL_FLAVOR")
+  ACC_COUNT=$(catalog_get_accelerator_count "$MODEL_FLAVOR")
+  
+  if [[ -n "${EXTRA_VLLM_FLAGS:-}" ]]; then
+    MODEL_DESC="${MODEL_NAME} with extra runtime flags (${EXTRA_VLLM_FLAGS}) on ${ACC_COUNT}x ${ACC_TYPE} (${MACHINE_TYPE})."
+  else
+    MODEL_DESC="${MODEL_NAME} on ${ACC_COUNT}x ${ACC_TYPE} (${MACHINE_TYPE})."
+  fi
+fi
+
 gcloud ai models upload \
   --project="$PROJECT_ID" \
   --region="$REGION" \
   --display-name="$MODEL_DISPLAY_NAME" \
+  --description="$MODEL_DESC" \
   --container-image-uri="$CONTAINER_IMAGE" \
   --container-args="$CONTAINER_ARGS" \
   --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL,VLLM_RPC_TIMEOUT=300,VLLM_TORCH_COMPILE_TIMEOUT=300" \

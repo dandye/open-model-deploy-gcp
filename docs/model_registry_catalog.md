@@ -26,27 +26,27 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 
 ### Region: `us-east1` (South Carolina)
 
-| Model ID | Display Name | Target Flavor | Machine / GPUs | Optimizations & Runtime Flags | Created |
+| Model ID | Display Name | Target Flavor | Machine / GPUs | Description | Created |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`6666666653670965248`** | `gemma-3-27b-it-quantization-fp8-specula-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | **FP8 + Speculative Decoding (N-gram Prompt Lookup)** | 2026-08-25 22:44 |
-| **`5380326010103267328`** | `gemma-3-27b-it-quantization-fp8-enable--model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | **FP8 + Chunked Prefill + Prefix Caching** | 2026-08-25 20:07 |
-| **`7193024860119891968`** | `gemma-3-27b-it-quantization-fp8-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | **FP8 Native Quantization (W8A8)** | 2026-08-25 19:47 |
-| **`7426649090789736448`** | `gemma-4-31b-it-model-garden` | `gemma-4-31b-it` | `a2-highgpu-2g` (2x A100) | **Native BF16 Reasoner (vLLM V1 Engine)** | 2026-08-25 15:42 |
-| **`4643987471028191232`** | `gemma-2-27b-it-model-garden` | `gemma-2-27b-it` | `g2-standard-48` (4x L4) | **Native BF16 Baseline** | 2026-08-25 01:49 |
+| **`6666666653670965248`** | `gemma-3-27b-it-quantization-fp8-specula-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with FP8 Quantization and Prompt Lookup (N-gram) Speculative Decoding on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 22:44 |
+| **`5380326010103267328`** | `gemma-3-27b-it-quantization-fp8-enable--model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with FP8 Quantization, Chunked Prefill, and Automatic Prefix Caching on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 20:07 |
+| **`7193024860119891968`** | `gemma-3-27b-it-quantization-fp8-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with Native Hardware FP8 (W8A8) Quantization on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 19:47 |
+| **`7426649090789736448`** | `gemma-4-31b-it-model-garden` | `gemma-4-31b-it` | `a2-highgpu-2g` (2x A100) | Gemma 4 31B Instruct Multimodal Reasoner in Native BF16 with vLLM V1 Engine on 2x NVIDIA A100 40GB NVLink (a2-highgpu-2g). | 2026-08-25 15:42 |
+| **`4643987471028191232`** | `gemma-2-27b-it-model-garden` | `gemma-2-27b-it` | `g2-standard-48` (4x L4) | Gemma 2 27B Instruct in Native BF16 on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 01:49 |
 
 ---
 
 ### Region: `us-central1` (Iowa)
 
-| Model ID | Display Name | Target Flavor | Machine / GPUs | Optimizations & Runtime Flags | Created |
+| Model ID | Display Name | Target Flavor | Machine / GPUs | Description | Created |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`5612620381459316736`** | `gemma-3-27b-it-quantization-fp8-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | **FP8 Native Quantization (W8A8)** | 2026-08-25 19:25 |
-| **`7723656318510170112`** | `gemma-2-2b-it-model-garden` | `gemma-2-2b-it` | `g2-standard-4` (1x L4) | **Native BF16 Baseline** | 2026-08-25 01:25 |
-| **`1389343442613567488`** | `gemma-3-1b-it-model-garden` | `gemma-3-1b-it` | `g2-standard-4` (1x L4) | **Native BF16 Baseline** | 2026-08-25 01:25 |
-| **`1516570132086784000`** | `gemma-3-4b-it-model-garden` | `gemma-3-4b-it` | `g2-standard-8` (1x L4) | **Multimodal Vision + 32k Context** | 2026-08-25 00:48 |
-| **`9027448410633928704`** | `gemma-3-12b-it-model-garden` | `gemma-3-12b-it` | `g2-standard-48` (4x L4) | **Multimodal Vision + 32k Context** | 2026-08-25 00:30 |
-| **`540441301133295616`**  | `gemma-2-9b-it-model-garden` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | **Native BF16 Baseline** | 2026-08-24 23:35 |
-| **`5242199312108093440`**  | `gemma-2-9b-it-model-garden-v3` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | **Native BF16 Variant** | 2026-08-24 23:35 |
+| **`5612620381459316736`** | `gemma-3-27b-it-quantization-fp8-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with Native Hardware FP8 (W8A8) Quantization on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 19:25 |
+| **`1516570132086784000`** | `gemma-3-4b-it-model-garden` | `gemma-3-4b-it` | `g2-standard-8` (1x L4) | Gemma 3 4B Instruct Multimodal Vision with 32k Context Length on 1x NVIDIA L4 GPU (g2-standard-8). Active for SocTier1Agent evaluation. | 2026-08-25 00:48 |
+| **`9027448410633928704`** | `gemma-3-12b-it-model-garden` | `gemma-3-12b-it` | `g2-standard-48` (4x L4) | Gemma 3 12B Instruct Multimodal Vision with 32k Context Length on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 00:30 |
+| **`1389343442613567488`** | `gemma-3-1b-it-model-garden` | `gemma-3-1b-it` | `g2-standard-4` (1x L4) | Gemma 3 1B Instruct in Native BF16 with 8k Context Length on 1x NVIDIA L4 GPU (g2-standard-4). | 2026-08-25 01:25 |
+| **`7723656318510170112`** | `gemma-2-2b-it-model-garden` | `gemma-2-2b-it` | `g2-standard-4` (1x L4) | Gemma 2 2B Instruct in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-4). | 2026-08-25 01:25 |
+| **`540441301133295616`**  | `gemma-2-9b-it-model-garden` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct in Native BF16 with 4k Context Length on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
+| **`5242199312108093440`**  | `gemma-2-9b-it-model-garden-v3` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct v3 in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
 
 ---
 
@@ -57,7 +57,9 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 ### Model `6666666653670965248`: Gemma 3 27B FP8 + Speculative Decoding (N-gram Prompt Lookup)
 * **Model ID**: `6666666653670965248`
 * **Display Name**: `gemma-3-27b-it-quantization-fp8-specula-model-garden`
+* **Description**: `Gemma 3 27B Instruct with FP8 Quantization and Prompt Lookup (N-gram) Speculative Decoding on 4x NVIDIA L4 GPUs (g2-standard-48).`
 * **Region**: `us-east1`
+
 * **GCS Weights Source**: `gs://vertex-model-garden-restricted-us/gemma3/gemma-3-27b-it`
 * **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
 * **Target Hardware**: `g2-standard-48` (4x NVIDIA L4, 96GB VRAM, Tensor Parallelism TP=4)
@@ -93,6 +95,7 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 ### Model `5380326010103267328`: Gemma 3 27B FP8 + Chunked Prefill & Prefix Caching
 * **Model ID**: `5380326010103267328`
 * **Display Name**: `gemma-3-27b-it-quantization-fp8-enable--model-garden`
+* **Description**: `Gemma 3 27B Instruct with FP8 Quantization, Chunked Prefill, and Automatic Prefix Caching on 4x NVIDIA L4 GPUs (g2-standard-48).`
 * **Region**: `us-east1`
 * **GCS Weights Source**: `gs://vertex-model-garden-restricted-us/gemma3/gemma-3-27b-it`
 * **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
@@ -127,6 +130,7 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 ### Model `7193024860119891968`: Gemma 3 27B Native Hardware FP8 (us-east1)
 * **Model ID**: `7193024860119891968`
 * **Display Name**: `gemma-3-27b-it-quantization-fp8-model-garden`
+* **Description**: `Gemma 3 27B Instruct with Native Hardware FP8 (W8A8) Quantization on 4x NVIDIA L4 GPUs (g2-standard-48).`
 * **Region**: `us-east1` (Iowa counterpart: `5612620381459316736` in `us-central1`)
 * **GCS Weights Source**: `gs://vertex-model-garden-restricted-us/gemma3/gemma-3-27b-it`
 * **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
@@ -159,6 +163,7 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 ### Model `7426649090789736448`: Gemma 4 31B Instruct Reasoner (us-east1)
 * **Model ID**: `7426649090789736448`
 * **Display Name**: `gemma-4-31b-it-model-garden`
+* **Description**: `Gemma 4 31B Instruct Multimodal Reasoner in Native BF16 with vLLM V1 Engine on 2x NVIDIA A100 40GB NVLink (a2-highgpu-2g).`
 * **Region**: `us-east1`
 * **GCS Weights Source**: `gs://vertex-model-garden-restricted-us/gemma4/gemma-4-31B-it`
 * **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4`
@@ -185,7 +190,9 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 ### Model `1516570132086784000`: Gemma 3 4B Instruct Multimodal (us-central1)
 * **Model ID**: `1516570132086784000`
 * **Display Name**: `gemma-3-4b-it-model-garden`
+* **Description**: `Gemma 3 4B Instruct Multimodal Vision with 32k Context Length on 1x NVIDIA L4 GPU (g2-standard-8). Active for SocTier1Agent evaluation.`
 * **Region**: `us-central1`
+
 * **GCS Weights Source**: `gs://vertex-model-garden-restricted-us/gemma3/gemma-3-4b-it`
 * **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
 * **Target Hardware**: `g2-standard-8` (1x NVIDIA L4 GPU 24GB, TP=1, 32GB Host RAM)
