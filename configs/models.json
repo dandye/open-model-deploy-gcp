@@ -61,7 +61,7 @@
       "swapSpaceGb": 8,
       "gpuMemoryUtilization": 0.90,
       "maxModelLen": 32768,
-      "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
+      "extraArgs": []
     },
     "supportedTargets": ["vertex", "cloudrun"]
   },
@@ -83,7 +83,7 @@
       "swapSpaceGb": 16,
       "gpuMemoryUtilization": 0.90,
       "maxModelLen": 32768,
-      "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
+      "extraArgs": []
     },
     "supportedTargets": ["vertex", "cloudrun"]
   },
