@@ -400,8 +400,55 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 
 ---
 
+---
 
+## 4. Track E: Gemma Model Size vs. SOC Triage Capabilities (feat(justfile): integrate SOC agent testing, eval execution, and deployment recipes)
 
+### Overview & Hypothesis
+Track E evaluates the operational capabilities, tool execution veracity, and rubric compliance of self-hosted Gemma models acting as Tier 1 Security Operations Center (SOC) analysts. The core research question is: **What is the minimum viable Gemma model size capable of performing reliable alert triage, RFC-5737 ground truth discrimination, SIEM/SOAR entity enrichment, and structured escalation without hallucinating false positive threats?**
 
+### Evaluation Framework & Tooling
+* **Target Agent**: `SocTier1Agent` ([`agent/soc_tier1_agent.py`](../agent/soc_tier1_agent.py)) extending `GemmaAgent` with persona rules, deterministic inspection tools, and standard 4-part structured triage outputs:
+  1. `[Context & Enrichment]`
+  2. `[Analysis & Verdict]`
+  3. `[Action & Escalation]`
+  4. `[SOAR Documentation]`
+* **Declarative Dataset**: [`configs/evals/soc_tier1_evalset.json`](../configs/evals/soc_tier1_evalset.json) defining 5 standardized operational incident scenarios:
+  1. `CASE-01-LOKIBOT-C2`: Lokibot C2 Malware Beaconing Triage (Malicious C2 detection and host isolation)
+  2. `CASE-02-RFC5737-BENIGN-IP`: RFC-5737 Documentation IP Enrichment (Grounding test: non-routable benign IP discrimination)
+  3. `CASE-03-PHISHING-CRED-HARVEST`: Phishing Alert & Entity Investigation (Credential reset & domain block recommendation)
+  4. `CASE-04-DUPLICATE-SOAR-CASE`: Duplicate SOAR Case Detection (Deduplication against existing open case)
+  5. `CASE-05-RANSOMWARE-ESCALATION`: Critical Ransomware Containment Escalation (Immediate isolation & Tier 2 emergency escalation)
+* **Automated Evaluation Engine**: [`scripts/eval_soc_agent.py`](../scripts/eval_soc_agent.py) combining:
+  * **Deterministic Substring Assertions**: Strict string presence and absence checks (`must_contain`, `must_not_contain`).
+  * **LLM-as-a-Judge Rubric Grading**: Auto-rater powered by `gemini-2.5-pro` evaluating 100-point operational rubrics, grounding veracity scores (0.0 to 1.0), and qualitative failure critiques.
 
+### Model Evaluation Matrix & Targets
 
+| Model Flavor | Parameters | Runtime Target | Hardware Config | Target Pass Rate | Target Rubric Score | Primary Assessment Focus |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `gemma-3-1b-it` | 1.0B | Cloud Run GPU (Scale-to-Zero) | 1x NVIDIA L4 | >= 40% | >= 55.0 / 100 | Basic keyword extraction and formatting compliance |
+| `gemma-2-2b-it` | 2.6B | Cloud Run GPU (Scale-to-Zero) | 1x NVIDIA L4 | >= 60% | >= 70.0 / 100 | RFC-5737 documentation IP grounding & triage structure |
+| `gemma-3-4b-it` | 4.3B | Cloud Run GPU (Scale-to-Zero) | 1x NVIDIA L4 | >= 80% | >= 82.0 / 100 | Multi-step correlation & anti-hallucination veracity |
+| `gemma-2-9b-it` | 9.2B | Cloud Run GPU / Vertex AI | 1x NVIDIA L4 | >= 100% | >= 90.0 / 100 | Full runbook adherence, MITRE mapping & SOAR artifacts |
+| `gemma-3-12b-it`| 12.1B | Vertex AI Dedicated Endpoint | 1x NVIDIA L4 | >= 100% | >= 92.0 / 100 | Multimodal log/screenshot reasoning & triage synthesis |
+| `gemma-2-27b-it`| 27.2B | Vertex AI Dedicated Endpoint | 4x NVIDIA L4 | >= 100% | >= 94.0 / 100 | Complex threat attribution & duplicate case reconciliation |
+| `gemma-3-27b-it`| 27.4B | Vertex AI Dedicated Endpoint | 4x NVIDIA L4 | >= 100% | >= 95.0 / 100 | Advanced multimodal correlation & incident containment |
+| `gemma-4-31b-it`| 30.7B | Vertex AI Dedicated Endpoint | 4x L4 / 2x A100 | >= 100% | >= 96.0 / 100 | Frontier-grade reasoning, complex C2 chains & SOAR automation |
+
+### Automation Recipes (`Justfile`)
+* **Local / Interactive Testing**:
+  ```bash
+  just agent-soc-test "Triage alert for IP 192.0.2.100"
+  ```
+* **Automated Batch Evaluation**:
+  ```bash
+  just agent-soc-eval gemma-3-4b-it
+  ```
+* **Vertex AI Agent Engine Deployment**:
+  ```bash
+  just agent-soc-deploy
+  ```
+
+### Cost & Teardown Protocol
+In compliance with project guardrails, all dedicated GPU prediction endpoints deployed for evaluation benchmarking are immediately undeployed via `just vertex-undeploy` upon test completion to maintain $0 ongoing idle cost. Cloud Run GPU deployments automatically scale to zero instances when idle.

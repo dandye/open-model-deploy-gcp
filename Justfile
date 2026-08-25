@@ -31,6 +31,12 @@ default:
     @printf "  \033[1;32mjust tf-plan [flavor]\033[0m                  \033[2mPlan Terraform infrastructure for model flavor\033[0m\n"
     @printf "  \033[1;32mjust tf-apply [flavor]\033[0m                 \033[2mApply Terraform infrastructure for model flavor\033[0m\n"
     @printf "  \033[1;32mjust tf-destroy\033[0m                        \033[2mDestroy Terraform-managed infrastructure\033[0m\n\n"
+    @printf "\033[1;33mVERTEX AI AGENT ENGINE (ADK & SOC AGENT):\033[0m\n"
+    @printf "  \033[1;32mjust agent-test [prompt]\033[0m               \033[2mTest general Gemma ADK Agent locally\033[0m\n"
+    @printf "  \033[1;32mjust agent-deploy\033[0m                      \033[2mDeploy general Gemma ADK Agent to Agent Engine\033[0m\n"
+    @printf "  \033[1;32mjust agent-soc-test [prompt] [flavor]\033[0m  \033[2mTest SOC Tier 1 Agent locally against endpoint\033[0m\n"
+    @printf "  \033[1;32mjust agent-soc-eval [flavor] [endpoint]\033[0m \033[2mRun automated SOC eval suite with LLM judge\033[0m\n"
+    @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -126,7 +132,7 @@ tf-destroy:
     @cd terraform && terraform destroy
 
 # ------------------------------------------------------------------------------
-# Vertex AI Agent Engine (ADK Agent)
+# Vertex AI Agent Engine (ADK Agent & SOC Triage)
 # ------------------------------------------------------------------------------
 
 # Test Gemma ADK Agent locally (Usage: just agent-test [prompt])
@@ -136,4 +142,17 @@ agent-test PROMPT="Explain quantum computing in two concise sentences.":
 # Deploy Gemma ADK Agent to Vertex AI Agent Engine
 agent-deploy:
     @python3 agent/deploy.py
+
+# Test SOC Tier 1 Agent locally against active Gemma endpoint (Usage: just agent-soc-test [prompt] [flavor])
+agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" FLAVOR="":
+    @python3 -m agent.test_agent "{{PROMPT}}"
+
+# Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [endpoint])
+agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="":
+    @python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
+
+# Deploy SOC Tier 1 Agent to Vertex AI Agent Engine
+agent-soc-deploy:
+    @python3 -m agent.deploy_soc_tier1
+
 
