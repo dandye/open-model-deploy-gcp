@@ -1,7 +1,6 @@
 """Deterministic SOC inspection tools for Tier 1 alert triage and enrichment."""
 
 import json
-from typing import Any, Dict
 
 
 def get_ip_address_report(ip: str) -> str:
