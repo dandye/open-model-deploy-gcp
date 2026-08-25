@@ -72,17 +72,18 @@ def test_format_soc_prompt_without_context():
 def test_query_default_temperature_and_tokens():
     agent = SocTier1Agent()
     with patch.object(agent, "_call_llm_step") as mock_step:
-        mock_step.return_value = "Final Answer: Triage complete"
+        mock_step.return_value = ("Final Answer: Triage complete", {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15})
         result = agent.query(prompt="Analyze alert")
         mock_step.assert_called_once()
         assert "Triage complete" in result["response"]
+        assert result["usage"]["total_tokens"] == 15
 
 
 def test_react_loop_executes_tool_and_returns_grounded_answer():
     agent = SocTier1Agent()
     step_outputs = [
-        'Thought: I need to check IP reputation.\nAction: get_ip_address_report(ip="192.0.2.100")',
-        'Thought: IP is benign documentation network.\nFinal Answer:\n[Context & Enrichment]\n192.0.2.100 is RFC-5737 test IP.\n\n[Analysis & Verdict]\nBENIGN documentation artifact.\n\n[Action & Escalation]\nClose alert.\n\n[SOAR Documentation]\nDocumented.',
+        ('Thought: I need to check IP reputation.\nAction: get_ip_address_report(ip="192.0.2.100")', {"prompt_tokens": 20, "completion_tokens": 10, "total_tokens": 30}),
+        ('Thought: IP is benign documentation network.\nFinal Answer:\n[Context & Enrichment]\n192.0.2.100 is RFC-5737 test IP.\n\n[Analysis & Verdict]\nBENIGN documentation artifact.\n\n[Action & Escalation]\nClose alert.\n\n[SOAR Documentation]\nDocumented.', {"prompt_tokens": 40, "completion_tokens": 20, "total_tokens": 60}),
     ]
     with patch.object(agent, "_call_llm_step", side_effect=step_outputs):
         result = agent.query(prompt="Triage alert for IP 192.0.2.100")
@@ -92,13 +93,14 @@ def test_react_loop_executes_tool_and_returns_grounded_answer():
         assert result["trajectory"][0]["args"] == {"ip": "192.0.2.100"}
         assert "RFC-5737" in result["trajectory"][0]["observation"]
         assert "BENIGN documentation artifact" in result["response"]
+        assert result["usage"]["total_tokens"] == 90
 
 
 def test_react_loop_handles_json_action():
     agent = SocTier1Agent()
     step_outputs = [
-        '```json\n{"tool": "lookup_entity", "args": {"entity": "10.0.4.15"}}\n```',
-        'Final Answer:\n[Context & Enrichment]\nInternal workstation.\n\n[Analysis & Verdict]\nBENIGN internal.\n\n[Action & Escalation]\nNo action.\n\n[SOAR Documentation]\nLogged.',
+        ('```json\n{"tool": "lookup_entity", "args": {"entity": "10.0.4.15"}}\n```', {"prompt_tokens": 15, "completion_tokens": 5, "total_tokens": 20}),
+        ('Final Answer:\n[Context & Enrichment]\nInternal workstation.\n\n[Analysis & Verdict]\nBENIGN internal.\n\n[Action & Escalation]\nNo action.\n\n[SOAR Documentation]\nLogged.', {"prompt_tokens": 25, "completion_tokens": 15, "total_tokens": 40}),
     ]
     with patch.object(agent, "_call_llm_step", side_effect=step_outputs):
         result = agent.query(prompt="Lookup 10.0.4.15")
@@ -107,17 +109,20 @@ def test_react_loop_handles_json_action():
         assert result["trajectory"][0]["args"] == {"entity": "10.0.4.15"}
         assert "10.0.4.15" in result["trajectory"][0]["observation"]
         assert "Internal workstation" in result["response"]
+        assert result["usage"]["total_tokens"] == 60
 
 
 def test_react_loop_max_iterations():
     agent = SocTier1Agent()
     step_outputs = [
-        'Action: list_cases(entity="test")',
-        'Action: list_cases(entity="test")',
-        'Action: list_cases(entity="test")',
+        ('Action: list_cases(entity="test")', {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}),
+        ('Action: list_cases(entity="test")', {"prompt_tokens": 15, "completion_tokens": 5, "total_tokens": 20}),
+        ('Action: list_cases(entity="test")', {"prompt_tokens": 20, "completion_tokens": 5, "total_tokens": 25}),
     ]
     with patch.object(agent, "_call_llm_step", side_effect=step_outputs):
         result = agent.query(prompt="Loop test", max_iterations=2)
         assert len(result["trajectory"]) == 2
         assert "Reached maximum investigation iterations" in result["response"]
+        assert result["usage"]["total_tokens"] == 35
+
 

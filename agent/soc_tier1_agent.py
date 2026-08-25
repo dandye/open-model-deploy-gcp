@@ -163,13 +163,15 @@ class SocTier1Agent(GemmaAgent):
             return f"Error executing tool '{tool_name}': {str(e)}"
 
 
-    def _call_llm_step(self, prompt: str, max_tokens: int = 1024, temperature: float = 0.2) -> str:
+    def _call_llm_step(self, prompt: str, max_tokens: int = 1024, temperature: float = 0.2) -> Tuple[str, Dict[str, int]]:
         """Invokes underlying Gemma LLM backend for a single reasoning step."""
         res = super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
+        usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         if isinstance(res, dict):
             self.last_backend = res.get("backend", "Unknown")
-            return res.get("response", "")
-        return str(res)
+            usage = res.get("usage", usage)
+            return res.get("response", ""), usage
+        return str(res), usage
 
     def format_triage_prompt(self, query: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Formats an operational triage request with optional case metadata."""
@@ -206,9 +208,14 @@ class SocTier1Agent(GemmaAgent):
         current_prompt = f"{react_instructions}\n\nQuestion: {prompt}\n"
         trajectory: List[Dict[str, Any]] = []
         final_answer = ""
+        total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
         for iteration in range(max_iterations):
-            step_output = self._call_llm_step(current_prompt, max_tokens=max_tokens, temperature=temperature)
+            step_output, step_usage = self._call_llm_step(current_prompt, max_tokens=max_tokens, temperature=temperature)
+            total_usage["prompt_tokens"] += step_usage.get("prompt_tokens", 0)
+            total_usage["completion_tokens"] += step_usage.get("completion_tokens", 0)
+            total_usage["total_tokens"] += step_usage.get("total_tokens", 0)
+
             if not step_output:
                 break
 
@@ -245,7 +252,9 @@ class SocTier1Agent(GemmaAgent):
         return {
             "response": final_answer,
             "trajectory": trajectory,
+            "usage": total_usage,
             "backend": self.last_backend,
             "endpoint_id": self.endpoint_id,
         }
+
 

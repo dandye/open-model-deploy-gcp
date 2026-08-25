@@ -85,9 +85,9 @@ def test_calculate_aggregate_score_empty():
 
 def test_calculate_aggregate_score_mixed():
     results = [
-        {"rubric_score": 90.0, "passed": True, "latency_s": 2.5},
-        {"rubric_score": 70.0, "passed": False, "latency_s": 3.5},
-        {"rubric_score": 85.0, "passed": True, "latency_s": 1.5},
+        {"rubric_score": 90.0, "passed": True, "latency_s": 2.5, "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150}, "trajectory": [{"tool": "list_cases"}]},
+        {"rubric_score": 70.0, "passed": False, "latency_s": 3.5, "usage": {"prompt_tokens": 120, "completion_tokens": 30, "total_tokens": 150}, "trajectory": []},
+        {"rubric_score": 85.0, "passed": True, "latency_s": 1.5, "usage": {"prompt_tokens": 80, "completion_tokens": 20, "total_tokens": 100}, "trajectory": [{"tool": "lookup_entity"}]},
     ]
     summary = calculate_aggregate_score(results)
     assert summary["total_cases"] == 3
@@ -95,6 +95,11 @@ def test_calculate_aggregate_score_mixed():
     assert summary["pass_rate"] == pytest.approx(66.666, rel=1e-2)
     assert summary["avg_rubric_score"] == pytest.approx(81.7, rel=1e-2)
     assert summary["avg_latency_s"] == pytest.approx(2.5, rel=1e-2)
+    assert summary["total_prompt_tokens"] == 300
+    assert summary["total_completion_tokens"] == 100
+    assert summary["total_tokens"] == 400
+    assert summary["avg_tokens_per_case"] == pytest.approx(133.3, rel=1e-1)
+    assert summary["total_tool_calls"] == 2
 
 
 def test_judge_response_with_llm():
@@ -155,6 +160,8 @@ def test_run_evaluation_mocked(tmp_path: Path):
         mock_agent.query.return_value = {
             "response": "Host DESKTOP-FIN-08 is infected. Escalate.",
             "backend": "MockBackend",
+            "usage": {"prompt_tokens": 150, "completion_tokens": 50, "total_tokens": 200},
+            "trajectory": [{"iteration": 1, "tool": "lookup_entity", "args": {"entity_id": "DESKTOP-FIN-08"}, "observation": "{}"}],
         }
         mock_agent_cls.return_value = mock_agent
 
@@ -177,9 +184,12 @@ def test_run_evaluation_mocked(tmp_path: Path):
         assert eval_result["summary"]["passed_cases"] == 1
         assert eval_result["summary"]["pass_rate"] == 100.0
         assert eval_result["summary"]["avg_rubric_score"] == 95.0
+        assert eval_result["summary"]["total_tokens"] == 200
+        assert eval_result["summary"]["total_tool_calls"] == 1
         assert len(eval_result["case_results"]) == 1
         assert eval_result["case_results"][0]["eval_id"] == "CASE-TEST-01"
         assert eval_result["case_results"][0]["passed"] is True
+        assert len(eval_result["case_results"][0]["trajectory"]) == 1
 
 
 def test_cli_main_markdown_report_generation(tmp_path: Path):
@@ -192,6 +202,9 @@ def test_cli_main_markdown_report_generation(tmp_path: Path):
             "pass_rate": 100.0,
             "avg_rubric_score": 95.0,
             "avg_latency_s": 2.15,
+            "total_tokens": 200,
+            "avg_tokens_per_case": 200.0,
+            "total_tool_calls": 1,
         },
         "case_results": [
             {
@@ -201,6 +214,10 @@ def test_cli_main_markdown_report_generation(tmp_path: Path):
                 "grounding_score": 1.0,
                 "passed": True,
                 "latency_s": 2.15,
+                "usage": {"prompt_tokens": 150, "completion_tokens": 50, "total_tokens": 200},
+                "trajectory": [{"iteration": 1, "tool": "lookup_entity", "args": {"entity_id": "10.0.4.15"}, "observation": "{\"events\": 10}"}],
+                "critique": "Solid analysis.",
+                "response": "[Context & Enrichment]\nHost analysis.\n\n[Analysis & Verdict]\nMalicious.",
             }
         ],
     }
@@ -218,9 +235,14 @@ def test_cli_main_markdown_report_generation(tmp_path: Path):
         assert report_output_file.exists()
         content = report_output_file.read_text(encoding="utf-8")
         assert "# SOC Evaluation Report: gemma-3-4b-it" in content
+        assert "## 1. Executive Summary" in content
         assert "- **Pass Rate:** 100.0%" in content
+        assert "- **Total Token Usage:** 200 tokens" in content
         assert "CASE-01-LOKIBOT-C2" in content
-        assert "PASS" in content
+        assert "Tool Execution Trajectory:" in content
+        assert "lookup_entity" in content
+        assert "Generated Triage Report:" in content
+
 
 
 def test_no_emojis_in_eval_runner_file():

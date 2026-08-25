@@ -48,7 +48,7 @@ def evaluate_assertions(
 
 
 def calculate_aggregate_score(results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """Computes summary statistics across eval cases."""
+    """Computes summary statistics and token usage across eval cases."""
     total = len(results)
     if total == 0:
         return {
@@ -57,16 +57,31 @@ def calculate_aggregate_score(results: List[Dict[str, Any]]) -> Dict[str, Any]:
             "pass_rate": 0.0,
             "avg_rubric_score": 0.0,
             "avg_latency_s": 0.0,
+            "total_prompt_tokens": 0,
+            "total_completion_tokens": 0,
+            "total_tokens": 0,
+            "avg_tokens_per_case": 0.0,
+            "total_tool_calls": 0,
         }
     avg_score = sum(r["rubric_score"] for r in results) / total
     passed_count = sum(1 for r in results if r.get("passed", False))
     avg_latency = sum(r.get("latency_s", 0.0) for r in results) / total
+    total_prompt_tok = sum(r.get("usage", {}).get("prompt_tokens", 0) for r in results)
+    total_comp_tok = sum(r.get("usage", {}).get("completion_tokens", 0) for r in results)
+    total_tok = sum(r.get("usage", {}).get("total_tokens", 0) for r in results)
+    total_tools = sum(len(r.get("trajectory", [])) for r in results)
+
     return {
         "total_cases": total,
         "passed_cases": passed_count,
         "pass_rate": (passed_count / total) * 100.0,
         "avg_rubric_score": round(avg_score, 1),
         "avg_latency_s": round(avg_latency, 2),
+        "total_prompt_tokens": total_prompt_tok,
+        "total_completion_tokens": total_comp_tok,
+        "total_tokens": total_tok,
+        "avg_tokens_per_case": round(total_tok / total, 1) if total else 0.0,
+        "total_tool_calls": total_tools,
     }
 
 
@@ -142,7 +157,6 @@ def run_evaluation(
 
     judge_client = genai.Client(vertexai=True, project=project_id, location=region)
 
-
     results: List[Dict[str, Any]] = []
     for case in evalset.get("eval_cases", []):
         print(f"\n[Case: {case['eval_id']}] {case['name']}...")
@@ -150,6 +164,8 @@ def run_evaluation(
         res = agent.query(prompt=case["prompt"])
         latency = time.time() - start_time
         response_text = res.get("response", "")
+        trajectory = res.get("trajectory", [])
+        usage = res.get("usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
 
         # Deterministic Assertions
         assertions = case.get("assertions", {})
@@ -170,14 +186,17 @@ def run_evaluation(
 
         case_passed = assert_passed and judge_res.passed
         status_label = "PASS" if case_passed else "FAIL"
-        print(f"  Result: {status_label} | Rubric: {judge_res.rubric_score}/100 | Latency: {latency:.2f}s")
+        print(f"  Result: {status_label} | Rubric: {judge_res.rubric_score}/100 | Latency: {latency:.2f}s | Tokens: {usage.get('total_tokens', 0)} | Tool Calls: {len(trajectory)}")
         if failures:
             print(f"  Assertion Failures: {failures}")
 
         results.append({
             "eval_id": case["eval_id"],
             "name": case["name"],
+            "prompt": case["prompt"],
             "latency_s": latency,
+            "usage": usage,
+            "trajectory": trajectory,
             "assert_passed": assert_passed,
             "assertion_failures": failures,
             "rubric_score": judge_res.rubric_score,
@@ -190,9 +209,11 @@ def run_evaluation(
     summary = calculate_aggregate_score(results)
     print("\n==================================================================")
     print(f" Evaluation Summary for {flavor}")
-    print(f" Pass Rate:     {summary['pass_rate']:.1f}% ({summary['passed_cases']}/{summary['total_cases']})")
-    print(f" Average Score: {summary['avg_rubric_score']}/100")
-    print(f" Avg Latency:   {summary['avg_latency_s']} s")
+    print(f" Pass Rate:         {summary['pass_rate']:.1f}% ({summary['passed_cases']}/{summary['total_cases']})")
+    print(f" Average Score:     {summary['avg_rubric_score']}/100")
+    print(f" Avg Latency:       {summary['avg_latency_s']} s")
+    print(f" Total Tokens:      {summary['total_tokens']} (Avg: {summary['avg_tokens_per_case']} / case)")
+    print(f" Total Tool Calls:  {summary['total_tool_calls']}")
     print("==================================================================")
 
     return {"flavor": flavor, "summary": summary, "case_results": results}
@@ -210,6 +231,7 @@ def main() -> None:
     parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle"))
     parser.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
+    parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
     args = parser.parse_args()
 
     eval_data = run_evaluation(
@@ -223,30 +245,78 @@ def main() -> None:
         use_live_mcp=args.live_mcp,
     )
 
+    # Save JSON raw artifacts
+    json_path = Path(args.output_json) if args.output_json else (
+        Path(args.output_report).with_suffix(".json") if args.output_report else None
+    )
+    if json_path:
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(eval_data, f, indent=2)
+        print(f"Evaluation JSON saved to: {json_path}")
 
+    # Save Markdown report
     if args.output_report:
         report_path = Path(args.output_report)
         report_path.parent.mkdir(parents=True, exist_ok=True)
         lines = [
             f"# SOC Evaluation Report: {args.flavor}",
             f"\n**Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}",
-            "\n## Summary",
-            f"- **Pass Rate:** {eval_data['summary']['pass_rate']}%",
-            f"- **Average Rubric Score:** {eval_data['summary']['avg_rubric_score']}/100",
+            f"**Live SecOps MCP:** {'Enabled' if args.live_mcp else 'Disabled'}",
+            "\n## 1. Executive Summary",
+            f"- **Pass Rate:** {eval_data['summary']['pass_rate']}% ({eval_data['summary']['passed_cases']}/{eval_data['summary']['total_cases']})",
+            f"- **Average Rubric Score:** {eval_data['summary']['avg_rubric_score']} / 100",
             f"- **Average Latency:** {eval_data['summary']['avg_latency_s']} s",
-            "\n## Detailed Case Breakdown\n",
-            "| Case ID | Case Name | Rubric Score | Grounding | Status | Latency |",
-            "| :--- | :--- | :--- | :--- | :--- | :--- |",
+            f"- **Total Token Usage:** {eval_data['summary']['total_tokens']} tokens (Avg: {eval_data['summary']['avg_tokens_per_case']} tok/case)",
+            f"- **Total Tool Invocations:** {eval_data['summary']['total_tool_calls']}",
+            "\n## 2. Evaluation Scorecard Matrix\n",
+            "| Case ID | Case Name | Rubric Score | Grounding | Status | Latency | Tokens | Tool Calls |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
         ]
         for c in eval_data["case_results"]:
             status_str = "PASS" if c["passed"] else "FAIL"
+            tok = c.get("usage", {}).get("total_tokens", 0)
+            tools_cnt = len(c.get("trajectory", []))
             lines.append(
                 f"| {c['eval_id']} | {c['name']} | {c['rubric_score']}/100 | "
-                f"{c['grounding_score']:.2f} | {status_str} | {c['latency_s']:.2f}s |"
+                f"{c['grounding_score']:.2f} | {status_str} | {c['latency_s']:.2f}s | {tok} | {tools_cnt} |"
             )
+
+        lines.append("\n---\n\n## 3. Detailed Case Trajectories & Reports\n")
+        for c in eval_data["case_results"]:
+            lines.append(f"### {c['eval_id']}: {c['name']}\n")
+            lines.append(f"- **Status:** {'PASS' if c['passed'] else 'FAIL'}")
+            lines.append(f"- **Score:** {c['rubric_score']}/100 | Grounding: {c['grounding_score']:.2f} | Latency: {c['latency_s']:.2f}s")
+            u = c.get("usage", {})
+            lines.append(f"- **Token Usage:** {u.get('prompt_tokens', 0)} prompt + {u.get('completion_tokens', 0)} completion = **{u.get('total_tokens', 0)} total tokens**")
+            
+            if c.get("assertion_failures"):
+                lines.append(f"- **Assertion Failures:** `{c['assertion_failures']}`")
+            lines.append(f"- **Judge Critique:** {c['critique']}\n")
+
+            # Trajectory
+            traj = c.get("trajectory", [])
+            lines.append("#### Tool Execution Trajectory:")
+            if traj:
+                for step in traj:
+                    lines.append(f"**Step {step['iteration']} - `{step['tool']}`**")
+                    lines.append(f"- Arguments: `{json.dumps(step['args'])}`")
+                    lines.append("```json")
+                    lines.append(step['observation'])
+                    lines.append("```")
+            else:
+                lines.append("*(No tools invoked)*\n")
+
+            lines.append("\n#### Generated Triage Report:")
+            lines.append("```markdown")
+            lines.append(c["response"])
+            lines.append("```\n")
+            lines.append("---\n")
+
         with open(report_path, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
-        print(f"\nReport saved to: {report_path}")
+        print(f"Report saved to: {report_path}")
+
 
 
 if __name__ == "__main__":

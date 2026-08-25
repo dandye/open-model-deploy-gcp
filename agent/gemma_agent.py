@@ -164,7 +164,18 @@ class GemmaAgent:
             with urllib.request.urlopen(req, timeout=120) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             reply = data["choices"][0]["message"]["content"]
-            return {"response": reply, "backend": "Cloud Run GPU", "url": self.cloudrun_url}
+            raw_usage = data.get("usage", {})
+            usage = {
+                "prompt_tokens": raw_usage.get("prompt_tokens", int(len(prompt.split()) * 1.3)),
+                "completion_tokens": raw_usage.get("completion_tokens", int(len(reply.split()) * 1.3)),
+                "total_tokens": raw_usage.get("total_tokens", int((len(prompt.split()) + len(reply.split())) * 1.3)),
+            }
+            return {
+                "response": reply,
+                "backend": "Cloud Run GPU",
+                "url": self.cloudrun_url,
+                "usage": usage,
+            }
 
         # Strategy 2: Explicit or Auto-Discovered Vertex AI Endpoint
         active_endpoint = self.endpoint_id
@@ -205,11 +216,18 @@ class GemmaAgent:
                     reply = predictions[0] if predictions else "No prediction returned."
                     if isinstance(reply, str) and "Output:\n" in reply:
                         reply = reply.split("Output:\n", 1)[1].strip()
+                    prompt_est = int(len(f"{self.system_instruction} {prompt}".split()) * 1.3)
+                    comp_est = int(len(str(reply).split()) * 1.3)
                     return {
                         "response": reply,
                         "backend": "Vertex AI Online Prediction",
                         "endpoint_id": active_endpoint,
                         "region": active_region,
+                        "usage": {
+                            "prompt_tokens": prompt_est,
+                            "completion_tokens": comp_est,
+                            "total_tokens": prompt_est + comp_est,
+                        },
                     }
                 else:
                     return {"error": res.stderr, "backend": "Vertex AI Prediction Error"}
@@ -230,14 +248,23 @@ class GemmaAgent:
             )
             chat = client.chats.create(model=target_managed_model, config=config)
             res = chat.send_message(prompt)
+            prompt_cnt = getattr(res.usage_metadata, "prompt_token_count", int(len(prompt.split()) * 1.3))
+            comp_cnt = getattr(res.usage_metadata, "candidates_token_count", int(len((res.text or "").split()) * 1.3))
+            total_cnt = getattr(res.usage_metadata, "total_token_count", prompt_cnt + comp_cnt)
             return {
                 "response": res.text or "",
                 "backend": f"Vertex AI Model Garden / MaaS ({target_managed_model})",
                 "model": target_managed_model,
+                "usage": {
+                    "prompt_tokens": prompt_cnt,
+                    "completion_tokens": comp_cnt,
+                    "total_tokens": total_cnt,
+                },
             }
         except Exception as e:
             return {
                 "error": f"Managed model query failed: {e}",
                 "backend": "Managed Model Error",
             }
+
 
