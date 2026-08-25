@@ -99,7 +99,10 @@ def test_calculate_aggregate_score_mixed():
     assert summary["total_completion_tokens"] == 100
     assert summary["total_tokens"] == 400
     assert summary["avg_tokens_per_case"] == pytest.approx(133.3, rel=1e-1)
+    assert summary["avg_generation_tps"] == 13.33
+    assert summary["avg_total_tps"] == 53.33
     assert summary["total_tool_calls"] == 2
+
 
 
 def test_judge_response_with_llm():
