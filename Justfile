@@ -77,6 +77,10 @@ vertex-status:
 vertex-undeploy:
     @./scripts/vertex_undeploy.sh
 
+# Request Compute / Vertex AI NVIDIA A100 80GB GPU quota increase (Usage: just vertex-quota-request-a100 [region] [count])
+vertex-quota-request-a100 REGION="us-central1" COUNT="1":
+    @./scripts/a100_quota_request.sh "{{REGION}}" "{{COUNT}}"
+
 # ------------------------------------------------------------------------------
 # Cloud Run (Serverless GPU Scale-to-Zero)
 # ------------------------------------------------------------------------------
