@@ -33,6 +33,8 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-08** | **Speculative Decoding on Single A100 80GB (`--speculative-model`)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | N/A | N/A | N/A | N/A | N/A | Incompatible CLI: vLLM V1 requires `--speculative-config` (Documented) |
 | **EXP-10** | **Concurrent Multi-Stream Load Test on 2x A100 NVLink ($N=1, 2, 4, 8$)** | `a2-highgpu-2g` | 2x A100 (80 GB NVLink) | 2 | 7.45 s | 4.58 s (warm) | 474 tok | **77.9 tok/s (90.1 peak)** | **4,676 tok/min (5,403 peak)** | **Linear scaling to 8 streams, $26.15/1M tok (Verified & Torn Down)** |
 | **EXP-11** | **Gemma 3 27B Multimodal Concurrency Load Test on 4x L4 ($N=1, 2, 4, 8$)** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 9.83 s | 10.11 s (warm)| 952 tok | **94.1 tok/s (96.2 peak)** | **5,647 tok/min (5,773 peak)** | **Linear scaling to 8 streams, $9.92/1M tok (Verified & Torn Down)** |
+| **EXP-12** | **Gemma 3 27B Native Hardware FP8 Concurrency on 4x L4 ($N=1, 2, 4, 8$)** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 6.96 s | 6.53 s (warm) | 1,550 tok | **148.8 tok/s (Peak)** | **8,926 tok/min (Peak)** | **+58% throughput, -34% latency, $6.27/1M tok (Verified & Torn Down)** |
+
 
 ---
 
@@ -55,6 +57,8 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 | **`EXP-08`** | `a2-ultragpu-1g` | 1x NVIDIA A100 80GB (Speculative Decoding)| ~0.1 min | ~16.2 min | ~7.5 min | ~3.0 min | Failed CLI arg | **26.8 min** |
 | **`EXP-10`** | `a2-highgpu-2g` | 2x NVIDIA A100 40GB (Concurrency Scaling)| ~0.1 min | ~16.8 min | ~3.2 min | ~3.5 min | ~2.3 min | **25.9 min** |
 | **`EXP-11`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B Concurrency)| ~0.1 min | ~14.3 min | ~2.8 min | ~1.2 min | ~0.0 min | **18.4 min** |
+| **`EXP-12`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B FP8 Quantization)| ~0.2 min | ~10.5 min | ~2.5 min | ~3.7 min | ~0.0 min | **16.9 min** |
+
 
 ---
 
@@ -294,6 +298,41 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
   * **Hardware Saturation Limit on 4x L4**: At $N = 8$ streams, the 4x L4 cluster reached max throughput saturation at **~94–96 tokens/sec (5,614–5,773 TPM)**, with latency increasing to 15.12s due to continuous batch queuing.
   * **Extremely Cost-Efficient Serving**: At full saturation, serving cost dropped from $36.41 / 1M tokens down to **$9.92 / 1M tokens** ($3.36/hr / 338,820 tokens/hr).
 * **Status**: Benchmark Complete & Validated. Deployed Model `4486576988349267968` and Endpoint `5038993620376485888` **Cleanly Undeployed & Deleted** ($0 active billing).
+
+---
+
+### EXP-12: Gemma 3 27B Native Hardware FP8 Concurrency Scaling on 4x L4 ($N=1, 2, 4, 8$)
+* **Goal**: Benchmark hardware-accelerated 8-bit FP8 weight quantization (`--quantization=fp8`) on NVIDIA L4 Ada Lovelace Tensor Cores across concurrency sweeps ($N=1, 2, 4, 8$) to compare against baseline BF16 serving throughput and latency.
+* **Configuration**:
+  * Machine: `g2-standard-48` (4x NVIDIA L4, 96GB VRAM, Tensor Parallelism TP=4)
+  * Endpoint ID: `6458471927928324096` (`us-east1`)
+  * Container Image: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma3`
+  * Model ID: `7193024860119891968` (`gemma-3-27b-it-quantization-fp8-model-garden`)
+  * Flags: `--tensor-parallel-size=4`, `--gpu-memory-utilization=0.90`, `--max-model-len=4096`, `--swap-space=32`, `--limit_mm_per_prompt=image=5`, `--max-num-seqs=4`, `--quantization=fp8`
+* **Provisioning & Deployment Lifecycle**:
+  * Total Spin-Up Time: **16.9 minutes**
+  * Stage breakdown: Preparing model (0.2m), Creating cluster (10.5m), Adding nodes (2.5m), Image pull & Weight loading (3.7m).
+* **Empirical Concurrency Benchmark Results**:
+  * **$N = 1$ Single Stream (Single User)**:
+    * Run 1: Latency = 6.52s | 193 tok | 29.6 tok/s | 1,777 tok/min
+    * Run 2: Latency = 6.53s | 194 tok | 29.7 tok/s | 1,782 tok/min
+    * Avg Latency = **6.53s** (P50 = 6.53s, P90 = 6.53s, P99 = 6.53s)
+    * Generation Speed = **29.7 tok/s** | Throughput = **1,779 tok/min**
+  * **$N = 2$ Parallel Streams (Dual Users)**:
+    * Batch Time: **6.79s** | Avg Stream Latency: **6.79s** (P50 = 6.79s) | 391 tokens
+    * Aggregate Rate: **57.6 tokens/sec (TPS)** | **3,455 tokens/min (TPM)**
+  * **$N = 4$ Parallel Streams (Quad Users)**:
+    * Batch Time: **7.05s** | Avg Stream Latency: **7.05s** (P50 = 7.05s, P90 = 7.06s) | 769 tokens
+    * Aggregate Rate: **109.0 tokens/sec (TPS)** | **6,541 tokens/min (TPM)**
+  * **$N = 8$ Parallel Streams (High Concurrency Load)**:
+    * Batch Time: **13.85s** | Avg Stream Latency: **10.42s** (P50 = 10.42s, P90 = 10.42s) | 1,550 tokens
+    * Aggregate Rate: **148.8 tokens/sec (TPS)** | **8,926 tokens/min (TPM)**
+* **Findings & Architectural Conclusions**:
+  * **Massive +143% Single-Stream Speedup**: Single-stream latency dropped from 9.83s in BF16 baseline (`EXP-11`) down to **6.53s** (**-33.6% latency reduction**), with single-user generation speed jumping from 12.2 tok/s to **29.7 tok/s**.
+  * **Superior Concurrency Scaling**: Peak aggregate throughput jumped from 96.2 tok/s (5,773 TPM) in BF16 up to **148.8 tok/s (8,926 TPM)** at $N=8$, representing a **+54.6% higher throughput ceiling**.
+  * **Record Low Serving Cost on Dedicated GPUs**: At 8,926 tok/min (535,560 tokens/hr) on a $3.36/hr `g2-standard-48` cluster, serving cost dropped from $9.92 down to **$6.27 per 1M output tokens** (**-36.8% cost reduction**).
+* **Status**: Benchmark Complete & Validated. Deployed Model `7193024860119891968` and Endpoint `6458471927928324096` **Cleanly Undeployed & Deleted** ($0 active billing).
+
 
 ---
 
