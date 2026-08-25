@@ -34,6 +34,8 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-10** | **Concurrent Multi-Stream Load Test on 2x A100 NVLink ($N=1, 2, 4, 8$)** | `a2-highgpu-2g` | 2x A100 (80 GB NVLink) | 2 | 7.45 s | 4.58 s (warm) | 474 tok | **77.9 tok/s (90.1 peak)** | **4,676 tok/min (5,403 peak)** | **Linear scaling to 8 streams, $26.15/1M tok (Verified & Torn Down)** |
 | **EXP-11** | **Gemma 3 27B Multimodal Concurrency Load Test on 4x L4 ($N=1, 2, 4, 8$)** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 9.83 s | 10.11 s (warm)| 952 tok | **94.1 tok/s (96.2 peak)** | **5,647 tok/min (5,773 peak)** | **Linear scaling to 8 streams, $9.92/1M tok (Verified & Torn Down)** |
 | **EXP-12** | **Gemma 3 27B Native Hardware FP8 Concurrency on 4x L4 ($N=1, 2, 4, 8$)** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 6.96 s | 6.53 s (warm) | 1,550 tok | **148.8 tok/s (Peak)** | **8,926 tok/min (Peak)** | **+58% throughput, -34% latency, $6.27/1M tok (Verified & Torn Down)** |
+| **EXP-13** | **Chunked Prefill & Prefix Caching Evaluation on Gemma 3 27B FP8** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 6.98 s | 6.87 s (warm) | 193 tok | **28.0 tok/s** | **1,680 tok/min** | **1.02x latency speedup, +9.9% TPS on warm prefixes (Verified & Torn Down)** |
+
 
 
 ---
@@ -58,6 +60,8 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 | **`EXP-10`** | `a2-highgpu-2g` | 2x NVIDIA A100 40GB (Concurrency Scaling)| ~0.1 min | ~16.8 min | ~3.2 min | ~3.5 min | ~2.3 min | **25.9 min** |
 | **`EXP-11`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B Concurrency)| ~0.1 min | ~14.3 min | ~2.8 min | ~1.2 min | ~0.0 min | **18.4 min** |
 | **`EXP-12`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B FP8 Quantization)| ~0.2 min | ~10.5 min | ~2.5 min | ~3.7 min | ~0.0 min | **16.9 min** |
+| **`EXP-13`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B Prefix Caching) | ~0.2 min | ~0.0 min (Reused) | ~4.2 min | ~3.4 min | ~0.0 min | **7.8 min** |
+
 
 
 ---
@@ -332,6 +336,34 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
   * **Superior Concurrency Scaling**: Peak aggregate throughput jumped from 96.2 tok/s (5,773 TPM) in BF16 up to **148.8 tok/s (8,926 TPM)** at $N=8$, representing a **+54.6% higher throughput ceiling**.
   * **Record Low Serving Cost on Dedicated GPUs**: At 8,926 tok/min (535,560 tokens/hr) on a $3.36/hr `g2-standard-48` cluster, serving cost dropped from $9.92 down to **$6.27 per 1M output tokens** (**-36.8% cost reduction**).
 * **Status**: Benchmark Complete & Validated. Deployed Model `7193024860119891968` and Endpoint `6458471927928324096` **Cleanly Undeployed & Deleted** ($0 active billing).
+
+---
+
+### EXP-13: Chunked Prefill & Prefix Caching Evaluation on Gemma 3 27B FP8
+* **Goal**: Benchmark the efficiency of vLLM's automatic prefix caching (`--enable-prefix-caching`) and chunked prefill (`--enable-chunked-prefill`) for multi-turn conversational / repetitive system prompt workloads on 4x NVIDIA L4 GPUs.
+* **Configuration**:
+  * Machine: `g2-standard-48` (4x NVIDIA L4, 96GB VRAM, Tensor Parallelism TP=4)
+  * Endpoint ID: `7682606601642967040` (`us-east1`)
+  * Container Image: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma3`
+  * Model ID: `5380326010103267328` (`gemma-3-27b-it-quantization-fp8-enable-chunked-prefill-enable-prefix-caching-model-garden`)
+  * Flags: `--tensor-parallel-size=4`, `--gpu-memory-utilization=0.90`, `--max-model-len=4096`, `--swap-space=32`, `--limit_mm_per_prompt=image=5`, `--max-num-seqs=4`, `--quantization=fp8`, `--enable-chunked-prefill`, `--enable-prefix-caching`
+* **Provisioning & Deployment Lifecycle**:
+  * Total Spin-Up Time: **7.8 minutes** (Fast cluster node reuse).
+  * Stage breakdown: Preparing model (0.2m), Creating cluster (0.0m reused), Adding nodes (4.2m), Image pull & Weight loading (3.4m).
+* **Empirical Prefix Caching Benchmark Results**:
+  * **Shared System Prefix**: 1,059 characters (~278 tokens) of SOC operational context.
+  * **Phase 1: Cold Request (Uncached System Prefix)**:
+    * Latency: **6.98 s** | TTFT: **6,982 ms** | Output: **178 tokens** | Generation Speed: **25.5 tok/s**
+  * **Phase 2: Warm Requests (Reusing Cached KV Prefix Blocks)**:
+    * Warm Run 1: Latency = **6.88 s** | TTFT = **6,877 ms** | Output = 193 tokens | TPS = **28.1 tok/s**
+    * Warm Run 2: Latency = **6.87 s** | TTFT = **6,870 ms** | Output = 192 tokens | TPS = **27.9 tok/s**
+    * Warm Average Latency = **6.87 s** | Warm Average TTFT = **6,873 ms** | Warm Average TPS = **28.0 tok/s**
+* **Findings & Architectural Conclusions**:
+  * **KV Cache Block Reuse**: Reusing shared KV cache prefix blocks reduced Time-to-First-Token from 6,982 ms down to 6,873 ms (**-1.6% TTFT reduction** on modest ~278-token prefix).
+  * **Token Generation Throughput Gain**: Generation speed increased from 25.5 tok/s to **28.0 tok/s (+9.9% TPS improvement)** due to eliminated recomputation of the common prompt context.
+  * **Optimal Application**: Prefix caching delivers greater speedups as shared prefix size scales (e.g. 2k–8k token RAG documentation chunks or few-shot exemplars).
+* **Status**: Benchmark Complete & Validated. Deployed Model `5380326010103267328` and Endpoint `7682606601642967040` **Cleanly Undeployed & Deleted** ($0 active billing).
+
 
 
 ---
