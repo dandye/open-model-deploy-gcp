@@ -152,5 +152,34 @@
       "extraArgs": ["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]
     },
     "supportedTargets": ["vertex"]
+  },
+  "gemma-4-31b-it": {
+    "displayName": "Gemma 4 31B Instruct (Multimodal Reasoner)",
+    "family": "gemma4",
+    "params": "31.0B",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma4/gemma-4-31B-it",
+    "hfRepo": "google/gemma-4-31B-it",
+    "compute": {
+      "machineType": "g2-standard-48",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 4,
+      "hostRamGb": 192,
+      "hourlyCostUsd": 3.36
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4",
+      "tensorParallelSize": 4,
+      "swapSpaceGb": 32,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 16384,
+      "extraArgs": [
+        "--limit-mm-per-prompt.image=4",
+        "--limit-mm-per-prompt.video=1",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser=gemma4",
+        "--reasoning-parser=gemma4"
+      ]
+    },
+    "supportedTargets": ["vertex"]
   }
 }

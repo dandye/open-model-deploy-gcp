@@ -67,6 +67,17 @@ catalog_get_gpu_mem_util() {
   catalog_get "$1" ".runtime.gpuMemoryUtilization"
 }
 
+catalog_get_container_image() {
+  local model_key="$1"
+  local img
+  img=$(catalog_get "$model_key" ".runtime.containerImage" 2>/dev/null)
+  if [[ "$img" != "null" && -n "$img" ]]; then
+    echo "$img"
+  else
+    echo "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01"
+  fi
+}
+
 catalog_supports_target() {
   local model_key="$1"
   local target="$2"

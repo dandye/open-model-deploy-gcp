@@ -55,11 +55,13 @@ if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" ]]; then
   CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_ARGS_CSV}"
 fi
 
+CONTAINER_IMAGE=$(catalog_get_container_image "$MODEL_FLAVOR")
+
 REGISTER_OUTPUT=$(gcloud ai models upload \
   --project="$PROJECT_ID" \
   --region="$REGION" \
   --display-name="$MODEL_DISPLAY_NAME" \
-  --container-image-uri="us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01" \
+  --container-image-uri="$CONTAINER_IMAGE" \
   --container-args="$CONTAINER_ARGS" \
   --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL" \
   --container-ports="8080" \

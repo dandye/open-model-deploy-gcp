@@ -32,6 +32,7 @@ The table below summarizes the catalog status, compute profile, and environment 
 | `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
 | `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
+| `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 16,384 | Compatible | Incompatible (>1 GPU) | Deploying (`us-west1`) |
 
 ---
 
@@ -92,6 +93,22 @@ Paris is famous for many things, including:
 * **Tensor Parallelism**: `tensor-parallel-size=4`
 * **Hourly Cost**: $3.36/hour
 * **Status**: Provisioning serving cluster / initializing vLLM container.
+
+### Gemma 4 31B Multimodal Reasoner (`gemma-4-31b-it`)
+
+* **Deployment Environment**: Vertex AI Online Prediction
+* **Region**: `us-west1` (Oregon)
+* **Model Size**: 31.0B parameters (multimodal text, image, video reasoning, tool calling)
+* **Source URI**: `gs://vertex-model-garden-restricted-us/gemma4/gemma-4-31B-it`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4`
+* **Machine Type**: `g2-standard-48` (48 vCPUs, 192 GB Host RAM, 4 x NVIDIA L4 GPUs 96GB total VRAM)
+* **Tensor Parallelism**: `tensor-parallel-size=4`
+* **Hourly Cost**: $3.36/hour
+* **vLLM Engine Configuration**:
+  * `gpu-memory-utilization`: `0.90`
+  * `max-model-len`: `16384`
+  * `extraArgs`: `["--limit-mm-per-prompt.image=4", "--limit-mm-per-prompt.video=1", "--enable-auto-tool-choice", "--tool-call-parser=gemma4", "--reasoning-parser=gemma4"]`
+* **Status**: Registering & deploying in parallel.
 
 ---
 
