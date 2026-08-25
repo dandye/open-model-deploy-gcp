@@ -1,6 +1,6 @@
 ---
-title: "Gemma 4 31B: Performance Analysis & Throughput Optimization Plan"
-description: "Root cause analysis of baseline 3.1 tok/s generation throughput and systematic experimental roadmap to maximize serving speed on GCP."
+title: "Gemma 4 31B: Performance Analysis & Optimization Empirical Roadmap"
+description: "Root cause analysis of baseline 3.1 tok/s generation throughput and empirical results from CUDA graphs, FP8 quantization, single A100 80GB, and 2x A100 NVLink serving."
 type: "plan"
 tags:
   - gemma4
@@ -8,11 +8,13 @@ tags:
   - vllm-tuning
   - latency-reduction
   - throughput
+  - benchmarks
 created: 2026-08-25
-status: "in-progress"
+updated: 2026-08-25
+status: "completed"
 ---
 
-# Gemma 4 31B: Performance Analysis & Throughput Optimization Plan
+# Gemma 4 31B: Performance Analysis & Optimization Empirical Roadmap
 
 ## 1. Baseline Performance Summary
 
@@ -53,40 +55,43 @@ During initial baseline testing on Google Cloud Vertex AI dedicated prediction e
 
 ---
 
-## 3. Experimental Roadmap
+## 3. Empirical Results Across Experimental Tracks
 
-### Experiment Track A: Compilation & Graph Execution
-* **Hypothesis**: Replacing eager execution with CUDA graph capture or tuned `torch.compile` will eliminate Python kernel launch overhead, increasing generation speed from ~3 tok/s to ~8–12 tok/s.
-* **Method**:
-  1. Set container environment variables `VLLM_RPC_TIMEOUT=300` and `VLLM_TORCH_COMPILE_TIMEOUT=300`.
-  2. Test compilation configuration flags (`--max-seq-len-to-capture=2048`, `--enable-chunked-prefill=true`).
-  3. Compare latency, warmup time, and steady-state tokens/sec.
+For detailed per-run logs, refer to [`experiments_status.md`](experiments_status.md) and [`cost_analysis.md`](cost_analysis.md).
 
-### Experiment Track B: KV Cache & Engine Parameter Tuning
-* **Hypothesis**: Optimizing KV cache precision (`--kv-cache-dtype=fp8`) and batch execution parameters will reduce memory bus pressure and increase token throughput.
-* **Method**:
-  1. Benchmark `--kv-cache-dtype=fp8` vs default `auto`.
-  2. Measure concurrency scaling across 1, 2, and 4 parallel requests.
+### Track A: Compilation & CUDA Graph Execution (`EXP-01b`)
+* **Hypothesis**: Replacing eager execution with CUDA graph capture eliminates Python kernel launch overhead.
+* **Result**:
+  * Steady-state warm generation latency improved from **12.76s to 10.20s**.
+  * Generation speed increased from **3.1 to 3.8 tok/s (+23% speedup)**.
+  * Ceiling identified: 128+ PCIe `AllReduce` communication barriers across the 4 L4 cards remained the primary bottleneck.
 
-### Experiment Track C: Quantization & Compression (FP8 / AWQ)
-* **Hypothesis**: Using FP8 (W8A8) quantized weights reduces memory transfer from 62 GB/step to ~31 GB/step, leveraging native Ada Lovelace 4th-gen Tensor Core FP8 acceleration for a 2x–3x speedup.
-* **Method**:
-  1. Test FP8 model variants if available in Model Garden / vLLM.
-  2. Measure accuracy/perplexity impact and throughput gain.
+### Track B: KV Cache Tuning (`EXP-02`)
+* **Hypothesis**: Quantizing KV cache to 8-bit (`--kv-cache-dtype=fp8`) reduces memory footprint and cache memory pressure.
+* **Result**: Reduced KV cache memory consumption by **50%** with zero numerical divergence. Single-stream speed remained 3.8 tok/s due to PCIe AllReduce limits.
 
-### Experiment Track D: Single High-Bandwidth Accelerator Architecture
-* **Hypothesis**: Serving on a single high-memory GPU (A100 80GB, H100 80GB, or RTX 6000 Ada 96GB) completely eliminates PCIe AllReduce latency, enabling 25–50 tok/s.
-* **Method**:
-  1. Check quota and deployability of `a2-ultragpu-1g` / `g4-standard-48`.
-  2. Compare price-performance efficiency ($/1M tokens).
+### Track C: Quantization on Diverse GPU Architectures (`EXP-05` vs `EXP-06`)
+* **Ampere (A100, `EXP-05`)**: Triton/Inductor autotuning failed with `ValueError: type fp8e4nv not supported in this architecture`. Ampere lacks hardware tensor core support for `fp8e4nv` (E4M3), requiring native BF16 or BitsAndBytes INT8.
+* **Ada Lovelace (L4, `EXP-06`)**: Native 4th-Gen FP8 Tensor Cores accelerated weight execution, pushing 4x L4 throughput from **3.1 tok/s to 7.1 tok/s (+129% speedup)** and **424 tok/min**. Note: Dynamic uncalibrated scaling on BF16 weights requires static scale factors to avoid output token repetition.
+
+### Track D: High-Bandwidth Dedicated Interconnects (`EXP-04` & `EXP-07b`)
+* **Single A100 80GB (`a2-ultragpu-1g`, TP=1, `EXP-04`)**:
+  * Completely eliminated multi-GPU PCIe AllReduce syncs.
+  * Latency cut in half: **6.36 s** (vs 12.76s baseline, **-50%**).
+  * Throughput doubled: **6.1 tok/s** / **368 tok/min** (**+97%** vs baseline) with pristine output quality.
+* **2x A100 40GB with 600 GB/s NVLink (`a2-highgpu-2g`, TP=2, `EXP-07b`)**:
+  * Replaced ~32 GB/s PCIe with a **600 GB/s bidirectional NVLink bridge**.
+  * Latency dropped to **4.29 s** (vs 12.76s baseline, **-66% latency reduction / 3x faster response**).
+  * Generation speed reached **up to 23.0 tokens/second** (averaging **12.4 tok/s** / **745 tok/min**).
 
 ---
 
-## 4. Experiment Success Criteria
+## 4. Final Optimization Scorecard
 
-| Metric | Baseline (Eager 4x L4) | Target (Optimized 4x L4) | Target (Single High-VRAM GPU) |
-| :--- | :--- | :--- | :--- |
-| **Generation Speed (TPS)** | 3.1 tok/s | **>= 10.0 tok/s** | **>= 25.0 tok/s** |
-| **Tokens Per Minute (TPM)** | 183 tok/min | **>= 600 tok/min** | **>= 1,500 tok/min** |
-| **Warm Step Latency (50 tok)** | ~16.0 s | **<= 5.0 s** | **<= 2.0 s** |
-| **Cost / Million Tokens** | $306.01 | **<= $93.00** | **<= $40.00** |
+| Experiment Track | Machine Type | GPU / Interconnect | TP | Steady Latency | Generation Speed | Throughput (TPM) | Cost / 1M Tokens | Optimization Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Baseline (Eager)** | `g2-standard-48` | 4x L4 (PCIe Gen4) | 4 | 12.76 s | 3.1 tok/s | 183 tok/min | $306.01 | Baseline Measured |
+| **CUDA Graphs** | `g2-standard-48` | 4x L4 (PCIe Gen4) | 4 | 10.20 s | 3.8 tok/s | 229 tok/min | $243.48 | +23% Speedup |
+| **Native FP8 (Ada)** | `g2-standard-48` | 4x L4 (Ada Lovelace) | 4 | 10.06 s | 7.1 tok/s | 424 tok/min | $132.08 | +129% Speedup |
+| **Single Die A100** | `a2-ultragpu-1g` | 1x A100 80GB (Single Die)| 1 | 6.36 s | 6.1 tok/s | 368 tok/min | $166.21 | -50% Latency, +97% Speedup |
+| **2-GPU NVLink Mesh** | `a2-highgpu-2g` | 2x A100 40GB (600 GB/s NVLink)| 2 | 4.29 s | 12.4 – 23.0 tok/s | 745 – 1,382 tok/min | $164.20 | -66% Latency, 3x-7x Faster |
