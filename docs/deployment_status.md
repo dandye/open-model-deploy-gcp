@@ -26,7 +26,7 @@ The table below summarizes the catalog status, compute profile, and environment 
 | Model Flavor | Generation | Parameters | Weights (BF16) | Target Machine | GPUs | TP Size | Context Len | Vertex AI | Cloud Run GPU | Validation Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `gemma-3-1b-it` | Gemma 3 | 1.0B | ~2.5 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
-| `gemma-3-4b-it` | Gemma 3 | 4.0B | ~8.0 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-3-4b-it` | Gemma 3 | 4.0B | ~8.0 GB | `g2-standard-8` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-3-12b-it` | Gemma 3 (Vision) | 12.0B | ~24.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 | `gemma-3-27b-it` | Gemma 3 | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
 | `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
@@ -110,6 +110,39 @@ Here are three key features of the Gemma 3 12B model:
 1.  **Improved Performance:** Gemma 3 12B demonstrates significant performance gains over its predecessor, Gemma 2. It surpasses the previous model on a wide range of benchmarks, particularly in reasoning, coding, and mathematical capabilities.
 2.  **Longer Context Length:** Gemma 3 12B boasts an 8,192 token context length. This allows the model to process and understand much longer inputs, enabling better performance on tasks requiring more context and memory.
 3.  **Mixture-of-Experts (MoE) Architecture:** A key architectural change is the introduction of a Mixture-of-Experts (MoE) layer. This allows the model to access more parameters when needed, without increasing inference cost.
+```
+
+### Gemma 3 4B Instruct (`gemma-3-4b-it`)
+
+* **Deployment Environment**: Vertex AI Online Prediction
+* **Region**: `us-central1` (Iowa)
+* **Endpoint Name**: `gemma-3-4b-it-endpoint-20260825-0048`
+* **Endpoint ID**: `3800163424000802816`
+* **Deployed Model ID**: `7323922269162438656`
+* **Model Registry ID**: `1516570132086784000`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
+* **Machine Type**: `g2-standard-8` (8 vCPUs, 32 GB Host RAM, 1 x NVIDIA L4 GPU 24GB)
+* **Tensor Parallelism**: `tensor-parallel-size=1`
+* **Hourly Cost**: $0.76/hour
+* **vLLM Engine Configuration**:
+  * `gpu-memory-utilization`: `0.90`
+  * `max-model-len`: `32768`
+  * `swap-space`: `16`
+
+#### Verified Live Test Output
+
+**Prompt**:
+```text
+List 3 benefits of the Gemma 3 4B model.
+```
+
+**Vertex AI Response**:
+```text
+Here are 3 benefits of the Gemma 3 4B model:
+
+1.  **Open and Accessible:** Gemma is an open-weights model, meaning its weights are publicly available. This allows researchers, developers, and anyone interested to download, study, modify, and use the model freely, fostering innovation and transparency.
+2.  **Relatively Small Size:** With 4 billion parameters, Gemma 3 4B is smaller than many other large language models. This smaller size makes it more practical to run on consumer-grade hardware, reducing the computational resources required for inference.
+3.  **Strong Performance for its Size:** Despite its relatively small size, Gemma 3 4B demonstrates competitive performance on a range of benchmarks and tasks, often outperforming larger models in certain areas.
 ```
 
 ---
