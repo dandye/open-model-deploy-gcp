@@ -34,5 +34,7 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 | [`vertex_deployment_notes.md`](vertex_deployment_notes.md) | `guide` | Vertex AI Online Prediction deployment & troubleshooting solutions |
 | [`vertex_cleanup_strategies.md`](vertex_cleanup_strategies.md) | `architecture` | Automated scheduled and metric-based cleanup architectures |
 | [`speculative_decoding.md`](speculative_decoding.md) | `architecture` | Speculative decoding guide, N-gram prompt lookup mechanics & Vertex AI benchmarks |
+| [`model_registry_catalog.md`](model_registry_catalog.md) | `guide` | Authoritative catalog of all registered Vertex AI models, container specs & creation commands |
 | [`references.md`](references.md) | `reference` | Curated external guides, Google Cloud community articles & ADK references |
+
 

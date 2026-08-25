@@ -99,5 +99,7 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
   * [`docs/vertex_cleanup_strategies.md`](docs/vertex_cleanup_strategies.md): Endpoint and resource cleanup guide.
   * [`docs/cloudrun_deploy.md`](docs/cloudrun_deploy.md): Cloud Run GPU guide and scale-to-zero mechanics.
   * [`docs/speculative_decoding.md`](docs/speculative_decoding.md): Speculative decoding guide, N-gram prompt lookup mechanics & Vertex AI benchmarks.
+  * [`docs/model_registry_catalog.md`](docs/model_registry_catalog.md): Authoritative Vertex AI Model Registry inventory & creation commands.
   * [`docs/quota_requests.md`](docs/quota_requests.md): Cloud GPU quota requests and tracking log.
+
 
