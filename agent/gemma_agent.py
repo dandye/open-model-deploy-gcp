@@ -218,31 +218,26 @@ class GemmaAgent:
                     os.remove(tmp_path)
 
         # Strategy 3: Fallback / Managed Model
-        if self.managed_model:
-            try:
-                from google import genai
-                from google.genai import types
-                client = genai.Client(vertexai=True, project=self.project_id, location=self.region)
-                config = types.GenerateContentConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                    system_instruction=self.system_instruction,
-                    tools=self.tools if self.tools else None,
-                )
-                chat = client.chats.create(model=self.managed_model, config=config)
-                res = chat.send_message(prompt)
-                return {
-                    "response": res.text or "",
-                    "backend": f"Vertex AI Model Garden / MaaS ({self.managed_model})",
-                    "model": self.managed_model,
-                }
-            except Exception as e:
-                return {
-                    "error": f"Managed model query failed: {e}",
-                    "backend": "Managed Model Error",
-                }
+        target_managed_model = self.managed_model or "gemini-2.5-flash"
+        try:
+            from google import genai
+            from google.genai import types
+            client = genai.Client(vertexai=True, project=self.project_id, location=self.region)
+            config = types.GenerateContentConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens,
+                system_instruction=self.system_instruction,
+            )
+            chat = client.chats.create(model=target_managed_model, config=config)
+            res = chat.send_message(prompt)
+            return {
+                "response": res.text or "",
+                "backend": f"Vertex AI Model Garden / MaaS ({target_managed_model})",
+                "model": target_managed_model,
+            }
+        except Exception as e:
+            return {
+                "error": f"Managed model query failed: {e}",
+                "backend": "Managed Model Error",
+            }
 
-        return {
-            "error": "No active Gemma endpoint found and no managed model configured. Deploy a model with 'just vertex-deploy <flavor>' or specify an endpoint ID.",
-            "backend": "None",
-        }
