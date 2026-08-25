@@ -124,3 +124,16 @@ tf-apply FLAVOR="gemma-2-9b-it":
 # Destroy Terraform-managed infrastructure
 tf-destroy:
     @cd terraform && terraform destroy
+
+# ------------------------------------------------------------------------------
+# Vertex AI Agent Engine (ADK Agent)
+# ------------------------------------------------------------------------------
+
+# Test Gemma ADK Agent locally (Usage: just agent-test [prompt])
+agent-test PROMPT="Explain quantum computing in two concise sentences.":
+    @python3 agent/test_agent.py "{{PROMPT}}"
+
+# Deploy Gemma ADK Agent to Vertex AI Agent Engine
+agent-deploy:
+    @python3 agent/deploy.py
+

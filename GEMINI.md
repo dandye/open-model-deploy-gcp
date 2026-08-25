@@ -76,6 +76,8 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
 | `just tf-plan [flavor]` | Plan Terraform infrastructure for specific model flavor |
 | `just tf-apply [flavor]` | Apply Terraform infrastructure for specific model flavor |
 | `just tf-destroy` | Destroy Terraform-managed infrastructure |
+| `just agent-test [prompt]` | Test Gemma ADK Agent locally (auto-discovers active endpoints) |
+| `just agent-deploy` | Deploy Gemma ADK Agent to Vertex AI Agent Engine |
 
 ---
 
@@ -84,6 +86,7 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
 * [`configs/models.json`](configs/models.json): Central model specifications & compute catalog.
 * [`Justfile`](Justfile): Command definitions.
 * [`.env.example`](.env.example): Environment variable template.
+* [`agent/`](agent/): ADK Agent for Vertex AI Agent Engine with dynamic Gemma backend resolution.
 * [`scripts/lib/model_catalog.sh`](scripts/lib/model_catalog.sh): Model catalog helper library.
 * [`scripts/`](scripts/): Automation scripts for deployment, quota management, and query operations.
   * [`scripts/benchmark.py`](scripts/benchmark.py): Model latency and throughput benchmarking tool.
