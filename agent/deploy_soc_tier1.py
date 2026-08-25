@@ -9,6 +9,8 @@ from typing import Any, Dict, Optional
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
+os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
+
 import vertexai
 from vertexai.preview import reasoning_engines
 from agent.soc_tier1_agent import SocTier1Agent
@@ -67,6 +69,7 @@ def deploy(
     remote_agent = reasoning_engines.ReasoningEngine.create(
         reasoning_engine=agent_instance,
         requirements=config["requirements"],
+        extra_packages=[str(ROOT_DIR / "agent")],
         display_name=config["display_name"],
         description=config["description"],
     )
