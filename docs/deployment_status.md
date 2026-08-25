@@ -25,11 +25,11 @@ The table below summarizes the catalog status, compute profile, and environment 
 
 | Model Flavor | Generation | Parameters | Weights (BF16) | Target Machine | GPUs | TP Size | Context Len | Vertex AI | Cloud Run GPU | Validation Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `gemma-3-1b-it` | Gemma 3 | 1.0B | ~2.5 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-3-1b-it` | Gemma 3 | 1.0B | ~2.5 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-3-4b-it` | Gemma 3 | 4.0B | ~8.0 GB | `g2-standard-8` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-3-12b-it` | Gemma 3 (Vision) | 12.0B | ~24.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 | `gemma-3-27b-it` | Gemma 3 (Vision) | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
-| `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
 | `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
@@ -42,6 +42,8 @@ The following metrics were measured directly on active Google Cloud Vertex AI de
 
 | Model Flavor Key | Generation & Size | Machine Type | GPU Configuration | TP Size | Avg Latency | Avg Output | Tokens / Sec (TPS) | Tokens / Min (TPM) | Hourly Cost |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`gemma-3-1b-it`** | Gemma 3 1.0B | **`g2-standard-4`** | 1x NVIDIA L4 (24 GB) | 1 | **2.05 s** | 219 tokens | **107.9 tok/s** | **6,471 tok/min** | $0.70/hr |
+| **`gemma-2-2b-it`** | Gemma 2 2.6B | **`g2-standard-4`** | 1x NVIDIA L4 (24 GB) | 1 | **3.99 s** | 236 tokens | **59.3 tok/s** | **3,556 tok/min** | $0.70/hr |
 | **`gemma-3-12b-it`** | Gemma 3 12B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **4.90 s** | 226 tokens | **46.2 tok/s** | **2,769 tok/min** | $3.36/hr |
 | **`gemma-3-4b-it`** | Gemma 3 4B | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | **5.45 s** | 246 tokens | **45.2 tok/s** | **2,710 tok/min** | $0.76/hr |
 | **`gemma-3-27b-it`** | Gemma 3 27B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **9.63 s** | 228 tokens | **23.7 tok/s** | **1,423 tok/min** | $3.36/hr |
