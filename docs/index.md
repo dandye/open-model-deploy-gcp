@@ -23,6 +23,7 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 | Document | Type | Description |
 | :--- | :--- | :--- |
 | [`gemma_soc_agent_evaluation_plan.md`](gemma_soc_agent_evaluation_plan.md) | `plan` | Gemma SOC Tier 1 agent implementation, deployment & rubric evaluation plan |
+| [`soc_eval_failure_analysis.md`](soc_eval_failure_analysis.md) | `analysis` | Failure analysis of CASE-01, synthetic GTI hallucination & ReAct next steps |
 | [`gemma4_performance_optimization_plan.md`](gemma4_performance_optimization_plan.md) | `plan` | Gemma 4 performance analysis, optimization roadmap & empirical findings |
 | [`deployment_status.md`](deployment_status.md) | `guide` | Live deployment tracking, multi-model compatibility matrix & test records |
 | [`experiments_status.md`](experiments_status.md) | `status` | Gemma 4 Vertex AI performance optimization experiment logs & benchmarks |
