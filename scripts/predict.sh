@@ -77,7 +77,7 @@ FOUND_REGION=""
 for r in "${VERTEX_REGIONS[@]}"; do
   FILTER_PATTERN="displayName:gemma*"
   if [[ -n "$TARGET_MODEL" ]]; then
-    FILTER_PATTERN="displayName:*${TARGET_MODEL}*"
+    FILTER_PATTERN="displayName:${TARGET_MODEL}*"
   fi
 
   EP_RES=$(gcloud ai endpoints list \
