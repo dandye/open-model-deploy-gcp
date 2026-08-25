@@ -172,7 +172,7 @@
       "swapSpaceGb": 0,
       "gpuMemoryUtilization": 0.85,
       "maxModelLen": 4096,
-      "extraArgs": ["--max-num-seqs=8"]
+      "extraArgs": ["--max-num-seqs=8", "--kv-cache-dtype=fp8"]
     },
     "supportedTargets": ["vertex"]
   }
