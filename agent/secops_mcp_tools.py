@@ -18,20 +18,26 @@ SECOPS_MCP_ENDPOINT = os.environ.get("SECOPS_MCP_ENDPOINT", f"https://{DEFAULT_R
 
 
 def _get_access_token() -> str:
-    """Retrieves OAuth2 access token via Google Cloud ADC."""
+    """Retrieves OAuth2 access token via Google Cloud ADC or metadata."""
     try:
         import google.auth
         import google.auth.transport.requests
-        credentials, _ = google.auth.default(scopes=[
-            "https://www.googleapis.com/auth/cloud-platform",
-            "https://www.googleapis.com/auth/chronicle",
-        ])
-        auth_req = google.auth.transport.requests.Request()
-        credentials.refresh(auth_req)
-        return credentials.token
+        credentials, _ = google.auth.default()
+        if not credentials.valid:
+            auth_req = google.auth.transport.requests.Request()
+            credentials.refresh(auth_req)
+        return credentials.token or ""
     except Exception:
-        token_res = subprocess.run(["gcloud", "auth", "print-access-token"], capture_output=True, text=True)
-        return token_res.stdout.strip()
+        try:
+            token_res = subprocess.run(
+                ["gcloud", "auth", "print-access-token"],
+                capture_output=True,
+                text=True,
+            )
+            return token_res.stdout.strip()
+        except Exception:
+            return ""
+
 
 
 def call_secops_mcp(
@@ -168,3 +174,14 @@ def fetch_alert_data(siem_alert_id: str) -> str:
     if "content" in res and res["content"]:
         return res["content"][0].get("text", json.dumps(res))
     return json.dumps(res)
+
+
+SECOPS_MCP_TOOLS = [
+    list_cases,
+    get_case,
+    create_case_comment,
+    summarize_entity,
+    udm_search,
+    fetch_alert_data,
+]
+

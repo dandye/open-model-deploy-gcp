@@ -86,41 +86,44 @@ class GemmaAgent:
             if reg in seen_regions:
                 continue
             seen_regions.add(reg)
-            cmd = [
-                "gcloud", "ai", "endpoints", "list",
-                f"--region={reg}",
-                f"--project={self.project_id}",
-                "--filter=displayName:gemma*",
-                "--sort-by=~createTime",
-                "--format=value(name.basename(),displayName)",
-            ]
-            res = subprocess.run(cmd, capture_output=True, text=True)
-            if res.returncode == 0 and res.stdout.strip():
-                valid_lines = [
-                    l.strip().split(None, 1)
-                    for l in res.stdout.splitlines()
-                    if l.strip() and not l.strip().startswith("Using endpoint")
-                ]
-                for parts in valid_lines:
-                    if not parts or not parts[0].isdigit():
-                        continue
-                    ep_id = parts[0]
-                    display_name = parts[1] if len(parts) > 1 else ep_id
-                    # Verify deployed models exist
-                    desc_cmd = [
-                        "gcloud", "ai", "endpoints", "describe", ep_id,
+            try:
+                from google.cloud import aiplatform
+                endpoints = aiplatform.Endpoint.list(
+                    filter='display_name="gemma*"',
+                    project=self.project_id,
+                    location=reg,
+                )
+                for ep in endpoints:
+                    if ep.gca_resource.deployed_models:
+                        self.endpoint_id = ep.name
+                        self.region = reg
+                        return {
+                            "endpoint_id": ep.name,
+                            "region": reg,
+                            "display_name": ep.display_name,
+                        }
+            except Exception:
+                try:
+                    cmd = [
+                        "gcloud", "ai", "endpoints", "list",
                         f"--region={reg}",
                         f"--project={self.project_id}",
-                        "--format=value(deployedModels[0].id)",
+                        "--filter=displayName:gemma*",
+                        "--sort-by=~createTime",
+                        "--format=value(name.basename(),displayName)",
                     ]
-                    desc_res = subprocess.run(desc_cmd, capture_output=True, text=True)
-                    if desc_res.returncode == 0:
-                        desc_lines = [
-                            l.strip()
-                            for l in desc_res.stdout.splitlines()
+                    res = subprocess.run(cmd, capture_output=True, text=True)
+                    if res.returncode == 0 and res.stdout.strip():
+                        valid_lines = [
+                            l.strip().split(None, 1)
+                            for l in res.stdout.splitlines()
                             if l.strip() and not l.strip().startswith("Using endpoint")
                         ]
-                        if desc_lines and desc_lines[0].isdigit():
+                        for parts in valid_lines:
+                            if not parts or not parts[0].isdigit():
+                                continue
+                            ep_id = parts[0]
+                            display_name = parts[1] if len(parts) > 1 else ep_id
                             self.endpoint_id = ep_id
                             self.region = reg
                             return {
@@ -128,6 +131,8 @@ class GemmaAgent:
                                 "region": reg,
                                 "display_name": display_name,
                             }
+                except Exception:
+                    pass
         return None
 
     def query(self, prompt: str, max_tokens: int = 512, temperature: float = 0.7) -> Dict[str, Any]:
@@ -144,8 +149,21 @@ class GemmaAgent:
         # Strategy 1: Cloud Run URL
         if self.cloudrun_url:
             import urllib.request
-            token_res = subprocess.run(["gcloud", "auth", "print-access-token"], capture_output=True, text=True)
-            token = token_res.stdout.strip()
+            token = ""
+            try:
+                import google.auth
+                import google.auth.transport.requests
+                credentials, _ = google.auth.default()
+                if not credentials.valid:
+                    auth_req = google.auth.transport.requests.Request()
+                    credentials.refresh(auth_req)
+                token = credentials.token or ""
+            except Exception:
+                try:
+                    token_res = subprocess.run(["gcloud", "auth", "print-access-token"], capture_output=True, text=True)
+                    token = token_res.stdout.strip()
+                except Exception:
+                    pass
             url = f"{self.cloudrun_url.rstrip('/')}/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {token}",
@@ -188,52 +206,78 @@ class GemmaAgent:
                 active_region = discovery["region"]
 
         if active_endpoint:
-            payload = {
-                "instances": [
-                    {
-                        "prompt": f"<start_of_turn>user\n{self.system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
-                        "max_tokens": max_tokens,
-                        "temperature": temperature,
-                    }
-                ]
-            }
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
-                json.dump(payload, f)
-                tmp_path = f.name
-
+            instances = [
+                {
+                    "prompt": f"<start_of_turn>user\n{self.system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                }
+            ]
             try:
-                cmd = [
-                    "gcloud", "ai", "endpoints", "predict", active_endpoint,
-                    f"--region={active_region}",
-                    f"--project={self.project_id}",
-                    f"--json-request={tmp_path}",
-                    "--format=json",
-                ]
-                res = subprocess.run(cmd, capture_output=True, text=True)
-                if res.returncode == 0:
-                    data = json.loads(res.stdout)
-                    predictions = data.get("predictions", [])
-                    reply = predictions[0] if predictions else "No prediction returned."
-                    if isinstance(reply, str) and "Output:\n" in reply:
-                        reply = reply.split("Output:\n", 1)[1].strip()
-                    prompt_est = int(len(f"{self.system_instruction} {prompt}".split()) * 1.3)
-                    comp_est = int(len(str(reply).split()) * 1.3)
-                    return {
-                        "response": reply,
-                        "backend": "Vertex AI Online Prediction",
-                        "endpoint_id": active_endpoint,
-                        "region": active_region,
-                        "usage": {
-                            "prompt_tokens": prompt_est,
-                            "completion_tokens": comp_est,
-                            "total_tokens": prompt_est + comp_est,
-                        },
-                    }
-                else:
-                    return {"error": res.stderr, "backend": "Vertex AI Prediction Error"}
-            finally:
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
+                from google.cloud import aiplatform
+                endpoint = aiplatform.Endpoint(
+                    endpoint_name=active_endpoint,
+                    project=self.project_id,
+                    location=active_region,
+                )
+                res = endpoint.predict(instances=instances)
+                predictions = res.predictions
+                reply = predictions[0] if predictions else "No prediction returned."
+                if isinstance(reply, str) and "Output:\n" in reply:
+                    reply = reply.split("Output:\n", 1)[1].strip()
+                prompt_est = int(len(f"{self.system_instruction} {prompt}".split()) * 1.3)
+                comp_est = int(len(str(reply).split()) * 1.3)
+                return {
+                    "response": str(reply),
+                    "backend": "Vertex AI Online Prediction",
+                    "endpoint_id": active_endpoint,
+                    "region": active_region,
+                    "usage": {
+                        "prompt_tokens": prompt_est,
+                        "completion_tokens": comp_est,
+                        "total_tokens": prompt_est + comp_est,
+                    },
+                }
+            except Exception:
+                payload = {"instances": instances}
+                with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+                    json.dump(payload, f)
+                    tmp_path = f.name
+
+                try:
+                    cmd = [
+                        "gcloud", "ai", "endpoints", "predict", active_endpoint,
+                        f"--region={active_region}",
+                        f"--project={self.project_id}",
+                        f"--json-request={tmp_path}",
+                        "--format=json",
+                    ]
+                    res = subprocess.run(cmd, capture_output=True, text=True)
+                    if res.returncode == 0:
+                        data = json.loads(res.stdout)
+                        predictions = data.get("predictions", [])
+                        reply = predictions[0] if predictions else "No prediction returned."
+                        if isinstance(reply, str) and "Output:\n" in reply:
+                            reply = reply.split("Output:\n", 1)[1].strip()
+                        prompt_est = int(len(f"{self.system_instruction} {prompt}".split()) * 1.3)
+                        comp_est = int(len(str(reply).split()) * 1.3)
+                        return {
+                            "response": reply,
+                            "backend": "Vertex AI Online Prediction",
+                            "endpoint_id": active_endpoint,
+                            "region": active_region,
+                            "usage": {
+                                "prompt_tokens": prompt_est,
+                                "completion_tokens": comp_est,
+                                "total_tokens": prompt_est + comp_est,
+                            },
+                        }
+                except Exception:
+                    pass
+                finally:
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+
 
         # Strategy 3: Fallback / Managed Model
         target_managed_model = self.managed_model or "gemini-2.5-flash"

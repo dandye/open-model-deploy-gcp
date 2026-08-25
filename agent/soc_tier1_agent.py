@@ -2,15 +2,47 @@ import inspect
 import json
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple
-from agent.gemma_agent import GemmaAgent
-from agent.soc_tools import (
-    get_domain_report,
-    get_file_report,
-    get_ip_address_report,
-    list_cases,
-    lookup_entity,
-    post_case_comment,
-)
+
+try:
+
+    from agent.gemma_agent import GemmaAgent
+    from agent.soc_tools import (
+        get_domain_report,
+        get_file_report,
+        get_ip_address_report,
+        list_cases,
+        lookup_entity,
+        post_case_comment,
+    )
+    from agent.secops_mcp_tools import (
+        SECOPS_MCP_TOOLS,
+        create_case_comment as secops_create_case_comment,
+        fetch_alert_data as secops_fetch_alert_data,
+        get_case as secops_get_case,
+        list_cases as secops_list_cases,
+        summarize_entity as secops_summarize_entity,
+        udm_search as secops_udm_search,
+    )
+except ModuleNotFoundError:
+    from gemma_agent import GemmaAgent
+    from soc_tools import (
+        get_domain_report,
+        get_file_report,
+        get_ip_address_report,
+        list_cases,
+        lookup_entity,
+        post_case_comment,
+    )
+    from secops_mcp_tools import (
+        SECOPS_MCP_TOOLS,
+        create_case_comment as secops_create_case_comment,
+        fetch_alert_data as secops_fetch_alert_data,
+        get_case as secops_get_case,
+        list_cases as secops_list_cases,
+        summarize_entity as secops_summarize_entity,
+        udm_search as secops_udm_search,
+    )
+
 
 SOC_TIER1_PERSONA = """You are a Tier 1 Security Operations Center (SOC) Analyst.
 Your primary role is alert triage, basic indicator enrichment, duplicate case detection, and structured escalation recommendations.

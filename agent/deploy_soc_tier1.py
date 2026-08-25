@@ -17,7 +17,8 @@ from agent.soc_tier1_agent import SocTier1Agent
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle")
 REGION = os.environ.get("GCP_REGION", "us-central1")
-STAGING_BUCKET = os.environ.get("GCS_STAGING_BUCKET", f"gs://{PROJECT_ID}-agent-engine-staging")
+STAGING_BUCKET = os.environ.get("GCS_STAGING_BUCKET", f"gs://{PROJECT_ID}-soc-agent-artifacts")
+
 
 
 def get_deployment_config() -> Dict[str, Any]:
@@ -70,13 +71,16 @@ def deploy(
         use_live_mcp=use_live_mcp,
     )
 
+    os.chdir(ROOT_DIR)
     remote_agent = reasoning_engines.ReasoningEngine.create(
         reasoning_engine=agent_instance,
         requirements=config["requirements"],
-        extra_packages=[str(ROOT_DIR / "agent")],
+        extra_packages=["agent"],
         display_name=config["display_name"],
         description=config["description"],
     )
+
+
 
     print("\n==========================================")
     print(" SOC Agent Deployment Successful!")
