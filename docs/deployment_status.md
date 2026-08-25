@@ -36,7 +36,19 @@ The table below summarizes the catalog status, compute profile, and environment 
 
 ---
 
-## 2. Live Verified Deployment Records
+## 2. Empirical Benchmark & Throughput Metrics
+
+The following metrics were measured directly on active Google Cloud Vertex AI dedicated prediction endpoints running Google Model Garden vLLM serving containers:
+
+| Model Flavor Key | Generation & Size | Machine Type | GPU Configuration | TP Size | Avg Latency | Avg Output | Tokens / Sec (TPS) | Tokens / Min (TPM) | Hourly Cost |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`gemma-3-12b-it`** | Gemma 3 12B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **4.90 s** | 226 tokens | **46.2 tok/s** | **2,769 tok/min** | $3.36/hr |
+| **`gemma-3-4b-it`** | Gemma 3 4B | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | **5.45 s** | 246 tokens | **45.2 tok/s** | **2,710 tok/min** | $0.76/hr |
+| **`gemma-2-9b-it`** | Gemma 2 9B | **`g2-standard-12`** | 1x NVIDIA L4 (24 GB) | 1 | **17.55 s** | 341 tokens | **19.5 tok/s** | **1,170 tok/min** | $0.83/hr |
+
+---
+
+## 3. Live Verified Deployment Records
 
 ### Gemma 2 9B (`gemma-2-9b-it`)
 
