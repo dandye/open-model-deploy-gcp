@@ -147,9 +147,10 @@ agent-deploy:
 agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" LIVE_MCP="false":
     @uv run python3 -m agent.test_agent "{{PROMPT}}" --soc {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}}
 
-# Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [endpoint])
-agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="":
-    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
+# Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [endpoint] [live_mcp])
+agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="" LIVE_MCP="false":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
+
 
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":

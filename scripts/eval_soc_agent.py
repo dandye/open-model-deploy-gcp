@@ -119,10 +119,12 @@ def run_evaluation(
     managed_model: Optional[str] = None,
     project_id: str = "dandye-0324-chronicle",
     region: str = "us-central1",
+    use_live_mcp: bool = False,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     print("==================================================================")
     print(f" Running Gemma SOC Tier 1 Evaluation: {flavor}")
+    print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
     print("==================================================================")
 
     with open(evalset_path, "r", encoding="utf-8") as f:
@@ -134,10 +136,12 @@ def run_evaluation(
         endpoint_id=endpoint_id,
         cloudrun_url=cloudrun_url,
         managed_model=managed_model,
+        use_live_mcp=use_live_mcp,
     )
     agent.set_up()
 
     judge_client = genai.Client(vertexai=True, project=project_id, location=region)
+
 
     results: List[Dict[str, Any]] = []
     for case in evalset.get("eval_cases", []):
@@ -199,6 +203,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate Gemma SOC Agent against Rubrics.")
     parser.add_argument("--flavor", default="local-gemma", help="Model flavor name")
     parser.add_argument("--evalset", default="configs/evals/soc_tier1_evalset.json", help="Path to evalset JSON")
+    parser.add_argument("--live-mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
     parser.add_argument("--endpoint", default=None, help="Vertex AI Endpoint ID")
     parser.add_argument("--cloudrun-url", default=None, help="Cloud Run URL")
     parser.add_argument("--managed-model", default=None, help="Hosted MaaS model name")
@@ -215,7 +220,9 @@ def main() -> None:
         managed_model=args.managed_model,
         project_id=args.project_id,
         region=args.region,
+        use_live_mcp=args.live_mcp,
     )
+
 
     if args.output_report:
         report_path = Path(args.output_report)
