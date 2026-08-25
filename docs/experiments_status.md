@@ -26,6 +26,7 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-01b**| **Tuned Sampler Warmup (`--max-num-seqs=8`, 0.85 mem, CUDA Graphs)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 13.32 s | 11.24 s (10.20s warm) | 39 tok | **3.5 tok/s (3.8 warm)** | **211 tok/min (229 warm)** | **Verified & Torn Down** |
 | **EXP-02** | **vLLM Engine Tuning (`--kv-cache-dtype=fp8` & CUDA Graphs)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 13.32 s | 11.21 s (10.15s warm) | 39 tok | **3.5 tok/s (3.8 warm)** | **212 tok/min (230 warm)** | **Verified & Torn Down** |
 | **EXP-03** | **Architecture Comparison: Managed Model-as-a-Service vs Self-Deployed** | Global / Multi-Cluster | TPU v5e/v5p / H100 | N/A | Instant | < 1.0 s | 250+ tok | **50 – 100+ tok/s** | **3,000 – 6,000+ TPM** | **Documented in research.md** |
+| **EXP-04** | **Single High-Bandwidth GPU (`a2-ultragpu-1g`, 1x A100 80GB, TP=1)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | TBD | TBD | TBD | TBD | TBD | **In Progress** (Endpoint `7432316523475107840`) |
 
 ---
 
