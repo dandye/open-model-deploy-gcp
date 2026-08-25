@@ -35,6 +35,8 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-11** | **Gemma 3 27B Multimodal Concurrency Load Test on 4x L4 ($N=1, 2, 4, 8$)** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 9.83 s | 10.11 s (warm)| 952 tok | **94.1 tok/s (96.2 peak)** | **5,647 tok/min (5,773 peak)** | **Linear scaling to 8 streams, $9.92/1M tok (Verified & Torn Down)** |
 | **EXP-12** | **Gemma 3 27B Native Hardware FP8 Concurrency on 4x L4 ($N=1, 2, 4, 8$)** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 6.96 s | 6.53 s (warm) | 1,550 tok | **148.8 tok/s (Peak)** | **8,926 tok/min (Peak)** | **+58% throughput, -34% latency, $6.27/1M tok (Verified & Torn Down)** |
 | **EXP-13** | **Chunked Prefill & Prefix Caching Evaluation on Gemma 3 27B FP8** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 6.98 s | 6.87 s (warm) | 193 tok | **28.0 tok/s** | **1,680 tok/min** | **1.02x latency speedup, +9.9% TPS on warm prefixes (Verified & Torn Down)** |
+| **EXP-08b**| **Gemma 3 27B Prompt Lookup (N-gram) Speculative Decoding with FP8 on 4x L4** | `g2-standard-48` | 4x L4 (96 GB Ada Lovelace)| 4 | 8.39 s | 7.12 s (warm) | 198 tok | **25.5 tok/s (28.2 peak)** | **1,532 tok/min (1,693 peak)** | **Zero extra VRAM, verified operational & cleanly torn down** |
+
 
 
 
@@ -61,6 +63,8 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 | **`EXP-11`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B Concurrency)| ~0.1 min | ~14.3 min | ~2.8 min | ~1.2 min | ~0.0 min | **18.4 min** |
 | **`EXP-12`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B FP8 Quantization)| ~0.2 min | ~10.5 min | ~2.5 min | ~3.7 min | ~0.0 min | **16.9 min** |
 | **`EXP-13`** | `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B Prefix Caching) | ~0.2 min | ~0.0 min (Reused) | ~4.2 min | ~3.4 min | ~0.0 min | **7.8 min** |
+| **`EXP-08b`**| `g2-standard-48` | 4x NVIDIA L4 (Gemma 3 27B Speculative Decoding)| ~0.2 min | ~11.5 min | ~2.2 min | ~4.5 min | ~0.0 min | **18.4 min** |
+
 
 
 
@@ -363,6 +367,34 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
   * **Token Generation Throughput Gain**: Generation speed increased from 25.5 tok/s to **28.0 tok/s (+9.9% TPS improvement)** due to eliminated recomputation of the common prompt context.
   * **Optimal Application**: Prefix caching delivers greater speedups as shared prefix size scales (e.g. 2k–8k token RAG documentation chunks or few-shot exemplars).
 * **Status**: Benchmark Complete & Validated. Deployed Model `5380326010103267328` and Endpoint `7682606601642967040` **Cleanly Undeployed & Deleted** ($0 active billing).
+
+---
+
+### EXP-08b: Gemma 3 27B Prompt Lookup (N-gram) Speculative Decoding with FP8 on 4x L4
+* **Goal**: Benchmark hardware speculative decoding in vLLM using Prompt Lookup (`--speculative-model=[ngram]`) paired with native FP8 quantization on 4x NVIDIA L4 Ada Lovelace GPUs.
+* **Configuration**:
+  * Machine: `g2-standard-48` (4x NVIDIA L4, 96GB VRAM, Tensor Parallelism TP=4)
+  * Endpoint ID: `5532982204503687168` (`us-east1`)
+  * Container Image: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
+  * Model ID: `6666666653670965248` (`gemma-3-27b-it-quantization-fp8-specula-model-garden`)
+  * Flags: `--tensor-parallel-size=4`, `--gpu-memory-utilization=0.90`, `--max-model-len=8192`, `--swap-space=4`, `--limit_mm_per_prompt=image=5`, `--max-num-seqs=4`, `--quantization=fp8`, `--speculative-model=[ngram]`, `--num-speculative-tokens=5`, `--ngram-prompt-lookup-max=5`, `--ngram-prompt-lookup-min=2`
+* **Provisioning & Deployment Lifecycle**:
+  * Total Spin-Up Time: **18.4 minutes**
+  * Stage breakdown: Preparing model (0.2m), Creating cluster (11.5m), Adding nodes (2.2m), Image pull & Weight loading (4.5m).
+* **Empirical Benchmark Results**:
+  * **General Prompt Generation**:
+    * Run 1 (Cold): Latency = **8.39 s** | Est. Tokens = 195 | TPS = **23.2 tok/s** | TPM = 1,395 tok/min
+    * Run 2 (Warm): Latency = **7.12 s** | Est. Tokens = 201 | TPS = **28.2 tok/s** | TPM = 1,693 tok/min
+    * Average Latency: **7.76 s** (P50 = 7.76s, P90 = 8.26s, P99 = 8.38s) | Generation Speed = **25.5 tok/s** | Throughput = **1,532 tok/min**
+  * **Structured JSON / Code Rewriting Prompt**:
+    * Run 1: Latency = **6.21 s** | Est. Tokens = 120 | TPS = **19.3 tok/s** | TPM = 1,160 tok/min
+    * Run 2: Latency = **6.15 s** | Est. Tokens = 120 | TPS = **19.5 tok/s** | TPM = 1,172 tok/min
+    * Average Latency: **6.18 s** (P50 = 6.18s, P90 = 6.20s) | Generation Speed = **19.4 tok/s** | Throughput = **1,166 tok/min**
+* **Findings & Architectural Conclusions**:
+  * **Zero Extra VRAM Overhead**: Prompt Lookup (`--speculative-model=[ngram]`) requires 0 additional GPU memory or external draft models, operating entirely within existing GPU memory while proposing candidate speculative subsequences from the prompt and generated prefix.
+  * **Container CLI Syntax Resolution**: Identified that Model Garden Gemma serving containers require top-level flags (`--speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2`) and that complex container arguments must be escaped via custom delimiters (`^|^`) in `gcloud ai models upload` to prevent comma splitting.
+* **Status**: Benchmark Complete & Validated. Deployed Model `6666666653670965248` and Endpoint `5532982204503687168` **Cleanly Undeployed & Deleted** ($0 active billing).
+
 
 
 
