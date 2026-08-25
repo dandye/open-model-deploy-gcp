@@ -10,3 +10,5 @@
 *.tfvars
 !terraform.tfvars.example
 .vertex_active_operation
+
+notes.md

@@ -38,3 +38,5 @@ This document collects authoritative external references, Google Cloud community
 * [`docs/managed_vs_deploy.md`](managed_vs_deploy.md): Comparison of Managed Model-as-a-Service (MaaS) vs self-deployed GPU endpoints.
 * [`docs/cloudrun_deploy.md`](cloudrun_deploy.md): Serverless GPU deployment guide with scale-to-zero mechanics.
 * [`docs/gemma4_performance_optimization_plan.md`](gemma4_performance_optimization_plan.md): Systematic optimization roadmap for Gemma 4 serving throughput.
+* [Cloud Run GPU Configuration Guide](https://docs.cloud.google.com/run/docs/configuring/services/gpu#gcloud): Google Cloud official documentation for configuring NVIDIA L4 GPU acceleration and `--no-gpu-zonal-redundancy` on Cloud Run.
+* [Google Security Operations Remote MCP](https://docs.cloud.google.com/chronicle/docs/secops/use-google-secops-mcp): Official documentation for configuring Google SecOps Remote MCP servers with AI agents and application frameworks.
