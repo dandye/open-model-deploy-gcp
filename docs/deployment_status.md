@@ -31,7 +31,7 @@ The table below summarizes the catalog status, compute profile, and environment 
 | `gemma-3-27b-it` | Gemma 3 (Vision) | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 | `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
-| `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
+| `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 | `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 
 ---
@@ -46,6 +46,7 @@ The following metrics were measured directly on active Google Cloud Vertex AI de
 | **`gemma-2-2b-it`** | Gemma 2 2.6B | **`g2-standard-4`** | 1x NVIDIA L4 (24 GB) | 1 | **3.99 s** | 236 tokens | **59.3 tok/s** | **3,556 tok/min** | $0.70/hr |
 | **`gemma-3-12b-it`** | Gemma 3 12B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **4.90 s** | 226 tokens | **46.2 tok/s** | **2,769 tok/min** | $3.36/hr |
 | **`gemma-3-4b-it`** | Gemma 3 4B | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | **5.45 s** | 246 tokens | **45.2 tok/s** | **2,710 tok/min** | $0.76/hr |
+| **`gemma-2-27b-it`** | Gemma 2 27B | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **9.26 s** | 243 tokens | **26.3 tok/s** | **1,576 tok/min** | $3.36/hr |
 | **`gemma-3-27b-it`** | Gemma 3 27B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **9.63 s** | 228 tokens | **23.7 tok/s** | **1,423 tok/min** | $3.36/hr |
 | **`gemma-2-9b-it`** | Gemma 2 9B | **`g2-standard-12`** | 1x NVIDIA L4 (24 GB) | 1 | **17.55 s** | 341 tokens | **19.5 tok/s** | **1,170 tok/min** | $0.83/hr |
 | **`gemma-4-31b-it`** | Gemma 4 31B (Reasoner) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **12.76 s** | 39 tokens | **3.1 tok/s** | **183 tok/min** | $3.36/hr |
@@ -192,25 +193,35 @@ Explain the key advantages of open models in 2 paragraphs.
 * **Generation Speed**: **23.7 tokens/sec (TPS)**
 * **Throughput**: **1,423 tokens/min (TPM)**
 
----
-
-## 3. Parallel Deployment Records
-
-### Gemma 4 31B Multimodal Reasoner (`gemma-4-31b-it`)
+### Gemma 2 27B Instruct (`gemma-2-27b-it`)
 
 * **Deployment Environment**: Vertex AI Online Prediction
-* **Region**: `us-west1` (Oregon)
-* **Model Size**: 31.0B parameters (multimodal text, image, video reasoning, tool calling)
-* **Source URI**: `gs://vertex-model-garden-restricted-us/gemma4/gemma-4-31B-it`
-* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4`
+* **Region**: `us-east1` (North Virginia)
+* **Endpoint Name**: `gemma-2-27b-it-endpoint-20260825-0149`
+* **Endpoint ID**: `6138997829361729536`
+* **Deployed Model ID**: `6370770482450399232`
+* **Model Registry ID**: `4643987471028191232`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
 * **Machine Type**: `g2-standard-48` (48 vCPUs, 192 GB Host RAM, 4 x NVIDIA L4 GPUs 96GB total VRAM)
 * **Tensor Parallelism**: `tensor-parallel-size=4`
 * **Hourly Cost**: $3.36/hour
 * **vLLM Engine Configuration**:
   * `gpu-memory-utilization`: `0.90`
-  * `max-model-len`: `16384`
-  * `extraArgs`: `["--limit-mm-per-prompt.image=4", "--limit-mm-per-prompt.video=1", "--enable-auto-tool-choice", "--tool-call-parser=gemma4", "--reasoning-parser=gemma4"]`
-* **Status**: Registering & deploying in parallel.
+  * `max-model-len`: `8192`
+  * `swap-space`: `4`
+
+#### Verified Live Test Output & Benchmark
+
+**Prompt**:
+```text
+Explain the key advantages of open models in 2 paragraphs.
+```
+
+**Vertex AI Benchmark Results**:
+* **Avg Latency**: 9.26 s
+* **Avg Output Length**: 243 tokens
+* **Generation Speed**: **26.3 tokens/sec (TPS)**
+* **Throughput**: **1,576 tokens/min (TPM)**
 
 ---
 
