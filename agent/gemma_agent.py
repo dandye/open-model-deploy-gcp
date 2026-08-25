@@ -202,21 +202,28 @@ class GemmaAgent:
 
         # Strategy 3: Fallback / Managed Model
         if self.managed_model:
-            token_res = subprocess.run(["gcloud", "auth", "print-access-token"], capture_output=True, text=True)
-            token = token_res.stdout.strip()
-            import urllib.request
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.managed_model}:generateContent"
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            }
-            payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-            candidates = data.get("candidates", [])
-            text = candidates[0]["content"]["parts"][0]["text"] if candidates else "No response"
-            return {"response": text, "backend": "Managed MaaS / Gemini API", "model": self.managed_model}
+            try:
+                from google import genai
+                from google.genai import types
+                client = genai.Client(vertexai=True, project=self.project_id, location=self.region)
+                config = types.GenerateContentConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                    system_instruction=self.system_instruction,
+                    tools=self.tools if self.tools else None,
+                )
+                chat = client.chats.create(model=self.managed_model, config=config)
+                res = chat.send_message(prompt)
+                return {
+                    "response": res.text or "",
+                    "backend": f"Vertex AI Model Garden / MaaS ({self.managed_model})",
+                    "model": self.managed_model,
+                }
+            except Exception as e:
+                return {
+                    "error": f"Managed model query failed: {e}",
+                    "backend": "Managed Model Error",
+                }
 
         return {
             "error": "No active Gemma endpoint found and no managed model configured. Deploy a model with 'just vertex-deploy <flavor>' or specify an endpoint ID.",
