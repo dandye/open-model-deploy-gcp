@@ -160,15 +160,15 @@
     "sourceUri": "gs://vertex-model-garden-restricted-us/gemma4/gemma-4-31B-it",
     "hfRepo": "google/gemma-4-31B-it",
     "compute": {
-      "machineType": "a2-ultragpu-1g",
-      "acceleratorType": "nvidia-a100-80gb",
-      "acceleratorCount": 1,
+      "machineType": "a2-highgpu-2g",
+      "acceleratorType": "nvidia-tesla-a100",
+      "acceleratorCount": 2,
       "hostRamGb": 170,
-      "hourlyCostUsd": 3.67
+      "hourlyCostUsd": 7.34
     },
     "runtime": {
       "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4",
-      "tensorParallelSize": 1,
+      "tensorParallelSize": 2,
       "swapSpaceGb": 0,
       "gpuMemoryUtilization": 0.90,
       "maxModelLen": 8192,

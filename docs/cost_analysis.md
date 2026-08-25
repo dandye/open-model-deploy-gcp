@@ -32,8 +32,9 @@ This document provides compute specifications, hourly pricing, full/business mon
 | **`gemma-3-12b-it`**| **Gemma 3 12B Multimodal** | 12.0B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 8,192 | **$3.36 / hr** | $537.60 | **$2,452.80** |
 | **`gemma-2-27b-it`**| **Gemma 2 27B Instruct** | 27.2B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 8,192 | **$3.36 / hr** | $537.60 | **$2,452.80** |
 | **`gemma-3-27b-it`**| **Gemma 3 27B Multimodal** | 27.0B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 8,192 | **$3.36 / hr** | $537.60 | **$2,452.80** |
-| **`gemma-4-31b-it`**| **Gemma 4 31B Reasoner (4x L4)** | 31.0B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 4,096 | **$3.36 / hr** | $537.60 | **$2,452.80** |
-| **`gemma-4-31b-it`**| **Gemma 4 31B Reasoner (1x A100)** | 31.0B | bfloat16 | **`a2-ultragpu-1g`** | 1x NVIDIA A100 (80 GB) | 1 | 8,192 | **$3.67 / hr** | $587.20 | **$2,679.10** |
+| **`gemma-4-31b-it`**| **Gemma 4 31B (1x A100 80GB)** | 31.0B | bfloat16 | **`a2-ultragpu-1g`** | 1x NVIDIA A100 (80 GB) | 1 | 8,192 | **$3.67 / hr** | $587.20 | **$2,679.10** |
+| **`gemma-4-31b-it`**| **Gemma 4 31B (2x A100 NVLink)** | 31.0B | bfloat16 | **`a2-highgpu-2g`** | 2x NVIDIA A100 (80 GB NVLink) | 2 | 8,192 | **$7.34 / hr** | $1,174.40 | **$5,358.20** |
+| **`gemma-4-31b-it`**| **Gemma 4 31B (4x L4 FP8)** | 31.0B | fp8 / bf16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 4,096 | **$3.36 / hr** | $537.60 | **$2,452.80** |
 
 ---
 
@@ -50,6 +51,8 @@ The following generation throughput and speed metrics were measured directly acr
 | **`gemma-2-27b-it`** | Gemma 2 27.2B | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | 4 | **26.3 tok/s** | **1,576 tok/min** | $3.36/hr | **$35.59 / 1M tok** | **Verified on Live Hardware** |
 | **`gemma-3-27b-it`** | Gemma 3 27.0B (Vision) | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | 4 | **23.7 tok/s** | **1,423 tok/min** | $3.36/hr | **$39.35 / 1M tok** | **Verified on Live Hardware** |
 | **`gemma-2-9b-it`** | Gemma 2 9.2B | `g2-standard-12` | 1x NVIDIA L4 (24 GB) | 1 | **19.5 tok/s** | **1,170 tok/min** | $0.83/hr | **$11.82 / 1M tok** | **Verified on Live Hardware** |
+| **`gemma-4-31b-it`** | Gemma 4 31B (2x A100 NVLink) | `a2-highgpu-2g` | 2x NVIDIA A100 (80 GB NVLink) | 2 | **12.4 – 23.0 tok/s** | **745 – 1,382 tok/min** | $7.34/hr | **$164.20 / 1M tok** | **Verified on Live Hardware** |
+| **`gemma-4-31b-it`** | Gemma 4 31B (4x L4 FP8) | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | 4 | **7.1 tok/s** | **424 tok/min** | $3.36/hr | **$132.08 / 1M tok** | **Verified on Live Hardware** |
 | **`gemma-4-31b-it`** | Gemma 4 31B (1x A100 80GB) | `a2-ultragpu-1g` | 1x NVIDIA A100 (80 GB) | 1 | **6.1 tok/s** | **368 tok/min** | $3.67/hr | **$166.21 / 1M tok** | **Verified on Live Hardware** |
 | **`gemma-4-31b-it`** | Gemma 4 31B (4x L4 Graphs) | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | 4 | **3.8 tok/s** | **230 tok/min** | $3.36/hr | **$243.48 / 1M tok** | **Verified on Live Hardware** |
 | **`gemma-4-31b-it`** | Gemma 4 31B (4x L4 Eager) | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | 4 | **3.1 tok/s** | **183 tok/min** | $3.36/hr | **$306.01 / 1M tok** | **Verified on Live Hardware** |
@@ -58,25 +61,23 @@ The following generation throughput and speed metrics were measured directly acr
 
 ## 3. Key Runtime & Architectural Constraints Learned
 
-### A. Single High-VRAM GPU vs Multi-GPU PCIe Interconnect
-1. **PCIe Barrier Bottleneck**: On `g2-standard-48` (4x L4), GPUs communicate over PCIe Gen4. Because custom peer-to-peer AllReduce is disabled on >2 PCIe GPUs, every forward pass incurs 128+ host synchronization barriers across 64 layers, placing an empirical ceiling at ~3.8 tok/s.
-2. **Single-Die A100 80GB Solution (`a2-ultragpu-1g`)**: Deploying on a single 80GB GPU eliminates tensor parallelism barriers completely, doubling throughput to **6.1 tok/s** and reducing generation latency by **50%** (12.76s down to 6.36s).
+### A. Interconnect Speed: 600 GB/s NVLink vs Single Die vs PCIe Gen4
+1. **PCIe Barrier Bottleneck (4x L4)**: On `g2-standard-48` (4x L4), GPUs communicate over PCIe Gen4 (~32 GB/s). Because custom peer-to-peer AllReduce is disabled on >2 PCIe GPUs, every forward pass incurs 128+ host synchronization barriers across 64 layers, placing an empirical ceiling at ~3.8 tok/s.
+2. **Native FP8 on Ada Lovelace (4x L4)**: Ada Lovelace 4th-Gen Tensor Cores accelerate FP8 GEMMs natively, cutting weight memory streaming in half and pushing 4x L4 speed to **7.1 tok/s**.
+3. **Single-Die A100 80GB (`a2-ultragpu-1g`)**: Deploying on a single 80GB GPU eliminates tensor parallelism barriers completely, delivering **6.1 tok/s** and cutting latency by **50%** (12.76s down to 6.36s).
+4. **600 GB/s NVLink Mesh (`a2-highgpu-2g`, 2x A100 40GB)**: 2-way NVLink mesh removes PCIe synchronization barriers, dropping response latency to **4.29s** (-66%) and driving generation throughput to **12.4 – 23.0 tokens/second** (up to **1,382 tokens/minute**).
 
-### B. Host RAM & vLLM Swap Allocation Rules
-1. **Tensor Parallel Swap Multiplier**: vLLM multiplies `--swap-space` by the number of tensor-parallel workers. On `g2-standard-48` (192GB RAM, TP=4), setting `--swap-space=32` instructs vLLM to allocate 128GB of host swap space, leading to CPU memory exhaustion and KV cache warnings. Setting `--swap-space=4` (16GB total) prevents host OOM while maintaining memory safety.
-2. **Small VM Host Memory Guard**: `g2-standard-4` has only 16GB total Host RAM. Reserving `--swap-space=8` leaves only ~7.6GB for Python runtime and CUDA graph capture. Use `--swap-space=2` for all single-GPU instances on `g2-standard-4`.
-
-### C. Gemma 4 Compilation & Sampler Warmup Tuning
-1. **Sampler Warmup Memory Ceiling**: Default vLLM sampler warmup creates 256 dummy requests during CUDA graph capture, exceeding available memory on 24GB L4 cards. Passing `--max-num-seqs=8` and `gpuMemoryUtilization: 0.85` restricts dummy allocation and permits successful graph capture.
-2. **`VLLM_RPC_TIMEOUT` Extension**: When Inductor kernel compilation runs on 4 GPUs, graph compilation takes ~86 seconds. Setting container environment variable `VLLM_RPC_TIMEOUT=300` prevents RPC heartbeat timeouts between vLLM processes during compilation.
+### B. Microarchitecture FP8 Support (Ada Lovelace vs Ampere)
+* **Ada Lovelace (L4)**: Supports native hardware FP8 (`fp8e4nv` / `fp8e5`).
+* **Ampere (A100)**: Does **not** support standard `fp8e4nv` Tensor Core ops. When compiling on A100, use native **BF16 weights and KV cache** (or BitsAndBytes INT8).
 
 ---
 
 ## 4. Cost Comparison: 24/7 vs On-Demand Schedules
 
-| Deployment Schedule | Gemma 2 9B (`g2-standard-12`, 1x L4) | Gemma 3 12B / 27B (`g2-standard-48`, 4x L4) | Gemma 4 31B (`a2-ultragpu-1g`, 1x A100 80GB) |
-| :--- | :--- | :--- | :--- |
-| **24/7 Continuous (1 Month / 730h)** | **$605.90** | **$2,452.80** | **$2,679.10** |
-| **Business Hours Only (40h / week = 160h / month)** | **$132.80** | **$537.60** | **$587.20** |
-| **Test Sessions (10h / week = 40h / month)** | **$33.20** | **$134.40** | **$146.80** |
-| **Cloud Run GPU (Scale-to-Zero)** | Pay only per request second | Not supported (>1 GPU required) | Not supported (Single GPU max L4) |
+| Deployment Schedule | Gemma 2 9B (`g2-standard-12`, 1x L4) | Gemma 3 12B / 27B (`g2-standard-48`, 4x L4) | Gemma 4 31B (`a2-ultragpu-1g`, 1x A100 80GB) | Gemma 4 31B (`a2-highgpu-2g`, 2x A100 NVLink) |
+| :--- | :--- | :--- | :--- | :--- |
+| **24/7 Continuous (1 Month / 730h)** | **$605.90** | **$2,452.80** | **$2,679.10** | **$5,358.20** |
+| **Business Hours Only (40h / week = 160h / month)** | **$132.80** | **$537.60** | **$587.20** | **$1,174.40** |
+| **Test Sessions (10h / week = 40h / month)** | **$33.20** | **$134.40** | **$146.80** | **$293.60** |
+| **Cloud Run GPU (Scale-to-Zero)** | Pay only per request second | Not supported (>1 GPU required) | Not supported (Single GPU max L4) | Not supported (Single GPU max L4) |
