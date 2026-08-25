@@ -3,6 +3,16 @@
 *.swp
 .DS_Store
 
+# Python & Testing
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.superpowers/
+
 # Terraform
 **/.terraform/
 *.tfstate
