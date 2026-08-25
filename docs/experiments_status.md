@@ -33,7 +33,27 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 
 ---
 
-## 2. Detailed Experiment Logs
+## 2. Deployment Stage Timing & Provisioning Latency Analysis
+
+Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before inference traffic is accepted:
+1. **`PREPARING_MODEL`**: Model registration, container parameter parsing, and IAM policy resolution.
+2. **`CREATING_SERVING_CLUSTER`**: Dynamic Google Compute Engine (GCE) VM and physical GPU allocation.
+3. **`ADDING_NODES_TO_CLUSTER`**: Node joining to Vertex AI Kubernetes serving cluster and driver initialization.
+4. **`GETTING_CONTAINER_IMAGE`**: Pulling custom vLLM Model Garden container image from Artifact Registry.
+5. **`CONTAINER_STARTING` / Weight Download**: Model weights transfer from Cloud Storage (`gs://`), vLLM initialization, and CUDA graph warmup.
+
+### Stage Duration Breakdown by Experiment
+
+| Exp ID | Machine Type | GPU Hardware & Topology | Preparing Model | Creating Cluster | Adding Nodes | Container Image Pull | Container / Weight Init | Total Spin-Up Time |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`EXP-04`** | `a2-ultragpu-1g` | 1x NVIDIA A100 80GB (Single Die) | ~0.2 min | ~5.5 min | ~2.1 min | ~2.3 min | ~2.0 min | **12.1 min** |
+| **`EXP-06`** | `g2-standard-48` | 4x NVIDIA L4 (96 GB Ada Lovelace) | ~0.2 min | ~7.0 min | ~2.5 min | ~2.4 min | ~2.2 min | **14.3 min** |
+| **`EXP-07b`**| `a2-highgpu-2g` | 2x NVIDIA A100 40GB (600 GB/s NVLink)| ~0.2 min | ~2.5 min | ~2.3 min | ~3.0 min | ~2.3 min | **10.3 min** |
+| **`EXP-08`** | `a2-ultragpu-1g` | 1x NVIDIA A100 80GB (Speculative Decoding)| ~0.1 min | ~16.2 min | In Progress | ... | ... | In Flight |
+
+---
+
+## 3. Detailed Experiment Logs
 
 ### EXP-00: Baseline (Eager Mode)
 * **Goal**: Establish baseline throughput on default Vertex AI container wrapper.
