@@ -71,6 +71,20 @@ catalog_get_gpu_mem_util() {
   catalog_get "$1" ".runtime.gpuMemoryUtilization"
 }
 
+catalog_get_extra_args() {
+  local model_key="$1"
+  jq -r ".[\"$model_key\"].runtime.extraArgs // [] | .[]" "$CATALOG_FILE" 2>/dev/null || true
+}
+
+get_runtime_extra_args() {
+  catalog_get_extra_args "$@"
+}
+
+catalog_get_extra_args_csv() {
+  local model_key="$1"
+  jq -r '.["'"$model_key"'"].runtime.extraArgs // [] | join(",")' "$CATALOG_FILE" 2>/dev/null || true
+}
+
 catalog_get_container_image() {
   local model_key="$1"
   local img
@@ -87,3 +101,4 @@ catalog_supports_target() {
   local target="$2"
   jq -e ".[\"$model_key\"].supportedTargets | index(\"$target\") != null" "$CATALOG_FILE" >/dev/null 2>&1
 }
+

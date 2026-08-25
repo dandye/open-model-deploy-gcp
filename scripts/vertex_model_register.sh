@@ -15,7 +15,13 @@ source "${SCRIPT_DIR}/lib/model_catalog.sh"
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 MODEL_FLAVOR="${1:-${GEMMA_MODEL_FLAVOR:-gemma-2-9b-it}}"
 REGION="${2:-${GCP_REGION:-us-central1}}"
-MODEL_DISPLAY_NAME="${3:-${MODEL_FLAVOR}-model-garden}"
+if [[ -n "${EXTRA_VLLM_FLAGS:-}" ]]; then
+  FLAGS_SLUG=$(echo "$EXTRA_VLLM_FLAGS" | tr -cs 'a-zA-Z0-9' '-' | sed 's/^-//;s/-$//' | cut -c1-24)
+  DEFAULT_DISPLAY_NAME="${MODEL_FLAVOR}-${FLAGS_SLUG}-model-garden"
+else
+  DEFAULT_DISPLAY_NAME="${MODEL_FLAVOR}-model-garden"
+fi
+MODEL_DISPLAY_NAME="${3:-${VERTEX_MODEL_DISPLAY_NAME:-$DEFAULT_DISPLAY_NAME}}"
 
 # Validate model exists in catalog
 if ! catalog_model_exists "$MODEL_FLAVOR"; then
@@ -60,10 +66,21 @@ if [[ "$MODEL_FAMILY" != "gemma4" ]]; then
 fi
 
 # Append extra arguments if present
-if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" ]]; then
+if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" && "$EXTRA_ARGS_JSON" != "null" ]]; then
   EXTRA_ARGS_CSV=$(echo "$EXTRA_ARGS_JSON" | jq -r 'join(",")')
-  CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_ARGS_CSV}"
+  if [[ -n "$EXTRA_ARGS_CSV" ]]; then
+    CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_ARGS_CSV}"
+  fi
 fi
+
+# Append dynamic runtime flags (EXTRA_VLLM_FLAGS) if provided
+if [[ -n "${EXTRA_VLLM_FLAGS:-}" ]]; then
+  EXTRA_VLLM_CSV=$(echo "$EXTRA_VLLM_FLAGS" | tr ' ' '\n' | tr ',' '\n' | grep -v '^$' | paste -sd, -)
+  if [[ -n "$EXTRA_VLLM_CSV" ]]; then
+    CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_VLLM_CSV}"
+  fi
+fi
+
 
 CONTAINER_IMAGE=$(catalog_get_container_image "$MODEL_FLAVOR")
 

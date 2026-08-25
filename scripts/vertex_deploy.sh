@@ -15,6 +15,8 @@ source "${SCRIPT_DIR}/lib/model_catalog.sh"
 PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 MODEL_FLAVOR="${1:-${GEMMA_MODEL_FLAVOR:-gemma-2-9b-it}}"
 REGION="${2:-${GCP_REGION:-us-central1}}"
+EXTRA_VLLM_FLAGS="${EXTRA_VLLM_FLAGS:-}"
+export EXTRA_VLLM_FLAGS
 
 # Validate model exists in catalog
 if ! catalog_model_exists "$MODEL_FLAVOR"; then
@@ -40,6 +42,9 @@ echo "Region:       $REGION"
 echo "Model Flavor: $MODEL_FLAVOR"
 echo "Endpoint:     $ENDPOINT_NAME"
 echo "Machine Type: $MACHINE_TYPE ($ACCELERATOR_COUNT x $ACCELERATOR_TYPE)"
+if [[ -n "$EXTRA_VLLM_FLAGS" ]]; then
+  echo "Extra Flags:  $EXTRA_VLLM_FLAGS"
+fi
 echo "=========================================="
 
 echo "Step 1/3: Resolving Model ID from Model Registry..."
