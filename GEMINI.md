@@ -8,8 +8,8 @@ This file provides architectural context, commands, and project conventions for 
 
 This repository contains automation scripts, Terraform modules, `Justfile` recipes, and documentation for deploying Google Gemma models on Google Cloud Platform across two runtime environments:
 
-1. **Vertex AI Online Prediction**: Dedicated GPU virtual machines (`g2-standard-4`, `g2-standard-12`, `g2-standard-48`) for persistent model serving.
-2. **Cloud Run with GPU**: Serverless containers (`1x NVIDIA L4 GPU`, `--min-instances=0`) enabling true scale-to-zero when idle ($0 idle cost).
+1. **Vertex AI Online Prediction**: Dedicated GPU virtual machines (`g2-standard-4`, `g2-standard-8`, `g2-standard-12`, `g2-standard-48`) for persistent model serving.
+2. **Cloud Run with GPU**: Serverless containers (`1x NVIDIA L4 GPU`, `--min-instances=0`) enabling scale-to-zero when idle ($0 idle cost).
 
 ---
 
@@ -18,18 +18,30 @@ This repository contains automation scripts, Terraform modules, `Justfile` recip
 The repository uses a single source of truth at [`configs/models.json`](configs/models.json) defining compute, runtime, VRAM, and target environment compatibility for all supported Gemma variants:
 * **Gemma 2 2B / 9B / 27B** (`gemma-2-2b-it`, `gemma-2-9b-it`, `gemma-2-27b-it`)
 * **Gemma 3 1B / 4B / 12B / 27B** (`gemma-3-1b-it`, `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3-27b-it`)
+* **Gemma 4 31B** (`gemma-4-31b-it`)
 
 All bash scripts, Terraform modules, and CLI commands read dynamically from this catalog via [`scripts/lib/model_catalog.sh`](scripts/lib/model_catalog.sh) and Terraform `jsondecode()`.
 
 ---
 
-## 3. Key Architectural Constraints & Lessons Learned
+## 3. Project Conventions & Agent Guardrails
+
+* **No Emojis**: Never use emojis in code, commits, comments, or documentation.
+* **Shell Variables**: Always define shell variables explicitly (`PROJECT_ID="..."`) before expanding (`$PROJECT_ID`).
+* **Worktree Portability**: All scripts and tools must resolve paths relative to the repository root (`ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`).
+* **Cost Awareness**: Dedicated GPU endpoints do not support scale-to-zero. Always run `just vertex-undeploy` after testing to stop active GPU billing.
+
+---
+
+## 4. Key Architectural Constraints & Lessons Learned
 
 ### Vertex AI Prediction
 * **Host RAM & Swap Space**: Custom Model Garden container specifications must set `--swap-space` appropriately (`8` for <=32GB RAM, `16` for 48GB RAM, `32` for 192GB RAM) to avoid `ValueError: Too large swap space`.
+* **Gemma 4 Custom Container**: `gemma-4-31b-it` uses a dedicated container image (`us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4`) with `swapSpaceGb: 0` and omits `--disable-log-stats`.
+* **Multimodal Configuration**: Gemma 3 12B and 27B require multimodal CLI arguments in vLLM (`--limit_mm_per_prompt=image=5` and `--max-num-seqs=4`).
 * **Accelerator Count Mappings**: On GCP `g2` instances:
   * `g2-standard-4`, `g2-standard-8`, `g2-standard-12`, `g2-standard-16`: Exactly **1x L4** (`count=1`).
-  * `g2-standard-48`: Exactly **2x L4** (`count=2`) or **4x L4** (`count=4`).
+  * `g2-standard-48`: Exactly **4x L4** (`count=4`).
 * **Container Entrypoint**: Do **not** override `command` in `gcloud ai models upload` when using Google Model Garden images; allow Google's default container wrapper to download `gs://` weights locally before launching vLLM.
 * **Model IDs**: `gcloud ai endpoints deploy-model` requires the **numeric/registered Model ID** from Vertex AI Model Registry.
 * **Billing**: Dedicated GPU endpoints do **not** support `min-replica-count=0`. To stop billing, run `just vertex-undeploy`.
@@ -41,11 +53,11 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
 
 ---
 
-## 4. Primary Commands (`Justfile`)
+## 5. Primary Commands (`Justfile`)
 
 | Recipe | Action |
 | :--- | :--- |
-| `just` | Display categorized, color-coded help menu |
+| `just` | Display categorized help menu |
 | `just status` | Print unified live dashboard of all Vertex AI and Cloud Run resources |
 | `just auth-check` | Verify gcloud account, project configuration & ADC token validity |
 | `just model-list` | List models in catalog (`configs/models.json`) & registered models |
@@ -67,12 +79,19 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
 
 ---
 
-## 5. File Tree
+## 6. File Tree
 
 * [`configs/models.json`](configs/models.json): Central model specifications & compute catalog.
 * [`Justfile`](Justfile): Command definitions.
 * [`.env.example`](.env.example): Environment variable template.
 * [`scripts/lib/model_catalog.sh`](scripts/lib/model_catalog.sh): Model catalog helper library.
-* [`scripts/`](scripts/): Automation scripts for all deployment and query operations.
+* [`scripts/`](scripts/): Automation scripts for deployment, quota management, and query operations.
+  * [`scripts/benchmark.py`](scripts/benchmark.py): Model latency and throughput benchmarking tool.
 * [`terraform/`](terraform/): Terraform Infrastructure-as-Code definitions.
 * [`docs/`](docs/): Operational, architectural, and cost analysis documentation.
+  * [`docs/deployment_status.md`](docs/deployment_status.md): Active deployment registry and operational tracking.
+  * [`docs/experiments_status.md`](docs/experiments_status.md): Vertex AI optimization experiment tracking and benchmarks.
+  * [`docs/cloudrun_experiments_status.md`](docs/cloudrun_experiments_status.md): Cloud Run GPU experiment tracking and benchmarks.
+  * [`docs/cost_analysis.md`](docs/cost_analysis.md): Hardware pricing and sizing breakdown.
+  * [`docs/vertex_cleanup_strategies.md`](docs/vertex_cleanup_strategies.md): Endpoint and resource cleanup guide.
+  * [`docs/cloudrun_deploy.md`](docs/cloudrun_deploy.md): Cloud Run GPU guide and scale-to-zero mechanics.

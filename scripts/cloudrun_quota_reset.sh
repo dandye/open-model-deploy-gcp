@@ -22,8 +22,8 @@ echo "=========================================="
 
 echo "Step 1/2: Checking existing quota preferences for run.googleapis.com..."
 PREFERENCES=$(gcloud quotas preferences list \
-  --service="run.googleapis.com" \
   --project="$PROJECT_ID" \
+  --filter="quotaId~NvidiaL4GpuAlloc" \
   --format="value(name)" 2>/dev/null || true)
 
 if [[ -n "$PREFERENCES" ]]; then
@@ -38,14 +38,18 @@ else
   echo "No existing named preferences found."
 fi
 
+# Resolve contact email
+CONTACT_EMAIL=$(gcloud config get-value account 2>/dev/null || echo "admin@dandye.altostrat.com")
+
 echo ""
 echo "Step 2/2: Submitting quota reset request (preferred-value=0)..."
 gcloud quotas preferences create \
   --service="run.googleapis.com" \
   --project="$PROJECT_ID" \
-  --quota-id="nvidia-l4-gpus-per-project-region" \
+  --quota-id="NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion" \
   --dimensions="region=$REGION" \
   --preferred-value=0 \
+  --email="$CONTACT_EMAIL" \
   --allow-high-percentage-quota-decrease \
   --justification="Resetting test Cloud Run GPU quota back to 0" || {
     echo "Note: Quota limit can also be adjusted via console at:"

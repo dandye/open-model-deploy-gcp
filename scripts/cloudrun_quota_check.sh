@@ -18,25 +18,38 @@ echo "Checking Cloud Run NVIDIA L4 GPU quota in $REGION..."
 # 1. Ensure Cloud Quotas API is enabled
 gcloud services enable cloudquotas.googleapis.com --project="$PROJECT_ID" >/dev/null 2>&1 || true
 
-# 2. Check current limit using Cloud Quotas API
-LIMIT=$(gcloud quotas info list \
-  --service="run.googleapis.com" \
+# 2. Check current limit or preference using Cloud Quotas API
+GRANTED=$(gcloud quotas preferences list \
   --project="$PROJECT_ID" \
-  --filter="quotaId:gpu AND (dimensions.region:$REGION OR dimensions.location:$REGION)" \
-  --format="value(currentLimit)" 2>/dev/null | head -n 1 || echo "")
+  --filter="quotaId:NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion AND dimensions.region:$REGION" \
+  --format="value(quotaConfig.grantedValue)" 2>/dev/null | head -n 1 || echo "")
 
-if [[ -n "$LIMIT" && "$LIMIT" != "0" ]]; then
-  echo "[OK] Cloud Run GPU Quota verified (Current limit: $LIMIT in $REGION)."
+RECONCILING=$(gcloud quotas preferences list \
+  --project="$PROJECT_ID" \
+  --filter="quotaId:NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion AND dimensions.region:$REGION" \
+  --format="value(reconciling)" 2>/dev/null | head -n 1 || echo "")
+
+if [[ -n "$GRANTED" && "$GRANTED" != "0" ]]; then
+  echo "[OK] Cloud Run GPU Quota verified (Granted limit: $GRANTED in $REGION)."
   exit 0
 fi
 
-# If limit is 0 or could not be determined
-echo "[WARNING] Cloud Run NVIDIA L4 GPU quota appears to be 0 or pending approval in $REGION."
-echo "If your quota was just submitted, Google Cloud may take a few minutes to process the approval."
+if [[ "$RECONCILING" == "True" || "$RECONCILING" == "true" ]]; then
+  echo "[INFO] Cloud Run GPU quota request is currently reconciling/pending in $REGION."
+else
+  echo "[WARNING] Cloud Run NVIDIA L4 GPU quota appears to be 0 or unrequested in $REGION."
+fi
 echo ""
 echo "To check or edit your quota request, visit:"
 echo "  https://console.cloud.google.com/iam-admin/quotas?project=$PROJECT_ID&filter=service:run.googleapis.com"
 echo ""
+
+# Non-interactive or auto-prompt
+if [[ ! -t 0 ]]; then
+  echo "Non-interactive shell detected. Continuing..."
+  exit 0
+fi
+
 read -r -p "Do you want to proceed with deployment anyway? (y/N): " PROCEED
 if [[ "$PROCEED" =~ ^[Yy]$ ]]; then
   exit 0

@@ -23,23 +23,28 @@ echo "Requested:    $DESIRED_GPUS x NVIDIA L4 GPU"
 echo "=========================================="
 
 # 1. Enable Cloud Quotas API
-echo "Step 1/2: Enabling Cloud Quotas API..."
+echo "Step 1/2: Ensuring Cloud Quotas API is enabled..."
 gcloud services enable cloudquotas.googleapis.com --project="$PROJECT_ID"
 
+# Resolve contact email
+CONTACT_EMAIL=$(gcloud config get-value account 2>/dev/null || echo "admin@dandye.altostrat.com")
+
 # 2. Submit Quota Preference
-echo "Step 2/2: Submitting Quota Preference Request..."
+echo "Step 2/2: Submitting Quota Preference Request for $CONTACT_EMAIL..."
 gcloud quotas preferences create \
   --service="run.googleapis.com" \
   --project="$PROJECT_ID" \
-  --quota-id="nvidia-l4-gpus-per-project-region" \
+  --quota-id="NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion" \
   --dimensions="region=$REGION" \
   --preferred-value="$DESIRED_GPUS" \
+  --email="$CONTACT_EMAIL" \
   --justification="Gemma model inference on Cloud Run" || {
     echo ""
-    echo "Note: If the quota-id differs for your account type, view available quota IDs using:"
+    echo "Note: If the quota request fails, view available quota IDs using:"
     echo "  gcloud quotas info list --service=run.googleapis.com --project=$PROJECT_ID"
     echo "Or submit directly via the web UI at: https://console.cloud.google.com/iam-admin/quotas?project=$PROJECT_ID&filter=service:run.googleapis.com"
 }
 
 echo ""
 echo "Quota request submitted. Check status at: https://console.cloud.google.com/iam-admin/quotas?project=$PROJECT_ID"
+

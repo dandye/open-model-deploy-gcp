@@ -72,6 +72,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --set-env-vars="$ENV_VARS" \
   --gpu="$GPU_COUNT" \
   --gpu-type="$GPU_TYPE" \
+  --no-gpu-zonal-redundancy \
   --cpu="$CPU" \
   --memory="$MEMORY" \
   --min-instances="$MIN_INSTANCES" \
