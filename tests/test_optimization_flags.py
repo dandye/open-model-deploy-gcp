@@ -61,30 +61,49 @@ class TestOptimizationFlags(unittest.TestCase):
         EXTRA_ARGS_JSON=$(catalog_get "$MODEL_FLAVOR" ".runtime.extraArgs")
         MODEL_FAMILY=$(catalog_get_family "$MODEL_FLAVOR")
 
-        CONTAINER_ARGS="python,-m,vllm.entrypoints.api_server,--host=0.0.0.0,--port=8080,--model=${SOURCE_URI},--tensor-parallel-size=${TP_SIZE},--gpu-memory-utilization=${GPU_MEM_UTIL},--max-model-len=${MAX_LEN}"
+        ARGS_ARRAY=(
+          "python"
+          "-m"
+          "vllm.entrypoints.api_server"
+          "--host=0.0.0.0"
+          "--port=8080"
+          "--model=${SOURCE_URI}"
+          "--tensor-parallel-size=${TP_SIZE}"
+          "--gpu-memory-utilization=${GPU_MEM_UTIL}"
+          "--max-model-len=${MAX_LEN}"
+        )
 
         if [[ -n "$SWAP_SPACE" && "$SWAP_SPACE" -gt 0 ]]; then
-          CONTAINER_ARGS="${CONTAINER_ARGS},--swap-space=${SWAP_SPACE}"
+          ARGS_ARRAY+=("--swap-space=${SWAP_SPACE}")
         fi
 
         if [[ "$MODEL_FAMILY" != "gemma4" ]]; then
-          CONTAINER_ARGS="${CONTAINER_ARGS},--disable-log-stats"
+          ARGS_ARRAY+=("--disable-log-stats")
         fi
 
         if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" && "$EXTRA_ARGS_JSON" != "null" ]]; then
-          EXTRA_ARGS_CSV=$(echo "$EXTRA_ARGS_JSON" | jq -r 'join(",")')
-          if [[ -n "$EXTRA_ARGS_CSV" ]]; then
-            CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_ARGS_CSV}"
-          fi
+          while IFS= read -r arg; do
+            if [[ -n "$arg" ]]; then
+              ARGS_ARRAY+=("$arg")
+            fi
+          done < <(echo "$EXTRA_ARGS_JSON" | jq -r '.[]')
         fi
 
         if [[ -n "${EXTRA_VLLM_FLAGS:-}" ]]; then
-          EXTRA_VLLM_CSV=$(echo "$EXTRA_VLLM_FLAGS" | tr ' ' '\\n' | tr ',' '\\n' | grep -v '^$' | paste -sd, -)
-          if [[ -n "$EXTRA_VLLM_CSV" ]]; then
-            CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_VLLM_CSV}"
-          fi
+          while IFS= read -r flag; do
+            if [[ -n "$flag" ]]; then
+              ARGS_ARRAY+=("$flag")
+            fi
+          done < <(python3 -c '
+import sys, shlex
+flags = sys.argv[1] if len(sys.argv) > 1 else ""
+for item in shlex.split(flags):
+    print(item)
+' "$EXTRA_VLLM_FLAGS")
         fi
 
+        DELIMITER="|"
+        CONTAINER_ARGS=$(printf "^${DELIMITER}^%s" "$(IFS="$DELIMITER"; echo "${ARGS_ARRAY[*]}")")
         echo "$CONTAINER_ARGS"
         """
 
@@ -97,9 +116,9 @@ class TestOptimizationFlags(unittest.TestCase):
         )
         self.assertEqual(res1.returncode, 0)
         self.assertIn("--quantization=fp8", res1.stdout)
-        self.assertIn("--limit_mm_per_prompt=image=5,--max-num-seqs=4,--quantization=fp8", res1.stdout)
+        self.assertIn("|--limit_mm_per_prompt=image=5|--max-num-seqs=4|--quantization=fp8", res1.stdout)
 
-        # Scenario 2: Multiple space-separated flags (chunked prefill + prefix caching)
+        # Scenario 2: Multiple space-separated flags
         res2 = subprocess.run(
             ["bash", "-c", f'EXTRA_VLLM_FLAGS="--enable-chunked-prefill --enable-prefix-caching" {bash_script}'],
             cwd=ROOT_DIR,
@@ -107,17 +126,19 @@ class TestOptimizationFlags(unittest.TestCase):
             text=True,
         )
         self.assertEqual(res2.returncode, 0)
-        self.assertIn("--enable-chunked-prefill,--enable-prefix-caching", res2.stdout)
+        self.assertIn("|--enable-chunked-prefill|--enable-prefix-caching", res2.stdout)
 
-        # Scenario 3: Comma-separated flags
+        # Scenario 3: Speculative config JSON payload preserving internal commas
+        spec_flags = "--speculative-config='{\\\"model\\\":\\\"google/gemma-3-1b-it\\\",\\\"num_speculative_tokens\\\":3}'"
         res3 = subprocess.run(
-            ["bash", "-c", f'EXTRA_VLLM_FLAGS="--quantization=fp8,--speculative-model=foo" {bash_script}'],
+            ["bash", "-c", f'EXTRA_VLLM_FLAGS="{spec_flags}" {bash_script}'],
             cwd=ROOT_DIR,
             capture_output=True,
             text=True,
         )
         self.assertEqual(res3.returncode, 0)
-        self.assertIn("--quantization=fp8,--speculative-model=foo", res3.stdout)
+        self.assertIn("--speculative-config=", res3.stdout)
+        self.assertIn('"num_speculative_tokens":3', res3.stdout)
 
     def test_vertex_model_register_display_name_generation(self):
         bash_script = """

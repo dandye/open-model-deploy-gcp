@@ -55,31 +55,51 @@ EXTRA_ARGS_JSON=$(catalog_get "$MODEL_FLAVOR" ".runtime.extraArgs")
 
 MODEL_FAMILY=$(catalog_get_family "$MODEL_FLAVOR")
 
-CONTAINER_ARGS="python,-m,vllm.entrypoints.api_server,--host=0.0.0.0,--port=8080,--model=${SOURCE_URI},--tensor-parallel-size=${TP_SIZE},--gpu-memory-utilization=${GPU_MEM_UTIL},--max-model-len=${MAX_LEN}"
+ARGS_ARRAY=(
+  "python"
+  "-m"
+  "vllm.entrypoints.api_server"
+  "--host=0.0.0.0"
+  "--port=8080"
+  "--model=${SOURCE_URI}"
+  "--tensor-parallel-size=${TP_SIZE}"
+  "--gpu-memory-utilization=${GPU_MEM_UTIL}"
+  "--max-model-len=${MAX_LEN}"
+)
 
 if [[ -n "$SWAP_SPACE" && "$SWAP_SPACE" -gt 0 ]]; then
-  CONTAINER_ARGS="${CONTAINER_ARGS},--swap-space=${SWAP_SPACE}"
+  ARGS_ARRAY+=("--swap-space=${SWAP_SPACE}")
 fi
 
 if [[ "$MODEL_FAMILY" != "gemma4" ]]; then
-  CONTAINER_ARGS="${CONTAINER_ARGS},--disable-log-stats"
+  ARGS_ARRAY+=("--disable-log-stats")
 fi
 
 # Append extra arguments if present
 if [[ "$EXTRA_ARGS_JSON" != "[]" && -n "$EXTRA_ARGS_JSON" && "$EXTRA_ARGS_JSON" != "null" ]]; then
-  EXTRA_ARGS_CSV=$(echo "$EXTRA_ARGS_JSON" | jq -r 'join(",")')
-  if [[ -n "$EXTRA_ARGS_CSV" ]]; then
-    CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_ARGS_CSV}"
-  fi
+  while IFS= read -r arg; do
+    if [[ -n "$arg" ]]; then
+      ARGS_ARRAY+=("$arg")
+    fi
+  done < <(echo "$EXTRA_ARGS_JSON" | jq -r '.[]')
 fi
 
 # Append dynamic runtime flags (EXTRA_VLLM_FLAGS) if provided
 if [[ -n "${EXTRA_VLLM_FLAGS:-}" ]]; then
-  EXTRA_VLLM_CSV=$(echo "$EXTRA_VLLM_FLAGS" | tr ' ' '\n' | tr ',' '\n' | grep -v '^$' | paste -sd, -)
-  if [[ -n "$EXTRA_VLLM_CSV" ]]; then
-    CONTAINER_ARGS="${CONTAINER_ARGS},${EXTRA_VLLM_CSV}"
-  fi
+  while IFS= read -r flag; do
+    if [[ -n "$flag" ]]; then
+      ARGS_ARRAY+=("$flag")
+    fi
+  done < <(python3 -c '
+import sys, shlex
+flags = sys.argv[1] if len(sys.argv) > 1 else ""
+for item in shlex.split(flags):
+    print(item)
+' "$EXTRA_VLLM_FLAGS")
 fi
+
+DELIMITER="|"
+CONTAINER_ARGS=$(printf "^${DELIMITER}^%s" "$(IFS="$DELIMITER"; echo "${ARGS_ARRAY[*]}")")
 
 
 CONTAINER_IMAGE=$(catalog_get_container_image "$MODEL_FLAVOR")
