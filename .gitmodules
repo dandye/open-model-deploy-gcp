@@ -1,0 +1,3 @@
+[submodule "external/adk_runbooks"]
+	path = external/adk_runbooks
+	url = git@github.com:dandye/adk_runbooks.git

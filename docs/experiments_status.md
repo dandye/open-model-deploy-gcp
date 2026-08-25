@@ -30,6 +30,7 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-05** | **Dynamic FP8 Weight Quantization on A100 (`--quantization=fp8`)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | N/A | N/A | N/A | N/A | N/A | Incompatible: Ampere lacks `fp8e4nv` hardware |
 | **EXP-06** | **Native Hardware FP8 on 4x NVIDIA L4 Ada Lovelace (`--quantization=fp8`)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 13.25 s | 11.13 s (10.06s warm) | 71 tok | **5.7 tok/s (7.1 warm)** | **341 tok/min (424 warm)** | **+129% speedup vs 4x L4 baseline (Verified & Torn Down)** |
 | **EXP-07b** | **2x NVIDIA A100 40GB with 600 GB/s NVLink (`a2-highgpu-2g`, TP=2)** | `a2-highgpu-2g` | 2x A100 (80 GB NVLink) | 2 | 7.57 s | 5.39 s (4.29s warm) | 59 tok | **12.4 tok/s (23.0 peak)** | **745 tok/min (1,382 peak)** | **-66% latency, +300% to +640% throughput (Verified & Torn Down)** |
+| **EXP-08** | **Speculative Decoding on Single A100 80GB (`--speculative-model`)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | N/A | N/A | N/A | N/A | N/A | Incompatible CLI: vLLM V1 requires `--speculative-config` (Documented) |
 
 ---
 
@@ -49,7 +50,7 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 | **`EXP-04`** | `a2-ultragpu-1g` | 1x NVIDIA A100 80GB (Single Die) | ~0.2 min | ~5.5 min | ~2.1 min | ~2.3 min | ~2.0 min | **12.1 min** |
 | **`EXP-06`** | `g2-standard-48` | 4x NVIDIA L4 (96 GB Ada Lovelace) | ~0.2 min | ~7.0 min | ~2.5 min | ~2.4 min | ~2.2 min | **14.3 min** |
 | **`EXP-07b`**| `a2-highgpu-2g` | 2x NVIDIA A100 40GB (600 GB/s NVLink)| ~0.2 min | ~2.5 min | ~2.3 min | ~3.0 min | ~2.3 min | **10.3 min** |
-| **`EXP-08`** | `a2-ultragpu-1g` | 1x NVIDIA A100 80GB (Speculative Decoding)| ~0.1 min | ~16.2 min | In Progress | ... | ... | In Flight |
+| **`EXP-08`** | `a2-ultragpu-1g` | 1x NVIDIA A100 80GB (Speculative Decoding)| ~0.1 min | ~16.2 min | ~7.5 min | ~3.0 min | Failed CLI arg | **26.8 min** |
 
 ---
 
@@ -218,6 +219,22 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 * **Status**: Benchmark Complete & Validated. Deployed Model `8050127709075931136` and Endpoint `6293609505192148992` **Cleanly Undeployed & Deleted** ($0 active billing).
 
 ---
+
+### EXP-08: Speculative Decoding CLI Compatibility on Single A100 80GB
+* **Goal**: Test speculative draft token generation using a co-located Gemma 3 1B draft model alongside Gemma 4 31B in unified 80GB VRAM.
+* **Configuration**:
+  * Machine: `a2-ultragpu-1g` (1x NVIDIA A100 80GB SXM4, TP=1)
+  * Endpoint ID: `8141211252320894976` (`us-central1`)
+  * Container Image: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4`
+  * Flags: `--speculative-model=google/gemma-3-1b-it`, `--num-speculative-tokens=3`
+* **Findings & Failure Analysis**:
+  * The Model Garden vLLM V1 API server exited on startup with:
+    `api_server.py: error: unrecognized arguments: --speculative-model=google/gemma-3-1b-it --num-speculative-tokens=3`.
+  * **Root Cause**: The Google Model Garden container wrapper for Gemma 4 uses vLLM V1 engine options which expect `--speculative-config SPECULATIVE_CONFIG` rather than separate `--speculative-model` CLI flags.
+* **Status**: Tested & Documented. Endpoint `8141211252320894976` and Model `2726938920221671424` **Cleanly Deleted** ($0 active billing).
+
+---
+
 
 
 
