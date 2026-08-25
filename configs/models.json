@@ -170,9 +170,9 @@
       "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4",
       "tensorParallelSize": 4,
       "swapSpaceGb": 0,
-      "gpuMemoryUtilization": 0.90,
-      "maxModelLen": 8192,
-      "extraArgs": ["--enforce-eager"]
+      "gpuMemoryUtilization": 0.85,
+      "maxModelLen": 4096,
+      "extraArgs": ["--max-num-seqs=8"]
     },
     "supportedTargets": ["vertex"]
   }

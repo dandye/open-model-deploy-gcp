@@ -22,7 +22,8 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | Exp ID | Configuration / Optimization Hypothesis | Machine Type | GPU Setup | TP | Warmup Time | Avg Latency | Avg Output | TPS (tok/s) | TPM (tok/min) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **EXP-00** | **Baseline (Eager Mode `--enforce-eager`)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 20.54 s | 12.76 s | 39 tok | **3.1 tok/s** | **183 tok/min** | Baseline Complete (Torn Down) |
-| **EXP-01** | **Extended IPC Timeout + CUDA Graph Capture** | `g2-standard-48` | 4x L4 (96 GB) | 4 | TBD | TBD | TBD | TBD | TBD | In Progress |
+| **EXP-01** | **Default Sampler Warmup (256 seqs, 0.90 mem)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | N/A | N/A | N/A | N/A | N/A | Failed: Sampler CUDA OOM (Documented) |
+| **EXP-01b**| **Tuned Sampler Warmup (`--max-num-seqs=8`, 0.85 mem, CUDA Graphs)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | TBD | TBD | TBD | TBD | TBD | In Progress |
 | **EXP-02** | **vLLM Engine Tuning (`--kv-cache-dtype=fp8` & Chunked Prefill)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | TBD | TBD | TBD | TBD | TBD | Queued |
 | **EXP-03** | **Single High-Bandwidth GPU Architecture** | `a2-ultragpu-1g` / `g4-standard-48` | 1x A100 / RTX 6000 | 1 | TBD | TBD | TBD | TBD | TBD | Queued |
 
@@ -40,5 +41,15 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
   * Initialization: 10.14s weight download/load, instant startup in eager mode.
   * Inference: 3.1 tok/s due to sequential kernel dispatch and PCIe AllReduce synchronization.
 * **Status**: Tested, verified, and torn down.
+
+---
+
+### EXP-01: Default Sampler Warmup Analysis
+* **Goal**: Measure compiled CUDA graph speedup without eager mode.
+* **Failure Analysis**:
+  * Trace: `RuntimeError: CUDA out of memory occurred when warming up sampler with 256 dummy requests.`
+  * Cause: On 24GB L4 GPUs, 15.89 GB weights + default 256 dummy request warmup exceeds remaining VRAM headroom.
+  * Resolution: Bound warmup budget via `--max-num-seqs=8`, `--gpu-memory-utilization=0.85`, and `maxModelLen=4096`.
+* **Status**: Completed root-cause analysis; proceeding to EXP-01b.
 
 ---

@@ -73,7 +73,7 @@ gcloud ai models upload \
   --display-name="$MODEL_DISPLAY_NAME" \
   --container-image-uri="$CONTAINER_IMAGE" \
   --container-args="$CONTAINER_ARGS" \
-  --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL" \
+  --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL,VLLM_RPC_TIMEOUT=300,VLLM_TORCH_COMPILE_TIMEOUT=300" \
   --container-ports="8080" \
   --container-predict-route="/generate" \
   --container-health-route="/ping" >/dev/null 2>&1 || true
