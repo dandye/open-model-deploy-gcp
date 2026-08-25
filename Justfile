@@ -143,17 +143,17 @@ agent-test PROMPT="Explain quantum computing in two concise sentences.":
 agent-deploy:
     @uv run python3 agent/deploy.py
 
-# Test SOC Tier 1 Agent locally against active Gemma endpoint (Usage: just agent-soc-test [prompt] [flavor])
-agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" FLAVOR="":
-    @uv run python3 -m agent.test_agent "{{PROMPT}}" --soc
-
+# Test SOC Tier 1 Agent locally against active Gemma endpoint or SecOps MCP (Usage: just agent-soc-test [prompt] [live_mcp])
+agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" LIVE_MCP="false":
+    @uv run python3 -m agent.test_agent "{{PROMPT}}" --soc {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}}
 
 # Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [endpoint])
 agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
 
-# Deploy SOC Tier 1 Agent to Vertex AI Agent Engine
-agent-soc-deploy:
-    @uv run python3 -m agent.deploy_soc_tier1
+# Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
+agent-soc-deploy LIVE_MCP="true":
+    @USE_LIVE_MCP="{{LIVE_MCP}}" uv run python3 -m agent.deploy_soc_tier1
+
 
 

@@ -16,8 +16,10 @@ def test_deployment_config():
     assert isinstance(cfg["requirements"], list)
     assert any("google-cloud-aiplatform" in req for req in cfg["requirements"])
     assert any("google-genai" in req for req in cfg["requirements"])
+    assert any("google-auth" in req for req in cfg["requirements"])
     assert any("pydantic" in req for req in cfg["requirements"])
     assert any("requests" in req for req in cfg["requirements"])
+
 
 
 @patch("agent.deploy_soc_tier1.vertexai.init")

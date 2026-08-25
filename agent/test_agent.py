@@ -10,6 +10,8 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
+os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
+
 import json
 from agent.gemma_agent import GemmaAgent
 from agent.soc_tier1_agent import SocTier1Agent
@@ -28,6 +30,7 @@ def main():
     args = parser.parse_args()
 
     project_id = os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle")
+    is_soc = args.soc or args.live_mcp
 
     if args.remote_resource:
         import vertexai
@@ -40,7 +43,7 @@ def main():
         print(res)
         return
 
-    agent_type = "SOC Tier 1 Agent (ReAct Tools Enabled)" if args.soc else "Standard GemmaAgent"
+    agent_type = "SOC Tier 1 Agent (ReAct Tools Enabled)" if is_soc else "Standard GemmaAgent"
     print("==========================================")
     print(f" Local {agent_type} Test Runner")
     print("==========================================")
@@ -50,7 +53,7 @@ def main():
     print(f"Prompt:       {args.prompt}")
     print("==========================================")
 
-    if args.soc:
+    if is_soc:
         agent = SocTier1Agent(
             project_id=project_id,
             region=args.region,
@@ -59,6 +62,7 @@ def main():
             managed_model=args.managed_model,
             use_live_mcp=args.live_mcp,
         )
+
     else:
         agent = GemmaAgent(
             project_id=project_id,

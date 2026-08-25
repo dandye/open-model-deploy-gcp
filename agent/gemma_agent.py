@@ -12,6 +12,9 @@ import json
 import tempfile
 import subprocess
 
+os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
+
+
 
 def get_current_time() -> str:
     """Returns the current UTC date and time."""
@@ -76,7 +79,7 @@ class GemmaAgent:
 
     def discover_active_vertex_endpoint(self) -> Optional[Dict[str, str]]:
         """Auto-discovers any currently active Gemma endpoint across standard regions."""
-        regions_to_scan = [self.region, "us-east1", "us-west1", "us-east4"]
+        regions_to_scan = [self.region, "us-central1", "us-east1", "us-west1", "us-east4"]
         seen_regions = set()
 
         for reg in regions_to_scan:
@@ -90,13 +93,19 @@ class GemmaAgent:
                 "--filter=displayName:gemma*",
                 "--sort-by=~createTime",
                 "--format=value(name.basename(),displayName)",
-                "--limit=1",
             ]
             res = subprocess.run(cmd, capture_output=True, text=True)
             if res.returncode == 0 and res.stdout.strip():
-                lines = res.stdout.strip().split()
-                if len(lines) >= 1:
-                    ep_id = lines[0]
+                valid_lines = [
+                    l.strip().split(None, 1)
+                    for l in res.stdout.splitlines()
+                    if l.strip() and not l.strip().startswith("Using endpoint")
+                ]
+                for parts in valid_lines:
+                    if not parts or not parts[0].isdigit():
+                        continue
+                    ep_id = parts[0]
+                    display_name = parts[1] if len(parts) > 1 else ep_id
                     # Verify deployed models exist
                     desc_cmd = [
                         "gcloud", "ai", "endpoints", "describe", ep_id,
@@ -105,12 +114,20 @@ class GemmaAgent:
                         "--format=value(deployedModels[0].id)",
                     ]
                     desc_res = subprocess.run(desc_cmd, capture_output=True, text=True)
-                    if desc_res.returncode == 0 and desc_res.stdout.strip():
-                        return {
-                            "endpoint_id": ep_id,
-                            "region": reg,
-                            "display_name": lines[1] if len(lines) > 1 else ep_id,
-                        }
+                    if desc_res.returncode == 0:
+                        desc_lines = [
+                            l.strip()
+                            for l in desc_res.stdout.splitlines()
+                            if l.strip() and not l.strip().startswith("Using endpoint")
+                        ]
+                        if desc_lines and desc_lines[0].isdigit():
+                            self.endpoint_id = ep_id
+                            self.region = reg
+                            return {
+                                "endpoint_id": ep_id,
+                                "region": reg,
+                                "display_name": display_name,
+                            }
         return None
 
     def query(self, prompt: str, max_tokens: int = 512, temperature: float = 0.7) -> Dict[str, Any]:

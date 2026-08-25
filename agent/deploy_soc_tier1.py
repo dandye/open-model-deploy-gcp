@@ -24,10 +24,11 @@ def get_deployment_config() -> Dict[str, Any]:
     """Returns deployment parameters and required pip packages."""
     return {
         "display_name": "gemma-soc-tier1-agent",
-        "description": "Gemma-powered Tier 1 SOC Analyst Agent for alert triage and IOC enrichment.",
+        "description": "Gemma-powered Tier 1 SOC Analyst Agent with live Google SecOps Remote MCP tools.",
         "requirements": [
             "google-cloud-aiplatform>=1.60.0",
             "google-genai>=0.1.1",
+            "google-auth>=2.0.0",
             "pydantic>=2.0.0",
             "requests>=2.31.0",
         ],
@@ -38,6 +39,7 @@ def deploy(
     project_id: Optional[str] = None,
     region: Optional[str] = None,
     staging_bucket: Optional[str] = None,
+    use_live_mcp: bool = True,
 ):
     """Deploys SocTier1Agent to Vertex AI Agent Engine."""
     target_project = project_id or PROJECT_ID
@@ -52,6 +54,7 @@ def deploy(
     print(f"Project:        {target_project}")
     print(f"Region:         {target_region}")
     print(f"Staging Bucket: {target_bucket}")
+    print(f"Live SecOps:    {'Enabled' if use_live_mcp else 'Disabled (Local Mock Tools)'}")
     print("==========================================")
 
     vertexai.init(
@@ -64,6 +67,7 @@ def deploy(
     agent_instance = SocTier1Agent(
         project_id=target_project,
         region=target_region,
+        use_live_mcp=use_live_mcp,
     )
 
     remote_agent = reasoning_engines.ReasoningEngine.create(
@@ -82,4 +86,6 @@ def deploy(
 
 
 if __name__ == "__main__":
-    deploy()
+    live_mcp_flag = os.environ.get("USE_LIVE_MCP", "true").lower() in ("1", "true", "yes")
+    deploy(use_live_mcp=live_mcp_flag)
+
