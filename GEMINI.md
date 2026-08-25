@@ -95,3 +95,4 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
   * [`docs/cost_analysis.md`](docs/cost_analysis.md): Hardware pricing and sizing breakdown.
   * [`docs/vertex_cleanup_strategies.md`](docs/vertex_cleanup_strategies.md): Endpoint and resource cleanup guide.
   * [`docs/cloudrun_deploy.md`](docs/cloudrun_deploy.md): Cloud Run GPU guide and scale-to-zero mechanics.
+  * [`docs/quota_requests.md`](docs/quota_requests.md): Cloud GPU quota requests and tracking log.

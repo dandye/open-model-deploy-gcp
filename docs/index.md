@@ -27,5 +27,8 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 | [`cloudrun_experiments_status.md`](cloudrun_experiments_status.md) | `status` | Cloud Run GPU deployment experiments, benchmarks & scale-to-zero tracking |
 | [`cloudrun_deploy.md`](cloudrun_deploy.md) | `guide` | Deploying Gemma to Cloud Run with NVIDIA L4 GPU & Scale-to-Zero |
 | [`cost_analysis.md`](cost_analysis.md) | `analysis` | Hardware sizing, VRAM requirements, and pricing projections |
+| [`quota_requests.md`](quota_requests.md) | `status` | Google Cloud GPU quota requests & experiment unblocking log |
+| [`research.md`](research.md) | `research` | Best practices for deploying Gemma across Agent Platform, Cloud Run, GKE, and TPUs |
+| [`managed_vs_deploy.md`](managed_vs_deploy.md) | `guide` | Comparison of Model as a Service (MaaS) vs self-deployed GPU endpoints |
 | [`vertex_deployment_notes.md`](vertex_deployment_notes.md) | `guide` | Vertex AI Online Prediction deployment & troubleshooting solutions |
 | [`vertex_cleanup_strategies.md`](vertex_cleanup_strategies.md) | `architecture` | Automated scheduled and metric-based cleanup architectures |
