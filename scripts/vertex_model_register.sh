@@ -57,7 +57,7 @@ fi
 
 CONTAINER_IMAGE=$(catalog_get_container_image "$MODEL_FLAVOR")
 
-REGISTER_OUTPUT=$(gcloud ai models upload \
+gcloud ai models upload \
   --project="$PROJECT_ID" \
   --region="$REGION" \
   --display-name="$MODEL_DISPLAY_NAME" \
@@ -66,7 +66,12 @@ REGISTER_OUTPUT=$(gcloud ai models upload \
   --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL" \
   --container-ports="8080" \
   --container-predict-route="/generate" \
-  --container-health-route="/ping" \
-  --format="value(name.basename())")
+  --container-health-route="/ping" >/dev/null 2>&1 || true
 
-echo "$REGISTER_OUTPUT"
+gcloud ai models list \
+  --project="$PROJECT_ID" \
+  --region="$REGION" \
+  --filter="displayName=$MODEL_DISPLAY_NAME" \
+  --sort-by="~createTime" \
+  --format="value(name.basename())" \
+  --limit=1
