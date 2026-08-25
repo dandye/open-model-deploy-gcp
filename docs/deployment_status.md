@@ -84,15 +84,15 @@ Paris is famous for many things, including:
 ### Gemma 3 12B Multimodal (`gemma-3-12b-it`)
 
 * **Deployment Environment**: Vertex AI Online Prediction
-* **Region**: `us-east4` (Northern Virginia)
-* **Endpoint Name**: `gemma-3-12b-it-endpoint-20260824-2349`
-* **Endpoint ID**: `2861740695054450688`
-* **Model ID**: `8879792245360820224`
-* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250220_0916_RC00`
+* **Region**: `us-central1` (Iowa)
+* **Endpoint Name**: `gemma-3-12b-it-endpoint-20260825-0030`
+* **Endpoint ID**: `6747347167649726464`
+* **Model ID**: `9027448410633928704`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
 * **Machine Type**: `g2-standard-48` (48 vCPUs, 192 GB Host RAM, 4 x NVIDIA L4 GPUs 96GB total VRAM)
 * **Tensor Parallelism**: `tensor-parallel-size=4`
 * **Hourly Cost**: $3.36/hour
-* **Status**: Provisioning serving cluster / initializing vLLM container.
+* **Status**: Provisioning serving cluster & loading container (Op `6391329722097205248`).
 
 ### Gemma 4 31B Multimodal Reasoner (`gemma-4-31b-it`)
 
