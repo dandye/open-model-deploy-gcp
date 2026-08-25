@@ -436,6 +436,26 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
 | `gemma-3-27b-it`| 27.4B | Vertex AI Dedicated Endpoint | 4x NVIDIA L4 | >= 100% | >= 95.0 / 100 | Advanced multimodal correlation & incident containment |
 | `gemma-4-31b-it`| 30.7B | Vertex AI Dedicated Endpoint | 4x L4 / 2x A100 | >= 100% | >= 96.0 / 100 | Frontier-grade reasoning, complex C2 chains & SOAR automation |
 
+### Empirical Benchmark Results: Track E
+
+#### EXP-E01: `gemma-3-1b-it` (1x NVIDIA L4 on `g2-standard-4`)
+* **Endpoint ID**: `8275052603746811904` (`gemma-3-1b-it-endpoint-20260825-1838`)
+* **Model ID**: `1389343442613567488` (`gemma-3-1b-it-model-garden`)
+* **Hardware**: `g2-standard-4` (1x NVIDIA L4, 16 GB Host RAM, 24 GB VRAM)
+* **Results**:
+  * **Pass Rate**: **20.0% (1/5)**
+  * **Average Rubric Score**: **64.0 / 100**
+  * **Average Latency**: **12.76 s**
+* **Detailed Breakdown**:
+  * `CASE-01-LOKIBOT-C2`: **55.0/100** (FAIL: Contained prohibited substring `'BENIGN'`) | Latency: 14.32s
+  * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: Flawless non-routable documentation IP grounding) | Latency: 9.46s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **70.0/100** (FAIL: Contained prohibited substring `'BENIGN'`) | Latency: 13.19s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **20.0/100** (FAIL: Missing required duplicate reference `'CASE-33279'`) | Latency: 13.27s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **75.0/100** (FAIL: Incomplete multi-step containment steps) | Latency: 13.56s
+* **Key Observations**:
+  * **Grounding Strengths**: Strong semantic grasp of RFC-5737 documentation IP rules (scored 100/100 on Case 2).
+  * **Limitations**: 1B parameter capacity struggles with multi-entity state tracking (duplicate case numbers) and strict negative assertion constraints.
+
 ### Automation Recipes (`Justfile`)
 * **Local / Interactive Testing**:
   ```bash
@@ -443,7 +463,7 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
   ```
 * **Automated Batch Evaluation**:
   ```bash
-  just agent-soc-eval gemma-3-4b-it
+  just agent-soc-eval gemma-3-1b-it
   ```
 * **Vertex AI Agent Engine Deployment**:
   ```bash
@@ -451,4 +471,5 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
   ```
 
 ### Cost & Teardown Protocol
-In compliance with project guardrails, all dedicated GPU prediction endpoints deployed for evaluation benchmarking are immediately undeployed via `just vertex-undeploy` upon test completion to maintain $0 ongoing idle cost. Cloud Run GPU deployments automatically scale to zero instances when idle.
+When testing concludes, dedicated GPU prediction endpoints can be undeployed via `just vertex-undeploy` to return to $0 ongoing idle cost. During active development cycles, endpoints are kept running to support rapid iteration.
+
