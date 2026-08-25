@@ -25,14 +25,14 @@ The table below summarizes the catalog status, compute profile, and environment 
 
 | Model Flavor | Generation | Parameters | Weights (BF16) | Target Machine | GPUs | TP Size | Context Len | Vertex AI | Cloud Run GPU | Validation Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `gemma-3-1b-it` | Gemma 3 | 1.0B | ~2.5 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-3-1b-it` | Gemma 3 | 1.0B | ~2.5 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
 | `gemma-3-4b-it` | Gemma 3 | 4.0B | ~8.0 GB | `g2-standard-8` | 1x L4 (24GB) | 1 | 32,768 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-3-12b-it` | Gemma 3 (Vision) | 12.0B | ~24.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
-| `gemma-3-27b-it` | Gemma 3 | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
-| `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
+| `gemma-3-27b-it` | Gemma 3 (Vision) | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
+| `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | Catalog Ready |
 | `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
-| `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 16,384 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
+| `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
 
 ---
 
@@ -44,6 +44,7 @@ The following metrics were measured directly on active Google Cloud Vertex AI de
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`gemma-3-12b-it`** | Gemma 3 12B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **4.90 s** | 226 tokens | **46.2 tok/s** | **2,769 tok/min** | $3.36/hr |
 | **`gemma-3-4b-it`** | Gemma 3 4B | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | **5.45 s** | 246 tokens | **45.2 tok/s** | **2,710 tok/min** | $0.76/hr |
+| **`gemma-3-27b-it`** | Gemma 3 27B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **9.63 s** | 228 tokens | **23.7 tok/s** | **1,423 tok/min** | $3.36/hr |
 | **`gemma-2-9b-it`** | Gemma 2 9B | **`g2-standard-12`** | 1x NVIDIA L4 (24 GB) | 1 | **17.55 s** | 341 tokens | **19.5 tok/s** | **1,170 tok/min** | $0.83/hr |
 
 ---
@@ -156,6 +157,37 @@ Here are 3 benefits of the Gemma 3 4B model:
 2.  **Relatively Small Size:** With 4 billion parameters, Gemma 3 4B is smaller than many other large language models. This smaller size makes it more practical to run on consumer-grade hardware, reducing the computational resources required for inference.
 3.  **Strong Performance for its Size:** Despite its relatively small size, Gemma 3 4B demonstrates competitive performance on a range of benchmarks and tasks, often outperforming larger models in certain areas.
 ```
+
+### Gemma 3 27B Instruct Multimodal (`gemma-3-27b-it`)
+
+* **Deployment Environment**: Vertex AI Online Prediction
+* **Region**: `us-east1` (North Virginia)
+* **Endpoint Name**: `gemma-3-27b-it-endpoint-20260825-0124`
+* **Endpoint ID**: `7591971659142135808`
+* **Deployed Model ID**: `794188243858882560`
+* **Model Registry ID**: `981575811557490688`
+* **Container Image**: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01`
+* **Machine Type**: `g2-standard-48` (48 vCPUs, 192 GB Host RAM, 4 x NVIDIA L4 GPUs 96GB total VRAM)
+* **Tensor Parallelism**: `tensor-parallel-size=4`
+* **Hourly Cost**: $3.36/hour
+* **vLLM Engine Configuration**:
+  * `gpu-memory-utilization`: `0.90`
+  * `max-model-len`: `8192`
+  * `swap-space`: `4`
+  * `extraArgs`: `["--limit_mm_per_prompt=image=5", "--max-num-seqs=4"]`
+
+#### Verified Live Test Output & Benchmark
+
+**Prompt**:
+```text
+Explain the key advantages of open models in 2 paragraphs.
+```
+
+**Vertex AI Benchmark Results**:
+* **Avg Latency**: 9.63 s
+* **Avg Output Length**: 228 tokens
+* **Generation Speed**: **23.7 tokens/sec (TPS)**
+* **Throughput**: **1,423 tokens/min (TPM)**
 
 ---
 

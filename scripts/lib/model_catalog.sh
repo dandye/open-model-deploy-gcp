@@ -43,6 +43,10 @@ catalog_get_accelerator_count() {
   catalog_get "$1" ".compute.acceleratorCount"
 }
 
+catalog_get_family() {
+  catalog_get "$1" ".family"
+}
+
 catalog_get_source_uri() {
   catalog_get "$1" ".sourceUri"
 }
