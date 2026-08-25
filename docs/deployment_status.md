@@ -32,7 +32,7 @@ The table below summarizes the catalog status, compute profile, and environment 
 | `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
-| `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | Catalog Ready |
+| `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 
 ---
 
@@ -48,6 +48,7 @@ The following metrics were measured directly on active Google Cloud Vertex AI de
 | **`gemma-3-4b-it`** | Gemma 3 4B | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | **5.45 s** | 246 tokens | **45.2 tok/s** | **2,710 tok/min** | $0.76/hr |
 | **`gemma-3-27b-it`** | Gemma 3 27B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **9.63 s** | 228 tokens | **23.7 tok/s** | **1,423 tok/min** | $3.36/hr |
 | **`gemma-2-9b-it`** | Gemma 2 9B | **`g2-standard-12`** | 1x NVIDIA L4 (24 GB) | 1 | **17.55 s** | 341 tokens | **19.5 tok/s** | **1,170 tok/min** | $0.83/hr |
+| **`gemma-4-31b-it`** | Gemma 4 31B (Reasoner) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **12.76 s** | 39 tokens | **3.1 tok/s** | **183 tok/min** | $3.36/hr |
 
 ---
 
