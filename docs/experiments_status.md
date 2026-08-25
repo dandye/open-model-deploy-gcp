@@ -26,7 +26,7 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-01b**| **Tuned Sampler Warmup (`--max-num-seqs=8`, 0.85 mem, CUDA Graphs)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 13.32 s | 11.24 s (10.20s warm) | 39 tok | **3.5 tok/s (3.8 warm)** | **211 tok/min (229 warm)** | **Verified & Torn Down** |
 | **EXP-02** | **vLLM Engine Tuning (`--kv-cache-dtype=fp8` & CUDA Graphs)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 13.32 s | 11.21 s (10.15s warm) | 39 tok | **3.5 tok/s (3.8 warm)** | **212 tok/min (230 warm)** | **Verified & Torn Down** |
 | **EXP-03** | **Architecture Comparison: Managed Model-as-a-Service vs Self-Deployed** | Global / Multi-Cluster | TPU v5e/v5p / H100 | N/A | Instant | < 1.0 s | 250+ tok | **50 – 100+ tok/s** | **3,000 – 6,000+ TPM** | **Documented in research.md** |
-| **EXP-04** | **Single High-Bandwidth GPU (`a2-ultragpu-1g`, 1x A100 80GB, TP=1)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | TBD | TBD | TBD | TBD | TBD | **In Progress** (Endpoint `7432316523475107840`) |
+| **EXP-04** | **Single High-Bandwidth GPU (`a2-ultragpu-1g`, 1x A100 80GB, TP=1)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | 8.36 s | 7.03 s (6.36s warm) | 39 tok | **5.6 tok/s (6.1 warm)** | **338 tok/min (368 warm)** | **Verified & Cleanly Torn Down** |
 
 ---
 
@@ -111,5 +111,28 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
      * Eliminates multi-GPU tensor parallelism and PCIe AllReduce barriers completely, enabling direct single-die memory streaming at **25 to 60+ tok/s**.
   3. **Cloud Run Serverless Scale-to-Zero for Smaller Models (1B – 9B)**:
      * Single-GPU models (`gemma-3-1b-it`, `gemma-2-2b-it`, `gemma-3-4b-it`) achieve **45 to 108 tok/s** on single L4 GPUs with true scale-to-zero ($0 idle spend).
+
+---
+
+### EXP-04: Single High-Bandwidth GPU (`a2-ultragpu-1g`, 1x A100 80GB, TP=1)
+* **Goal**: Measure performance gains on a single 80GB SXM4 GPU by eliminating multi-GPU PCIe `AllReduce` communication overhead.
+* **Configuration**:
+  * Machine: `a2-ultragpu-1g` (1x NVIDIA A100 80GB SXM4, 170GB Host RAM, TP=1)
+  * Endpoint ID: `7432316523475107840` (`us-central1`)
+  * Container Image: `us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4`
+  * Flags: `--tensor-parallel-size=1`, `--gpu-memory-utilization=0.90`, `--max-model-len=8192`, `--max-num-seqs=16`
+* **Benchmark Results**:
+  * Cold/Warmup Run (Run 1): Latency = **8.36s** | TPS = **4.7 tok/s** | TPM = **280 tok/min**
+  * Steady-State Warm (Run 2): Latency = **6.37s** | TPS = **6.1 tok/s** | TPM = **367 tok/min**
+  * Steady-State Warm (Run 3): Latency = **6.36s** | TPS = **6.1 tok/s** | TPM = **368 tok/min**
+  * **Summary**:
+    * Avg Latency: **7.03 s** (Steady-state warm: **6.36 s**)
+    * Generation Speed: **5.6 tok/s (Avg)** / **6.1 tok/s (Warm)**
+    * Throughput: **338 tok/min (Avg)** / **368 tok/min (Warm)**
+* **Conclusions**:
+  * Eliminating multi-GPU tensor parallelism and running on a single A100 80GB GPU dropped steady-state generation latency by **50%** (from 12.76s down to 6.36s).
+  * Generation throughput increased by **+97%** (nearly doubling from 3.1 tok/s to **6.1 tok/s**).
+  * Successfully validated by the Gemma ADK Agent ([`agent/test_agent.py`](../agent/test_agent.py)).
+* **Status**: Benchmark Complete. Deployed Model `6657389524311605248` and Endpoint `7432316523475107840` **Cleanly Undeployed & Deleted** ($0 active billing).
 
 ---

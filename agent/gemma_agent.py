@@ -7,11 +7,10 @@ auto-discovering active endpoints to gracefully handle rapid deployment & teardo
 
 from typing import Any, Callable, Dict, List, Optional
 import os
+import sys
 import json
-import requests
-import google.auth
-import google.auth.transport.requests
-from google.cloud import aiplatform
+import tempfile
+import subprocess
 
 
 def get_current_time() -> str:
@@ -27,7 +26,6 @@ def calculate(expression: str) -> str:
         expression: Mathematical expression (e.g. '24 * 1024 / 4').
     """
     try:
-        # Safe eval using restricted globals/locals
         allowed_chars = set("0123456789+-*/(). %")
         if not all(c in allowed_chars for c in expression):
             return "Error: Expression contains disallowed characters."
@@ -71,49 +69,48 @@ class GemmaAgent:
             "Provide concise, factually grounded, and helpful answers."
         )
         self.tools = tools or [get_current_time, calculate]
-        self._auth_credentials = None
-        self._auth_request = None
 
     def set_up(self) -> None:
         """Called automatically when initialized on Vertex AI Agent Engine."""
-        aiplatform.init(project=self.project_id, location=self.region)
-        self._auth_credentials, _ = google.auth.default(
-            scopes=["https://www.googleapis.com/auth/cloud-platform"]
-        )
-        self._auth_request = google.auth.transport.requests.Request()
-
-    def _get_token(self) -> str:
-        """Retrieves a fresh OAuth2 Bearer token."""
-        if self._auth_credentials is None or self._auth_request is None:
-            self.set_up()
-        if not self._auth_credentials.valid:
-            self._auth_credentials.refresh(self._auth_request)
-        return self._auth_credentials.token
+        pass
 
     def discover_active_vertex_endpoint(self) -> Optional[Dict[str, str]]:
         """Auto-discovers any currently active Gemma endpoint across standard regions."""
-        regions_to_scan = [self.region, "us-central1", "us-east1", "us-west1"]
+        regions_to_scan = [self.region, "us-east1", "us-west1", "us-east4"]
         seen_regions = set()
 
         for reg in regions_to_scan:
             if reg in seen_regions:
                 continue
             seen_regions.add(reg)
-            try:
-                endpoints = aiplatform.Endpoint.list(
-                    project=self.project_id,
-                    location=reg,
-                    order_by="create_time desc",
-                )
-                for ep in endpoints:
-                    if ep.deployed_models:
+            cmd = [
+                "gcloud", "ai", "endpoints", "list",
+                f"--region={reg}",
+                f"--project={self.project_id}",
+                "--filter=displayName:gemma*",
+                "--sort-by=~createTime",
+                "--format=value(name.basename(),displayName)",
+                "--limit=1",
+            ]
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0 and res.stdout.strip():
+                lines = res.stdout.strip().split()
+                if len(lines) >= 1:
+                    ep_id = lines[0]
+                    # Verify deployed models exist
+                    desc_cmd = [
+                        "gcloud", "ai", "endpoints", "describe", ep_id,
+                        f"--region={reg}",
+                        f"--project={self.project_id}",
+                        "--format=value(deployedModels[0].id)",
+                    ]
+                    desc_res = subprocess.run(desc_cmd, capture_output=True, text=True)
+                    if desc_res.returncode == 0 and desc_res.stdout.strip():
                         return {
-                            "endpoint_id": ep.name,
+                            "endpoint_id": ep_id,
                             "region": reg,
-                            "display_name": ep.display_name,
+                            "display_name": lines[1] if len(lines) > 1 else ep_id,
                         }
-            except Exception:
-                continue
         return None
 
     def query(self, prompt: str, max_tokens: int = 512, temperature: float = 0.7) -> Dict[str, Any]:
@@ -127,10 +124,11 @@ class GemmaAgent:
         Returns:
             Dictionary containing the generated response, metadata, and active backend.
         """
-        token = self._get_token()
-
         # Strategy 1: Cloud Run URL
         if self.cloudrun_url:
+            import urllib.request
+            token_res = subprocess.run(["gcloud", "auth", "print-access-token"], capture_output=True, text=True)
+            token = token_res.stdout.strip()
             url = f"{self.cloudrun_url.rstrip('/')}/v1/chat/completions"
             headers = {
                 "Authorization": f"Bearer {token}",
@@ -145,9 +143,9 @@ class GemmaAgent:
                 "max_tokens": max_tokens,
                 "temperature": temperature,
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=120)
-            resp.raise_for_status()
-            data = resp.json()
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
             reply = data["choices"][0]["message"]["content"]
             return {"response": reply, "backend": "Cloud Run GPU", "url": self.cloudrun_url}
 
@@ -162,15 +160,6 @@ class GemmaAgent:
                 active_region = discovery["region"]
 
         if active_endpoint:
-            url = (
-                f"https://{active_region}-aiplatform.googleapis.com/v1/projects/"
-                f"{self.project_id}/locations/{active_region}/endpoints/{active_endpoint}:predict"
-            )
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            }
-            # Standard OpenAI/vLLM format supported by Model Garden containers
             payload = {
                 "instances": [
                     {
@@ -180,27 +169,54 @@ class GemmaAgent:
                     }
                 ]
             }
-            resp = requests.post(url, headers=headers, json=payload, timeout=120)
-            resp.raise_for_status()
-            data = resp.json()
-            predictions = data.get("predictions", [])
-            reply = predictions[0] if predictions else "No prediction returned."
-            return {
-                "response": reply,
-                "backend": "Vertex AI Online Prediction",
-                "endpoint_id": active_endpoint,
-                "region": active_region,
-            }
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+                json.dump(payload, f)
+                tmp_path = f.name
+
+            try:
+                cmd = [
+                    "gcloud", "ai", "endpoints", "predict", active_endpoint,
+                    f"--region={active_region}",
+                    f"--project={self.project_id}",
+                    f"--json-request={tmp_path}",
+                    "--format=json",
+                ]
+                res = subprocess.run(cmd, capture_output=True, text=True)
+                if res.returncode == 0:
+                    data = json.loads(res.stdout)
+                    predictions = data.get("predictions", [])
+                    reply = predictions[0] if predictions else "No prediction returned."
+                    if isinstance(reply, str) and "Output:\n" in reply:
+                        reply = reply.split("Output:\n", 1)[1].strip()
+                    return {
+                        "response": reply,
+                        "backend": "Vertex AI Online Prediction",
+                        "endpoint_id": active_endpoint,
+                        "region": active_region,
+                    }
+                else:
+                    return {"error": res.stderr, "backend": "Vertex AI Prediction Error"}
+            finally:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
 
         # Strategy 3: Fallback / Managed Model
         if self.managed_model:
-            from google import genai
-            client = genai.Client()
-            resp = client.models.generate_content(
-                model=self.managed_model,
-                contents=prompt,
-            )
-            return {"response": resp.text, "backend": "Managed MaaS / Gemini API", "model": self.managed_model}
+            token_res = subprocess.run(["gcloud", "auth", "print-access-token"], capture_output=True, text=True)
+            token = token_res.stdout.strip()
+            import urllib.request
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.managed_model}:generateContent"
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            }
+            payload = {"contents": [{"parts": [{"text": prompt}]}]}
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            candidates = data.get("candidates", [])
+            text = candidates[0]["content"]["parts"][0]["text"] if candidates else "No response"
+            return {"response": text, "backend": "Managed MaaS / Gemini API", "model": self.managed_model}
 
         return {
             "error": "No active Gemma endpoint found and no managed model configured. Deploy a model with 'just vertex-deploy <flavor>' or specify an endpoint ID.",
