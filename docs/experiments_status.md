@@ -27,6 +27,7 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 | **EXP-02** | **vLLM Engine Tuning (`--kv-cache-dtype=fp8` & CUDA Graphs)** | `g2-standard-48` | 4x L4 (96 GB) | 4 | 13.32 s | 11.21 s (10.15s warm) | 39 tok | **3.5 tok/s (3.8 warm)** | **212 tok/min (230 warm)** | **Verified & Torn Down** |
 | **EXP-03** | **Architecture Comparison: Managed Model-as-a-Service vs Self-Deployed** | Global / Multi-Cluster | TPU v5e/v5p / H100 | N/A | Instant | < 1.0 s | 250+ tok | **50 – 100+ tok/s** | **3,000 – 6,000+ TPM** | **Documented in research.md** |
 | **EXP-04** | **Single High-Bandwidth GPU (`a2-ultragpu-1g`, 1x A100 80GB, TP=1)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | 8.36 s | 7.03 s (6.36s warm) | 39 tok | **5.6 tok/s (6.1 warm)** | **338 tok/min (368 warm)** | **Verified & Cleanly Torn Down** |
+| **EXP-05** | **Dynamic FP8 Weight Quantization on A100 (`--quantization=fp8`)** | `a2-ultragpu-1g` | 1x A100 (80 GB) | 1 | N/A | N/A | N/A | N/A | N/A | Incompatible: Ampere lacks `fp8e4nv` hardware |
 
 ---
 
@@ -136,3 +137,18 @@ This document tracks all optimization experiments for **Gemma 4 31B (`gemma-4-31
 * **Status**: Benchmark Complete. Deployed Model `6657389524311605248` and Endpoint `7432316523475107840` **Cleanly Undeployed & Deleted** ($0 active billing).
 
 ---
+
+### EXP-05: Dynamic FP8 Weight Quantization on Single A100 80GB
+* **Goal**: Test dynamic runtime FP8 weight quantization (`--quantization=fp8`) on `a2-ultragpu-1g` to compress memory bandwidth from 62 GB/step to ~31 GB/step.
+* **Configuration**:
+  * Machine: `a2-ultragpu-1g` (1x NVIDIA A100 80GB SXM4, TP=1)
+  * Flags: `--tensor-parallel-size=1`, `--quantization=fp8`, `--kv-cache-dtype=fp8`, `--max-model-len=8192`
+* **Findings & Failure Analysis**:
+  * During Triton/Inductor autotuning kernel compilation, the vLLM engine crashed with:
+    `ValueError: type fp8e4nv not supported in this architecture. The supported fp8 dtypes are ('fp8e4b15', 'fp8e5')`.
+  * **Root Cause**: NVIDIA Ampere architecture (A100 / Compute Capability 8.0) lacks hardware tensor core support for standard `fp8e4nv` (E4M3) operations. Native hardware FP8 E4M3 tensor cores were introduced in Ada Lovelace (L4 / RTX 4090) and Hopper (H100).
+  * **Architectural Rule**: On A100 GPUs, Gemma 4 must be served in native BF16 weights (which yields **6.1 tok/s** as verified in EXP-04). For hardware-accelerated FP8 E4M3 weight execution, use Ada Lovelace (L4) or Hopper (H100).
+* **Status**: Tested & Documented. Endpoint `177017523781238784` and Model `6822936393036070912` **Cleanly Deleted & Reverted** ($0 active billing).
+
+---
+
