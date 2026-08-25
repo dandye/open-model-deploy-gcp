@@ -145,7 +145,8 @@ agent-deploy:
 
 # Test SOC Tier 1 Agent locally against active Gemma endpoint (Usage: just agent-soc-test [prompt] [flavor])
 agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" FLAVOR="":
-    @uv run python3 -m agent.test_agent "{{PROMPT}}"
+    @uv run python3 -m agent.test_agent "{{PROMPT}}" --soc
+
 
 # Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [endpoint])
 agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="":

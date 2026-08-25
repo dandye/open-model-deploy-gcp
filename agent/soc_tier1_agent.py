@@ -1,6 +1,7 @@
-"""Gemma-Powered SOC Tier 1 Analyst Agent for Vertex AI Agent Engine."""
-
-from typing import Any, Callable, Dict, List, Optional
+import inspect
+import json
+import re
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from agent.gemma_agent import GemmaAgent
 from agent.soc_tools import (
     get_domain_report,
@@ -29,7 +30,7 @@ Operational Runbook Procedures:
 
 
 class SocTier1Agent(GemmaAgent):
-    """Reasoning Engine compatible Tier 1 SOC Analyst Agent powered by Gemma."""
+    """Reasoning Engine compatible Tier 1 SOC Analyst Agent powered by Gemma with ReAct tool execution."""
 
     def __init__(
         self,
@@ -77,6 +78,98 @@ class SocTier1Agent(GemmaAgent):
         )
         self.use_live_mcp = use_live_mcp
         self.name = "soc_analyst_tier1"
+        self.tools_dict: Dict[str, Callable] = {tool.__name__: tool for tool in (self.tools or [])}
+        self.last_backend: str = "Unknown"
+
+    def _build_tools_description(self) -> str:
+        """Extracts tool docstrings and signatures for ReAct prompt formatting."""
+        descriptions = []
+        for name, func in self.tools_dict.items():
+            doc = inspect.getdoc(func) or "No description available."
+            first_line = doc.splitlines()[0]
+            sig = inspect.signature(func)
+            descriptions.append(f"- {name}{sig}: {first_line}")
+        return "\n".join(descriptions)
+
+    def _parse_action(self, text: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """Parses action calls in ReAct or JSON formats."""
+        # 1. JSON action format: {"tool": "name", "args": {...}} or {"action": "name", "action_input": {...}}
+        json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+        if not json_match:
+            json_match = re.search(r"(\{\s*\"(?:tool|action)\"\s*:.*?\})", text, re.DOTALL)
+        if json_match:
+            try:
+                data = json.loads(json_match.group(1))
+                tool_name = data.get("tool") or data.get("action")
+                args = data.get("args") or data.get("action_input") or {}
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except Exception:
+                        args = {"input": args}
+                if tool_name and isinstance(args, dict):
+                    return str(tool_name).strip(), args
+            except Exception:
+                pass
+
+        # 2. ReAct action format: Action: tool_name(arg_name="value") or tool_name("value")
+        action_match = re.search(r"Action:\s*([a-zA-Z0-9_]+)\s*\((.*?)\)", text, re.DOTALL)
+        if action_match:
+            tool_name = action_match.group(1).strip()
+            args_raw = action_match.group(2).strip()
+            args: Dict[str, Any] = {}
+            if args_raw:
+                # Check keyword arguments: k="v" or k='v' or k=v
+                kwarg_matches = re.findall(r'([a-zA-Z0-9_]+)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([a-zA-Z0-9_\.\-]+))', args_raw)
+                if kwarg_matches:
+                    for k, v1, v2, v3 in kwarg_matches:
+                        args[k] = v1 or v2 or v3
+                else:
+                    # Positional argument passed without keyword
+                    pos_match = re.match(r'^(?:"([^"]*)"|\'([^\']*)\'|([a-zA-Z0-9_\.\-]+))$', args_raw)
+                    if pos_match:
+                        val = pos_match.group(1) or pos_match.group(2) or pos_match.group(3)
+                        func = self.tools_dict.get(tool_name)
+                        if func:
+                            params = list(inspect.signature(func).parameters.keys())
+                            if params:
+                                args[params[0]] = val
+                        else:
+                            args["arg"] = val
+            return tool_name, args
+
+        return None
+
+    def _execute_tool(self, tool_name: str, args: Dict[str, Any]) -> str:
+        """Executes a local or remote tool function safely."""
+        func = self.tools_dict.get(tool_name)
+        if not func:
+            return f"Error: Tool '{tool_name}' not found. Available tools: {list(self.tools_dict.keys())}"
+        try:
+            sig = inspect.signature(func)
+            valid_args = {}
+            params = list(sig.parameters.keys())
+            if len(params) == 1 and len(args) == 1:
+                valid_args[params[0]] = list(args.values())[0]
+            else:
+                for param_name in params:
+                    if param_name in args:
+                        valid_args[param_name] = args[param_name]
+                    elif len(args) == 1 and list(args.keys())[0] in ("input", "arg"):
+                        valid_args[param_name] = list(args.values())[0]
+            result = func(**valid_args)
+            return str(result)
+        except Exception as e:
+            return f"Error executing tool '{tool_name}': {str(e)}"
+
+
+    def _call_llm_step(self, prompt: str, max_tokens: int = 1024, temperature: float = 0.2) -> str:
+        """Invokes underlying Gemma LLM backend for a single reasoning step."""
+        res = super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
+        if isinstance(res, dict):
+            self.last_backend = res.get("backend", "Unknown")
+            return res.get("response", "")
+        return str(res)
 
     def format_triage_prompt(self, query: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Formats an operational triage request with optional case metadata."""
@@ -85,6 +178,74 @@ class SocTier1Agent(GemmaAgent):
         ctx_str = "\n".join(f"- {k}: {v}" for k, v in context.items())
         return f"Operational Triage Request:\n{query}\n\nCase Context:\n{ctx_str}\n\nPerform initial investigation and provide the triage report."
 
-    def query(self, prompt: str, max_tokens: int = 1024, temperature: float = 0.2) -> Dict[str, Any]:
-        """Executes triage reasoning with lower temperature for operational determinism."""
-        return super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
+    def query(
+        self,
+        prompt: str,
+        max_iterations: int = 5,
+        max_tokens: int = 1024,
+        temperature: float = 0.2,
+    ) -> Dict[str, Any]:
+        """Executes multi-step ReAct triage reasoning and executes tools iteratively."""
+        tools_doc = self._build_tools_description()
+        react_instructions = (
+            f"{SOC_TIER1_PERSONA}\n\n"
+            f"Available Investigation Tools:\n{tools_doc}\n\n"
+            "Interaction Protocol (ReAct):\n"
+            "To gather information, output Thought and Action:\n"
+            "Thought: <reasoning about needed evidence>\n"
+            "Action: <tool_name>(<arg_name>=\"<value>\")\n\n"
+            "When you receive the Observation, continue. When you have gathered all necessary information, conclude with:\n"
+            "Thought: I have gathered all necessary information to form a complete triage verdict.\n"
+            "Final Answer:\n"
+            "[Context & Enrichment]\n<entities and findings>\n\n"
+            "[Analysis & Verdict]\n<verdict: BENIGN, SUSPICIOUS, or MALICIOUS>\n\n"
+            "[Action & Escalation]\n<clear operational actions>\n\n"
+            "[SOAR Documentation]\n<markdown comment>\n"
+        )
+
+        current_prompt = f"{react_instructions}\n\nQuestion: {prompt}\n"
+        trajectory: List[Dict[str, Any]] = []
+        final_answer = ""
+
+        for iteration in range(max_iterations):
+            step_output = self._call_llm_step(current_prompt, max_tokens=max_tokens, temperature=temperature)
+            if not step_output:
+                break
+
+            # 1. Check for explicit Final Answer
+            if "Final Answer:" in step_output:
+                final_answer = step_output.split("Final Answer:", 1)[1].strip()
+                break
+
+            # 2. Check if model produced the full structured triage report directly
+            if "[Context & Enrichment]" in step_output and "[Analysis & Verdict]" in step_output:
+                final_answer = step_output.strip()
+                break
+
+            # 3. Check for Action / Tool invocation
+            parsed = self._parse_action(step_output)
+            if parsed:
+                tool_name, tool_args = parsed
+                observation = self._execute_tool(tool_name, tool_args)
+                trajectory.append({
+                    "iteration": iteration + 1,
+                    "tool": tool_name,
+                    "args": tool_args,
+                    "observation": observation,
+                })
+                current_prompt += f"{step_output}\nObservation: {observation}\n"
+            else:
+                # No action and no final answer tag; treat output as final answer
+                final_answer = step_output.strip()
+                break
+
+        if not final_answer:
+            final_answer = "Reached maximum investigation iterations without final triage output."
+
+        return {
+            "response": final_answer,
+            "trajectory": trajectory,
+            "backend": self.last_backend,
+            "endpoint_id": self.endpoint_id,
+        }
+

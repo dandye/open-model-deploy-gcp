@@ -10,11 +10,16 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
+import json
 from agent.gemma_agent import GemmaAgent
+from agent.soc_tier1_agent import SocTier1Agent
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Test GemmaAgent locally or against Agent Engine.")
+    parser = argparse.ArgumentParser(description="Test GemmaAgent or SocTier1Agent locally or against Agent Engine.")
     parser.add_argument("prompt", nargs="?", default="Explain quantum computing in two concise sentences.", help="Input user prompt")
+    parser.add_argument("--soc", action="store_true", default=False, help="Use SocTier1Agent with ReAct tool execution")
+    parser.add_argument("--live-mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
     parser.add_argument("--endpoint", default=None, help="Specific Vertex AI Endpoint ID")
     parser.add_argument("--region", default="us-central1", help="GCP Region")
     parser.add_argument("--cloudrun-url", default=None, help="Cloud Run HTTPS Service URL")
@@ -35,28 +40,53 @@ def main():
         print(res)
         return
 
+    agent_type = "SOC Tier 1 Agent (ReAct Tools Enabled)" if args.soc else "Standard GemmaAgent"
     print("==========================================")
-    print(" Local GemmaAgent Test Runner")
+    print(f" Local {agent_type} Test Runner")
     print("==========================================")
     print(f"Project:      {project_id}")
     print(f"Region:       {args.region}")
+    print(f"Live SecOps:  {'Enabled' if args.live_mcp else 'Disabled (Local Mock Tools)'}")
     print(f"Prompt:       {args.prompt}")
     print("==========================================")
 
-    agent = GemmaAgent(
-        project_id=project_id,
-        region=args.region,
-        endpoint_id=args.endpoint,
-        cloudrun_url=args.cloudrun_url,
-        managed_model=args.managed_model,
-    )
+    if args.soc:
+        agent = SocTier1Agent(
+            project_id=project_id,
+            region=args.region,
+            endpoint_id=args.endpoint,
+            cloudrun_url=args.cloudrun_url,
+            managed_model=args.managed_model,
+            use_live_mcp=args.live_mcp,
+        )
+    else:
+        agent = GemmaAgent(
+            project_id=project_id,
+            region=args.region,
+            endpoint_id=args.endpoint,
+            cloudrun_url=args.cloudrun_url,
+            managed_model=args.managed_model,
+        )
     agent.set_up()
 
     print("\nScanning for active Gemma endpoints...")
     result = agent.query(prompt=args.prompt)
-    print("\n--- Result ---")
+
+    if isinstance(result, dict) and "trajectory" in result:
+        trajectory = result.get("trajectory", [])
+        if trajectory:
+            print("\n--- ReAct Tool Execution Trajectory ---")
+            for step in trajectory:
+                print(f"Step {step['iteration']}: [Tool: {step['tool']}]")
+                print(f"  Arguments:   {json.dumps(step['args'])}")
+                print(f"  Observation: {step['observation']}\n")
+        else:
+            print("\n[INFO] No tools required for this query.")
+
+    print("\n--- Final Result ---")
     print(json.dumps(result, indent=2) if isinstance(result, dict) else result)
 
+
 if __name__ == "__main__":
-    import json
     main()
+

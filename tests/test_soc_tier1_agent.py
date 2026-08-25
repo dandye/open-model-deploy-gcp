@@ -71,12 +71,53 @@ def test_format_soc_prompt_without_context():
 
 def test_query_default_temperature_and_tokens():
     agent = SocTier1Agent()
-    with patch("agent.gemma_agent.GemmaAgent.query") as mock_super_query:
-        mock_super_query.return_value = {"response": "Triage complete", "backend": "Mock"}
+    with patch.object(agent, "_call_llm_step") as mock_step:
+        mock_step.return_value = "Final Answer: Triage complete"
         result = agent.query(prompt="Analyze alert")
-        mock_super_query.assert_called_once_with(
-            prompt="Analyze alert",
-            max_tokens=1024,
-            temperature=0.2,
-        )
-        assert result["response"] == "Triage complete"
+        mock_step.assert_called_once()
+        assert "Triage complete" in result["response"]
+
+
+def test_react_loop_executes_tool_and_returns_grounded_answer():
+    agent = SocTier1Agent()
+    step_outputs = [
+        'Thought: I need to check IP reputation.\nAction: get_ip_address_report(ip="192.0.2.100")',
+        'Thought: IP is benign documentation network.\nFinal Answer:\n[Context & Enrichment]\n192.0.2.100 is RFC-5737 test IP.\n\n[Analysis & Verdict]\nBENIGN documentation artifact.\n\n[Action & Escalation]\nClose alert.\n\n[SOAR Documentation]\nDocumented.',
+    ]
+    with patch.object(agent, "_call_llm_step", side_effect=step_outputs):
+        result = agent.query(prompt="Triage alert for IP 192.0.2.100")
+        assert "trajectory" in result
+        assert len(result["trajectory"]) == 1
+        assert result["trajectory"][0]["tool"] == "get_ip_address_report"
+        assert result["trajectory"][0]["args"] == {"ip": "192.0.2.100"}
+        assert "RFC-5737" in result["trajectory"][0]["observation"]
+        assert "BENIGN documentation artifact" in result["response"]
+
+
+def test_react_loop_handles_json_action():
+    agent = SocTier1Agent()
+    step_outputs = [
+        '```json\n{"tool": "lookup_entity", "args": {"entity": "10.0.4.15"}}\n```',
+        'Final Answer:\n[Context & Enrichment]\nInternal workstation.\n\n[Analysis & Verdict]\nBENIGN internal.\n\n[Action & Escalation]\nNo action.\n\n[SOAR Documentation]\nLogged.',
+    ]
+    with patch.object(agent, "_call_llm_step", side_effect=step_outputs):
+        result = agent.query(prompt="Lookup 10.0.4.15")
+        assert len(result["trajectory"]) == 1
+        assert result["trajectory"][0]["tool"] == "lookup_entity"
+        assert result["trajectory"][0]["args"] == {"entity": "10.0.4.15"}
+        assert "10.0.4.15" in result["trajectory"][0]["observation"]
+        assert "Internal workstation" in result["response"]
+
+
+def test_react_loop_max_iterations():
+    agent = SocTier1Agent()
+    step_outputs = [
+        'Action: list_cases(entity="test")',
+        'Action: list_cases(entity="test")',
+        'Action: list_cases(entity="test")',
+    ]
+    with patch.object(agent, "_call_llm_step", side_effect=step_outputs):
+        result = agent.query(prompt="Loop test", max_iterations=2)
+        assert len(result["trajectory"]) == 2
+        assert "Reached maximum investigation iterations" in result["response"]
+
