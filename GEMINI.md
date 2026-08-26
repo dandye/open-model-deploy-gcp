@@ -18,7 +18,8 @@ This repository contains automation scripts, Terraform modules, `Justfile` recip
 The repository uses a single source of truth at [`configs/models.json`](configs/models.json) defining compute, runtime, VRAM, and target environment compatibility for all supported Gemma variants:
 * **Gemma 2 2B / 9B / 27B** (`gemma-2-2b-it`, `gemma-2-9b-it`, `gemma-2-27b-it`)
 * **Gemma 3 1B / 4B / 12B / 27B** (`gemma-3-1b-it`, `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3-27b-it`)
-* **Gemma 4 31B** (`gemma-4-31b-it`)
+* **Gemma 4 E2B / E4B / 31B** (`gemma-4-e2b-it`, `gemma-4-e4b-it`, `gemma-4-31b-it`)
+
 
 All bash scripts, Terraform modules, and CLI commands read dynamically from this catalog via [`scripts/lib/model_catalog.sh`](scripts/lib/model_catalog.sh) and Terraform `jsondecode()`.
 

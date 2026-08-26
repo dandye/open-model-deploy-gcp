@@ -175,5 +175,52 @@
       "extraArgs": ["--max-num-seqs=16"]
     },
     "supportedTargets": ["vertex"]
+  },
+  "gemma-4-e2b-it": {
+    "displayName": "Gemma 4 E2B Instruct",
+    "family": "gemma4",
+    "params": "2.3B eff (5.1B total)",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma4/gemma-4-E2B-it",
+    "hfRepo": "google/gemma-4-E2B-it",
+    "compute": {
+      "machineType": "g2-standard-4",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 16,
+      "hourlyCostUsd": 0.70
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4",
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 0,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": ["--max-num-seqs=16"]
+    },
+    "supportedTargets": ["vertex", "cloudrun"]
+  },
+  "gemma-4-e4b-it": {
+    "displayName": "Gemma 4 E4B Instruct",
+    "family": "gemma4",
+    "params": "4.5B eff (8.0B total)",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/gemma4/gemma-4-E4B-it",
+    "hfRepo": "google/gemma-4-E4B-it",
+    "compute": {
+      "machineType": "g2-standard-8",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 32,
+      "hourlyCostUsd": 0.76
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:gemma4",
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 0,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": ["--max-num-seqs=16"]
+    },
+    "supportedTargets": ["vertex", "cloudrun"]
   }
 }
+

@@ -31,8 +31,10 @@ The table below summarizes the catalog status, compute profile, and environment 
 | `gemma-3-27b-it` | Gemma 3 (Vision) | 27.0B | ~54.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 | `gemma-2-2b-it` | Gemma 2 | 2.6B | ~5.2 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
 | `gemma-2-9b-it` | Gemma 2 | 9.2B | ~17.2 GB | `g2-standard-12` | 1x L4 (24GB) | 1 | 4,096 | Compatible | Compatible (Scale-to-0) | **Live & Verified** |
-| `gemma-2-27b-it` | Gemma 2 | 27.2B | ~54.4 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
+| `gemma-4-e2b-it` | Gemma 4 | 2.3B eff (5.1B total) | ~5.1 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | **Registered & Ready** |
+| `gemma-4-e4b-it` | Gemma 4 | 4.5B eff (8.0B total) | ~8.0 GB | `g2-standard-8` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | **Registered & Ready** |
 | `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
+
 
 ---
 

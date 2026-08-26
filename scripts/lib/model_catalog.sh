@@ -31,6 +31,10 @@ catalog_get() {
 }
 
 # Get compute attributes
+catalog_get_display_name() {
+  catalog_get "$1" ".displayName"
+}
+
 catalog_get_machine_type() {
   catalog_get "$1" ".compute.machineType"
 }

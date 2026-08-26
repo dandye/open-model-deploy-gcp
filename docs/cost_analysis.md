@@ -31,10 +31,12 @@ This document provides compute specifications, hourly pricing, full/business mon
 | **`gemma-2-9b-it`** | **Gemma 2 9B Instruct** | 9.2B | bfloat16 | **`g2-standard-12`** | 1x NVIDIA L4 (24 GB) | 1 | 4,096 | **$0.83 / hr** | $132.80 | **$605.90** |
 | **`gemma-3-12b-it`**| **Gemma 3 12B Multimodal** | 12.0B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 8,192 | **$3.36 / hr** | $537.60 | **$2,452.80** |
 | **`gemma-2-27b-it`**| **Gemma 2 27B Instruct** | 27.2B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 8,192 | **$3.36 / hr** | $537.60 | **$2,452.80** |
-| **`gemma-3-27b-it`**| **Gemma 3 27B Multimodal** | 27.0B | bfloat16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 8,192 | **$3.36 / hr** | $537.60 | **$2,452.80** |
+| **`gemma-4-e2b-it`** | **Gemma 4 E2B Instruct** | 2.3B eff | bfloat16 | **`g2-standard-4`** | 1x NVIDIA L4 (24 GB) | 1 | 8,192 | **$0.70 / hr** | $112.00 | **$511.00** |
+| **`gemma-4-e4b-it`** | **Gemma 4 E4B Instruct** | 4.5B eff | bfloat16 | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | 8,192 | **$0.76 / hr** | $121.60 | **$554.80** |
 | **`gemma-4-31b-it`**| **Gemma 4 31B (1x A100 80GB)** | 31.0B | bfloat16 | **`a2-ultragpu-1g`** | 1x NVIDIA A100 (80 GB) | 1 | 8,192 | **$3.67 / hr** | $587.20 | **$2,679.10** |
 | **`gemma-4-31b-it`**| **Gemma 4 31B (2x A100 NVLink)** | 31.0B | bfloat16 | **`a2-highgpu-2g`** | 2x NVIDIA A100 (80 GB NVLink) | 2 | 8,192 | **$7.34 / hr** | $1,174.40 | **$5,358.20** |
 | **`gemma-4-31b-it`**| **Gemma 4 31B (4x L4 FP8)** | 31.0B | fp8 / bf16 | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | 4,096 | **$3.36 / hr** | $537.60 | **$2,452.80** |
+
 
 ---
 

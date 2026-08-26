@@ -28,6 +28,8 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 
 | Model ID | Display Name | Target Flavor | Machine / GPUs | Description | Created |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`164594691654811648`** | `gemma-4-e4b-it-model-garden` | `gemma-4-e4b-it` | `g2-standard-8` (1x L4) | Gemma 4 E4B Instruct on 1x nvidia-l4 (g2-standard-8). | 2026-08-26 00:19 |
+| **`7686169019316961280`** | `gemma-4-e2b-it-model-garden` | `gemma-4-e2b-it` | `g2-standard-4` (1x L4) | Gemma 4 E2B Instruct on 1x nvidia-l4 (g2-standard-4). | 2026-08-26 00:19 |
 | **`6666666653670965248`** | `gemma-3-27b-it-quantization-fp8-specula-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with FP8 Quantization and Prompt Lookup (N-gram) Speculative Decoding on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 22:44 |
 | **`5380326010103267328`** | `gemma-3-27b-it-quantization-fp8-enable--model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with FP8 Quantization, Chunked Prefill, and Automatic Prefix Caching on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 20:07 |
 | **`7193024860119891968`** | `gemma-3-27b-it-quantization-fp8-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with Native Hardware FP8 (W8A8) Quantization on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 19:47 |
@@ -40,6 +42,8 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 
 | Model ID | Display Name | Target Flavor | Machine / GPUs | Description | Created |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **`6801007733131706368`** | `gemma-4-e4b-it-model-garden` | `gemma-4-e4b-it` | `g2-standard-8` (1x L4) | Gemma 4 E4B Instruct on 1x nvidia-l4 (g2-standard-8). | 2026-08-26 00:19 |
+| **`2965629700472307712`** | `gemma-4-e2b-it-model-garden` | `gemma-4-e2b-it` | `g2-standard-4` (1x L4) | Gemma 4 E2B Instruct on 1x nvidia-l4 (g2-standard-4). | 2026-08-26 00:19 |
 | **`5612620381459316736`** | `gemma-3-27b-it-quantization-fp8-model-garden` | `gemma-3-27b-it` | `g2-standard-48` (4x L4) | Gemma 3 27B Instruct with Native Hardware FP8 (W8A8) Quantization on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 19:25 |
 | **`1516570132086784000`** | `gemma-3-4b-it-model-garden` | `gemma-3-4b-it` | `g2-standard-8` (1x L4) | Gemma 3 4B Instruct Multimodal Vision with 32k Context Length on 1x NVIDIA L4 GPU (g2-standard-8). Active for SocTier1Agent evaluation. | 2026-08-25 00:48 |
 | **`9027448410633928704`** | `gemma-3-12b-it-model-garden` | `gemma-3-12b-it` | `g2-standard-48` (4x L4) | Gemma 3 12B Instruct Multimodal Vision with 32k Context Length on 4x NVIDIA L4 GPUs (g2-standard-48). | 2026-08-25 00:30 |
@@ -47,6 +51,7 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 | **`7723656318510170112`** | `gemma-2-2b-it-model-garden` | `gemma-2-2b-it` | `g2-standard-4` (1x L4) | Gemma 2 2B Instruct in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-4). | 2026-08-25 01:25 |
 | **`540441301133295616`**  | `gemma-2-9b-it-model-garden` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct in Native BF16 with 4k Context Length on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
 | **`5242199312108093440`**  | `gemma-2-9b-it-model-garden-v3` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct v3 in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
+
 
 ---
 
