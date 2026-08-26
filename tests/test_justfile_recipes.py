@@ -28,6 +28,24 @@ def test_justfile_contains_soc_recipes():
     assert "eval_soc_agent" in content, "Recipe agent-soc-eval must call eval_soc_agent"
 
 
+def test_justfile_contains_overnight_sweep_recipe():
+    """Verify Justfile contains overnight-sweep recipe with logging and optional filtering."""
+    justfile_path = ROOT_DIR / "Justfile"
+    assert justfile_path.exists(), "Justfile not found"
+
+    content = justfile_path.read_text(encoding="utf-8")
+
+    # Assert recipe definition and help menu presence
+    assert "overnight-sweep" in content, "Recipe 'overnight-sweep' not defined in Justfile"
+    assert "just overnight-sweep" in content, "Help menu missing 'just overnight-sweep'"
+
+    # Assert recipe creates logs directory and runs orchestrator with tee logging
+    assert "mkdir -p logs" in content, "Recipe must ensure logs/ directory exists"
+    assert "run_overnight_sweep.py" in content, "Recipe must invoke run_overnight_sweep.py"
+    assert "overnight_sweep_" in content and ".log" in content, "Recipe must log to timestamped log file"
+    assert "tee" in content, "Recipe must use tee for live output and logfile capture"
+
+
 def test_justfile_syntax():
     """Verify Justfile parses without syntax errors using the just CLI."""
     res = subprocess.run(
@@ -40,6 +58,7 @@ def test_justfile_syntax():
     assert "agent-soc-test" in res.stdout
     assert "agent-soc-eval" in res.stdout
     assert "agent-soc-deploy" in res.stdout
+    assert "overnight-sweep" in res.stdout
 
 
 def test_experiments_status_contains_track_e():

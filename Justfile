@@ -36,7 +36,8 @@ default:
     @printf "  \033[1;32mjust agent-deploy\033[0m                      \033[2mDeploy general Gemma ADK Agent to Agent Engine\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-test [prompt] [flavor]\033[0m  \033[2mTest SOC Tier 1 Agent locally against endpoint\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-eval [flavor] [endpoint]\033[0m \033[2mRun automated SOC eval suite with LLM judge\033[0m\n"
-    @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
+    @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n"
+    @printf "  \033[1;32mjust overnight-sweep [models] [dry_run]\033[0m \033[2mRun overnight benchmark & SOC eval sweep with logging\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -155,6 +156,18 @@ agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="" LIVE_MCP="false":
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":
     @USE_LIVE_MCP="{{LIVE_MCP}}" uv run python3 -m agent.deploy_soc_tier1
+
+# ------------------------------------------------------------------------------
+# Master Overnight Evaluation & Benchmark Sweep
+# ------------------------------------------------------------------------------
+
+# Run master overnight comprehensive model evaluation & benchmark sweep (Usage: just overnight-sweep [models] [dry_run])
+overnight-sweep MODELS="" DRY_RUN="false":
+    @mkdir -p logs
+    @LOGFILE="logs/overnight_sweep_$(date +%Y%m%d_%H%M%S).log"; \
+    echo "Starting overnight sweep. Logging to $LOGFILE"; \
+    uv run python3 scripts/run_overnight_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}} 2>&1 | tee "$LOGFILE"
+
 
 
 
