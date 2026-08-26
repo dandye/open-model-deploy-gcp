@@ -1,6 +1,11 @@
-# SOC Evaluation Report: gemini-2.5-flash-baseline
+# SOC Evaluation Report: gemini-2.5-flash-baseline [DEPRECATED]
+
+> [!WARNING]
+> **DEPRECATED / SUPERSEDED**:
+> This baseline report reflects early Phase 1 testing with a prescriptive ("spoiled") system prompt that hardcoded alert cheat sheets. It is superseded by the un-spoiled benchmark report in [`gemini_2_5_flash_report.md`](gemini_2_5_flash_report.md) and [`../soc_model_comparative_evals.md`](../soc_model_comparative_evals.md).
 
 **Date:** 2026-08-25 18:50:30 UTC
+
 
 ## Summary
 - **Pass Rate:** 100.0%

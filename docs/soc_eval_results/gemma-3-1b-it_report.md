@@ -1,6 +1,11 @@
-# SOC Evaluation Report: gemma-3-1b-it
+# SOC Evaluation Report: gemma-3-1b-it [DEPRECATED]
+
+> [!WARNING]
+> **DEPRECATED / SUPERSEDED**:
+> This report reflects initial Phase 1 testing using a prescriptive ("spoiled") system prompt. It is superseded by the un-spoiled evaluation standard documented in [`../soc_model_comparative_evals.md`](../soc_model_comparative_evals.md).
 
 **Date:** 2026-08-25 19:11:59 UTC
+
 
 ## Summary
 - **Pass Rate:** 20.0%

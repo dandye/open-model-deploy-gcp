@@ -438,7 +438,12 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
 
 ### Empirical Benchmark Results: Track E
 
-#### EXP-E01: `gemma-3-1b-it` (1x NVIDIA L4 on `g2-standard-4`)
+#### EXP-E01: `gemma-3-1b-it` (1x NVIDIA L4 on `g2-standard-4` - Prescriptive Persona) [DEPRECATED]
+
+> [!WARNING]
+> **DEPRECATED / SUPERSEDED (Prescriptive Prompt Iteration)**:
+> This initial baseline used an early "spoiled" prompt containing hardcoded alert cheat sheets (e.g., explicit phishing and ransomware recipes). It was superseded by the un-spoiled, principled evaluation standard established in **EXP-E02 through EXP-E06** and [`docs/soc_model_comparative_evals.md`](soc_model_comparative_evals.md).
+
 * **Endpoint ID**: `8275052603746811904` (`gemma-3-1b-it-endpoint-20260825-1838`)
 * **Model ID**: `1389343442613567488` (`gemma-3-1b-it-model-garden`)
 * **Hardware**: `g2-standard-4` (1x NVIDIA L4, 16 GB Host RAM, 24 GB VRAM)
@@ -446,6 +451,7 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
   * **Pass Rate**: **20.0% (1/5)**
   * **Average Rubric Score**: **64.0 / 100**
   * **Average Latency**: **12.76 s**
+
 * **Detailed Breakdown**:
   * `CASE-01-LOKIBOT-C2`: **55.0/100** (FAIL: Contained prohibited substring `'BENIGN'`) | Latency: 14.32s
   * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: Flawless non-routable documentation IP grounding) | Latency: 9.46s

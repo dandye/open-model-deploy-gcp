@@ -70,8 +70,9 @@ if [[ -n "$CLOUDRUN_URL" ]]; then
 fi
 
 # 2. Check for Active Vertex AI Endpoint across regions
-VERTEX_REGIONS=("$REGION" "us-east4" "us-west1" "europe-west4")
+VERTEX_REGIONS=("$REGION" "us-east1" "us-east4" "us-west1" "europe-west4")
 ENDPOINT_INFO=""
+
 FOUND_REGION=""
 
 for r in "${VERTEX_REGIONS[@]}"; do

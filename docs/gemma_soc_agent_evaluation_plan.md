@@ -4,7 +4,12 @@
 
 **Goal:** Create a lightweight Gemma-powered Security Operations Center (SOC) Tier 1 Analyst Agent in the `agent/` directory, deployable to Vertex AI Agent Engine, and evaluate its operational capabilities across Gemma model sizes (1B, 2B, 4B, 9B, 12B, 27B, 31B) using declarative runbook rubrics and an LLM-as-a-judge scoring engine from `adk_runbooks`.
 
+> [!IMPORTANT]
+> **EVALUATION STANDARD NOTICE (Un-Spoiled / Principled Persona)**:
+> Early iterations in Phase 1 that used prescriptive alert cheat sheets (e.g. specific hardcoded phishing/ransomware recipes) are **DEPRECATED** because they masked model reasoning limits. All authoritative evaluation results now follow the **Un-Spoiled Principled Standard** documented in [`docs/thoughts_on_evals.md`](thoughts_on_evals.md) and [`docs/soc_model_comparative_evals.md`](soc_model_comparative_evals.md).
+
 **Architecture:** The agent extends the project's dynamic backend resolution (`GemmaAgent`) with the Tier 1 SOC Analyst persona and runbook definitions (`basic_ioc_enrichment.md` and `triage_alerts.md`). An evaluation runner executes declarative SOC test cases against active Gemma endpoints (Vertex AI Prediction or Cloud Run GPU), invoking Gemini 2.5 Pro as an LLM judge to evaluate response quality, tool trajectory adherence, grounding veracity, and 100-point rubric compliance.
+
 
 **Tech Stack:** Python 3.11+, Google ADK 2.x, Vertex AI Agent Engine (`vertexai.preview.reasoning_engines`), `google-genai` SDK, Pydantic v2, Typer/Argparse, Justfile automation.
 
