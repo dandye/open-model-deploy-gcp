@@ -26,8 +26,35 @@ from scripts.benchmark import BenchmarkRunner
 from scripts.eval_soc_agent import run_evaluation
 
 
+# Canonical ordering by model size and capability (smallest on left/top to most capable on right/bottom)
+MODEL_CAPABILITY_ORDER: List[str] = [
+    # 1B - 2B Edge Tier
+    "gemma-3-1b-it",
+    "gemma-2-2b-it",
+    "gemma-4-e2b-it",
+    # 4B - 9B Mid Tier
+    "gemma-3-4b-it",
+    "gemma-4-e4b-it",
+    "gemma-2-9b-it",
+    # 12B - 27B Large Tier
+    "gemma-3-12b-it",
+    "gemma-2-27b-it",
+    "gemma-3-27b-it-fp8",
+    "gemma-3-27b-it-speculative",
+    "gemma-3-27b-it",
+    # 31B Frontier Open Weights
+    "gemma-4-31b-it",
+    # Frontier / Managed (Global & MaaS)
+    "gemini-3.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-3.7-flash",
+]
+
+
 @dataclass
 class ModelTarget:
+
     """Specification of a model evaluation target."""
 
     flavor: str
@@ -682,11 +709,20 @@ class SweepOrchestrator:
 
     def update_master_scorecard(self, results: List[Dict[str, Any]]) -> str:
         """
-        Updates docs/soc_model_comparative_evals.md with comprehensive results.
+        Updates docs/soc_model_comparative_evals.md with comprehensive results,
+        ordered by model size and capability from smallest/edge to largest/most capable.
         """
         successful_results = [r for r in results if r.get("success", False) and r.get("soc_eval")]
         if not successful_results:
             return ""
+
+        def get_sort_key(res: Dict[str, Any]) -> int:
+            flavor = res["flavor"]
+            if flavor in MODEL_CAPABILITY_ORDER:
+                return MODEL_CAPABILITY_ORDER.index(flavor)
+            return len(MODEL_CAPABILITY_ORDER) + 100
+
+        successful_results = sorted(successful_results, key=get_sort_key)
 
         headers = ["Metric"] + [f"`{r['flavor']}`" for r in successful_results]
         separator = [":---"] + [":---" for _ in successful_results]
@@ -752,7 +788,7 @@ class SweepOrchestrator:
             row = [f"**`{case_id}`**", f"**{scenario}**"]
             for r in successful_results:
                 case_item = next(
-                    (c for c in r["soc_eval"].get("case_results", []) if c.get("eval_id") == case_id),
+                    (c for c in r["soc_eval"].get("case_results", []) if c.get("eval_id", "").startswith(case_id)),
                     None,
                 )
                 if case_item:
@@ -853,6 +889,61 @@ class SweepOrchestrator:
         print(f"[INFO] Updated master scorecard: {self.scorecard_path}")
         return content
 
+    def rebuild_scorecard_from_reports(self) -> str:
+        """
+        Rebuilds docs/soc_model_comparative_evals.md by loading all JSON reports from docs/soc_eval_results/.
+        """
+        queue = self.build_queue()
+        target_map = {t.flavor: t for t in queue}
+        reports_dir = self.output_dir
+        results: List[Dict[str, Any]] = []
+
+
+        for json_file in sorted(reports_dir.glob("*_report.json")):
+            # Ignore legacy baseline duplicates if canonical file exists
+            if json_file.name in [
+                "gemini_2_5_flash_report.json",
+                "gemini_2_5_pro_report.json",
+                "gemini_3_5_flash_lite_report.json",
+                "gemini_3_7_flash_report.json",
+            ]:
+                continue
+
+            try:
+                with open(json_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                flavor = data.get("flavor", json_file.stem.replace("_report", ""))
+                # Normalize flavor names
+                if flavor == "gemini_2_5_flash":
+                    flavor = "gemini-2.5-flash"
+                elif flavor == "gemini_2_5_pro":
+                    flavor = "gemini-2.5-pro"
+                elif flavor == "gemini_3_5_flash_lite":
+                    flavor = "gemini-3.5-flash-lite"
+                elif flavor == "gemini_3_7_flash":
+                    flavor = "gemini-3.7-flash"
+
+                target = target_map.get(flavor, ModelTarget(flavor=flavor, target_type="vertex", notes=flavor))
+                results.append({
+                    "flavor": flavor,
+                    "target": target,
+                    "success": True,
+                    "endpoint_id": None,
+                    "benchmark": None,
+                    "soc_eval": data,
+                    "duration_s": data.get("summary", {}).get("avg_latency_s", 0.0) * 5,
+                    "error": None,
+                })
+            except Exception as e:
+                print(f"[WARNING] Failed to parse report file {json_file}: {e}")
+
+        # Deduplicate results by flavor (prefer latest)
+        unique_results: Dict[str, Dict[str, Any]] = {}
+        for r in results:
+            unique_results[r["flavor"]] = r
+
+        return self.update_master_scorecard(list(unique_results.values()))
+
 
 def main() -> None:
     """CLI entrypoint for running the overnight evaluation sweep."""
@@ -861,6 +952,7 @@ def main() -> None:
     parser.add_argument("--evalset", default="configs/evals/soc_tier1_evalset.json", help="Path to evalset JSON")
     parser.add_argument("--models", nargs="*", default=None, help="Optional subset of model flavors to evaluate")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Dry run mode (mocks deployment & eval)")
+    parser.add_argument("--rebuild-scorecard", action="store_true", default=False, help="Rebuild docs/soc_model_comparative_evals.md from docs/soc_eval_results/*.json without running evaluations")
     parser.add_argument("--timeout", type=int, default=1500, help="Per-model deployment timeout in seconds")
     parser.add_argument("--repetitions", type=int, default=3, help="Benchmark repetition count per model")
     parser.add_argument("--no-stream", action="store_true", default=False, help="Disable streaming TTFT measurement")
@@ -875,9 +967,17 @@ def main() -> None:
         repetitions=args.repetitions,
     )
 
+    if args.rebuild_scorecard:
+        print("[INFO] Rebuilding master scorecard from saved evaluation reports...")
+        orchestrator.rebuild_scorecard_from_reports()
+        print("[SUCCESS] Master scorecard rebuilt successfully.")
+        return
+
+
     results = orchestrator.run_sweep(model_filter=args.models)
     success_count = sum(1 for r in results if r.get("success", False))
     print(f"\nFinal Summary: {success_count}/{len(results)} models evaluated successfully.")
+
 
 
 if __name__ == "__main__":
