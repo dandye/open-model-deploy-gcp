@@ -47,7 +47,9 @@ def test_soc_persona_sections():
     assert "Analysis & Verdict" in SOC_TIER1_PERSONA
     assert "Action & Escalation" in SOC_TIER1_PERSONA
     assert "SOAR Documentation" in SOC_TIER1_PERSONA
-    assert "RFC-5737" in SOC_TIER1_PERSONA
+    assert "Evidence-Based Investigation" in SOC_TIER1_PERSONA
+    assert "Grounded Threat Attribution" in SOC_TIER1_PERSONA
+
 
 
 def test_format_soc_prompt_with_context():
