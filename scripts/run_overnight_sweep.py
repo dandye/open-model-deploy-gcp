@@ -716,13 +716,26 @@ class SweepOrchestrator:
         if not successful_results:
             return ""
 
+        # Check if custom model_order.txt exists in repo root
+        custom_order_file = ROOT_DIR / "model_order.txt"
+        active_order = list(MODEL_CAPABILITY_ORDER)
+        if custom_order_file.exists():
+            try:
+                with open(custom_order_file, "r", encoding="utf-8") as f:
+                    lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+                if lines:
+                    active_order = lines
+            except Exception as e:
+                print(f"[WARNING] Could not read model_order.txt: {e}")
+
         def get_sort_key(res: Dict[str, Any]) -> int:
             flavor = res["flavor"]
-            if flavor in MODEL_CAPABILITY_ORDER:
-                return MODEL_CAPABILITY_ORDER.index(flavor)
-            return len(MODEL_CAPABILITY_ORDER) + 100
+            if flavor in active_order:
+                return active_order.index(flavor)
+            return len(active_order) + 100
 
         successful_results = sorted(successful_results, key=get_sort_key)
+
 
         headers = ["Metric"] + [f"`{r['flavor']}`" for r in successful_results]
         separator = [":---"] + [":---" for _ in successful_results]
