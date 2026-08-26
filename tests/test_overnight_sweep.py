@@ -69,15 +69,17 @@ def test_build_model_queue_contains_all_models():
     assert "gemini-2.5-pro" in flavors
     assert "gemini-3.7-flash" in flavors
 
-    # Gemma 4 (Dense + Speculative)
+    # Gemma 4 (Dense + Speculative + Two-Model Draft)
     assert "gemma-4-e2b-it" in flavors
     assert "gemma-4-e2b-it-speculative" in flavors
     assert "gemma-4-e4b-it" in flavors
     assert "gemma-4-e4b-it-speculative" in flavors
     assert "gemma-4-31b-it" in flavors
     assert "gemma-4-31b-it-speculative" in flavors
+    assert "gemma-4-31b-it-draft-e2b" in flavors
+    assert "gemma-4-31b-it-draft-e4b" in flavors
 
-    # Gemma 3 (Dense + FP8 + Speculative + Caching)
+    # Gemma 3 (Dense + FP8 + Speculative + Caching + Two-Model Draft)
     assert "gemma-3-1b-it" in flavors
     assert "gemma-3-1b-it-speculative" in flavors
     assert "gemma-3-4b-it" in flavors
@@ -85,10 +87,13 @@ def test_build_model_queue_contains_all_models():
     assert "gemma-3-12b-it" in flavors
     assert "gemma-3-12b-it-fp8" in flavors
     assert "gemma-3-12b-it-speculative" in flavors
+    assert "gemma-3-12b-it-draft-1b" in flavors
     assert "gemma-3-27b-it" in flavors
     assert "gemma-3-27b-it-fp8" in flavors
     assert "gemma-3-27b-it-speculative" in flavors
     assert "gemma-3-27b-it-caching" in flavors
+    assert "gemma-3-27b-it-draft-1b" in flavors
+    assert "gemma-3-27b-it-draft-4b" in flavors
 
     # Gemma 2 (Dense + FP8 + Speculative)
     assert "gemma-2-2b-it" in flavors
@@ -100,7 +105,8 @@ def test_build_model_queue_contains_all_models():
     assert "gemma-2-27b-it-fp8" in flavors
     assert "gemma-2-27b-it-speculative" in flavors
 
-    assert len(queue) == 29
+    assert len(queue) == 34
+
 
 
 

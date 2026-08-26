@@ -25,9 +25,12 @@ gemma-3-1b-it-speculative
 gemma-3-4b-it-speculative
 gemma-3-12b-it-fp8
 gemma-3-12b-it-speculative
+gemma-3-12b-it-draft-1b
 gemma-3-27b-it-fp8
 gemma-3-27b-it-speculative
 gemma-3-27b-it-caching
+gemma-3-27b-it-draft-1b
+gemma-3-27b-it-draft-4b
 
 # Gemma 4 Family (Dense)
 gemma-4-e2b-it
@@ -38,6 +41,8 @@ gemma-4-31b-it
 gemma-4-e2b-it-speculative
 gemma-4-e4b-it-speculative
 gemma-4-31b-it-speculative
+gemma-4-31b-it-draft-e2b
+gemma-4-31b-it-draft-e4b
 
 # Gemini Managed Family
 gemini-2.5-flash

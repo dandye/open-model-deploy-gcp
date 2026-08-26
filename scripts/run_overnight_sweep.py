@@ -49,9 +49,12 @@ MODEL_CAPABILITY_ORDER: List[str] = [
     "gemma-3-4b-it-speculative",
     "gemma-3-12b-it-fp8",
     "gemma-3-12b-it-speculative",
+    "gemma-3-12b-it-draft-1b",
     "gemma-3-27b-it-fp8",
     "gemma-3-27b-it-speculative",
     "gemma-3-27b-it-caching",
+    "gemma-3-27b-it-draft-1b",
+    "gemma-3-27b-it-draft-4b",
     # Gemma 4 Family (Dense)
     "gemma-4-e2b-it",
     "gemma-4-e4b-it",
@@ -60,6 +63,8 @@ MODEL_CAPABILITY_ORDER: List[str] = [
     "gemma-4-e2b-it-speculative",
     "gemma-4-e4b-it-speculative",
     "gemma-4-31b-it-speculative",
+    "gemma-4-31b-it-draft-e2b",
+    "gemma-4-31b-it-draft-e4b",
     # Gemini Managed Family
     "gemini-2.5-flash",
     "gemini-2.5-pro",
@@ -86,10 +91,20 @@ class ModelTarget:
     def get_base_flavor(self) -> str:
         """Strip optimization variant suffixes to resolve the base catalog model name."""
         base = self.flavor
-        for suffix in ["-speculative", "-fp8", "-caching"]:
+        for suffix in [
+            "-speculative",
+            "-fp8",
+            "-caching",
+            "-draft-e2b",
+            "-draft-e4b",
+            "-draft-1b",
+            "-draft-4b",
+            "-draft-2b",
+        ]:
             if base.endswith(suffix):
                 base = base[: -len(suffix)]
         return base
+
 
 
 class SweepOrchestrator:
@@ -309,6 +324,16 @@ class SweepOrchestrator:
                 notes="Gemma 3 12B FP8 + Speculative Decoding (4x L4)",
             ),
             ModelTarget(
+                flavor="gemma-3-12b-it-draft-1b",
+                target_type="vertex",
+                region="us-central1",
+                machine_type="g2-standard-48",
+                gpu_count=4,
+                gpu_type="nvidia-l4",
+                extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4 --speculative-model=gs://vertex-model-garden-restricted-us/gemma3/gemma-3-1b-it --num-speculative-tokens=5",
+                notes="Gemma 3 12B + Gemma 3 1B Draft (4x L4)",
+            ),
+            ModelTarget(
                 flavor="gemma-3-27b-it",
                 target_type="vertex",
                 region="us-east1",
@@ -355,6 +380,26 @@ class SweepOrchestrator:
                 gpu_type="nvidia-l4",
                 extra_vllm_flags="--quantization=fp8 --enable-chunked-prefill --enable-prefix-caching --limit_mm_per_prompt=image=5 --max-num-seqs=4",
                 notes="Gemma 3 27B FP8 + Prefix Caching (4x L4)",
+            ),
+            ModelTarget(
+                flavor="gemma-3-27b-it-draft-1b",
+                target_type="vertex",
+                region="us-east1",
+                machine_type="g2-standard-48",
+                gpu_count=4,
+                gpu_type="nvidia-l4",
+                extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4 --speculative-model=gs://vertex-model-garden-restricted-us/gemma3/gemma-3-1b-it --num-speculative-tokens=5",
+                notes="Gemma 3 27B + Gemma 3 1B Draft (4x L4)",
+            ),
+            ModelTarget(
+                flavor="gemma-3-27b-it-draft-4b",
+                target_type="vertex",
+                region="us-east1",
+                machine_type="g2-standard-48",
+                gpu_count=4,
+                gpu_type="nvidia-l4",
+                extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4 --speculative-model=gs://vertex-model-garden-restricted-us/gemma3/gemma-3-4b-it --num-speculative-tokens=5",
+                notes="Gemma 3 27B + Gemma 3 4B Draft (4x L4)",
             ),
             # Phase 4: Gemma 4 Family (Dense & Optimizations)
             ModelTarget(
@@ -422,6 +467,28 @@ class SweepOrchestrator:
                 extra_vllm_flags="--max-num-seqs=16 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2",
                 max_model_len=8192,
                 notes="Gemma 4 31B + Speculative Decoding (2x A100)",
+            ),
+            ModelTarget(
+                flavor="gemma-4-31b-it-draft-e2b",
+                target_type="vertex",
+                region="us-east1",
+                machine_type="a2-highgpu-2g",
+                gpu_count=2,
+                gpu_type="nvidia-tesla-a100",
+                extra_vllm_flags="--max-num-seqs=16 --speculative-model=gs://vertex-model-garden-restricted-us/gemma4/gemma-4-E2B-it --num-speculative-tokens=5",
+                max_model_len=8192,
+                notes="Gemma 4 31B + Gemma 4 E2B Draft (2x A100)",
+            ),
+            ModelTarget(
+                flavor="gemma-4-31b-it-draft-e4b",
+                target_type="vertex",
+                region="us-east1",
+                machine_type="a2-highgpu-2g",
+                gpu_count=2,
+                gpu_type="nvidia-tesla-a100",
+                extra_vllm_flags="--max-num-seqs=16 --speculative-model=gs://vertex-model-garden-restricted-us/gemma4/gemma-4-E4B-it --num-speculative-tokens=5",
+                max_model_len=8192,
+                notes="Gemma 4 31B + Gemma 4 E4B Draft (2x A100)",
             ),
         ]
 
