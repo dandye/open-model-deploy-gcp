@@ -58,7 +58,7 @@ def test_model_target_base_flavor_resolution():
 
 
 def test_build_model_queue_contains_all_models():
-    """Verify build_queue returns the comprehensive sequence of 16 targets."""
+    """Verify build_queue returns the comprehensive sequence of all dense models and optimization variants."""
     orchestrator = SweepOrchestrator(dry_run=True)
     queue = orchestrator.build_queue()
     flavors = [t.flavor for t in queue]
@@ -69,25 +69,39 @@ def test_build_model_queue_contains_all_models():
     assert "gemini-2.5-pro" in flavors
     assert "gemini-3.7-flash" in flavors
 
-    # Gemma 4
+    # Gemma 4 (Dense + Speculative)
     assert "gemma-4-e2b-it" in flavors
+    assert "gemma-4-e2b-it-speculative" in flavors
     assert "gemma-4-e4b-it" in flavors
+    assert "gemma-4-e4b-it-speculative" in flavors
     assert "gemma-4-31b-it" in flavors
+    assert "gemma-4-31b-it-speculative" in flavors
 
-    # Gemma 3
+    # Gemma 3 (Dense + FP8 + Speculative + Caching)
     assert "gemma-3-1b-it" in flavors
+    assert "gemma-3-1b-it-speculative" in flavors
     assert "gemma-3-4b-it" in flavors
+    assert "gemma-3-4b-it-speculative" in flavors
     assert "gemma-3-12b-it" in flavors
+    assert "gemma-3-12b-it-fp8" in flavors
+    assert "gemma-3-12b-it-speculative" in flavors
     assert "gemma-3-27b-it" in flavors
     assert "gemma-3-27b-it-fp8" in flavors
     assert "gemma-3-27b-it-speculative" in flavors
+    assert "gemma-3-27b-it-caching" in flavors
 
-    # Gemma 2
+    # Gemma 2 (Dense + FP8 + Speculative)
     assert "gemma-2-2b-it" in flavors
+    assert "gemma-2-2b-it-speculative" in flavors
     assert "gemma-2-9b-it" in flavors
+    assert "gemma-2-9b-it-fp8" in flavors
+    assert "gemma-2-9b-it-speculative" in flavors
     assert "gemma-2-27b-it" in flavors
+    assert "gemma-2-27b-it-fp8" in flavors
+    assert "gemma-2-27b-it-speculative" in flavors
 
-    assert len(queue) == 16
+    assert len(queue) == 29
+
 
 
 def test_dry_run_single_model_evaluation():

@@ -2,23 +2,44 @@
 # Reorder these lines as desired (top-to-bottom = left-to-right in tables).
 # Lines starting with # are ignored.
 
-
+# Gemma 2 Family (Dense)
 gemma-2-2b-it
 gemma-2-9b-it
 gemma-2-27b-it
 
+# Gemma 2 Optimization Variants
+gemma-2-2b-it-speculative
+gemma-2-9b-it-fp8
+gemma-2-9b-it-speculative
+gemma-2-27b-it-fp8
+gemma-2-27b-it-speculative
+
+# Gemma 3 Family (Dense)
 gemma-3-1b-it
 gemma-3-4b-it
 gemma-3-12b-it
 gemma-3-27b-it
 
+# Gemma 3 Optimization Variants
+gemma-3-1b-it-speculative
+gemma-3-4b-it-speculative
+gemma-3-12b-it-fp8
+gemma-3-12b-it-speculative
 gemma-3-27b-it-fp8
 gemma-3-27b-it-speculative
+gemma-3-27b-it-caching
 
+# Gemma 4 Family (Dense)
 gemma-4-e2b-it
 gemma-4-e4b-it
 gemma-4-31b-it
 
+# Gemma 4 Optimization Variants
+gemma-4-e2b-it-speculative
+gemma-4-e4b-it-speculative
+gemma-4-31b-it-speculative
+
+# Gemini Managed Family
 gemini-2.5-flash
 gemini-2.5-pro
 gemini-3.5-flash-lite
