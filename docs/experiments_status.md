@@ -534,6 +534,26 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
 * **Key Observations**:
   * **Highest Autonomous Tool Usage**: `gemini-3.7-flash` executed 10 total tool calls across the 5 scenarios (avg 2.0 tool calls/case), showing aggressive multi-hop investigation instincts without prompt spoon-feeding.
 
+#### EXP-E06: `gemini-3.5-flash-lite` (Vertex AI Global MaaS Baseline - Un-Spoiled Persona)
+* **Backend**: Model-as-a-Service Managed Endpoint (`gemini-3.5-flash-lite`, location: `global`)
+* **Persona**: Principled Tier 1 SOC (Un-spoiled, no alert-specific cheat sheets)
+* **Results**:
+  * **Pass Rate**: **100.0% (5/5)**
+  * **Average Rubric Score**: **97.0 / 100**
+  * **Average Latency**: **11.36 s**
+  * **Output Throughput (Generation TPS)**: **70.22 tok/s** (Total Throughput: **241.65 tok/s**)
+  * **Total Token Consumption**: **13,723 tokens** (Avg: 2,744.6 / case)
+  * **Total Tool Calls**: **5 tool calls** (Exactly 1 targeted tool call per case)
+* **Detailed Breakdown**:
+  * `CASE-01-LOKIBOT-C2`: **90.0/100** (PASS: 1 tool call `get_domain_report`, identified C2 malicious reputation, attributed threat, and mandated host containment) | Latency: 14.20s | Gen TPS: 69.09 tok/s
+  * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: 1 tool call `get_ip_address_report`, verified RFC-5737 documentation status, closed as False Positive) | Latency: 9.58s | Gen TPS: 52.32 tok/s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **100.0/100** (PASS: 1 tool call `get_domain_report`, verified credential phishing page, ordered password reset and domain block) | Latency: 10.40s | Gen TPS: 68.75 tok/s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **100.0/100** (PASS: 1 tool call `list_cases`, detected active ticket `CASE-33279`, recommended deduplication/append) | Latency: 10.97s | Gen TPS: 66.92 tok/s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **95.0/100** (PASS: 1 tool call `lookup_entity`, prioritized ransomware severity, isolated host, and escalated to IR) | Latency: 11.64s | Gen TPS: 90.77 tok/s
+* **Key Observations**:
+  * **Best Overall Efficiency and Accuracy**: `gemini-3.5-flash-lite` achieved a perfect **100% pass rate (97.0/100 avg rubric)** while running at **70.22 tok/s generation throughput** and an average turn latency of **11.36 s**. Every single case received exactly one concise, high-precision tool query.
+
+
 
 
 
