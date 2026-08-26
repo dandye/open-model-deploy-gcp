@@ -24,28 +24,28 @@ All models were evaluated under identical conditions using the un-spoiled person
 
 ### Multi-Model Capability Matrix
 
-| Metric | `gemma-2-2b-it` | `gemma-2-9b-it` | `gemma-2-27b-it` | `gemma-3-1b-it` | `gemma-3-4b-it` | `gemma-3-12b-it` | `gemma-3-27b-it-fp8` | `gemma-3-27b-it-speculative` | `gemma-3-27b-it` | `gemma-4-e2b-it` | `gemma-4-e4b-it` | `gemma-4-31b-it` | `gemini-2.5-flash` | `gemini-2.5-pro` | `gemini-3.5-flash-lite` | `gemini-3.7-flash` |
+| Metric | `gemma-2-2b-it` | `gemma-2-9b-it` | `gemma-2-27b-it` | `gemma-3-1b-it` | `gemma-3-4b-it` | `gemma-3-12b-it` | `gemma-3-27b-it` | `gemma-3-27b-it-fp8` | `gemma-3-27b-it-speculative` | `gemma-4-e2b-it` | `gemma-4-e4b-it` | `gemma-4-31b-it` | `gemini-2.5-flash` | `gemini-2.5-pro` | `gemini-3.5-flash-lite` | `gemini-3.7-flash` |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Model Generation / Notes** | Gemma 2 2B (1x L4) | Gemma 2 9B (1x L4) | Gemma 2 27B (4x L4) | Gemma 3 1B (1x L4) | Gemma 3 4B (1x L4) | Gemma 3 12B Multimodal (4x L4) | Gemma 3 27B FP8 Quantized (4x L4) | Gemma 3 27B FP8 + Speculative Decoding (4x L4) | Gemma 3 27B Multimodal (4x L4) | Gemma 4 Edge (1x L4) | Gemma 4 Edge (1x L4) | Gemma 4 Multimodal Reasoner (2x A100) | Vertex AI Managed MaaS | Vertex AI Managed MaaS Pro | Vertex AI Global MaaS | Vertex AI Global MaaS |
-| **Pass Rate** | **0.0%** (0/5) | **20.0%** (1/5) | **20.0%** (1/5) | **0.0%** (0/5) | **20.0%** (1/5) | **60.0%** (3/5) | **20.0%** (1/5) | **20.0%** (1/5) | **40.0%** (2/5) | **0.0%** (0/5) | **80.0%** (4/5) | **60.0%** (3/5) | **60.0%** (3/5) | **20.0%** (1/5) | **60.0%** (3/5) | **60.0%** (3/5) |
-| **Average Score** | **16.0 / 100** | **64.0 / 100** | **46.0 / 100** | **29.0 / 100** | **52.6 / 100** | **91.0 / 100** | **45.0 / 100** | **62.0 / 100** | **82.0 / 100** | **37.0 / 100** | **91.0 / 100** | **85.0 / 100** | **75.2 / 100** | **40.0 / 100** | **58.0 / 100** | **81.0 / 100** |
-| **Average Latency** | **20.81 s** | **28.26 s** | **23.56 s** | **8.30 s** | **24.64 s** | **25.19 s** | **38.10 s** | **41.20 s** | **52.46 s** | **7.67 s** | **40.24 s** | **17.45 s** | **11.74 s** | **16.70 s** | **14.94 s** | **21.35 s** |
-| **Output Speed (Gen TPS)** | **23.68 tok/s** | **7.71 tok/s** | **10.44 tok/s** | **48.54 tok/s** | **14.73 tok/s** | **19.30 tok/s** | **11.91 tok/s** | **12.46 tok/s** | **8.81 tok/s** | **25.04 tok/s** | **15.27 tok/s** | **51.23 tok/s** | **59.64 tok/s** | **42.46 tok/s** | **34.96 tok/s** | **46.46 tok/s** |
-| **Total Processing TPS** | **110.70 tok/s** | **37.65 tok/s** | **59.98 tok/s** | **331.06 tok/s** | **49.09 tok/s** | **71.63 tok/s** | **38.21 tok/s** | **45.28 tok/s** | **37.35 tok/s** | **115.74 tok/s** | **44.56 tok/s** | **233.48 tok/s** | **271.41 tok/s** | **188.30 tok/s** | **214.77 tok/s** | **206.16 tok/s** |
-| **Total Tool Invocations** | **7 tool calls** | **1 tool calls** | **3 tool calls** | **11 tool calls** | **1 tool calls** | **4 tool calls** | **2 tool calls** | **4 tool calls** | **5 tool calls** | **0 tool calls** | **3 tool calls** | **8 tool calls** | **6 tool calls** | **4 tool calls** | **7 tool calls** | **9 tool calls** |
-| **Total Tokens Consumed** | **11,519 tokens** | **5,320 tokens** | **7,066 tokens** | **13,744 tokens** | **6,048 tokens** | **9,021 tokens** | **7,280 tokens** | **9,327 tokens** | **9,797 tokens** | **4,438 tokens** | **8,965 tokens** | **20,376 tokens** | **15,933 tokens** | **15,724 tokens** | **16,047 tokens** | **22,004 tokens** |
+| **Model Generation / Notes** | Gemma 2 2B (1x L4) | Gemma 2 9B (1x L4) | Gemma 2 27B (4x L4) | Gemma 3 1B (1x L4) | Gemma 3 4B (1x L4) | Gemma 3 12B Multimodal (4x L4) | Gemma 3 27B Multimodal (4x L4) | Gemma 3 27B FP8 Quantized (4x L4) | Gemma 3 27B FP8 + Speculative Decoding (4x L4) | Gemma 4 Edge (1x L4) | Gemma 4 Edge (1x L4) | Gemma 4 Multimodal Reasoner (2x A100) | Vertex AI Managed MaaS | Vertex AI Managed MaaS Pro | Vertex AI Global MaaS | Vertex AI Global MaaS |
+| **Pass Rate** | **0.0%** (0/5) | **20.0%** (1/5) | **20.0%** (1/5) | **0.0%** (0/5) | **20.0%** (1/5) | **60.0%** (3/5) | **40.0%** (2/5) | **20.0%** (1/5) | **20.0%** (1/5) | **0.0%** (0/5) | **80.0%** (4/5) | **60.0%** (3/5) | **60.0%** (3/5) | **20.0%** (1/5) | **60.0%** (3/5) | **60.0%** (3/5) |
+| **Average Score** | **16.0 / 100** | **64.0 / 100** | **46.0 / 100** | **29.0 / 100** | **52.6 / 100** | **91.0 / 100** | **82.0 / 100** | **45.0 / 100** | **62.0 / 100** | **37.0 / 100** | **91.0 / 100** | **85.0 / 100** | **75.2 / 100** | **40.0 / 100** | **58.0 / 100** | **81.0 / 100** |
+| **Average Latency** | **20.81 s** | **28.26 s** | **23.56 s** | **8.30 s** | **24.64 s** | **25.19 s** | **52.46 s** | **38.10 s** | **41.20 s** | **7.67 s** | **40.24 s** | **17.45 s** | **11.74 s** | **16.70 s** | **14.94 s** | **21.35 s** |
+| **Output Speed (Gen TPS)** | **23.68 tok/s** | **7.71 tok/s** | **10.44 tok/s** | **48.54 tok/s** | **14.73 tok/s** | **19.30 tok/s** | **8.81 tok/s** | **11.91 tok/s** | **12.46 tok/s** | **25.04 tok/s** | **15.27 tok/s** | **51.23 tok/s** | **59.64 tok/s** | **42.46 tok/s** | **34.96 tok/s** | **46.46 tok/s** |
+| **Total Processing TPS** | **110.70 tok/s** | **37.65 tok/s** | **59.98 tok/s** | **331.06 tok/s** | **49.09 tok/s** | **71.63 tok/s** | **37.35 tok/s** | **38.21 tok/s** | **45.28 tok/s** | **115.74 tok/s** | **44.56 tok/s** | **233.48 tok/s** | **271.41 tok/s** | **188.30 tok/s** | **214.77 tok/s** | **206.16 tok/s** |
+| **Total Tool Invocations** | **7 tool calls** | **1 tool calls** | **3 tool calls** | **11 tool calls** | **1 tool calls** | **4 tool calls** | **5 tool calls** | **2 tool calls** | **4 tool calls** | **0 tool calls** | **3 tool calls** | **8 tool calls** | **6 tool calls** | **4 tool calls** | **7 tool calls** | **9 tool calls** |
+| **Total Tokens Consumed** | **11,519 tokens** | **5,320 tokens** | **7,066 tokens** | **13,744 tokens** | **6,048 tokens** | **9,021 tokens** | **9,797 tokens** | **7,280 tokens** | **9,327 tokens** | **4,438 tokens** | **8,965 tokens** | **20,376 tokens** | **15,933 tokens** | **15,724 tokens** | **16,047 tokens** | **22,004 tokens** |
 
 ---
 
 ## 2. Case-by-Case Breakdown Matrix
 
-| Case ID | Scenario | `gemma-2-2b-it` | `gemma-2-9b-it` | `gemma-2-27b-it` | `gemma-3-1b-it` | `gemma-3-4b-it` | `gemma-3-12b-it` | `gemma-3-27b-it-fp8` | `gemma-3-27b-it-speculative` | `gemma-3-27b-it` | `gemma-4-e2b-it` | `gemma-4-e4b-it` | `gemma-4-31b-it` | `gemini-2.5-flash` | `gemini-2.5-pro` | `gemini-3.5-flash-lite` | `gemini-3.7-flash` |
+| Case ID | Scenario | `gemma-2-2b-it` | `gemma-2-9b-it` | `gemma-2-27b-it` | `gemma-3-1b-it` | `gemma-3-4b-it` | `gemma-3-12b-it` | `gemma-3-27b-it` | `gemma-3-27b-it-fp8` | `gemma-3-27b-it-speculative` | `gemma-4-e2b-it` | `gemma-4-e4b-it` | `gemma-4-31b-it` | `gemini-2.5-flash` | `gemini-2.5-pro` | `gemini-3.5-flash-lite` | `gemini-3.7-flash` |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`CASE-01`** | **Lokibot C2 Beaconing** | 45.0 (0 tools, FAIL) | 70.0 (0 tools, FAIL) | 30.0 (0 tools, FAIL) | 35.0 (0 tools, FAIL) | 78.0 (0 tools, FAIL) | 75.0 (0 tools, FAIL) | 25.0 (0 tools, FAIL) | 65.0 (0 tools, FAIL) | 65.0 (0 tools, FAIL) | 55.0 (0 tools, FAIL) | 65.0 (0 tools, FAIL) | 60.0 (1 tools, FAIL) | 1.0 (0 tools, FAIL) | 5.0 (1 tools, FAIL) | 90.0 (2 tools, **PASS**) | 85.0 (2 tools, **PASS**) |
-| **`CASE-02`** | **RFC-5737 Benign IP Grounding** | 0.0 (1 tools, FAIL) | 20.0 (0 tools, FAIL) | 20.0 (0 tools, FAIL) | 0.0 (2 tools, FAIL) | 0.0 (0 tools, FAIL) | 100.0 (1 tools, **PASS**) | 0.0 (0 tools, FAIL) | 0.0 (0 tools, FAIL) | 100.0 (1 tools, **PASS**) | 0.0 (0 tools, FAIL) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 10.0 (1 tools, FAIL) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) |
-| **`CASE-03`** | **Phishing Credential Harvest** | 25.0 (0 tools, FAIL) | 50.0 (0 tools, FAIL) | 50.0 (0 tools, FAIL) | 35.0 (2 tools, FAIL) | 25.0 (0 tools, FAIL) | 95.0 (1 tools, **PASS**) | 75.0 (1 tools, FAIL) | 60.0 (1 tools, FAIL) | 60.0 (1 tools, FAIL) | 55.0 (0 tools, FAIL) | 95.0 (1 tools, **PASS**) | 75.0 (2 tools, FAIL) | 75.0 (1 tools, FAIL) | 50.0 (1 tools, FAIL) | 0.0 (1 tools, FAIL) | 35.0 (2 tools, FAIL) |
+| **`CASE-01`** | **Lokibot C2 Beaconing** | 45.0 (0 tools, FAIL) | 70.0 (0 tools, FAIL) | 30.0 (0 tools, FAIL) | 35.0 (0 tools, FAIL) | 78.0 (0 tools, FAIL) | 75.0 (0 tools, FAIL) | 65.0 (0 tools, FAIL) | 25.0 (0 tools, FAIL) | 65.0 (0 tools, FAIL) | 55.0 (0 tools, FAIL) | 65.0 (0 tools, FAIL) | 60.0 (1 tools, FAIL) | 1.0 (0 tools, FAIL) | 5.0 (1 tools, FAIL) | 90.0 (2 tools, **PASS**) | 85.0 (2 tools, **PASS**) |
+| **`CASE-02`** | **RFC-5737 Benign IP Grounding** | 0.0 (1 tools, FAIL) | 20.0 (0 tools, FAIL) | 20.0 (0 tools, FAIL) | 0.0 (2 tools, FAIL) | 0.0 (0 tools, FAIL) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 0.0 (0 tools, FAIL) | 0.0 (0 tools, FAIL) | 0.0 (0 tools, FAIL) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 10.0 (1 tools, FAIL) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) |
+| **`CASE-03`** | **Phishing Credential Harvest** | 25.0 (0 tools, FAIL) | 50.0 (0 tools, FAIL) | 50.0 (0 tools, FAIL) | 35.0 (2 tools, FAIL) | 25.0 (0 tools, FAIL) | 95.0 (1 tools, **PASS**) | 60.0 (1 tools, FAIL) | 75.0 (1 tools, FAIL) | 60.0 (1 tools, FAIL) | 55.0 (0 tools, FAIL) | 95.0 (1 tools, **PASS**) | 75.0 (2 tools, FAIL) | 75.0 (1 tools, FAIL) | 50.0 (1 tools, FAIL) | 0.0 (1 tools, FAIL) | 35.0 (2 tools, FAIL) |
 | **`CASE-04`** | **Duplicate SOAR Case Detection** | 0.0 (5 tools, FAIL) | 95.0 (1 tools, **PASS**) | 40.0 (2 tools, FAIL) | 0.0 (5 tools, FAIL) | 95.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 0.0 (0 tools, FAIL) | 100.0 (1 tools, **PASS**) | 100.0 (2 tools, **PASS**) | 100.0 (2 tools, **PASS**) | 100.0 (1 tools, **PASS**) | 100.0 (2 tools, **PASS**) | 100.0 (2 tools, **PASS**) |
-| **`CASE-05`** | **Ransomware Escalation** | 10.0 (1 tools, FAIL) | 85.0 (0 tools, FAIL) | 90.0 (1 tools, **PASS**) | 75.0 (2 tools, FAIL) | 65.0 (0 tools, FAIL) | 85.0 (1 tools, FAIL) | 25.0 (0 tools, FAIL) | 85.0 (2 tools, FAIL) | 85.0 (2 tools, FAIL) | 75.0 (0 tools, FAIL) | 95.0 (0 tools, **PASS**) | 90.0 (2 tools, **PASS**) | 100.0 (2 tools, **PASS**) | 35.0 (0 tools, FAIL) | 0.0 (1 tools, FAIL) | 85.0 (2 tools, FAIL) |
+| **`CASE-05`** | **Ransomware Escalation** | 10.0 (1 tools, FAIL) | 85.0 (0 tools, FAIL) | 90.0 (1 tools, **PASS**) | 75.0 (2 tools, FAIL) | 65.0 (0 tools, FAIL) | 85.0 (1 tools, FAIL) | 85.0 (2 tools, FAIL) | 25.0 (0 tools, FAIL) | 85.0 (2 tools, FAIL) | 75.0 (0 tools, FAIL) | 95.0 (0 tools, **PASS**) | 90.0 (2 tools, **PASS**) | 100.0 (2 tools, **PASS**) | 35.0 (0 tools, FAIL) | 0.0 (1 tools, FAIL) | 85.0 (2 tools, FAIL) |
 
 ---
 
@@ -87,6 +87,12 @@ All models were evaluated under identical conditions using the un-spoiled person
 - **Tool Invocations:** 4 total calls across 5 cases
 - **Token Footprint:** 9,021 total tokens (1804.2 tok/case)
 
+### `gemma-3-27b-it` (Gemma 3 27B Multimodal (4x L4))
+- **Score:** 82.0 / 100 (Pass Rate: 40.0%)
+- **Latency & Throughput:** 52.46 s latency | 8.81 gen tok/s (37.35 total tok/s)
+- **Tool Invocations:** 5 total calls across 5 cases
+- **Token Footprint:** 9,797 total tokens (1959.4 tok/case)
+
 ### `gemma-3-27b-it-fp8` (Gemma 3 27B FP8 Quantized (4x L4))
 - **Score:** 45.0 / 100 (Pass Rate: 20.0%)
 - **Latency & Throughput:** 38.10 s latency | 11.91 gen tok/s (38.21 total tok/s)
@@ -98,12 +104,6 @@ All models were evaluated under identical conditions using the un-spoiled person
 - **Latency & Throughput:** 41.20 s latency | 12.46 gen tok/s (45.28 total tok/s)
 - **Tool Invocations:** 4 total calls across 5 cases
 - **Token Footprint:** 9,327 total tokens (1865.4 tok/case)
-
-### `gemma-3-27b-it` (Gemma 3 27B Multimodal (4x L4))
-- **Score:** 82.0 / 100 (Pass Rate: 40.0%)
-- **Latency & Throughput:** 52.46 s latency | 8.81 gen tok/s (37.35 total tok/s)
-- **Tool Invocations:** 5 total calls across 5 cases
-- **Token Footprint:** 9,797 total tokens (1959.4 tok/case)
 
 ### `gemma-4-e2b-it` (Gemma 4 Edge (1x L4))
 - **Score:** 37.0 / 100 (Pass Rate: 0.0%)
@@ -169,9 +169,9 @@ All models were evaluated under identical conditions using the un-spoiled person
 - Detailed gemma-3-1b-it Report: [`soc_eval_results/gemma-3-1b-it_report.md`](soc_eval_results/gemma-3-1b-it_report.md)
 - Detailed gemma-3-4b-it Report: [`soc_eval_results/gemma-3-4b-it_report.md`](soc_eval_results/gemma-3-4b-it_report.md)
 - Detailed gemma-3-12b-it Report: [`soc_eval_results/gemma-3-12b-it_report.md`](soc_eval_results/gemma-3-12b-it_report.md)
+- Detailed gemma-3-27b-it Report: [`soc_eval_results/gemma-3-27b-it_report.md`](soc_eval_results/gemma-3-27b-it_report.md)
 - Detailed gemma-3-27b-it-fp8 Report: [`soc_eval_results/gemma-3-27b-it-fp8_report.md`](soc_eval_results/gemma-3-27b-it-fp8_report.md)
 - Detailed gemma-3-27b-it-speculative Report: [`soc_eval_results/gemma-3-27b-it-speculative_report.md`](soc_eval_results/gemma-3-27b-it-speculative_report.md)
-- Detailed gemma-3-27b-it Report: [`soc_eval_results/gemma-3-27b-it_report.md`](soc_eval_results/gemma-3-27b-it_report.md)
 - Detailed gemma-4-e2b-it Report: [`soc_eval_results/gemma-4-e2b-it_report.md`](soc_eval_results/gemma-4-e2b-it_report.md)
 - Detailed gemma-4-e4b-it Report: [`soc_eval_results/gemma-4-e4b-it_report.md`](soc_eval_results/gemma-4-e4b-it_report.md)
 - Detailed gemma-4-31b-it Report: [`soc_eval_results/gemma-4-31b-it_report.md`](soc_eval_results/gemma-4-31b-it_report.md)
