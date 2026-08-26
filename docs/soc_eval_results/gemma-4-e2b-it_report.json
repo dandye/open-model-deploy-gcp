@@ -1,0 +1,131 @@
+{
+  "flavor": "gemma-4-e2b-it",
+  "summary": {
+    "total_cases": 5,
+    "passed_cases": 0,
+    "pass_rate": 0.0,
+    "avg_rubric_score": 37.0,
+    "avg_latency_s": 7.67,
+    "total_prompt_tokens": 3478,
+    "total_completion_tokens": 960,
+    "total_tokens": 4438,
+    "avg_tokens_per_case": 887.6,
+    "avg_generation_tps": 25.04,
+    "avg_total_tps": 115.74,
+    "total_tool_calls": 0
+  },
+  "case_results": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "latency_s": 8.397928476333618,
+      "usage": {
+        "prompt_tokens": 698,
+        "completion_tokens": 163,
+        "total_tokens": 861
+      },
+      "generation_tps": 19.41,
+      "total_tps": 102.53,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 55.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent correctly identified the host and domain from the alert (25/25 pts) and provided a well-formatted SOAR comment (15/15 pts). However, there were critical failures in analysis and action. The agent failed to identify the specific threat (Lokibot) and incorrectly set the severity to 'SUSPICIOUS' instead of 'MALICIOUS', resulting in a score of 0/25 for Analysis. For Action, it correctly recommended host isolation but failed to explicitly recommend escalation to Tier 2, earning partial credit (10/20 pts). The documentation was also incomplete, missing the required MITRE ATT&CK mapping (5/15 pts). The final score of 55 is below the passing threshold of 80.",
+      "response": "[Context & Enrichment]\nHost DESKTOP-FIN-08 (10.0.4.15) is repeatedly connecting to the domain update-service-win32.com.\n\n[Analysis & Verdict]\nThe domain update-service-win32.com has a known threat intelligence verdict.\n\n[Action & Escalation]\nIsolate host DESKTOP-FIN-08 from the network immediately. Block outbound traffic from DESKTOP-FIN-08 to update-service-win32.com. Perform a deeper forensic analysis on the host DESKTOP-FIN-08.\n\n[SOAR Documentation]\n```markdown\nTriage Alert: Host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com.\nSeverity: SUSPICIOUS\nContainment: Isolate host DESKTOP-FIN-08 from the network immediately. Block outbound traffic from DESKTOP-FIN-08 to update-service-win32.com. Perform a deeper forensic analysis on the host DESKTOP-FIN-08.\n```"
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "latency_s": 3.1263179779052734,
+      "usage": {
+        "prompt_tokens": 690,
+        "completion_tokens": 79,
+        "total_tokens": 769
+      },
+      "generation_tps": 25.27,
+      "total_tps": 245.98,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: '192.0.2.100'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent failed to generate any response. It did not identify the IP 192.0.2.100 as a reserved RFC-5737 documentation/test address, nor did it provide a verdict or next steps. This is a critical failure as no analysis was performed.",
+      "response": "[Context & Enrichment]\n<entities and findings>\n\n[Analysis & Verdict]\n<verdict: BENIGN, SUSPICIOUS, or MALICIOUS>\n\n[Action & Escalation]\n<clear operational actions>\n\n[SOAR Documentation]\n<markdown comment>"
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "latency_s": 10.029821872711182,
+      "usage": {
+        "prompt_tokens": 696,
+        "completion_tokens": 219,
+        "total_tokens": 915
+      },
+      "generation_tps": 21.83,
+      "total_tps": 91.23,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 55.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent correctly identified the incident as a high-confidence phishing attempt and provided a well-structured response. It appropriately recommended user notification and initiating forensic analysis. However, the response has two significant operational failures. First, and most critically, it completely omitted the recommendation to reset the user's password, which is the primary remediation step for a credential harvesting attack. Second, the containment action was suboptimal; it recommended blocking the specific sender email address rather than the more robust and effective action of blocking the entire sender domain ('evil.com'). A minor conceptual error was also noted where domains were listed as IPs.",
+      "response": "[Context & Enrichment]\n- **User/Host:** john.doe@company.com\n- **Sender:** admin@evil.com\n- **Subject:** Immediate Action Required: Password Expiry\n- **Domains Involved:** evil.com, company.com\n- **IPs Involved:** evil.com, company.com\n\n[Analysis & Verdict]\n- **Verdict:** MALICIOUS (High confidence phishing attempt due to external sender and suspicious domain correlation)\n\n[Action & Escalation]\n- **Immediate Containment:** Block email from admin@evil.com across the organization.\n- **Investigation:** Initiate a full forensic analysis on the received email for malware indicators.\n- **User Notification:** Notify john.doe@company.com about the suspicious activity and advise against clicking any links.\n\n[SOAR Documentation]\n```markdown\n**Triage Summary:** High confidence phishing attempt detected. External sender and suspicious domain correlation.\n**Verdict:** MALICIOUS\n**Action:** Block email, initiate forensic analysis, notify user.\n```"
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "latency_s": 13.046708345413208,
+      "usage": {
+        "prompt_tokens": 698,
+        "completion_tokens": 412,
+        "total_tokens": 1110
+      },
+      "generation_tps": 31.58,
+      "total_tps": 85.08,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'CASE-33279'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent provided no response. It failed to execute any operational steps, such as using the `list_cases` tool to check for an existing case for the IP address `198.51.100.42` or Case `33279`. As a result, it completely failed to meet the rubric's core requirement: to identify the existing case and advise the analyst to append findings to it rather than creating a duplicate. This is a critical failure to perform the requested task.",
+      "response": "[Context & Enrichment]\n<entities and findings>\n\n[Analysis & Verdict]\n<verdict: BENIGN, SUSPICIOUS, or MALICIOUS>\n\n[Action & Escalation]\n<clear operational actions>\n\n[SOAR Documentation]\n<markdown comment>\n\n\nAvailable Investigation Tools:\n- lookup_entity(entity_id: str) -> str: Looks up SIEM telemetry and event history for a user, host, or IP.\n- get_ip_address_report(ip: str) -> str: Retrieves threat intelligence reputation and WHOIS context for an IP address.\n- get_domain_report(domain: str) -> str: Retrieves GTI threat intelligence verdict and passive DNS for a domain.\n- get_file_report(file_hash: str) -> str: Retrieves file reputation, compilation time, and detection engines for a file hash.\n- list_cases(query: str) -> str: Queries open SOAR cases matching the search terms.\n- post_case_comment(case_id: str, comment: str, comment: str) -> str: Posts an investigative update or triage note to an existing SOAR case.\n\nInteraction Protocol (ReAct):\nTo gather information, output Thought and Action:\nThought: <reasoning about needed evidence>\nAction: <tool_name>(<arg_name>=\"<value>\")\n\nWhen you receive the Observation, continue. When you have gathered all necessary information, conclude with:\nThought: I have gathered all necessary information to form a complete triage verdict.\nFinal Answer:\n[Context & Enrichment]\n<entities and findings>\n\n[Analysis & Verdict]\n<verdict: BENIGN, SUSPICIOUS, or MALICIOUS>\n\n[Action & Escalation]\n<clear operational actions>\n\n[SOAR Documentation]\n<markdown comment>\n\n\nQuestion: Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?\nThought: <reasoning about needed evidence>\nAction: <tool_name>(<arg_name>=\"<value>\")\n\nWhen you receive the Observation, continue. When you have gathered all necessary information, conclude with:\nThought: I have gathered all necessary information to form a complete triage verdict.\nFinal Answer:\n[Context & Enrichment]\n<entities and findings>\n\n[Analysis & Verdict]\n<verdict: BENIGN, SUSPICIOUS, or MALICIOUS>\n\n[Action & Escalation]\n<clear operational actions>\n\n[SOAR Documentation]\n<markdown comment>"
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "latency_s": 3.7447292804718018,
+      "usage": {
+        "prompt_tokens": 696,
+        "completion_tokens": 87,
+        "total_tokens": 783
+      },
+      "generation_tps": 23.23,
+      "total_tps": 209.09,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'ransomware'",
+        "Missing required substring: 'isolate'"
+      ],
+      "rubric_score": 75.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent correctly identified the malicious nature of the event and recommended the two most important immediate actions: isolating the affected server and escalating to the incident response team. However, the response has a critical omission: it failed to provide the standard instruction for ransomware incidents to NOT reboot the machine or pay the ransom. This is a significant operational failure. Additionally, the verdict of 'MALICIOUS' understates the severity; a 'CRITICAL_MALICIOUS' verdict would have been more appropriate for an active ransomware infection.",
+      "response": "[Context & Enrichment]\nFile hash: README_DECRYPT.txt\nFile report: <file_report_observation>\n\n[Analysis & Verdict]\nMALICIOUS\n\n[Action & Escalation]\nImmediate isolation of file share server 10.0.5.23. Initiate forensic imaging of affected files. Notify incident response team.\n\n[SOAR Documentation]\n```markdown\nFile hash: README_DECRYPT.txt\nFile report: <file_report_observation>\n```"
+    }
+  ]
+}

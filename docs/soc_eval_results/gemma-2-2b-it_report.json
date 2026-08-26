@@ -1,0 +1,174 @@
+{
+  "flavor": "gemma-2-2b-it",
+  "summary": {
+    "total_cases": 5,
+    "passed_cases": 0,
+    "pass_rate": 0.0,
+    "avg_rubric_score": 16.0,
+    "avg_latency_s": 20.81,
+    "total_prompt_tokens": 9055,
+    "total_completion_tokens": 2464,
+    "total_tokens": 11519,
+    "avg_tokens_per_case": 2303.8,
+    "avg_generation_tps": 23.68,
+    "avg_total_tps": 110.7,
+    "total_tool_calls": 7
+  },
+  "case_results": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "latency_s": 9.0343017578125,
+      "usage": {
+        "prompt_tokens": 698,
+        "completion_tokens": 200,
+        "total_tokens": 898
+      },
+      "generation_tps": 22.14,
+      "total_tps": 99.4,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 45.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent correctly identified the initial entities (host, IP, domain) and provided a formatted SOAR comment. However, the response has critical failures. The analysis is completely missing; the agent failed to perform threat intelligence lookups on 'update-service-win32.com' to identify it as a known C2 for the Lokibot malware, resulting in a weak 'Suspicious' verdict instead of 'Malicious'. Consequently, the recommended action to block the connection is incorrect and insufficient. The standard procedure for a compromised host is isolation to prevent lateral movement, which was not recommended. Finally, the documentation lacks any MITRE ATT&CK mapping, which is a required component.",
+      "response": "[Context & Enrichment]\n- Host: DESKTOP-FIN-08 (10.0.4.15)\n- Domain: update-service-win32.com\n- IP Address: 10.0.4.15\n- The host is connecting repeatedly to update-service-win32.com. \n\n[Analysis & Verdict]\n- Suspicious\n\n[Action & Escalation]\n- Recommend blocking the IP address 10.0.4.15 from accessing the domain update-service-win32.com.\n- Escalate this incident to the Security team for further investigation. \n\n[SOAR Documentation]\n- The host DESKTOP-FIN-08 (10.0.4.15) is repeatedly connecting to the domain update-service-win32.com. This activity is suspicious and warrants further investigation."
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "latency_s": 13.255564451217651,
+      "usage": {
+        "prompt_tokens": 1440,
+        "completion_tokens": 297,
+        "total_tokens": 1737
+      },
+      "generation_tps": 22.41,
+      "total_tps": 131.04,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "get_ip_address_report",
+          "args": {},
+          "observation": "Error executing tool 'get_ip_address_report': get_ip_address_report() missing 1 required positional argument: 'ip'"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent committed a critical operational error by incorrectly identifying the IP address 192.0.2.100 as 'MALICIOUS'. This IP address is part of the TEST-NET-1 block (192.0.2.0/24) reserved for documentation and examples under RFC 5737. It is non-routable and should have been identified as benign. The agent completely failed the primary task of the rubric by hallucinating a malicious verdict instead of recognizing the IP's special, non-threatening nature. This led to incorrect recommended actions, such as escalation, which would waste valuable SOC resources.",
+      "response": "[Context & Enrichment]\n* IP address: 192.0.2.100\n* Related Case: 12345\n* Authentication log entry for IP 192.0.2.100\n\n[Analysis & Verdict]\nMALICIOUS\n\n[Action & Escalation]\n* Investigate the authentication log entry for IP 192.0.2.100 to determine the nature of the malicious activity. \n* Escalate to the Security Analyst team for further investigation and potential remediation. \n* Post case comment: \"IP 192.0.2.100 is associated with a malicious activity in the authentication log. Further investigation required.\"\n\n[SOAR Documentation]\nThe IP address 192.0.2.100 is associated with a malicious activity in the authentication log. Further investigation required."
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "latency_s": 8.124594926834106,
+      "usage": {
+        "prompt_tokens": 696,
+        "completion_tokens": 184,
+        "total_tokens": 880
+      },
+      "generation_tps": 22.65,
+      "total_tps": 108.31,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 25.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "Strengths: The agent correctly identified the alert as suspicious and initiated a basic entity lookup for the sender and recipient. Omissions: The agent failed to recommend the most critical remediation actions for a credential harvesting attempt. It did not recommend a password reset for the user or blocking the sender's domain (evil.com). The final analysis is superficial and lacks actionable intelligence. Operational Errors: The agent committed significant operational errors by using tools incorrectly. It passed an email address ('admin@evil.com') to the `get_ip_address_report` and `get_domain_report` functions, which expect an IP address and a domain, respectively. This indicates a fundamental failure to understand tool syntax and would lead to failed API calls.",
+      "response": "Thought: I need to gather information about the email, the sender, and the employee to determine if it's a phishing attempt. I should use lookup_entity to check the email address and the sender domain. \nAction: lookup_entity(entity_id: \"john.doe@company.com\") \nAction: lookup_entity(entity_id: \"admin@evil.com\") \n\n\n[Context & Enrichment]\n* **Email:** The email was sent from admin@evil.com with the subject \"Immediate Action Required: Password Expiry\".\n* **Sender:** The sender is admin@evil.com.\n* **Employee:** The recipient is john.doe@company.com.\n* **Tool Query Findings:**  The lookup_entity for \"john.doe@company.com\" and \"admin@evil.com\" are currently being processed. \n\n\n[Analysis & Verdict]\nSuspicious\n\n[Action & Escalation]\nThought: I need to gather more information about the email to determine if it is a phishing attempt. \nAction: get_ip_address_report(ip: \"admin@evil.com\") \nAction: get_domain_report(domain: \"admin@evil.com\") \nAction: list_cases(query: \"admin@evil.com\") \n\n\n[SOAR Documentation]\nThis alert is a potential phishing attempt. The email is suspicious due to the sender's email address and the subject line."
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "latency_s": 60.11539173126221,
+      "usage": {
+        "prompt_tokens": 4726,
+        "completion_tokens": 1430,
+        "total_tokens": 6156
+      },
+      "generation_tps": 23.79,
+      "total_tps": 102.4,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "list_cases",
+          "args": {},
+          "observation": "Error executing tool 'list_cases': list_cases() missing 1 required positional argument: 'query'"
+        },
+        {
+          "iteration": 2,
+          "tool": "list_cases",
+          "args": {},
+          "observation": "Error executing tool 'list_cases': list_cases() missing 1 required positional argument: 'query'"
+        },
+        {
+          "iteration": 3,
+          "tool": "list_cases",
+          "args": {},
+          "observation": "Error executing tool 'list_cases': list_cases() missing 1 required positional argument: 'query'"
+        },
+        {
+          "iteration": 4,
+          "tool": "lookup_entity",
+          "args": {},
+          "observation": "Error executing tool 'lookup_entity': lookup_entity() missing 1 required positional argument: 'entity_id'"
+        },
+        {
+          "iteration": 5,
+          "tool": "lookup_entity",
+          "args": {},
+          "observation": "Error executing tool 'lookup_entity': lookup_entity() missing 1 required positional argument: 'entity_id'"
+        }
+      ],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'CASE-33279'",
+        "Missing required substring: '33279'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent completely failed to answer the user's query. Instead of checking for an existing case, it returned a system error message indicating it could not complete the investigation. The rubric required the agent to identify the existing case (CASE-33279) and recommend appending new findings. The agent did neither of these things, resulting in a total operational failure.",
+      "response": "Reached maximum investigation iterations without final triage output."
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "latency_s": 13.521555662155151,
+      "usage": {
+        "prompt_tokens": 1495,
+        "completion_tokens": 353,
+        "total_tokens": 1848
+      },
+      "generation_tps": 26.11,
+      "total_tps": 136.67,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {},
+          "observation": "Error executing tool 'lookup_entity': lookup_entity() missing 1 required positional argument: 'entity_id'"
+        }
+      ],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'isolate'"
+      ],
+      "rubric_score": 10.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent's response is a critical operational failure. Despite clear and explicit evidence of an active ransomware infection ('.locked' files, ransom note), the agent failed to take any meaningful action. It became fixated on a non-critical tool error ('lookup_entity' failure) and stated it could not reach a verdict. This is a severe error in judgment. The single most important immediate action\u2014network containment/isolation of the infected server 10.0.5.23\u2014was completely omitted. Instead, the agent prioritized troubleshooting its own tool. Furthermore, it failed to provide standard ransomware guidance (do not reboot, do not pay ransom) and escalated to the SOC Manager instead of the required Tier 2 / Incident Response team. This response would allow the ransomware to spread unimpeded, causing catastrophic damage.",
+      "response": "[Context & Enrichment]\n* The `lookup_entity` tool is failing to execute, preventing me from identifying the user and file share server. \n* The ransom note README_DECRYPT.txt is associated with the IP address 10.0.5.23. \n\n[Analysis & Verdict]\n* Pending the resolution of the `lookup_entity` tool error, I cannot reach a definitive verdict on the threat. \n\n[Action & Escalation]\n* Escalate this incident to the SOC Manager. \n* Investigate the error and determine the cause of the `lookup_entity` tool failure. \n* Update the case comment with the error details. \n\n[SOAR Documentation]\n* **Case ID:** SOC-2023-001\n* **Incident Type:** Ransomware\n* **Observation:** Error executing `lookup_entity` tool. Unable to identify user and file share server. \n* **Next Steps:**\n    * Investigate the error and determine the cause of the `lookup_entity` tool failure.\n    * Escalate the incident to the SOC Manager. \n    * Update the case comment with the error details."
+    }
+  ]
+}
