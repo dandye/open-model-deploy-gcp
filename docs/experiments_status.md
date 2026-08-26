@@ -456,26 +456,46 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
   * **Grounding Strengths**: Strong semantic grasp of RFC-5737 documentation IP rules (scored 100/100 on Case 2).
   * **Limitations**: 1B parameter capacity struggles with multi-entity state tracking (duplicate case numbers) and strict negative assertion constraints.
 
-#### EXP-E02: `gemma-3-4b-it` (1x NVIDIA L4 on `g2-standard-8`)
+#### EXP-E02: `gemma-3-4b-it` (1x NVIDIA L4 on `g2-standard-8` - Un-Spoiled Persona)
 * **Endpoint ID**: `4868079485641031680` (`gemma-3-4b-it-endpoint-20260825-2220`)
 * **Deployed Model ID**: `8991380031196364800` (`gemma-3-4b-it-model-garden`)
 * **Hardware**: `g2-standard-8` (1x NVIDIA L4, 32 GB Host RAM, 24 GB VRAM)
+* **Persona**: Principled Tier 1 SOC (Un-spoiled, no alert-specific cheat sheets)
 * **Results**:
-  * **Pass Rate**: **80.0% (4/5)**
-  * **Average Rubric Score**: **92.0 / 100**
-  * **Average Latency**: **20.38 s**
-  * **Output Throughput (Generation TPS)**: **16.42 tok/s** (Total Throughput: **82.40 tok/s**)
-  * **Total Token Consumption**: **8,395 tokens** (Avg: 1,679.0 / case)
+  * **Pass Rate**: **0.0% (0/5)**
+  * **Average Rubric Score**: **48.0 / 100**
+  * **Average Latency**: **27.59 s**
+  * **Output Throughput (Generation TPS)**: **13.88 tok/s** (Total Throughput: **50.29 tok/s**)
+  * **Total Token Consumption**: **6,937 tokens** (Avg: 1,387.4 / case)
+  * **Total Tool Calls**: **2 tool calls**
+* **Detailed Breakdown**:
+  * `CASE-01-LOKIBOT-C2`: **30.0/100** (FAIL: Trajectory 0 tool calls, truncated output, missing attribution) | Latency: 39.00s | Gen TPS: 8.74 tok/s
+  * `CASE-02-RFC5737-BENIGN-IP`: **0.0/100** (FAIL: 0 tool calls, hallucinated synthetic `GTI-MALWARE-2988` reputation!) | Latency: 21.14s | Gen TPS: 14.66 tok/s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **60.0/100** (FAIL: 1 tool call `get_domain_report`, missed SOAR case check) | Latency: 30.72s | Gen TPS: 17.12 tok/s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **75.0/100** (FAIL: 1 tool call `list_cases`, detected `CASE-33279`, partial summary) | Latency: 13.36s | Gen TPS: 17.74 tok/s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **75.0/100** (FAIL: 0 tool calls, recognized threat but missed verification) | Latency: 33.71s | Gen TPS: 14.86 tok/s
+* **Key Observations**:
+  * **Capability Boundary Exposed**: Without prompt cheat-sheets, the 4B model exhibits attention satisfaction bias (stopping after 0-1 tool calls) and plausible hallucination under pressure.
+
+#### EXP-E03: `gemini-2.5-flash` (Vertex AI MaaS Baseline - Un-Spoiled Persona)
+* **Backend**: Model-as-a-Service Managed Endpoint (`gemini-2.5-flash`)
+* **Persona**: Principled Tier 1 SOC (Un-spoiled, no alert-specific cheat sheets)
+* **Results**:
+  * **Pass Rate**: **60.0% (3/5)**
+  * **Average Rubric Score**: **86.0 / 100**
+  * **Average Latency**: **10.56 s**
+  * **Output Throughput (Generation TPS)**: **55.88 tok/s** (Total Throughput: **257.32 tok/s**)
+  * **Total Token Consumption**: **13,588 tokens** (Avg: 2,717.6 / case)
   * **Total Tool Calls**: **3 tool calls**
 * **Detailed Breakdown**:
-  * `CASE-01-LOKIBOT-C2`: **60.0/100** (FAIL: Correctly enriched internal host and C2 domain; omitted specific family attribution string) | Latency: 30.99s | Gen TPS: 15.13 tok/s
-  * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: Flawless RFC-5737 grounding, closed alert as False Positive) | Latency: 22.79s | Gen TPS: 17.16 tok/s
-  * `CASE-03-PHISHING-CRED-HARVEST`: **100.0/100** (PASS: Identified credential harvesting, password reset, session revocation, domain blocking, Tier 2 escalation) | Latency: 21.83s | Gen TPS: 17.18 tok/s
-  * `CASE-04-DUPLICATE-SOAR-CASE`: **100.0/100** (PASS: Discovered existing `CASE-33279`, appended findings to prevent duplicate ticket) | Latency: 11.45s | Gen TPS: 17.20 tok/s
-  * `CASE-05-RANSOMWARE-ESCALATION`: **100.0/100** (PASS: Immediate network isolation, do-not-reboot/pay instructions, Tier 2 IR escalation) | Latency: 14.82s | Gen TPS: 16.27 tok/s
+  * `CASE-01-LOKIBOT-C2`: **30.0/100** (FAIL: Stopped after enrichment step without final escalation) | Latency: 12.57s | Gen TPS: 59.84 tok/s
+  * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: Autonomously called `get_ip_address_report`, identified RFC-5737, closed as False Positive) | Latency: 9.36s | Gen TPS: 42.96 tok/s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **100.0/100** (PASS: Multi-hop chaining across `get_domain_report` + `list_cases`, full credential containment) | Latency: 10.06s | Gen TPS: 84.16 tok/s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **100.0/100** (PASS: Autonomously called `list_cases`, found `CASE-33279`, recommended append) | Latency: 10.95s | Gen TPS: 46.49 tok/s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **100.0/100** (PASS: Autonomously called `list_cases`, immediate network isolation, escalated to Tier 2) | Latency: 9.87s | Gen TPS: 44.69 tok/s
 * **Key Observations**:
-  * **Massive Quality Jump**: 4B parameters jumps from 20% to 80% pass rate with 92.0/100 average score.
-  * **Throughput**: Single L4 GPU delivers **16.42 output tok/s** steady generation speed.
+  * **Strong Intrinsic Reasoning**: Gemini 2.5 Flash demonstrates spontaneous multi-hop tool exploration, perfect grounding on RFC-5737 without prompt hints, and decisive containment action.
+
 
 
 ### Automation Recipes (`Justfile`)
