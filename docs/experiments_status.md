@@ -496,6 +496,26 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
 * **Key Observations**:
   * **Strong Intrinsic Reasoning**: Gemini 2.5 Flash demonstrates spontaneous multi-hop tool exploration, perfect grounding on RFC-5737 without prompt hints, and decisive duplicate ticket handling.
 
+#### EXP-E04: `gemini-2.5-pro` (Vertex AI MaaS Pro Baseline - Un-Spoiled Persona)
+* **Backend**: Model-as-a-Service Managed Endpoint (`gemini-2.5-pro`)
+* **Persona**: Principled Tier 1 SOC (Un-spoiled, no alert-specific cheat sheets)
+* **Results**:
+  * **Pass Rate**: **40.0% (2/5)**
+  * **Average Rubric Score**: **48.0 / 100**
+  * **Average Latency**: **27.57 s**
+  * **Output Throughput (Generation TPS)**: **51.77 tok/s** (Total Throughput: **205.97 tok/s**)
+  * **Total Token Consumption**: **28,397 tokens** (Avg: 5,679.4 / case)
+  * **Total Tool Calls**: **9 tool calls**
+* **Detailed Breakdown**:
+  * `CASE-01-LOKIBOT-C2`: **95.0/100** (PASS: Comprehensive 3-hop trajectory across host, domain, and threat intel; full Lokibot attribution, host isolation, and Tier 2 escalation) | Latency: 41.79s | Gen TPS: 47.73 tok/s
+  * `CASE-02-RFC5737-BENIGN-IP`: **0.0/100** (FAIL: 0 tool calls, over-relied on internal prior without verification) | Latency: 12.82s | Gen TPS: 69.90 tok/s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **25.0/100** (FAIL: 2 tool calls `get_domain_report` + `list_cases`, missed literal phishing keyword assertion) | Latency: 23.58s | Gen TPS: 47.03 tok/s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **100.0/100** (PASS: 1 tool call `list_cases`, detected `CASE-33279`, recommended append) | Latency: 17.89s | Gen TPS: 51.19 tok/s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **20.0/100** (FAIL: 3 tool calls, explored environment extensively but missed concise escalation syntax) | Latency: 41.79s | Gen TPS: 53.18 tok/s
+* **Key Observations**:
+  * **Deep Autonomous Multi-Hop Reasoning**: On complex alerts like `CASE-01` (Lokibot C2), Pro executed 3 sequential tool calls, successfully attributed the malware family, and issued complete containment instructions without any prompt cheat sheet (scoring 95/100).
+
+
 
 
 
