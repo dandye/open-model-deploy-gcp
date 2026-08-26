@@ -22,6 +22,7 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 
 | Document | Type | Description |
 | :--- | :--- | :--- |
+| [`handoff.md`](handoff.md) | `guide` | Operational session handoff, active cloud infrastructure state & next milestones |
 | [`soc_model_comparative_evals.md`](soc_model_comparative_evals.md) | `analysis` | Multi-model capability matrix & comparative analysis (Gemma vs Gemini tiers) |
 | [`gemma_soc_agent_evaluation_plan.md`](gemma_soc_agent_evaluation_plan.md) | `plan` | Gemma SOC Tier 1 agent implementation, deployment & rubric evaluation plan |
 | [`thoughts_on_evals.md`](thoughts_on_evals.md) | `architecture` | Core philosophy on benchmark discriminative power & capability gradients |
