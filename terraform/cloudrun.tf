@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 
 resource "google_cloud_run_v2_service" "gemma_service" {
-  count    = var.enable_cloudrun_service ? 1 : 0
+  count    = (var.enable_cloudrun_service && local.is_cloudrun_supported) ? 1 : 0
   provider = google-beta
 
   name     = var.cloudrun_service_name
@@ -27,13 +27,7 @@ resource "google_cloud_run_v2_service" "gemma_service" {
     containers {
       image = var.cloudrun_container_image
 
-      args = [
-        "--model=${var.cloudrun_model_name}",
-        "--swap-space=${var.cloudrun_swap_space}",
-        "--gpu-memory-utilization=${var.cloudrun_gpu_memory_utilization}",
-        "--max-model-len=${var.cloudrun_max_model_len}",
-        "--port=8000"
-      ]
+      args = local.cloudrun_args
 
       resources {
         limits = {
@@ -47,9 +41,17 @@ resource "google_cloud_run_v2_service" "gemma_service" {
         container_port = 8000
       }
 
+      dynamic "env" {
+        for_each = var.hf_token != "" ? [var.hf_token] : []
+        content {
+          name  = "HF_TOKEN"
+          value = env.value
+        }
+      }
+
       env {
-        name  = "HF_TOKEN"
-        value = var.hf_token
+        name  = "MODEL_ID"
+        value = local.cloudrun_model_repo
       }
 
       env {
@@ -59,15 +61,17 @@ resource "google_cloud_run_v2_service" "gemma_service" {
     }
 
     labels = {
-      managed_by = "terraform"
-      workload   = "gemma-deployment"
+      managed_by   = "terraform"
+      workload     = "gemma-deployment"
+      model_flavor = var.model_flavor
+      family       = local.family
     }
   }
 }
 
-# Allow unauthenticated access if configured
+# Allow unauthenticated access if configured and Cloud Run service is active
 resource "google_cloud_run_v2_service_iam_member" "public_access" {
-  count    = (var.enable_cloudrun_service && var.allow_unauthenticated) ? 1 : 0
+  count    = (var.enable_cloudrun_service && local.is_cloudrun_supported && var.allow_unauthenticated) ? 1 : 0
   provider = google-beta
 
   project  = var.project_id

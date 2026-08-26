@@ -28,8 +28,8 @@ default:
     @printf "  \033[1;32mjust cloudrun-quota-reset\033[0m              \033[2mReset Cloud Run GPU quota preference back to 0\033[0m\n\n"
     @printf "\033[1;33mTERRAFORM (Infrastructure as Code):\033[0m\n"
     @printf "  \033[1;32mjust tf-init\033[0m                           \033[2mInitialize Terraform working directory\033[0m\n"
-    @printf "  \033[1;32mjust tf-plan [flavor]\033[0m                  \033[2mPlan Terraform infrastructure for model flavor\033[0m\n"
-    @printf "  \033[1;32mjust tf-apply [flavor]\033[0m                 \033[2mApply Terraform infrastructure for model flavor\033[0m\n"
+    @printf "  \033[1;32mjust tf-plan [flavor] [flags]\033[0m          \033[2mPlan Terraform infrastructure for model flavor\033[0m\n"
+    @printf "  \033[1;32mjust tf-apply [flavor] [flags]\033[0m         \033[2mApply Terraform infrastructure for model flavor\033[0m\n"
     @printf "  \033[1;32mjust tf-destroy\033[0m                        \033[2mDestroy Terraform-managed infrastructure\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI AGENT ENGINE (ADK & SOC AGENT):\033[0m\n"
     @printf "  \033[1;32mjust agent-test [prompt]\033[0m               \033[2mTest general Gemma ADK Agent locally\033[0m\n"
@@ -124,13 +124,13 @@ cloudrun-deploy FLAVOR="gemma-2-9b-it": auth-check cloudrun-quota-check
 tf-init:
     @cd terraform && terraform init
 
-# Plan Terraform infrastructure changes for specific model flavor
-tf-plan FLAVOR="gemma-2-9b-it":
-    @cd terraform && terraform plan -var="model_flavor={{FLAVOR}}"
+# Plan Terraform infrastructure changes for specific model flavor (Usage: just tf-plan [flavor] [flags])
+tf-plan FLAVOR="gemma-2-9b-it" FLAGS="":
+    @cd terraform && terraform plan -var="model_flavor={{FLAVOR}}" {{if FLAGS != "" { "-var=\"extra_vllm_flags=" + FLAGS + "\"" } else { "" }}}
 
-# Apply Terraform infrastructure changes for specific model flavor
-tf-apply FLAVOR="gemma-2-9b-it":
-    @cd terraform && terraform apply -var="model_flavor={{FLAVOR}}" -auto-approve
+# Apply Terraform infrastructure changes for specific model flavor (Usage: just tf-apply [flavor] [flags])
+tf-apply FLAVOR="gemma-2-9b-it" FLAGS="":
+    @cd terraform && terraform apply -var="model_flavor={{FLAVOR}}" {{if FLAGS != "" { "-var=\"extra_vllm_flags=" + FLAGS + "\"" } else { "" }}} -auto-approve
 
 # Destroy Terraform-managed infrastructure
 tf-destroy:

@@ -5,25 +5,41 @@
 project_id = "dandye-0324-chronicle"
 region     = "us-central1"
 
+# Model Selection from configs/models.json:
+# Google Gemma:
+#   "gemma-2-2b-it", "gemma-2-9b-it", "gemma-2-27b-it"
+#   "gemma-3-1b-it", "gemma-3-4b-it", "gemma-3-12b-it", "gemma-3-27b-it"
+#   "gemma-4-e2b-it", "gemma-4-e4b-it", "gemma-4-31b-it"
+# Partner OpenModels & Model Garden:
+#   "llama-3.2-3b-instruct", "llama-guard-3-8b", "llama-3.1-nemotron-70b-instruct"
+#   "qwen3.8-27b", "qwen2.5-coder-32b-instruct", "qwen3.8-flash-next", "qwen3.8-flash-next-fp8", "qwen3.8-2.4t-a95b-fp8"
+#   "deepseek-v4-pro", "deepseek-r1-distill-qwen-32b", "glm-5.3-flash", "kimi-k3"
+#   "nemotron-3.5-lightning-bf16", "inkling-small", "ministral-3b-2410", "phi-4"
+model_flavor = "gemma-2-9b-it"
+
 # Feature toggles
 enable_vertex_endpoint  = true
 enable_cloudrun_service = true
 
-# Vertex AI Settings
-vertex_endpoint_name = "gemma-endpoint"
+# Extra runtime optimization flags passed to vLLM
+# e.g. "--quantization=fp8"
+# e.g. "--speculative-model=[ngram] --num-speculative-tokens=5"
+# e.g. "--enable-prefix-caching"
+extra_vllm_flags = ""
 
-# Cloud Run Settings
-cloudrun_service_name           = "gemma-cloudrun-service"
-cloudrun_model_name             = "google/gemma-2-9b-it"
-cloudrun_min_instances          = 0
-cloudrun_max_instances          = 1
-cloudrun_cpu                    = "8"
-cloudrun_memory                 = "32Gi"
-cloudrun_gpu_count              = "1"
-cloudrun_gpu_type               = "nvidia-l4"
-cloudrun_timeout_seconds        = 900
-cloudrun_swap_space             = 4
-cloudrun_gpu_memory_utilization = 0.90
-cloudrun_max_model_len          = 4096
-hf_token                        = ""
-allow_unauthenticated           = true
+# Vertex AI Settings
+vertex_endpoint_name        = "gemma-endpoint"
+vertex_endpoint_description = "Vertex AI Online Prediction Endpoint for open models"
+
+# Cloud Run Settings (Only applicable to single-GPU models)
+cloudrun_service_name    = "gemma-cloudrun-service"
+cloudrun_container_image = "vllm/vllm-openai:latest"
+cloudrun_min_instances   = 0
+cloudrun_max_instances   = 1
+cloudrun_cpu             = "4"
+cloudrun_memory          = "16Gi"
+cloudrun_gpu_count       = "1"
+cloudrun_gpu_type        = "nvidia-l4"
+cloudrun_timeout_seconds = 900
+hf_token                 = ""
+allow_unauthenticated    = true
