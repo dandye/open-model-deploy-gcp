@@ -481,20 +481,21 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
 * **Backend**: Model-as-a-Service Managed Endpoint (`gemini-2.5-flash`)
 * **Persona**: Principled Tier 1 SOC (Un-spoiled, no alert-specific cheat sheets)
 * **Results**:
-  * **Pass Rate**: **60.0% (3/5)**
-  * **Average Rubric Score**: **86.0 / 100**
-  * **Average Latency**: **10.56 s**
-  * **Output Throughput (Generation TPS)**: **55.88 tok/s** (Total Throughput: **257.32 tok/s**)
-  * **Total Token Consumption**: **13,588 tokens** (Avg: 2,717.6 / case)
-  * **Total Tool Calls**: **3 tool calls**
+  * **Pass Rate**: **40.0% (2/5)**
+  * **Average Rubric Score**: **69.0 / 100**
+  * **Average Latency**: **10.28 s**
+  * **Output Throughput (Generation TPS)**: **64.48 tok/s** (Total Throughput: **256.21 tok/s**)
+  * **Total Token Consumption**: **13,164 tokens** (Avg: 2,632.8 / case)
+  * **Total Tool Calls**: **4 tool calls**
 * **Detailed Breakdown**:
-  * `CASE-01-LOKIBOT-C2`: **30.0/100** (FAIL: Stopped after enrichment step without final escalation) | Latency: 12.57s | Gen TPS: 59.84 tok/s
-  * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: Autonomously called `get_ip_address_report`, identified RFC-5737, closed as False Positive) | Latency: 9.36s | Gen TPS: 42.96 tok/s
-  * `CASE-03-PHISHING-CRED-HARVEST`: **100.0/100** (PASS: Multi-hop chaining across `get_domain_report` + `list_cases`, full credential containment) | Latency: 10.06s | Gen TPS: 84.16 tok/s
-  * `CASE-04-DUPLICATE-SOAR-CASE`: **100.0/100** (PASS: Autonomously called `list_cases`, found `CASE-33279`, recommended append) | Latency: 10.95s | Gen TPS: 46.49 tok/s
-  * `CASE-05-RANSOMWARE-ESCALATION`: **100.0/100** (PASS: Autonomously called `list_cases`, immediate network isolation, escalated to Tier 2) | Latency: 9.87s | Gen TPS: 44.69 tok/s
+  * `CASE-01-LOKIBOT-C2`: **30.0/100** (FAIL: Stopped after initial enrichment without final containment actions) | Latency: 10.86s | Gen TPS: 68.94 tok/s
+  * `CASE-02-RFC5737-BENIGN-IP`: **100.0/100** (PASS: Autonomously called `get_ip_address_report`, identified RFC-5737, closed as False Positive) | Latency: 8.47s | Gen TPS: 54.78 tok/s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **65.0/100** (FAIL: Multi-hop chaining across `get_domain_report` + `list_cases`, partial containment recommendation) | Latency: 14.48s | Gen TPS: 65.06 tok/s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **100.0/100** (PASS: Autonomously called `list_cases`, found `CASE-33279`, recommended append) | Latency: 8.76s | Gen TPS: 43.02 tok/s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **50.0/100** (FAIL: 0 tool calls, recognized threat but missed explicit isolate keyword) | Latency: 8.80s | Gen TPS: 88.73 tok/s
 * **Key Observations**:
-  * **Strong Intrinsic Reasoning**: Gemini 2.5 Flash demonstrates spontaneous multi-hop tool exploration, perfect grounding on RFC-5737 without prompt hints, and decisive containment action.
+  * **Strong Intrinsic Reasoning**: Gemini 2.5 Flash demonstrates spontaneous multi-hop tool exploration, perfect grounding on RFC-5737 without prompt hints, and decisive duplicate ticket handling.
+
 
 
 
