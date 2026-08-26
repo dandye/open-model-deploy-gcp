@@ -515,6 +515,26 @@ Track E evaluates the operational capabilities, tool execution veracity, and rub
 * **Key Observations**:
   * **Deep Autonomous Multi-Hop Reasoning**: On complex alerts like `CASE-01` (Lokibot C2), Pro executed 3 sequential tool calls, successfully attributed the malware family, and issued complete containment instructions without any prompt cheat sheet (scoring 95/100).
 
+#### EXP-E05: `gemini-3.7-flash` (Vertex AI Global MaaS Baseline - Un-Spoiled Persona)
+* **Backend**: Model-as-a-Service Managed Endpoint (`gemini-3.7-flash`, location: `global`)
+* **Persona**: Principled Tier 1 SOC (Un-spoiled, no alert-specific cheat sheets)
+* **Results**:
+  * **Pass Rate**: **40.0% (2/5)**
+  * **Average Rubric Score**: **64.0 / 100**
+  * **Average Latency**: **24.20 s**
+  * **Output Throughput (Generation TPS)**: **40.46 tok/s** (Total Throughput: **194.01 tok/s**)
+  * **Total Token Consumption**: **23,474 tokens** (Avg: 4,694.8 / case)
+  * **Total Tool Calls**: **10 tool calls** (Highest tool exploration density)
+* **Detailed Breakdown**:
+  * `CASE-01-LOKIBOT-C2`: **60.0/100** (FAIL: 2 tool calls across host and domain; identified C2 communication and malicious reputation, partial escalation) | Latency: 33.84s | Gen TPS: 65.45 tok/s
+  * `CASE-02-RFC5737-BENIGN-IP`: **0.0/100** (FAIL: 1 tool call `get_ip_address_report`, verified documentation status but omitted literal IP substring in summary block) | Latency: 12.12s | Gen TPS: 8.66 tok/s
+  * `CASE-03-PHISHING-CRED-HARVEST`: **100.0/100** (PASS: 3 tool calls across `get_domain_report` + `lookup_entity` + `list_cases`, full credential containment, password reset, and case linking) | Latency: 30.76s | Gen TPS: 34.04 tok/s
+  * `CASE-04-DUPLICATE-SOAR-CASE`: **95.0/100** (PASS: 3 tool calls, identified duplicate `CASE-33279`, appended findings) | Latency: 28.18s | Gen TPS: 25.51 tok/s
+  * `CASE-05-RANSOMWARE-ESCALATION`: **65.0/100** (FAIL: 1 tool call, provided extensive containment rules but missed exact literal 'isolate' substring assertion) | Latency: 16.10s | Gen TPS: 50.26 tok/s
+* **Key Observations**:
+  * **Highest Autonomous Tool Usage**: `gemini-3.7-flash` executed 10 total tool calls across the 5 scenarios (avg 2.0 tool calls/case), showing aggressive multi-hop investigation instincts without prompt spoon-feeding.
+
+
 
 
 
