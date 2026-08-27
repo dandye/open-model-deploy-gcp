@@ -2,6 +2,9 @@
 
 Automated deployment scripts, Terraform modules, and Justfile recipes for deploying the entire Google Gemma family (Gemma 2 2B/9B/27B, Gemma 3 1B/4B/12B/27B, Gemma 4 E2B/E4B/31B, FP8, and Speculative Decoding variants), Meta Llama models (Llama 4, Llama 3.x, Llama Guard), and frontier open-weight partner models (Thinking Machines Inkling, NVIDIA Nemotron, Qwen 3.8 / 2.5, Zhipu GLM, DeepSeek V4, Moonshot Kimi) across Vertex AI Online Prediction and Cloud Run with GPU, alongside managed Gemini comparative evaluation benchmarks.
 
+
+<img width="793" height="766" alt="Screenshot 2026-08-27 at 8 32 30 AM" src="https://depot.code.corp.goog/user-attachments/assets/451c3c09-882e-478c-8478-b11555a856b3" />
+
 ---
 
 ## 1. Multi-Model Architecture & Central Catalog
