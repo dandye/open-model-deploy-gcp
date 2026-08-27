@@ -153,6 +153,24 @@ def run_evaluation(
     with open(evalset_path, "r", encoding="utf-8") as f:
         evalset = json.load(f)
 
+    # Check model catalog for MaaS metadata
+    catalog_path = ROOT_DIR / "configs" / "models.json"
+    if catalog_path.exists() and not managed_model and not endpoint_id and not cloudrun_url:
+        try:
+            with open(catalog_path, "r", encoding="utf-8") as f:
+                cat = json.load(f)
+                if flavor in cat and cat[flavor].get("type") == "maas":
+                    managed_model = cat[flavor].get("modelId") or flavor
+                    if "region" in cat[flavor]:
+                        region = cat[flavor]["region"]
+        except Exception:
+            pass
+
+    if not managed_model and not endpoint_id and not cloudrun_url and "llama" in flavor.lower():
+        managed_model = flavor
+        if region == "us-central1":
+            region = "us-east5"
+
     agent = SocTier1Agent(
         project_id=project_id,
         region=region,
@@ -163,7 +181,9 @@ def run_evaluation(
     )
     agent.set_up()
 
-    judge_client = genai.Client(vertexai=True, project=project_id, location=region)
+    # Judge client uses us-central1 / global for Gemini 2.5 Pro availability
+    judge_region = "us-central1"
+    judge_client = genai.Client(vertexai=True, project=project_id, location=judge_region)
 
     results: List[Dict[str, Any]] = []
     for case in evalset.get("eval_cases", []):
@@ -245,7 +265,7 @@ def main() -> None:
     parser.add_argument("--flavor", default="local-gemma", help="Model flavor name")
     parser.add_argument("--evalset", default="configs/evals/soc_tier1_evalset.json", help="Path to evalset JSON")
     parser.add_argument("--live-mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
-    parser.add_argument("--endpoint", default=None, help="Vertex AI Endpoint ID")
+    parser.add_argument("--endpoint", "--endpoint-id", dest="endpoint", default=None, help="Vertex AI Endpoint ID")
     parser.add_argument("--cloudrun-url", default=None, help="Cloud Run URL")
     parser.add_argument("--managed-model", default=None, help="Hosted MaaS model name")
     parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle"))

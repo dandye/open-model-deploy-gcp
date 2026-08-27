@@ -1,0 +1,126 @@
+{
+  "flavor": "llama-4-maverick-17b-128e-instruct-maas",
+  "summary": {
+    "total_cases": 5,
+    "passed_cases": 0,
+    "pass_rate": 0.0,
+    "avg_rubric_score": 53.0,
+    "avg_latency_s": 12.94,
+    "total_prompt_tokens": 4238,
+    "total_completion_tokens": 3799,
+    "total_tokens": 8037,
+    "avg_tokens_per_case": 1607.4,
+    "avg_generation_tps": 58.73,
+    "avg_total_tps": 124.25,
+    "total_tool_calls": 0
+  },
+  "case_results": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "latency_s": 14.418038845062256,
+      "usage": {
+        "prompt_tokens": 857,
+        "completion_tokens": 786,
+        "total_tokens": 1643
+      },
+      "generation_tps": 54.52,
+      "total_tps": 113.95,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 65.0,
+      "grounding_score": 0.5,
+      "passed": false,
+      "critique": "The agent correctly identified the host, domain, and the malicious nature of the activity, leading to a correct verdict and a recommendation to escalate to Tier 2. The SOAR documentation artifact was well-formatted. However, the response has several significant deficiencies. First, it failed to identify the specific threat family (Lokibot), which is a critical omission in the analysis phase. Second, the recommended containment action (blocking the domain) is weaker than the required action of isolating the host. Third, the documentation is incomplete as it lacks the required MITRE ATT&CK mapping. Most critically, the agent hallucinated a 'poor reputation score' for the IP address 192.0.2.1, which is a documentation IP from RFC 5737 and has no real-world reputation. This indicates a failure in grounding and data interpretation.",
+      "response": "[Context & Enrichment]\n- Host: DESKTOP-FIN-08 (10.0.4.15) has been connecting to update-service-win32.com multiple times.\n- Domain: update-service-win32.com is reported as MALICIOUS by GTI threat intelligence.\n- IP: 192.0.2.1 (one of the resolved IPs for update-service-win32.com) has a poor reputation score.\n- Existing Case: SOC-1234 related to DESKTOP-FIN-08 is in the investigation phase.\n\n[Analysis & Verdict]\nThe connections from DESKTOP-FIN-08 to update-service-win32.com, a domain identified as MALICIOUS, along with the poor reputation of associated IPs, indicate that DESKTOP-FIN-08 is likely compromised and involved in a potential C2 communication. The verdict is MALICIOUS.\n\n[Action & Escalation]\n1. Containment: Immediately block all traffic to and from update-service-win32.com on the network perimeter and at the host level.\n2. Investigation: Continue investigating DESKTOP-FIN-08 for any signs of compromise or malware infection.\n3. Escalation: Update the existing case (SOC-1234) with new findings and escalate to Tier 2 for further analysis and potential incident response actions.\n\n[SOAR Documentation]\n### Triage Update for SOC-1234\n#### Summary\nDESKTOP-FIN-08 is connecting to the malicious domain update-service-win32.com. The associated IP (192.0.2.1) has a poor reputation. The host is likely compromised.\n#### Recommendations\n- Block update-service-win32.com on the network perimeter and host.\n- Continue host investigation.\n- Escalate to Tier 2 for further analysis."
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "latency_s": 9.595134973526001,
+      "usage": {
+        "prompt_tokens": 838,
+        "completion_tokens": 642,
+        "total_tokens": 1480
+      },
+      "generation_tps": 66.91,
+      "total_tps": 154.24,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The model committed a critical operational error by failing to identify the fundamental nature of the indicator. The IP 192.0.2.100 is part of the TEST-NET-1 block (192.0.2.0/24) reserved by RFC 5737 for documentation and examples; it is non-routable and should have been immediately identified as benign. Instead, the model completely hallucinated a malicious profile for the IP, including a reputation score, WHOIS data, associated brute-force attacks, and internal SIEM telemetry. This led to a dangerously incorrect verdict of 'MALICIOUS' and nonsensical containment actions (blocking a non-routable IP). This is a complete failure of grounding and basic network knowledge.",
+      "response": "[Context & Enrichment]\n- IP: 192.0.2.100\n  - Reputation Score: 70/100\n  - WHOIS: Registered to a known VPN provider\n  - Associated Activity: Multiple brute-force attacks\n- Existing Case: SOC-1234 (Investigating)\n- SIEM Telemetry: Multiple failed login attempts across different user accounts on the same host\n\n[Analysis & Verdict]\nThe IP 192.0.2.100 is deemed MALICIOUS due to its high reputation score, association with brute-force attacks, and evidence of multiple failed login attempts in the SIEM telemetry.\n\n[Action & Escalation]\n1. Containment: Block the IP address 192.0.2.100 at the firewall level to prevent further brute-force attacks.\n2. Escalation: Update the existing case (SOC-1234) with the new findings and recommend a password reset for the affected user accounts.\n3. Further Investigation: Monitor for any further activity from this IP or related IPs from the same VPN provider.\n\n[SOAR Documentation]\n### Case Update: SOC-1234\n#### Indicator Enrichment\n- IP: 192.0.2.100 is MALICIOUS.\n- Associated with brute-force attacks and registered to a VPN provider.\n#### Actions Taken\n- Recommended firewall block for 192.0.2.100.\n- Suggested password reset for affected accounts.\n#### Next Steps\n- Continue monitoring for related activity.\n- Update case with any further findings."
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "latency_s": 12.363075733184814,
+      "usage": {
+        "prompt_tokens": 847,
+        "completion_tokens": 717,
+        "total_tokens": 1564
+      },
+      "generation_tps": 58.0,
+      "total_tps": 126.51,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 75.0,
+      "grounding_score": 0.9,
+      "passed": false,
+      "critique": "The agent correctly identified the email as malicious, performed relevant enrichment on the sender's domain and IP, and recommended the correct action of blocking the domain. However, it failed to recommend the most critical user-centric remediation step: resetting the user's password. For any credential harvesting attempt, especially with a subject line related to password expiry, a proactive password reset is a mandatory safety precaution, regardless of whether interaction was observed. This is a significant omission from the standard playbook. Additionally, the escalation to Tier 2 is likely unnecessary for a clear-cut phishing attempt with no user interaction. The agent also treated an RFC-5737 documentation IP (192.0.2.1) as a real malicious IP, which is a minor grounding error.",
+      "response": "[Context & Enrichment]\n- The sender's email is admin@evil.com.\n- The domain \"evil.com\" is reported as MALICIOUS.\n- \"evil.com\" resolves to IP \"192.0.2.1\", which is also MALICIOUS.\n- \"john.doe@company.com\" did not interact with the email.\n\n[Analysis & Verdict]\nThe email from admin@evil.com with the subject 'Immediate Action Required: Password Expiry' is MALICIOUS. The domain and associated IP have a history of malicious activities, specifically phishing.\n\n[Action & Escalation]\n- Block the sender's domain \"evil.com\" at the email gateway.\n- Continue to monitor \"john.doe@company.com\" for any suspicious activity.\n- Escalate to Tier 2 for further analysis of the email content and headers.\n\n[SOAR Documentation]\n### Phishing Alert Triage\n- **Entities Involved**: admin@evil.com, john.doe@company.com, evil.com, 192.0.2.1\n- **Verdict**: MALICIOUS\n- **Actions Taken**: Blocked evil.com at email gateway, continued monitoring of john.doe@company.com.\n- **Escalation**: Tier 2 for further analysis."
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "latency_s": 11.183912515640259,
+      "usage": {
+        "prompt_tokens": 846,
+        "completion_tokens": 701,
+        "total_tokens": 1547
+      },
+      "generation_tps": 62.68,
+      "total_tps": 138.32,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'CASE-33279'"
+      ],
+      "rubric_score": 50.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent successfully identified the existing case (Case 33279) as requested. However, it failed to follow the correct SOC procedure for handling duplicate alerts. Instead of recommending that the new findings be appended to the existing case, the agent created a new, redundant case update. This is a critical operational error that directly contradicts the grading rubric's primary requirement, which is to avoid creating duplicate cases. While the enrichment and analysis were reasonable, the final action was incorrect and would create unnecessary work for the SOC team.",
+      "response": "[Context & Enrichment]\n- Entities identified: IP address 198.51.100.42, Host-1234.\n- Findings:\n  - Multiple login attempts from 198.51.100.42 to various user accounts on Host-1234.\n  - Connection established from Host-1234 to 198.51.100.42 on port 443.\n  - IP reputation: MALICIOUS.\n  - WHOIS context: Registered to a known VPN provider.\n  - Existing cases: Case 33279 and Case 34211.\n\n[Analysis & Verdict]\nThe correlation of findings indicates that the IP address 198.51.100.42 is MALICIOUS. The presence of multiple login attempts and a connection on port 443, combined with its malicious reputation and association with a VPN provider, supports this verdict.\n\n[Action & Escalation]\n- Containment: Block IP address 198.51.100.42 at the firewall.\n- Escalation: Notify the incident response team for further investigation and potential remediation actions.\n- Continue monitoring Host-1234 for suspicious activity.\n\n[SOAR Documentation]\n### Case Update: IP 198.51.100.42\n- **Verdict**: MALICIOUS\n- **Entities**: IP address 198.51.100.42, Host-1234\n- **Actions**: Block IP at firewall, notify incident response team\n- **Related Cases**: Case 33279, Case 34211"
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "latency_s": 17.124433755874634,
+      "usage": {
+        "prompt_tokens": 850,
+        "completion_tokens": 953,
+        "total_tokens": 1803
+      },
+      "generation_tps": 55.65,
+      "total_tps": 105.29,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 75.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent correctly identified the active ransomware infection and correctly prioritized the most critical action: immediate network isolation of the affected server (10.0.5.23) and the suspected source host (192.168.1.100). The response was well-structured, with clear enrichment and documentation. However, the agent failed to meet a key rubric requirement by omitting the critical instruction to not pay the ransom or reboot the affected systems. This is a significant procedural omission in a ransomware response playbook. While the escalation action was appropriate, the failure to provide this specific guidance results in a score below the passing threshold.",
+      "response": "[Context & Enrichment]\n- The file share server 10.0.5.23 has been hit by a ransomware attack, indicated by the appearance of .locked files and a README_DECRYPT.txt ransom note.\n- Recent SIEM events show connections from 192.168.1.100 to 10.0.5.23 around the time of the attack.\n- The IP 192.168.1.100 is internal with no known threat reputation.\n- A related case (CASE-1234) exists for suspicious activity on 10.0.5.23.\n- The .locked file is flagged as malicious by multiple detection engines.\n\n[Analysis & Verdict]\nThe evidence strongly suggests a MALICIOUS ransomware attack on the file share server 10.0.5.23.\n\n[Action & Escalation]\n1. Immediately isolate 10.0.5.23 and 192.168.1.100 from the network to prevent further spread.\n2. Initiate incident response protocol for ransomware attacks, including alerting management and starting forensic analysis.\n3. Update CASE-1234 with new findings and continue investigation under this case.\n\n[SOAR Documentation]\n### Ransomware Attack on File Share Server\n#### Summary\n- **Entities Involved**: 10.0.5.23 (file share server), 192.168.1.100 (internal IP)\n- **Indicators**: .locked files, README_DECRYPT.txt, malicious file hash \"abc123hash\"\n- **Verdict**: MALICIOUS - Ransomware Attack\n- **Actions**: Isolate affected systems, initiate incident response, and continue forensic analysis under CASE-1234."
+    }
+  ]
+}

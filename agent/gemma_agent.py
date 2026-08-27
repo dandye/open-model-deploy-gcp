@@ -281,10 +281,23 @@ class GemmaAgent:
 
         # Strategy 3: Fallback / Managed Model
         target_managed_model = self.managed_model or "gemini-2.5-flash"
+        target_region = self.region
+
+        # Auto-format provider prefix and region routing for partner/open MaaS models
+        if "llama" in target_managed_model.lower():
+            if not target_managed_model.startswith("meta/") and not target_managed_model.startswith("publishers/"):
+                target_managed_model = f"meta/{target_managed_model}"
+            if "llama-4" in target_managed_model.lower():
+                target_region = "us-east5"
+            else:
+                target_region = "us-central1"
+        elif "gemini-3.7" in target_managed_model.lower() and target_region == "us-central1":
+            target_region = "global"
+
         try:
             from google import genai
             from google.genai import types
-            client = genai.Client(vertexai=True, project=self.project_id, location=self.region)
+            client = genai.Client(vertexai=True, project=self.project_id, location=target_region)
             config = types.GenerateContentConfig(
                 temperature=temperature,
                 max_output_tokens=max_tokens,
@@ -299,6 +312,7 @@ class GemmaAgent:
                 "response": res.text or "",
                 "backend": f"Vertex AI Model Garden / MaaS ({target_managed_model})",
                 "model": target_managed_model,
+                "region": target_region,
                 "usage": {
                     "prompt_tokens": prompt_cnt,
                     "completion_tokens": comp_cnt,

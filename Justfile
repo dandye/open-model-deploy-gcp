@@ -88,6 +88,10 @@ vertex-undeploy:
 vertex-quota-request-a100 REGION="us-central1" COUNT="1":
     @./scripts/a100_quota_request.sh "{{REGION}}" "{{COUNT}}"
 
+# Deploy Hugging Face / Model Garden OpenModel via Vertex AI SDK (Usage: just openmodel-deploy [flavor] [dry_run])
+openmodel-deploy FLAVOR="qwen3.8-27b" DRY_RUN="false": auth-check
+    @uv run python3 scripts/deploy_open_model.py --flavor "{{FLAVOR}}" {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
 # ------------------------------------------------------------------------------
 # Cloud Run (Serverless GPU Scale-to-Zero)
 # ------------------------------------------------------------------------------
@@ -152,6 +156,9 @@ agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" LIVE_MCP="false":
 agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="" LIVE_MCP="false":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
 
+# Run automated SOC evaluation suite against target Llama flavor (Usage: just eval-llama [flavor] [live_mcp])
+eval-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" LIVE_MCP="false":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
 
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":
@@ -160,6 +167,10 @@ agent-soc-deploy LIVE_MCP="true":
 # ------------------------------------------------------------------------------
 # Master Overnight Evaluation & Benchmark Sweep
 # ------------------------------------------------------------------------------
+
+# Run automated evaluation sweep across new partner & OpenModels (Usage: just sweep-new [models...])
+sweep-new *MODELS: auth-check
+    @uv run python3 scripts/overnight_model_sweep.py {{if MODELS == "" { "" } else { "--models " + MODELS }}}
 
 # Run master overnight comprehensive model evaluation & benchmark sweep (Usage: just overnight-sweep [models] [dry_run])
 overnight-sweep MODELS="" DRY_RUN="false":
