@@ -88,11 +88,11 @@ For detailed per-run logs, refer to [`experiments_status.md`](experiments_status
 
 ## 4. Final Optimization Scorecard
 
-| Experiment Track | Machine Type | GPU / Interconnect | TP | Steady Latency | Generation Speed | Throughput (TPM) | Cost / 1M Tokens | Optimization Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Baseline (Eager)** | `g2-standard-48` | 4x L4 (PCIe Gen4) | 4 | 12.76 s | 3.1 tok/s | 183 tok/min | $306.01 | Baseline Measured |
-| **CUDA Graphs** | `g2-standard-48` | 4x L4 (PCIe Gen4) | 4 | 10.20 s | 3.8 tok/s | 229 tok/min | $243.48 | +23% Speedup |
-| **Native FP8 (Ada)** | `g2-standard-48` | 4x L4 (Ada Lovelace) | 4 | 10.06 s | 7.1 tok/s | 424 tok/min | $132.08 | +129% Speedup |
-| **Single Die A100** | `a2-ultragpu-1g` | 1x A100 80GB (Single Die)| 1 | 6.36 s | 6.1 tok/s | 368 tok/min | $166.21 | -50% Latency, +97% Speedup |
-| **2-GPU NVLink Mesh** | `a2-highgpu-2g` | 2x A100 40GB (600 GB/s NVLink)| 2 | 4.29 s | 12.4 – 23.0 tok/s | 745 – 1,382 tok/min | $164.20 | -66% Latency, 3x-7x Faster |
-| **NVLink Concurrency Scaling ($N=8$)**| `a2-highgpu-2g` | 2x A100 40GB (600 GB/s NVLink)| 2 | 4.58 s (warm)| **77.9 – 90.1 tok/s** | **4,676 – 5,403 tok/min**| **$26.15** | **+2,850% throughput vs baseline** |
+| Experiment Track | Machine Type | GPU / Interconnect | TP | Hourly Cost | Steady Latency | Generation Speed | Throughput (TPM) | Cost / 1M Tokens | Optimization Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Baseline (Eager)** | `g2-standard-48` | 4x L4 (PCIe Gen4) | 4 | $3.36 / hr | 12.76 s | 3.1 tok/s | 183 tok/min | $306.01 | Baseline Measured |
+| **CUDA Graphs** | `g2-standard-48` | 4x L4 (PCIe Gen4) | 4 | $3.36 / hr | 10.20 s | 3.8 tok/s | 229 tok/min | $243.48 | +23% Speedup |
+| **Native FP8 (Ada)** | `g2-standard-48` | 4x L4 (Ada Lovelace) | 4 | $3.36 / hr | 10.06 s | 7.1 tok/s | 424 tok/min | $132.08 | +129% Speedup |
+| **Single Die A100** | `a2-ultragpu-1g` | 1x A100 80GB (Single Die)| 1 | $3.67 / hr | 6.36 s | 6.1 tok/s | 368 tok/min | $166.21 | -50% Latency, +97% Speedup |
+| **2-GPU NVLink Mesh** | `a2-highgpu-2g` | 2x A100 40GB (600 GB/s NVLink)| 2 | $7.34 / hr | 4.29 s | 12.4 – 23.0 tok/s | 745 – 1,382 tok/min | $164.20 | -66% Latency, 3x-7x Faster |
+| **NVLink Concurrency Scaling ($N=8$)**| `a2-highgpu-2g` | 2x A100 40GB (600 GB/s NVLink)| 2 | $7.34 / hr | 4.58 s (warm)| **77.9 – 90.1 tok/s** | **4,676 – 5,403 tok/min**| **$26.15** | **+2,850% throughput vs baseline** |

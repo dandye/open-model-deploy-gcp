@@ -188,12 +188,12 @@ Once deployed to Endpoint `5532982204503687168` in `us-east1`, we benchmarked th
 
 The following matrix compares Gemma 3 27B inference performance across baseline, FP8 quantization, prefix caching, and speculative decoding on dedicated 4x NVIDIA L4 GPU clusters:
 
-| Experiment ID | Configuration / Optimization | Single-Stream Latency | Generation Speed | Peak Throughput | VRAM Footprint | Cost / 1M Tokens | Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EXP-11** | Baseline BF16 (No Quantization) | 9.83 s | 12.2 tok/s | 96.2 tok/s (5,773 TPM) | ~54 GB | \$9.92 | Complete |
-| **EXP-12** | Native Hardware FP8 Quantization (`--quantization=fp8`) | **6.53 s** | **29.7 tok/s** | **148.8 tok/s (8,926 TPM)**| ~28 GB | **\$6.27** | Complete |
-| **EXP-13** | Chunked Prefill & Automatic Prefix Caching | 6.87 s (warm) | 28.0 tok/s | 110+ tok/s | ~28 GB | \$6.27 | Complete |
-| **EXP-08b** | **Prompt Lookup (N-gram) Speculative Decoding + FP8** | **6.18 s** (structured) / **7.12 s** (general) | **25.5 tok/s (28.2 peak)** | **120+ tok/s** | **~28 GB (0 extra)** | **\$6.27** | **Verified & Operational** |
+| Experiment ID | Configuration / Optimization | Single-Stream Latency | Generation Speed | Peak Throughput | VRAM Footprint | Hourly Cost | Cost / 1M Tokens | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **EXP-11** | Baseline BF16 (No Quantization) | 9.83 s | 12.2 tok/s | 96.2 tok/s (5,773 TPM) | ~54 GB | $3.36 / hr | \$9.92 | Complete |
+| **EXP-12** | Native Hardware FP8 Quantization (`--quantization=fp8`) | **6.53 s** | **29.7 tok/s** | **148.8 tok/s (8,926 TPM)**| ~28 GB | $3.36 / hr | **\$6.27** | Complete |
+| **EXP-13** | Chunked Prefill & Automatic Prefix Caching | 6.87 s (warm) | 28.0 tok/s | 110+ tok/s | ~28 GB | $3.36 / hr | \$6.27 | Complete |
+| **EXP-08b** | **Prompt Lookup (N-gram) Speculative Decoding + FP8** | **6.18 s** (structured) / **7.12 s** (general) | **25.5 tok/s (28.2 peak)** | **120+ tok/s** | **~28 GB (0 extra)** | $3.36 / hr | **\$6.27** | **Verified & Operational** |
 
 ---
 
