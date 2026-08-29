@@ -1,4 +1,9 @@
 .env
+.env.*
+!.env.example
+.envrc
+.direnv/
+.gcloud/
 
 *.swp
 .DS_Store
