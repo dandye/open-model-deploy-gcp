@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "{{JOB_NAME}}"
+  namespace: "{{NAMESPACE}}"
+  labels:
+    kueue.x-k8s.io/queue-name: "{{QUEUE_NAME}}"
+    app.kubernetes.io/name: "soc-eval-job"
+    model.gemma.io/flavor: "{{MODEL_FLAVOR}}"
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        kueue.x-k8s.io/queue-name: "{{QUEUE_NAME}}"
+        app.kubernetes.io/name: "soc-eval-job"
+        model.gemma.io/flavor: "{{MODEL_FLAVOR}}"
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: eval-runner
+          image: python:3.10-slim
+          command:
+            - /bin/bash
+            - -c
+            - >-
+              set -euo pipefail;
+              echo "Starting SOC evaluation for {{MODEL_FLAVOR}} against {{VLLM_SERVICE_URL}}";
+              pip install --no-cache-dir google-genai pydantic requests google-cloud-storage;
+              mkdir -p /tmp/eval_results;
+              python3 scripts/eval_soc_agent.py \
+                --flavor "{{MODEL_FLAVOR}}" \
+                --cloudrun-url "{{VLLM_SERVICE_URL}}" \
+                --output-report /tmp/eval_results/eval_report.md \
+                --output-json /tmp/eval_results/eval_results.json;
+              if [ -n "{{OUTPUT_GCS_PATH}}" ]; then
+                echo "Uploading eval artifacts to {{OUTPUT_GCS_PATH}}";
+                python3 -c '
+              import sys, os
+              from google.cloud import storage
+              gcs_path = "{{OUTPUT_GCS_PATH}}"
+              if gcs_path.startswith("gs://"):
+                  parts = gcs_path[5:].split("/", 1)
+                  bucket_name, prefix = parts[0], parts[1] if len(parts) > 1 else ""
+                  client = storage.Client()
+                  bucket = client.bucket(bucket_name)
+                  for f in ["eval_report.md", "eval_results.json"]:
+                      local_file = os.path.join("/tmp/eval_results", f)
+                      if os.path.exists(local_file):
+                          blob = bucket.blob(f"{prefix}/{f}".strip("/"))
+                          blob.upload_from_filename(local_file)
+                          print(f"Uploaded {local_file} to gs://{bucket_name}/{blob.name}")
+              ';
+              fi;
+              echo "Evaluation complete for {{MODEL_FLAVOR}}"
+          env:
+            - name: MODEL_FLAVOR
+              value: "{{MODEL_FLAVOR}}"
+            - name: HF_REPO
+              value: "{{HF_REPO}}"
+            - name: VLLM_SERVICE_URL
+              value: "{{VLLM_SERVICE_URL}}"
+            - name: OUTPUT_GCS_PATH
+              value: "{{OUTPUT_GCS_PATH}}"
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"

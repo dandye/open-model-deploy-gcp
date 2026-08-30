@@ -1,0 +1,65 @@
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: default-flavor
+spec:
+  nodeLabels: {}
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: gpu-flavor-l4
+spec:
+  nodeLabels:
+    cloud.google.com/gke-accelerator: nvidia-l4
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: gpu-flavor-a100
+spec:
+  nodeLabels:
+    cloud.google.com/gke-accelerator: nvidia-tesla-a100
+  tolerations:
+    - key: "nvidia.com/gpu"
+      operator: "Exists"
+      effect: "NoSchedule"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: gpu-benchmark-cluster-queue
+spec:
+  namespaceSelector: {}
+  queueingStrategy: BestEffortFIFO
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: default-flavor
+          resources:
+            - name: "cpu"
+              nominalQuota: "256"
+            - name: "memory"
+              nominalQuota: "1024Gi"
+    - coveredResources: ["nvidia.com/gpu"]
+      flavors:
+        - name: gpu-flavor-l4
+          resources:
+            - name: "nvidia.com/gpu"
+              nominalQuota: "32"
+        - name: gpu-flavor-a100
+          resources:
+            - name: "nvidia.com/gpu"
+              nominalQuota: "16"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: llm-sweep-queue
+  namespace: gemma-benchmarks
+spec:
+  clusterQueue: gpu-benchmark-cluster-queue

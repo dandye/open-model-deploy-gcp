@@ -1,0 +1,111 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: "{{CLUSTER_NAME}}"
+  namespace: "{{NAMESPACE}}"
+  labels:
+    kueue.x-k8s.io/queue-name: "{{QUEUE_NAME}}"
+    model.gemma.io/flavor: "{{MODEL_FLAVOR}}"
+spec:
+  rayVersion: "2.35.0"
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: "0.0.0.0"
+      num-gpus: "0"
+      block: "true"
+    template:
+      metadata:
+        labels:
+          kueue.x-k8s.io/queue-name: "{{QUEUE_NAME}}"
+          model.gemma.io/flavor: "{{MODEL_FLAVOR}}"
+      spec:
+        nodeSelector:
+          iam.gke.io/gke-metadata-server-enabled: "true"
+        containers:
+          - name: ray-head
+            image: rayproject/ray:2.35.0-py310
+            resources:
+              limits:
+                cpu: "4"
+                memory: "16Gi"
+              requests:
+                cpu: "2"
+                memory: "8Gi"
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+            ports:
+              - containerPort: 6379
+                name: gcs-server
+              - containerPort: 8265
+                name: dashboard
+              - containerPort: 10001
+                name: client
+              - containerPort: 8000
+                name: serve
+        volumes:
+          - name: dshm
+            emptyDir:
+              medium: Memory
+              sizeLimit: 4Gi
+  workerGroupSpecs:
+    - groupName: gpu-worker
+      replicas: 1
+      minReplicas: 1
+      maxReplicas: 1
+      rayStartParams:
+        block: "true"
+      template:
+        metadata:
+          labels:
+            kueue.x-k8s.io/queue-name: "{{QUEUE_NAME}}"
+            model.gemma.io/flavor: "{{MODEL_FLAVOR}}"
+        spec:
+          nodeSelector:
+            cloud.google.com/gke-accelerator: "{{GPU_TYPE}}"
+          tolerations:
+            - key: "nvidia.com/gpu"
+              operator: "Exists"
+              effect: "NoSchedule"
+          containers:
+            - name: vllm-worker
+              image: vllm/vllm-openai:latest
+              command:
+                - /bin/bash
+                - -c
+                - >-
+                  python3 -m vllm.entrypoints.openai.api_server
+                  --model {{HF_REPO}}
+                  --tensor-parallel-size {{TP_SIZE}}
+                  --host 0.0.0.0
+                  --port 8000
+                  {{EXTRA_FLAGS}}
+              env:
+                - name: HUGGING_FACE_HUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: hf-secret
+                      key: token
+                      optional: true
+                - name: MODEL_FLAVOR
+                  value: "{{MODEL_FLAVOR}}"
+              resources:
+                limits:
+                  cpu: "{{CPU}}"
+                  memory: "{{MEMORY}}"
+                  nvidia.com/gpu: {{GPU_COUNT}}
+                requests:
+                  cpu: "{{CPU}}"
+                  memory: "{{MEMORY}}"
+                  nvidia.com/gpu: {{GPU_COUNT}}
+              volumeMounts:
+                - mountPath: /dev/shm
+                  name: dshm
+              ports:
+                - containerPort: 8000
+                  name: http-serve
+          volumes:
+            - name: dshm
+              emptyDir:
+                medium: Memory
+                sizeLimit: 32Gi
