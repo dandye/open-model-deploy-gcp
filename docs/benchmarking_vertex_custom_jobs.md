@@ -75,7 +75,8 @@ The sweep orchestrator (`scripts/run_vertex_custom_job_sweep.py`) dynamically ma
 | `gemma-3-4b-it-fp8` | 4.3B | 1x NVIDIA L4 (24GB) | `g2-standard-8` | FP8 quantized weights |
 | `gemma-3-4b-it-speculative` | 4.3B | 1x NVIDIA L4 (24GB) | `g2-standard-8` | N-gram prompt lookup (k=5) |
 | `gemma-3-4b-it-caching` | 4.3B | 1x NVIDIA L4 (24GB) | `g2-standard-8` | Automatic prefix caching |
-| `gemma-3-12b-it` | 12.1B | 1x NVIDIA L4 (24GB) | `g2-standard-12` | Multimodal support |
+| `gemma-3-12b-it` | 12.1B | 4x NVIDIA L4 (96GB) | `g2-standard-48` | Multimodal (Tensor Parallelism = 4) |
+| `gemma-3-12b-it-fp8` | 12.1B | 1x NVIDIA L4 (24GB) | `g2-standard-12` | FP8 quantized weights |
 | `gemma-3-27b-it` | 27.2B | 4x NVIDIA L4 (96GB) | `g2-standard-48` | Tensor Parallelism = 4 |
 | `gemma-4-e2b-it` | 2.0B | 1x NVIDIA L4 (24GB) | `g2-standard-4` | Efficient architecture |
 | `gemma-4-e4b-it` | 4.0B | 1x NVIDIA L4 (24GB) | `g2-standard-8` | Efficient architecture |

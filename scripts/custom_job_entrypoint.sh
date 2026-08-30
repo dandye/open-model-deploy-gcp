@@ -113,6 +113,9 @@ python3 "${ROOT_DIR}/scripts/eval_soc_agent.py" \
 }
 
 # Execute Latency & Throughput Benchmark
+# The inline Python benchmark script directly queries localhost:8080 vLLM chat completions
+# (http://127.0.0.1:8080/v1/chat/completions) to evaluate token generation latency, total tokens,
+# and throughput (tokens/sec) without requiring external network dependencies.
 BENCHMARK_JSON="${RESULTS_DIR}/${MODEL_FLAVOR}_benchmark.json"
 echo "=================================================================="
 echo " Executing Latency and Throughput Benchmark Suite"

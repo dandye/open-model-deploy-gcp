@@ -498,7 +498,7 @@ class VertexCustomJobOrchestrator:
         self,
         project_id: str = "dandye-0324-chronicle",
         region: str = "us-central1",
-        container_image_uri: str = "us-docker.pkg.dev/dandye-0324-chronicle/gemma-runner/vllm-bench:latest",
+        container_image_uri: str = "us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
         output_gcs_bucket: str = "gs://secops-eval-results/custom_jobs",
         hf_token: Optional[str] = None,
         dry_run: bool = False,
@@ -763,7 +763,7 @@ def main() -> None:
     parser.add_argument(
         "--image-uri",
         type=str,
-        default="us-docker.pkg.dev/dandye-0324-chronicle/gemma-runner/vllm-bench:latest",
+        default="us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
         help="Artifact Registry container image URI for benchmark runner",
     )
     parser.add_argument(

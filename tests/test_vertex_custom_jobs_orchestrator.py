@@ -88,7 +88,7 @@ def test_build_worker_pool_spec_for_1x_l4():
     )
     specs = build_worker_pool_spec(
         target=target,
-        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-runner/vllm-bench:latest",
+        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
         output_gcs_uri="gs://secops-eval-results/custom_jobs",
         hf_token="hf_mock_token_123",
     )
@@ -104,7 +104,7 @@ def test_build_worker_pool_spec_for_1x_l4():
     assert machine_spec["accelerator_count"] == 1
 
     container_spec = spec["container_spec"]
-    assert container_spec["image_uri"] == "us-docker.pkg.dev/dandye-0324-chronicle/gemma-runner/vllm-bench:latest"
+    assert container_spec["image_uri"] == "us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest"
     assert container_spec["args"] == [
         "gemma-3-4b-it",
         "google/gemma-3-4b-it",
@@ -128,7 +128,7 @@ def test_build_worker_pool_spec_for_4x_l4():
     )
     specs = build_worker_pool_spec(
         target=target,
-        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-runner/vllm-bench:latest",
+        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
         output_gcs_uri="gs://secops-eval-results/custom_jobs",
     )
 
@@ -155,7 +155,7 @@ def test_build_worker_pool_spec_for_2x_a100():
     )
     specs = build_worker_pool_spec(
         target=target,
-        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-runner/vllm-bench:latest",
+        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
         output_gcs_uri="gs://secops-eval-results/custom_jobs",
     )
 
@@ -378,6 +378,12 @@ def test_collect_results_from_gcs_mocked(tmp_path: Path):
         assert res["success"] is True
         assert res["soc_eval"] == mock_soc_eval
         assert res["benchmark"] == mock_bench
+
+
+def test_orchestrator_default_container_image_uri():
+    """Verifies that the orchestrator uses the standardized Artifact Registry image URI default."""
+    orchestrator = VertexCustomJobOrchestrator()
+    assert orchestrator.container_image_uri == "us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest"
 
 
 def test_no_emojis_in_custom_jobs_orchestrator():
