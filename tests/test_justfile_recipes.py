@@ -92,7 +92,7 @@ class TestJustfileRecipes(unittest.TestCase):
         # Assert recipes invoke expected Python / gcloud targets
         self.assertIn("run_gce_spot_sweep.py", content, "Recipe must call run_gce_spot_sweep.py")
         self.assertIn("scheduling.provisioningModel=SPOT", content, "Status recipe must filter for SPOT provisioning")
-        self.assertIn("gemma-spot-", content, "Cleanup recipe must filter for gemma-spot-* benchmark instances")
+        self.assertIn("name:(spot-* OR gemma-spot-*)", content, "Cleanup recipe must filter for spot-* and gemma-spot-* benchmark instances")
 
     def test_justfile_syntax(self):
         """Verify Justfile parses without syntax errors using the just CLI."""

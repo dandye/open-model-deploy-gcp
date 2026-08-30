@@ -89,11 +89,12 @@ def test_startup_script_health_poll():
 
 
 def test_startup_script_evaluation_invocation():
-    """Verify script invokes SOC evaluation runner and benchmark."""
+    """Verify script invokes SOC evaluation runner, benchmark, and fallback JSON generation."""
     assert STARTUP_SCRIPT_PATH.exists()
     content = STARTUP_SCRIPT_PATH.read_text(encoding="utf-8")
     assert "eval_soc_agent.py" in content
     assert "--cloudrun-url" in content or "http://127.0.0.1:8080" in content
+    assert "JSON_PATH" in content
 
 
 def test_startup_script_gcs_upload():
@@ -105,13 +106,14 @@ def test_startup_script_gcs_upload():
 
 
 def test_startup_script_self_deletion():
-    """Verify script executes instance self-deletion."""
+    """Verify script executes instance self-deletion and re-entrancy prevention."""
     assert STARTUP_SCRIPT_PATH.exists()
     content = STARTUP_SCRIPT_PATH.read_text(encoding="utf-8")
     assert "gcloud compute instances delete" in content
     assert "--zone" in content
     assert "--quiet" in content
     assert "trap cleanup_and_self_delete" in content
+    assert "trap - EXIT ERR INT TERM" in content
 
 
 def test_startup_template_exists_and_has_placeholders():

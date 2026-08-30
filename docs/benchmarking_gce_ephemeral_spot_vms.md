@@ -124,7 +124,7 @@ just gce-spot-status "us-central1-a"
 
 ### 3.4 Force Cleanup Lingering Benchmark VMs (`gce-spot-cleanup`)
 
-Safely terminate and delete any remaining ephemeral benchmark instances matching `gemma-spot-*`:
+Safely terminate and delete any remaining ephemeral benchmark instances matching `name:(spot-* OR gemma-spot-*)`:
 
 ```bash
 # Clean up lingering instances in default configured zone
@@ -180,4 +180,4 @@ uv run python3 scripts/run_gce_spot_sweep.py [OPTIONS]
 1. **Bash Exit & Signal Traps**: The startup script attaches cleanup routines to `EXIT`, `ERR`, `INT`, and `TERM` signals. Even if vLLM fails to start or an evaluation script encounters an exception, `gcloud compute instances delete` executes unconditionally.
 2. **Instance Termination Action**: Instances are created with `--instance-termination-action=DELETE` and `--maintenance-policy=TERMINATE` so that Spot preemptions cleanly trigger deletion rather than entering a suspended or stopped state.
 3. **Serial Console Streaming**: The orchestrator streams serial port logs (`gcloud compute instances get-serial-port-output`) in real time, capturing diagnostics immediately even if the instance is preempted.
-4. **Manual Recovery**: If an instance fails to terminate due to network partition or permissions issues, running `just gce-spot-cleanup` terminates all instances matching `gemma-spot-*`.
+4. **Manual Recovery**: If an instance fails to terminate due to network partition or permissions issues, running `just gce-spot-cleanup` terminates all instances matching `name:(spot-* OR gemma-spot-*)`.

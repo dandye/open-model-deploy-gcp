@@ -204,7 +204,7 @@ gce-spot-status ZONE="":
 # Forcefully delete any lingering Spot benchmark VMs (Usage: just gce-spot-cleanup [zone])
 gce-spot-cleanup ZONE="":
     @ZONE_FLAG="{{if ZONE != "" { "--zone=" + ZONE } else { "" }}}"; \
-    INSTANCES=$$(gcloud compute instances list --filter="name:gemma-spot-*" --format="value(name)" $$ZONE_FLAG); \
+    INSTANCES=$$(gcloud compute instances list --filter="name:(spot-* OR gemma-spot-*)" --format="value(name)" $$ZONE_FLAG); \
     if [ -n "$$INSTANCES" ]; then \
         echo "Deleting lingering GCE Spot benchmark instances:"; \
         echo "$$INSTANCES"; \

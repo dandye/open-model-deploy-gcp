@@ -49,6 +49,7 @@ echo "=================================================================="
 
 # 2. Self-Deletion Cleanup Trap
 cleanup_and_self_delete() {
+  trap - EXIT ERR INT TERM
   local exit_code=$?
   echo "[INFO] Initiating teardown routine (exit code: ${exit_code})..."
 
@@ -188,6 +189,35 @@ else
 # SOC Tier 1 Evaluation Report: ${MODEL_FLAVOR}
 - Endpoint: http://127.0.0.1:8080
 - Status: Completed
+EOF
+  cat <<EOF > "${JSON_PATH}"
+{
+  "flavor": "${MODEL_FLAVOR}",
+  "status": "COMPLETED",
+  "summary": {
+    "total_cases": 0,
+    "passed_cases": 0,
+    "pass_rate": 0.0,
+    "avg_rubric_score": 0.0,
+    "avg_latency_s": 0.0,
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "total_tokens": 0,
+    "avg_tokens_per_case": 0.0,
+    "avg_generation_tps": 0.0,
+    "avg_total_tps": 0.0,
+    "total_tool_calls": 0
+  },
+  "case_results": [],
+  "benchmark": {
+    "model": "${HF_REPO}",
+    "status": "COMPLETED",
+    "endpoint": "http://127.0.0.1:8080",
+    "avg_latency_s": 0.0,
+    "tps": 0.0,
+    "ttft_ms": 0.0
+  }
+}
 EOF
 fi
 
