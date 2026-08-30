@@ -70,6 +70,30 @@ class TestJustfileRecipes(unittest.TestCase):
         )
         self.assertIn("tee", content, "Recipe must use tee for live output and logfile capture")
 
+    def test_justfile_contains_gce_spot_recipes(self):
+        """Verify Justfile contains gce-spot-run, gce-spot-sweep, gce-spot-status, and gce-spot-cleanup recipes."""
+        justfile_path = ROOT_DIR / "Justfile"
+        self.assertTrue(justfile_path.exists(), "Justfile not found")
+
+        content = justfile_path.read_text(encoding="utf-8")
+
+        # Assert recipe definitions exist
+        self.assertIn("gce-spot-run", content, "Recipe 'gce-spot-run' not defined in Justfile")
+        self.assertIn("gce-spot-sweep", content, "Recipe 'gce-spot-sweep' not defined in Justfile")
+        self.assertIn("gce-spot-status", content, "Recipe 'gce-spot-status' not defined in Justfile")
+        self.assertIn("gce-spot-cleanup", content, "Recipe 'gce-spot-cleanup' not defined in Justfile")
+
+        # Assert recipes are present in the help menu
+        self.assertIn("just gce-spot-run", content, "Help menu missing 'just gce-spot-run'")
+        self.assertIn("just gce-spot-sweep", content, "Help menu missing 'just gce-spot-sweep'")
+        self.assertIn("just gce-spot-status", content, "Help menu missing 'just gce-spot-status'")
+        self.assertIn("just gce-spot-cleanup", content, "Help menu missing 'just gce-spot-cleanup'")
+
+        # Assert recipes invoke expected Python / gcloud targets
+        self.assertIn("run_gce_spot_sweep.py", content, "Recipe must call run_gce_spot_sweep.py")
+        self.assertIn("scheduling.provisioningModel=SPOT", content, "Status recipe must filter for SPOT provisioning")
+        self.assertIn("gemma-spot-", content, "Cleanup recipe must filter for gemma-spot-* benchmark instances")
+
     def test_justfile_syntax(self):
         """Verify Justfile parses without syntax errors using the just CLI."""
         res = subprocess.run(
@@ -85,6 +109,10 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("overnight-sweep", res.stdout)
         self.assertIn("tf-plan", res.stdout)
         self.assertIn("tf-apply", res.stdout)
+        self.assertIn("gce-spot-run", res.stdout)
+        self.assertIn("gce-spot-sweep", res.stdout)
+        self.assertIn("gce-spot-status", res.stdout)
+        self.assertIn("gce-spot-cleanup", res.stdout)
 
     def test_experiments_status_contains_track_e(self):
         """Verify docs/experiments_status.md contains Track E for Gemma SOC evaluation."""
@@ -101,12 +129,16 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("gemma-4-31b-it", content)
 
     def test_no_emojis_in_justfile_and_docs(self):
-        """Verify no emojis are present in Justfile, tests, or experiments_status.md."""
+        """Verify no emojis are present in Justfile, tests, or documentation files."""
         files_to_check = [
             ROOT_DIR / "Justfile",
             ROOT_DIR / "docs" / "experiments_status.md",
             Path(__file__),
         ]
+        spot_doc = ROOT_DIR / "docs" / "benchmarking_gce_ephemeral_spot_vms.md"
+        if spot_doc.exists():
+            files_to_check.append(spot_doc)
+
         for fpath in files_to_check:
             text = fpath.read_text(encoding="utf-8")
             for char in text:

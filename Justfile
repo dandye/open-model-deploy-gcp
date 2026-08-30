@@ -38,6 +38,11 @@ default:
     @printf "  \033[1;32mjust agent-soc-eval [flavor] [endpoint]\033[0m \033[2mRun automated SOC eval suite with LLM judge\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n"
     @printf "  \033[1;32mjust overnight-sweep [models] [dry_run]\033[0m \033[2mRun overnight benchmark & SOC eval sweep with logging\033[0m\n\n"
+    @printf "\033[1;33mCOMPUTE ENGINE SPOT GPU VMS (Cost-Optimized Benchmarks):\033[0m\n"
+    @printf "  \033[1;32mjust gce-spot-run [flavor] [dry_run]\033[0m   \033[2mRun single model benchmark on ephemeral Spot VM\033[0m\n"
+    @printf "  \033[1;32mjust gce-spot-sweep [models] [dry_run]\033[0m \033[2mRun full or filtered benchmark sweep across Spot VMs\033[0m\n"
+    @printf "  \033[1;32mjust gce-spot-status [zone]\033[0m            \033[2mList active GCE Spot GPU instances\033[0m\n"
+    @printf "  \033[1;32mjust gce-spot-cleanup [zone]\033[0m           \033[2mDelete lingering Spot benchmark VMs\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -178,6 +183,36 @@ overnight-sweep MODELS="" DRY_RUN="false":
     @LOGFILE="logs/overnight_sweep_$(date +%Y%m%d_%H%M%S).log"; \
     echo "Starting overnight sweep. Logging to $LOGFILE"; \
     uv run python3 scripts/run_overnight_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}} 2>&1 | tee "$LOGFILE"
+
+# ------------------------------------------------------------------------------
+# Compute Engine Spot GPU VMs (Cost-Optimized Ephemeral Benchmarks)
+# ------------------------------------------------------------------------------
+
+# Run a single model benchmark on an ephemeral Spot VM (Usage: just gce-spot-run [flavor] [dry_run])
+gce-spot-run FLAVOR="gemma-3-4b-it" DRY_RUN="false": auth-check
+    @uv run python3 scripts/run_gce_spot_sweep.py --models "{{FLAVOR}}" {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# Run a full or filtered benchmark sweep across Spot VMs (Usage: just gce-spot-sweep [models] [dry_run])
+gce-spot-sweep MODELS="" DRY_RUN="false": auth-check
+    @uv run python3 scripts/run_gce_spot_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# List active GCE Spot GPU instances (Usage: just gce-spot-status [zone])
+gce-spot-status ZONE="":
+    @ZONE_FLAG="{{if ZONE != "" { "--zone=" + ZONE } else { "" }}}"; \
+    gcloud compute instances list --filter="scheduling.provisioningModel=SPOT" $$ZONE_FLAG
+
+# Forcefully delete any lingering Spot benchmark VMs (Usage: just gce-spot-cleanup [zone])
+gce-spot-cleanup ZONE="":
+    @ZONE_FLAG="{{if ZONE != "" { "--zone=" + ZONE } else { "" }}}"; \
+    INSTANCES=$$(gcloud compute instances list --filter="name:gemma-spot-*" --format="value(name)" $$ZONE_FLAG); \
+    if [ -n "$$INSTANCES" ]; then \
+        echo "Deleting lingering GCE Spot benchmark instances:"; \
+        echo "$$INSTANCES"; \
+        gcloud compute instances delete $$INSTANCES $$ZONE_FLAG --quiet; \
+    else \
+        echo "No lingering GCE Spot benchmark instances found."; \
+    fi
+
 
 
 
