@@ -36,7 +36,13 @@ default:
     @printf "  \033[1;32mjust agent-deploy\033[0m                      \033[2mDeploy general Gemma ADK Agent to Agent Engine\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-test [prompt] [flavor]\033[0m  \033[2mTest SOC Tier 1 Agent locally against endpoint\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-eval [flavor] [endpoint]\033[0m \033[2mRun automated SOC eval suite with LLM judge\033[0m\n"
-    @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n"
+    @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
+    @printf "\033[1;33mVERTEX AI CUSTOM JOBS (Ephemeral Benchmarks & \$0 Idle):\033[0m\n"
+    @printf "  \033[1;32mjust custom-job-build [tag]\033[0m             \033[2mBuild & push runner Docker image to Artifact Registry\033[0m\n"
+    @printf "  \033[1;32mjust custom-job-run [flavor] [dry_run]\033[0m  \033[2mSubmit single model evaluation CustomJob\033[0m\n"
+    @printf "  \033[1;32mjust custom-job-sweep [models] [dry_run]\033[0m\033[2mExecute model evaluation CustomJob sweep\033[0m\n"
+    @printf "  \033[1;32mjust custom-job-status\033[0m                  \033[2mList recent CustomJobs in active region\033[0m\n\n"
+    @printf "\033[1;33mMASTER OVERNIGHT EVALUATION & BENCHMARK SWEEP:\033[0m\n"
     @printf "  \033[1;32mjust overnight-sweep [models] [dry_run]\033[0m \033[2mRun overnight benchmark & SOC eval sweep with logging\033[0m\n\n"
     @printf "\033[1;33mCOMPUTE ENGINE SPOT GPU VMS (Cost-Optimized Benchmarks):\033[0m\n"
     @printf "  \033[1;32mjust gce-spot-run [flavor] [dry_run]\033[0m   \033[2mRun single model benchmark on ephemeral Spot VM\033[0m\n"
@@ -212,6 +218,32 @@ gce-spot-cleanup ZONE="":
     else \
         echo "No lingering GCE Spot benchmark instances found."; \
     fi
+
+# ------------------------------------------------------------------------------
+# Vertex AI Custom Jobs (Ephemeral Compute & Guaranteed $0 Idle)
+# ------------------------------------------------------------------------------
+
+# Build and push benchmark runner container image to Artifact Registry (Usage: just custom-job-build [tag] [region])
+custom-job-build TAG="latest" REGION="us-central1": auth-check
+    @PROJECT_ID="$(gcloud config get-value project 2>/dev/null || echo 'dandye-0324-chronicle')"; \
+    IMAGE_URI="{{REGION}}-docker.pkg.dev/${PROJECT_ID}/gemma-benchmarks/runner:{{TAG}}"; \
+    echo "Building runner image ${IMAGE_URI}..."; \
+    docker build -f docker/Dockerfile.custom_job -t "${IMAGE_URI}" . && \
+    echo "Pushing runner image ${IMAGE_URI}..."; \
+    docker push "${IMAGE_URI}"
+
+# Submit single model evaluation CustomJob on Vertex AI (Usage: just custom-job-run [flavor] [dry_run])
+custom-job-run FLAVOR="gemma-3-4b-it" DRY_RUN="false": auth-check
+    @uv run python3 scripts/run_vertex_custom_job_sweep.py --models "{{FLAVOR}}" {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# Execute CustomJob evaluation sweep across models (Usage: just custom-job-sweep [models] [dry_run])
+custom-job-sweep MODELS="" DRY_RUN="false": auth-check
+    @uv run python3 scripts/run_vertex_custom_job_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# List recent Vertex AI CustomJobs in the active region (Usage: just custom-job-status [region])
+custom-job-status REGION="us-central1":
+    @PROJECT_ID="$(gcloud config get-value project 2>/dev/null || echo 'dandye-0324-chronicle')"; \
+    gcloud ai custom-jobs list --region="{{REGION}}" --project="${PROJECT_ID}" --limit=10
 
 
 

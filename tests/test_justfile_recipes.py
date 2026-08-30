@@ -94,6 +94,30 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("scheduling.provisioningModel=SPOT", content, "Status recipe must filter for SPOT provisioning")
         self.assertIn("name:(spot-* OR gemma-spot-*)", content, "Cleanup recipe must filter for spot-* and gemma-spot-* benchmark instances")
 
+    def test_justfile_contains_custom_job_recipes(self):
+        """Verify Justfile contains custom-job-build, custom-job-run, custom-job-sweep, and custom-job-status recipes."""
+        justfile_path = ROOT_DIR / "Justfile"
+        self.assertTrue(justfile_path.exists(), "Justfile not found")
+
+        content = justfile_path.read_text(encoding="utf-8")
+
+        # Assert recipe definitions exist
+        self.assertIn("custom-job-build", content, "Recipe 'custom-job-build' not defined in Justfile")
+        self.assertIn("custom-job-run", content, "Recipe 'custom-job-run' not defined in Justfile")
+        self.assertIn("custom-job-sweep", content, "Recipe 'custom-job-sweep' not defined in Justfile")
+        self.assertIn("custom-job-status", content, "Recipe 'custom-job-status' not defined in Justfile")
+
+        # Assert recipes are present in the help menu
+        self.assertIn("just custom-job-build", content, "Help menu missing 'just custom-job-build'")
+        self.assertIn("just custom-job-run", content, "Help menu missing 'just custom-job-run'")
+        self.assertIn("just custom-job-sweep", content, "Help menu missing 'just custom-job-sweep'")
+        self.assertIn("just custom-job-status", content, "Help menu missing 'just custom-job-status'")
+
+        # Assert recipes invoke expected underlying commands
+        self.assertIn("run_vertex_custom_job_sweep.py", content, "Recipe must invoke run_vertex_custom_job_sweep.py")
+        self.assertIn("Dockerfile.custom_job", content, "Recipe custom-job-build must reference Dockerfile.custom_job")
+        self.assertIn("gcloud ai custom-jobs list", content, "Recipe custom-job-status must call gcloud ai custom-jobs list")
+
     def test_justfile_syntax(self):
         """Verify Justfile parses without syntax errors using the just CLI."""
         res = subprocess.run(
@@ -113,6 +137,10 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("gce-spot-sweep", res.stdout)
         self.assertIn("gce-spot-status", res.stdout)
         self.assertIn("gce-spot-cleanup", res.stdout)
+        self.assertIn("custom-job-build", res.stdout)
+        self.assertIn("custom-job-run", res.stdout)
+        self.assertIn("custom-job-sweep", res.stdout)
+        self.assertIn("custom-job-status", res.stdout)
 
     def test_experiments_status_contains_track_e(self):
         """Verify docs/experiments_status.md contains Track E for Gemma SOC evaluation."""
@@ -133,6 +161,7 @@ class TestJustfileRecipes(unittest.TestCase):
         files_to_check = [
             ROOT_DIR / "Justfile",
             ROOT_DIR / "docs" / "experiments_status.md",
+            ROOT_DIR / "docs" / "benchmarking_vertex_custom_jobs.md",
             Path(__file__),
         ]
         spot_doc = ROOT_DIR / "docs" / "benchmarking_gce_ephemeral_spot_vms.md"
