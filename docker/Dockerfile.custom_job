@@ -1,0 +1,33 @@
+# Vertex AI Custom Job Ephemeral Benchmark Runner
+# Packages vLLM, eval_soc_agent, benchmark suites, and GCS artifact upload.
+
+FROM vllm/vllm-openai:latest
+
+ENV PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    GOOGLE_API_USE_CLIENT_CERTIFICATE=false
+
+WORKDIR /workspace
+
+# Install required Python dependencies
+RUN pip install --no-cache-dir \
+    google-cloud-storage \
+    google-cloud-aiplatform \
+    google-genai \
+    requests \
+    openai \
+    tabulate \
+    pydantic
+
+# Copy evaluation datasets, agent packages, and runner scripts
+COPY configs/evals/soc_tier1_evalset.json /workspace/configs/evals/soc_tier1_evalset.json
+COPY configs/models.json /workspace/configs/models.json
+COPY agent/ /workspace/agent/
+COPY scripts/eval_soc_agent.py /workspace/scripts/eval_soc_agent.py
+COPY scripts/benchmark.py /workspace/scripts/benchmark.py
+COPY scripts/custom_job_entrypoint.sh /workspace/scripts/custom_job_entrypoint.sh
+
+# Ensure runner entrypoint is executable
+RUN chmod +x /workspace/scripts/custom_job_entrypoint.sh
+
+ENTRYPOINT ["/workspace/scripts/custom_job_entrypoint.sh"]
