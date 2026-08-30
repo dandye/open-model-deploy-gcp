@@ -254,7 +254,6 @@ def test_orchestrator_filter_targets() -> None:
     assert "gemma-2-9b-it" in matched_flavors
     assert "gemma-2-9b-it-fp8" in matched_flavors
     assert "gemma-2-9b-it-speculative" in matched_flavors
-    assert "gemma-2-9b-it-speculative" in matched_flavors
 
 
 def test_orchestrator_dry_run_lifecycle() -> None:
