@@ -70,14 +70,20 @@ class TestJustfileRecipes(unittest.TestCase):
         )
         self.assertIn("tee", content, "Recipe must use tee for live output and logfile capture")
 
+<<<<<<< HEAD
     def test_justfile_contains_gce_spot_recipes(self):
         """Verify Justfile contains gce-spot-run, gce-spot-sweep, gce-spot-status, and gce-spot-cleanup recipes."""
+=======
+    def test_justfile_contains_gke_ray_recipes(self):
+        """Verify Justfile contains GKE Ray and Kueue sweep recipes and help menu entries."""
+>>>>>>> 3b205d9 (feat(gke-ray): add Justfile recipes and GKE Ray documentation)
         justfile_path = ROOT_DIR / "Justfile"
         self.assertTrue(justfile_path.exists(), "Justfile not found")
 
         content = justfile_path.read_text(encoding="utf-8")
 
         # Assert recipe definitions exist
+<<<<<<< HEAD
         self.assertIn("gce-spot-run", content, "Recipe 'gce-spot-run' not defined in Justfile")
         self.assertIn("gce-spot-sweep", content, "Recipe 'gce-spot-sweep' not defined in Justfile")
         self.assertIn("gce-spot-status", content, "Recipe 'gce-spot-status' not defined in Justfile")
@@ -118,6 +124,32 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("Dockerfile.custom_job", content, "Recipe custom-job-build must reference Dockerfile.custom_job")
         self.assertIn("gcloud ai custom-jobs list", content, "Recipe custom-job-status must call gcloud ai custom-jobs list")
 
+    def test_justfile_contains_gke_ray_recipes(self):
+        """Verify Justfile contains gke-ray-init, gke-ray-run, gke-ray-sweep, gke-ray-status, and gke-ray-cleanup recipes."""
+        justfile_path = ROOT_DIR / "Justfile"
+        self.assertTrue(justfile_path.exists(), "Justfile not found")
+
+        content = justfile_path.read_text(encoding="utf-8")
+
+        self.assertIn("gke-ray-init", content, "Recipe 'gke-ray-init' not defined in Justfile")
+        self.assertIn("gke-ray-run", content, "Recipe 'gke-ray-run' not defined in Justfile")
+        self.assertIn("gke-ray-sweep", content, "Recipe 'gke-ray-sweep' not defined in Justfile")
+        self.assertIn("gke-ray-status", content, "Recipe 'gke-ray-status' not defined in Justfile")
+        self.assertIn("gke-ray-cleanup", content, "Recipe 'gke-ray-cleanup' not defined in Justfile")
+
+        # Assert recipes are present in the help menu
+        self.assertIn("just gke-ray-init", content, "Help menu missing 'just gke-ray-init'")
+        self.assertIn("just gke-ray-run", content, "Help menu missing 'just gke-ray-run'")
+        self.assertIn("just gke-ray-sweep", content, "Help menu missing 'just gke-ray-sweep'")
+        self.assertIn("just gke-ray-status", content, "Help menu missing 'just gke-ray-status'")
+        self.assertIn("just gke-ray-cleanup", content, "Help menu missing 'just gke-ray-cleanup'")
+
+        # Assert recipe commands and integrations
+        self.assertIn("k8s/kueue_queues.yaml", content, "Recipe gke-ray-init must reference kueue_queues.yaml")
+        self.assertIn("run_gke_ray_sweep.py", content, "Recipe gke-ray-sweep must invoke run_gke_ray_sweep.py")
+        self.assertIn("kubectl get rayclusters", content, "Recipe gke-ray-status must query rayclusters via kubectl")
+        self.assertIn("kubectl delete rayclusters", content, "Recipe gke-ray-cleanup must delete rayclusters via kubectl")
+
     def test_justfile_syntax(self):
         """Verify Justfile parses without syntax errors using the just CLI."""
         res = subprocess.run(
@@ -141,6 +173,11 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("custom-job-run", res.stdout)
         self.assertIn("custom-job-sweep", res.stdout)
         self.assertIn("custom-job-status", res.stdout)
+        self.assertIn("gke-ray-init", res.stdout)
+        self.assertIn("gke-ray-run", res.stdout)
+        self.assertIn("gke-ray-sweep", res.stdout)
+        self.assertIn("gke-ray-status", res.stdout)
+        self.assertIn("gke-ray-cleanup", res.stdout)
 
     def test_experiments_status_contains_track_e(self):
         """Verify docs/experiments_status.md contains Track E for Gemma SOC evaluation."""
@@ -162,6 +199,7 @@ class TestJustfileRecipes(unittest.TestCase):
             ROOT_DIR / "Justfile",
             ROOT_DIR / "docs" / "experiments_status.md",
             ROOT_DIR / "docs" / "benchmarking_vertex_custom_jobs.md",
+            ROOT_DIR / "docs" / "benchmarking_gke_ray_serve.md",
             Path(__file__),
         ]
         spot_doc = ROOT_DIR / "docs" / "benchmarking_gce_ephemeral_spot_vms.md"
@@ -169,6 +207,8 @@ class TestJustfileRecipes(unittest.TestCase):
             files_to_check.append(spot_doc)
 
         for fpath in files_to_check:
+            if not fpath.exists():
+                continue
             text = fpath.read_text(encoding="utf-8")
             for char in text:
                 code = ord(char)

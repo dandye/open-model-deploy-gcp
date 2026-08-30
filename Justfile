@@ -44,11 +44,20 @@ default:
     @printf "  \033[1;32mjust custom-job-status\033[0m                  \033[2mList recent CustomJobs in active region\033[0m\n\n"
     @printf "\033[1;33mMASTER OVERNIGHT EVALUATION & BENCHMARK SWEEP:\033[0m\n"
     @printf "  \033[1;32mjust overnight-sweep [models] [dry_run]\033[0m \033[2mRun overnight benchmark & SOC eval sweep with logging\033[0m\n\n"
+<<<<<<< HEAD
     @printf "\033[1;33mCOMPUTE ENGINE SPOT GPU VMS (Cost-Optimized Benchmarks):\033[0m\n"
     @printf "  \033[1;32mjust gce-spot-run [flavor] [dry_run]\033[0m   \033[2mRun single model benchmark on ephemeral Spot VM\033[0m\n"
     @printf "  \033[1;32mjust gce-spot-sweep [models] [dry_run]\033[0m \033[2mRun full or filtered benchmark sweep across Spot VMs\033[0m\n"
     @printf "  \033[1;32mjust gce-spot-status [zone]\033[0m            \033[2mList active GCE Spot GPU instances\033[0m\n"
     @printf "  \033[1;32mjust gce-spot-cleanup [zone]\033[0m           \033[2mDelete lingering Spot benchmark VMs\033[0m\n\n"
+=======
+    @printf "\033[1;33mGKE RAY SERVE & KUEUE (Distributed Batch Benchmarks):\033[0m\n"
+    @printf "  \033[1;32mjust gke-ray-init [cluster] [region]\033[0m   \033[2mInitialize Kueue queues & Ray operator on GKE\033[0m\n"
+    @printf "  \033[1;32mjust gke-ray-run [flavor] [dry_run]\033[0m    \033[2mRun single model benchmark on GKE RayCluster\033[0m\n"
+    @printf "  \033[1;32mjust gke-ray-sweep [models] [dry_run]\033[0m  \033[2mRun full or filtered benchmark sweep on GKE\033[0m\n"
+    @printf "  \033[1;32mjust gke-ray-status [namespace]\033[0m        \033[2mQuery active RayClusters, Jobs & LocalQueues\033[0m\n"
+    @printf "  \033[1;32mjust gke-ray-cleanup [namespace]\033[0m       \033[2mDelete Ray workloads to release GPU node pools\033[0m\n\n"
+>>>>>>> 3b205d9 (feat(gke-ray): add Justfile recipes and GKE Ray documentation)
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -191,6 +200,7 @@ overnight-sweep MODELS="" DRY_RUN="false":
     uv run python3 scripts/run_overnight_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}} 2>&1 | tee "$LOGFILE"
 
 # ------------------------------------------------------------------------------
+<<<<<<< HEAD
 # Compute Engine Spot GPU VMs (Cost-Optimized Ephemeral Benchmarks)
 # ------------------------------------------------------------------------------
 
@@ -243,7 +253,33 @@ custom-job-sweep MODELS="" DRY_RUN="false": auth-check
 # List recent Vertex AI CustomJobs in the active region (Usage: just custom-job-status [region])
 custom-job-status REGION="us-central1":
     @PROJECT_ID="$(gcloud config get-value project 2>/dev/null || echo 'dandye-0324-chronicle')"; \
-    gcloud ai custom-jobs list --region="{{REGION}}" --project="${PROJECT_ID}" --limit=10
+# ------------------------------------------------------------------------------
+# GKE Ray Serve & Kueue (Distributed Batch Benchmarks)
+# ------------------------------------------------------------------------------
+
+# Initialize GKE cluster Kueue queues and Ray operator (Usage: just gke-ray-init [cluster] [region])
+gke-ray-init CLUSTER="" REGION="":
+    @if [ -n "{{CLUSTER}}" ] && [ -n "{{REGION}}" ]; then \
+        gcloud container clusters get-credentials "{{CLUSTER}}" --region="{{REGION}}"; \
+    fi
+    @kubectl apply -f k8s/kueue_queues.yaml
+
+# Run single model benchmark on GKE RayCluster (Usage: just gke-ray-run [flavor] [dry_run])
+gke-ray-run FLAVOR="gemma-3-4b-it" DRY_RUN="false":
+    @uv run python3 scripts/run_gke_ray_sweep.py --models "{{FLAVOR}}" {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# Run full or filtered benchmark sweep across GKE RayClusters (Usage: just gke-ray-sweep [models] [dry_run])
+gke-ray-sweep MODELS="" DRY_RUN="false":
+    @uv run python3 scripts/run_gke_ray_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# Query active RayClusters, Kueue LocalQueues, and batch Jobs (Usage: just gke-ray-status [namespace])
+gke-ray-status NAMESPACE="gemma-benchmarks":
+    @kubectl get rayclusters,jobs,localqueues -n "{{NAMESPACE}}"
+
+# Forcefully delete RayClusters and batch Jobs in namespace to release GPU node pools (Usage: just gke-ray-cleanup [namespace])
+gke-ray-cleanup NAMESPACE="gemma-benchmarks":
+    @echo "Cleaning up GKE Ray workloads in namespace '{{NAMESPACE}}'..."
+    @kubectl delete rayclusters,jobs --all -n "{{NAMESPACE}}" --ignore-not-found=true
 
 
 
