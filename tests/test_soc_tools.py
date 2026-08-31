@@ -114,3 +114,54 @@ def test_post_case_comment():
     assert data["status"] == "SUCCESS"
     assert data["case_id"] == "CASE-33279"
     assert data["bytes_posted"] == len(comment)
+
+
+def test_domain_report_borderline_dns_tunnel():
+    """Verify borderline DNS tunnel domain returns calibrated ambiguous metrics."""
+    raw = get_domain_report("tunnel-data.cdn-edge-update.net")
+    data = json.loads(raw)
+    assert data["domain"] == "tunnel-data.cdn-edge-update.net"
+    assert data["verdict"] == "BORDERLINE_SUSPICIOUS"
+    assert data["malicious_votes"] == 18
+    assert data["harmless_votes"] == 22
+    assert "CDN Tunnel" in data["category"]
+
+
+def test_domain_report_error_simulation():
+    """Verify HTTP 503 simulated service outage returns error payload."""
+    raw = get_domain_report("error-503.service-unavailable.org")
+    data = json.loads(raw)
+    assert data["status_code"] == 503
+    assert "HTTP 503" in data["error"]
+    assert data["domain"] == "error-503.service-unavailable.org"
+
+
+def test_lookup_entity_lateral_movement():
+    """Verify lateral movement telemetry indicators in entity lookup."""
+    raw = lookup_entity("DESKTOP-HR-04")
+    data = json.loads(raw)
+    assert data["entity"] == "DESKTOP-HR-04"
+    assert data["suspicious_indicators"] is True
+    assert "psexec" in data["process_command"].lower()
+    assert "10.0.8.99" in data["target_host"]
+
+
+def test_file_report_supply_chain_revoked_cert():
+    """Verify supply chain file hash returns revoked certificate metadata."""
+    sha256_hash = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"
+    raw = get_file_report(sha256_hash)
+    data = json.loads(raw)
+    assert data["hash"] == sha256_hash
+    assert data["certificate_status"] == "REVOKED_CERTIFICATE"
+    assert "SupplyChain" in data["threat_name"]
+    assert "Acme Corp" in data["vendor"]
+
+
+def test_ip_report_authorized_scanner():
+    """Verify authorized vulnerability scanner IP returns benign authorized status."""
+    raw = get_ip_address_report("10.0.99.50")
+    data = json.loads(raw)
+    assert data["ip"] == "10.0.99.50"
+    assert data["verdict"] == "SAFE"
+    assert "Authorized Scanner" in data["category"]
+

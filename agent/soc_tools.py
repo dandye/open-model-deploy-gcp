@@ -9,7 +9,17 @@ def get_ip_address_report(ip: str) -> str:
     Args:
         ip: IPv4 or IPv6 address string.
     """
-    if ip.startswith("192.0.2.") or ip.startswith("198.51.100.") or ip.startswith("203.0.113."):
+    if ip == "10.0.99.50":
+        return json.dumps({
+            "ip": ip,
+            "category": "Internal Authorized Scanner",
+            "reputation": "BENIGN_AUTHORIZED",
+            "verdict": "SAFE",
+            "service": "Qualys Vulnerability Scanner",
+            "malicious_votes": 0,
+            "harmless_votes": 100,
+        })
+    elif ip.startswith("192.0.2.") or ip.startswith("198.51.100.") or ip.startswith("203.0.113."):
         return json.dumps({
             "ip": ip,
             "category": "Documentation / Reserved RFC-5737",
@@ -44,7 +54,21 @@ def get_domain_report(domain: str) -> str:
         domain: Domain FQDN string (e.g. 'evil.com', 'google.com').
     """
     domain_clean = domain.strip().lower()
-    if domain_clean in ["update-service-win32.com", "evil.com", "malicious.com"]:
+    if domain_clean == "error-503.service-unavailable.org":
+        return json.dumps({
+            "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
+            "status_code": 503,
+            "domain": domain_clean,
+        })
+    elif domain_clean == "tunnel-data.cdn-edge-update.net":
+        return json.dumps({
+            "domain": domain_clean,
+            "verdict": "BORDERLINE_SUSPICIOUS",
+            "category": "Dynamic DNS / CDN Tunnel",
+            "malicious_votes": 18,
+            "harmless_votes": 22,
+        })
+    elif domain_clean in ["update-service-win32.com", "evil.com", "malicious.com"]:
         return json.dumps({
             "domain": domain_clean,
             "verdict": "MALICIOUS",
@@ -69,6 +93,16 @@ def get_file_report(file_hash: str) -> str:
     Args:
         file_hash: MD5, SHA-1, or SHA-256 hash string.
     """
+    if file_hash == "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90":
+        return json.dumps({
+            "hash": file_hash,
+            "hash_type": "SHA-256",
+            "verdict": "SUSPICIOUS",
+            "threat_name": "Signed.SupplyChain.Anomaly",
+            "certificate_status": "REVOKED_CERTIFICATE",
+            "vendor": "Acme Corp (Compromised Signing Key)",
+            "detections": "12/72 engines",
+        })
     return json.dumps({
         "hash": file_hash,
         "hash_type": "MD5" if len(file_hash) == 32 else "SHA-256",
@@ -84,6 +118,16 @@ def lookup_entity(entity_id: str) -> str:
     Args:
         entity_id: User email, hostname, or IP identifier.
     """
+    if entity_id in ["DESKTOP-HR-04", "10.0.8.99"]:
+        return json.dumps({
+            "entity": entity_id,
+            "siem_events_found": 28,
+            "recent_event_types": ["VPN_AUTHENTICATION", "PROCESS_LAUNCH", "SMB_SESSION"],
+            "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+            "suspicious_indicators": True,
+            "target_host": "10.0.8.99",
+            "last_active": "2026-08-31T18:00:00Z",
+        })
     return json.dumps({
         "entity": entity_id,
         "siem_events_found": 14,
