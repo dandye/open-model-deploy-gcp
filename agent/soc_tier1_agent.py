@@ -172,12 +172,17 @@ class SocTier1Agent(GemmaAgent):
 
         return None
 
-    def _execute_tool(self, tool_name: str, args: Dict[str, Any]) -> str:
-        """Executes a local or remote tool function safely."""
+    def _execute_tool_action(self, tool_name: str, args: Dict[str, Any]) -> str:
+        """Executes a local or remote tool function safely and returns a JSON string."""
         func = self.tools_dict.get(tool_name)
         if not func:
-            return f"Error: Tool '{tool_name}' not found. Available tools: {list(self.tools_dict.keys())}"
+            return json.dumps({
+                "error": f"Tool '{tool_name}' not found. Available tools: {list(self.tools_dict.keys())}",
+                "status": "ERROR",
+            })
         try:
+            if not isinstance(args, dict):
+                args = {}
             sig = inspect.signature(func)
             valid_args = {}
             params = list(sig.parameters.keys())
@@ -190,9 +195,18 @@ class SocTier1Agent(GemmaAgent):
                     elif len(args) == 1 and list(args.keys())[0] in ("input", "arg"):
                         valid_args[param_name] = list(args.values())[0]
             result = func(**valid_args)
+            if isinstance(result, (dict, list)):
+                return json.dumps(result)
             return str(result)
         except Exception as e:
-            return f"Error executing tool '{tool_name}': {str(e)}"
+            return json.dumps({
+                "error": f"Tool execution failed: {str(e)}",
+                "status": "ERROR",
+            })
+
+    def _execute_tool(self, tool_name: str, args: Dict[str, Any]) -> str:
+        """Executes a tool action safely (alias for _execute_tool_action)."""
+        return self._execute_tool_action(tool_name, args)
 
 
     def _call_llm_step(self, prompt: str, max_tokens: int = 1024, temperature: float = 0.2) -> Tuple[str, Dict[str, int]]:
@@ -265,7 +279,7 @@ class SocTier1Agent(GemmaAgent):
             parsed = self._parse_action(step_output)
             if parsed:
                 tool_name, tool_args = parsed
-                observation = self._execute_tool(tool_name, tool_args)
+                observation = self._execute_tool_action(tool_name, tool_args)
                 trajectory.append({
                     "iteration": iteration + 1,
                     "tool": tool_name,
