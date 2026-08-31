@@ -9,8 +9,11 @@ from typing import Any, Callable, Dict, List, Optional
 import os
 import sys
 import json
+import time
 import tempfile
 import subprocess
+import urllib.request
+import urllib.error
 
 os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
 
@@ -169,15 +172,20 @@ class GemmaAgent:
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             }
-            model_name = self.model_name or "gemma"
-            try:
-                models_req = urllib.request.Request(f"{self.cloudrun_url.rstrip('/')}/v1/models", headers=headers)
-                with urllib.request.urlopen(models_req, timeout=5) as m_resp:
-                    m_data = json.loads(m_resp.read().decode("utf-8"))
-                    if m_data.get("data") and len(m_data["data"]) > 0:
-                        model_name = m_data["data"][0]["id"]
-            except Exception:
-                pass
+            # Dynamically resolve registered model ID from vLLM /v1/models endpoint
+            model_name = self.managed_model
+            if not model_name:
+                try:
+                    models_url = f"{self.cloudrun_url.rstrip('/')}/v1/models"
+                    models_req = urllib.request.Request(models_url, headers=headers)
+                    with urllib.request.urlopen(models_req, timeout=10) as m_resp:
+                        m_data = json.loads(m_resp.read().decode("utf-8"))
+                        if m_data.get("data") and len(m_data["data"]) > 0:
+                            model_name = m_data["data"][0]["id"]
+                except Exception:
+                    pass
+            if not model_name:
+                model_name = "google/gemma-3-1b-it"
 
             payload = {
                 "model": model_name,
@@ -189,8 +197,19 @@ class GemmaAgent:
                 "temperature": temperature,
             }
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            max_retries = 6
+            data = None
+            for attempt in range(max_retries):
+                try:
+                    with urllib.request.urlopen(req, timeout=600) as resp:
+                        data = json.loads(resp.read().decode("utf-8"))
+                    break
+                except urllib.error.HTTPError as e:
+                    if e.code in (429, 503, 504) and attempt < max_retries - 1:
+                        sleep_s = (2 ** attempt) * 3
+                        time.sleep(sleep_s)
+                        continue
+                    raise
             reply = data["choices"][0]["message"]["content"]
             raw_usage = data.get("usage", {})
             usage = {

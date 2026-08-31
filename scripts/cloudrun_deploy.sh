@@ -68,7 +68,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --project="$PROJECT_ID" \
   --region="$REGION" \
   --image="vllm/vllm-openai:latest" \
-  --args="--model=${HF_REPO},--tensor-parallel-size=1,--gpu-memory-utilization=0.90,--max-model-len=4096" \
+  --args="--model=${HF_REPO},--port=8080,--enforce-eager,--tensor-parallel-size=1,--gpu-memory-utilization=0.90,--max-model-len=4096" \
   --set-env-vars="$ENV_VARS" \
   --gpu="$GPU_COUNT" \
   --gpu-type="$GPU_TYPE" \
@@ -78,6 +78,8 @@ gcloud run deploy "$SERVICE_NAME" \
   --min-instances="$MIN_INSTANCES" \
   --max-instances="$MAX_INSTANCES" \
   --no-cpu-throttling \
+  --timeout=900 \
+  --startup-probe="timeoutSeconds=10,periodSeconds=10,failureThreshold=60,tcpSocket.port=8080" \
   --allow-unauthenticated
 
 echo ""

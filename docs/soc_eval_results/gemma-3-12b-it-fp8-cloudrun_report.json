@@ -1,0 +1,164 @@
+{
+  "flavor": "gemma-3-12b-it-fp8-cloudrun",
+  "summary": {
+    "total_cases": 5,
+    "passed_cases": 2,
+    "pass_rate": 40.0,
+    "avg_rubric_score": 76.0,
+    "avg_latency_s": 98.77,
+    "total_prompt_tokens": 8723,
+    "total_completion_tokens": 3902,
+    "total_tokens": 12625,
+    "avg_tokens_per_case": 2525.0,
+    "avg_generation_tps": 7.9,
+    "avg_total_tps": 25.56,
+    "total_tool_calls": 4,
+    "cold_start_latency_s": 2.76,
+    "region": "europe-west4",
+    "target_type": "cloudrun",
+    "notes": "Gemma 3 12B FP8 Quantized (1x L4)"
+  },
+  "case_results": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "latency_s": 128.46248650550842,
+      "usage": {
+        "prompt_tokens": 911,
+        "completion_tokens": 1024,
+        "total_tokens": 1935
+      },
+      "generation_tps": 7.97,
+      "total_tps": 15.06,
+      "trajectory": [],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 55.0,
+      "grounding_score": 0.5,
+      "passed": false,
+      "critique": "The agent correctly identified the internal host, suspicious domain, and reached the correct high-level verdict of MALICIOUS. The recommended actions to isolate the host and escalate to Tier 2 were appropriate. However, there were significant errors and omissions. The agent failed to identify the specific threat family (Lokibot) as required for a full score in the Analysis section. The documentation was incomplete, truncated, and critically lacked the required MITRE ATT&CK mapping. The most severe error was a grounding failure: the agent treated RFC 5737 documentation IPs (192.0.2.12, 192.0.2.13, 192.0.2.14) as real malicious indicators, hallucinating threat intelligence for them ('associated with botnet activity') and recommending they be blocked. This demonstrates a fundamental knowledge gap.",
+      "response": "[Context & Enrichment]\n- Host: DESKTOP-FIN-08 (10.0.4.15)\n    - User: jsmith\n    - Recent Processes: explorer.exe, svchost.exe, chrome.exe, powershell.exe\n- Domain: update-service-win32.com\n    - GTI Verdict: Suspicious - Potential Malware Distribution\n    - Passive DNS: 192.0.2.12, 192.0.2.13, 192.0.2.14\n- IPs: 192.0.2.12, 192.0.2.13, 192.0.2.14\n    - Threat Intelligence: Suspicious, associated with botnet activity and malware distribution.\n    - WHOIS: Private Registration\n\n[Analysis & Verdict]\nMALICIOUS. The host is repeatedly connecting to a domain with a suspicious reputation and associated with malware distribution. The multiple IPs and private registration further indicate malicious activity. The presence of PowerShell among recent processes on the host is concerning.\n\n[Action & Escalation]\n1. **Immediate Containment:** Isolate host DESKTOP-FIN-08 (10.0.4.15) from the network.\n2. **Endpoint Scan:** Initiate a full malware scan on the isolated host.\n3. **User Notification:** Notify user jsmith of potential compromise and advise them to change their password.\n4. **Escalation:** Escalate to Tier 2 for further investigation and incident response.\n5. **Block IPs:** Block IPs 192.0.2.12, 192.0.2.13, and 192.0.2.14 at the firewall.\n\n[SOAR Documentation]\n```markdown\n### Alert Triage - DESKTOP-FIN-08 (10.0.4.15) - update-service-win32.com\n\n**Severity:** MALICIOUS\n**Summary:** Host 10.0.4.1"
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "latency_s": 43.80875849723816,
+      "usage": {
+        "prompt_tokens": 1938,
+        "completion_tokens": 320,
+        "total_tokens": 2258
+      },
+      "generation_tps": 7.3,
+      "total_tps": 51.54,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "get_ip_address_report",
+          "args": {
+            "ip": "192.0.2.100"
+          },
+          "observation": "{\"ip\": \"192.0.2.100\", \"category\": \"Documentation / Reserved RFC-5737\", \"reputation\": \"BENIGN / NON-ROUTABLE\", \"verdict\": \"SAFE\", \"malicious_votes\": 0, \"harmless_votes\": 100, \"asn\": \"AS0 (Documentation)\"}"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 100.0,
+      "grounding_score": 1.0,
+      "passed": true,
+      "critique": "The agent correctly identified the IP 192.0.2.100 as part of the TEST-NET-1 block reserved for documentation under RFC-5737. It accurately reported the reputation as benign and non-routable, avoiding any hallucinations of malicious activity. The recommended action to close the alert is appropriate. The response is well-structured and includes a clear SOAR documentation summary. No omissions or operational errors were noted.",
+      "response": "[Context & Enrichment]\nThe IP address 192.0.2.100 is categorized as \"Documentation / Reserved RFC-5737\" and has a reputation of \"BENIGN / NON-ROUTABLE\". Threat intelligence sources mark it as \"SAFE\" with 0 malicious votes and 100 harmless votes. The ASN is AS0 (Documentation).\n\n[Analysis & Verdict]\nBENIGN. The IP address is reserved for documentation and is not routable, indicating it is not actively participating in malicious activity.\n\n[Action & Escalation]\nNo further action is required. Close the alert.\n\n[SOAR Documentation]\n```markdown\n**Alert Triage Summary**\n\n* **Indicator:** 192.0.2.100 (IP Address)\n* **Source:** Authentication Log\n* **Verdict:** BENIGN\n* **Reasoning:** The IP address is reserved for documentation and is not routable. Threat intelligence reports indicate a safe reputation.\n* **Next Steps:** Close alert.\n```"
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "latency_s": 129.81024885177612,
+      "usage": {
+        "prompt_tokens": 1957,
+        "completion_tokens": 1037,
+        "total_tokens": 2994
+      },
+      "generation_tps": 7.99,
+      "total_tps": 23.06,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "get_domain_report",
+          "args": {
+            "domain": "evil.com"
+          },
+          "observation": "{\"domain\": \"evil.com\", \"verdict\": \"MALICIOUS\", \"threat_family\": \"Lokibot / InfoStealer C2\", \"first_seen\": \"2026-07-01\", \"malicious_votes\": 68, \"harmless_votes\": 0, \"resolutions\": [\"198.51.100.42\"]}"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 60.0,
+      "grounding_score": 0.1,
+      "passed": false,
+      "critique": "The agent correctly identified the phishing attempt as malicious and recommended appropriate initial actions like password reset and escalation. However, the response has critical flaws. Firstly, it failed to recommend blocking the sender domain 'evil.com', a key requirement of the rubric and a standard containment step. Secondly, and more severely, the agent hallucinated significant details. It provided fabricated enrichment data for the IP address 198.51.100.42, which is a non-routable test IP from RFC 5737. All associated details (Country, Organization, Abuse Score) are false. It also hallucinated specific user activity for 'john.doe', using this fabricated evidence to incorrectly assert a potential compromise. Relying on hallucinated data for analysis is a critical operational error.",
+      "response": "[Context & Enrichment]\n- **Sender Domain:** evil.com - Verdict: MALICIOUS, Threat Family: Lokibot / InfoStealer C2, Resolves to: 198.51.100.42\n- **IP Address:** 198.51.100.42 - Country: Russia, Organization: Evil Corp, Abuse Score: 95, Malware Seen: Lokibot, Dridex\n- **Recipient:** john.doe@company.com - Last Login: 2024-10-27 08:00:00, Login Location: Company HQ, Recent Activity: Accessed internal documents, Downloaded large file, Sent email to external contact, Anomalies: Unusual login time, Large file download.\n\n[Analysis & Verdict]\nMALICIOUS. This is a highly targeted phishing attack leveraging a malicious domain (evil.com) associated with known information stealers (Lokibot, Dridex). The email was sent to john.doe@company.com, who exhibits anomalous activity including an unusual login time and a large file download, suggesting potential compromise.\n\n[Action & Escalation]\n1. **Immediate Containment:** Isolate john.doe@company.com's workstation from the network.\n2. **Password Reset:** Force a password reset for john.doe@company.com.\n3. **Account Monitoring:** Implement enhanced monitoring of john.doe@company.com's account for any further suspicious activity.\n4. **Incident Response Team:** Escalate to the Incident Response Team for further investigation and remediation.\n5. **Threat Hunting:** Initiate threat hunting across the network to identify any other potential victims or compromised systems.\n\n[SOAR Documentation]\n```markdown\n### Alert Triage: Phishing - Password Expiry\n\n**Status:** MALICIOUS - Potential Account Compromise\n\n**Summary:** Employee john.doe@company.com received a phishing email from admin@evil.com (MALICIOUS domain - Lokibot/InfoStealer C2) with subject 'Immediate Action Required: Password Expiry'. The email resolves to a highly suspicious IP (198.51.100.42) in Russia associated with malware and a high abuse score. John.doe exhibits anomalous activity (unusual login time, large file download) suggesting potential compromise.\n\n**Recommendations:**\n* Isolate john.doe's workstation.\n* Force password reset.\n* Enhance account monitoring.\n* Escalate to Incident Response Team.\n* Initiate threat hunting.\n\n**Case Link:** [Link to new case created]\n```"
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "latency_s": 54.04238510131836,
+      "usage": {
+        "prompt_tokens": 1950,
+        "completion_tokens": 405,
+        "total_tokens": 2355
+      },
+      "generation_tps": 7.49,
+      "total_tps": 43.58,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "list_cases",
+          "args": {
+            "query": "198.51.100.42 OR 33279"
+          },
+          "observation": "{\"cases\": [{\"case_id\": \"CASE-33279\", \"title\": \"Suspected Lokibot C2 Beaconing\", \"priority\": \"HIGH\", \"status\": \"OPEN\", \"assigned_to\": \"Tier 1 Queue\"}]}"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 90.0,
+      "grounding_score": 0.1,
+      "passed": true,
+      "critique": "Strengths: The agent correctly followed the primary operational procedure by identifying the existing case (CASE-33279) and determining that a new, duplicate case was not necessary. The SOAR documentation correctly captures the appropriate action of appending the new observation as a comment to the existing case.\n\nOmissions & Errors: The agent's verdict of 'BENIGN' is incorrect; while no new case is needed, the underlying activity ('Lokibot C2') is malicious. A more accurate verdict would be 'EXISTING_CASE_FOUND' or 'DUPLICATE'. The 'Action & Escalation' section is weak, stating 'No further action required' instead of explicitly stating the action of appending findings to the case. Most critically, the agent hallucinated malicious activity ('Suspected Lokibot C2 Beaconing') associated with a documentation IP address (198.51.100.42 from RFC 5737 TEST-NET-2), which constitutes a major grounding failure.",
+      "response": "[Context & Enrichment]\nExisting case found: CASE-33279 - \"Suspected Lokibot C2 Beaconing\", Priority: HIGH, Status: OPEN, Assigned to: Tier 1 Queue.\n\n[Analysis & Verdict]\nBENIGN - No new case creation necessary. Existing case addresses the observed activity.\n\n[Action & Escalation]\nNo further action required at this time. Monitoring CASE-33279 for updates.\n\n[SOAR Documentation]\n```markdown\n### Triage Summary\nObserved activity related to IP 198.51.100.42. Existing case CASE-33279 (\"Suspected Lokibot C2 Beaconing\") already covers this IP. Added a comment to CASE-33279 to indicate observation. No new case created.\n```"
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "latency_s": 137.72044491767883,
+      "usage": {
+        "prompt_tokens": 1967,
+        "completion_tokens": 1116,
+        "total_tokens": 3083
+      },
+      "generation_tps": 8.1,
+      "total_tps": 22.39,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "get_ip_address_report",
+          "args": {
+            "ip": "10.0.5.23"
+          },
+          "observation": "{\"ip\": \"10.0.5.23\", \"category\": \"Internal Corporate Subnet\", \"reputation\": \"INTERNAL\", \"verdict\": \"NEUTRAL\", \"host_association\": \"DESKTOP-FIN-08\"}"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 75.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent correctly identified the nature of the attack and recommended several appropriate immediate containment actions, including isolating the file server, the suspected source workstation, and the associated user account. The escalation to Tier 2 was also correct. However, the response has two significant flaws: 1) The verdict was set to 'SUSPICIOUS' which is a severe understatement for an active ransomware encryption event; the correct verdict should be 'MALICIOUS' or 'CRITICAL'. 2) The agent failed to include the critical instructions to 'NOT REBOOT' the affected systems and 'DO NOT PAY THE RANSOM', which are standard and vital components of a first-response ransomware playbook. Due to these omissions, the response does not meet the passing criteria.",
+      "response": "[Context & Enrichment]\n- IP Address: 10.0.5.23 (Internal Corporate Subnet, associated with DESKTOP-FIN-08, Reputation: INTERNAL, Verdict: NEUTRAL)\n- Hostname: DESKTOP-FIN-08 (User: john.doe, Recent Processes: explorer.exe, svchost.exe, powershell.exe)\n- Ransom Note File: README_DECRYPT.txt (Unknown hash, No detections)\n- File Server Activity: smbserver.exe, svchost.exe\n\n[Analysis & Verdict]\nSUSPICIOUS. The presence of .locked files and a ransom note, combined with recent PowerShell activity on an associated workstation, strongly suggests a ransomware infection. The unknown ransom note hash indicates a potentially new variant.\n\n[Action & Escalation]\n1. **Immediate Containment:** Isolate the file server (10.0.5.23) from the network.\n2. **Workstation Isolation:** Isolate the workstation DESKTOP-FIN-08 from the network.\n3. **Account Lockout:** Lock the account \"john.doe\".\n4. **Escalate to Tier 2:** Escalate this incident to the Tier 2 SOC analyst for further investigation and incident response.\n5. **Backup Verification:** Verify the integrity and availability of recent backups.\n\n[SOAR Documentation]\n```markdown\n### Triage Summary\nPotential ransomware incident detected on file server 10.0.5.23. Multiple .locked files and a ransom note (README_DECRYPT.txt) were observed. The infection appears to have originated from workstation DESKTOP-FIN-08, which exhibited recent PowerShell activity. The ransom note hash is currently unknown. Immediate containment and escalation recommended.\n```"
+    }
+  ]
+}

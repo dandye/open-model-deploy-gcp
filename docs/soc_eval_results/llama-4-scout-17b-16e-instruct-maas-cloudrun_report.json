@@ -1,0 +1,145 @@
+{
+  "flavor": "llama-4-scout-17b-16e-instruct-maas",
+  "summary": {
+    "total_cases": 5,
+    "passed_cases": 0,
+    "pass_rate": 0.0,
+    "avg_rubric_score": 0.0,
+    "avg_latency_s": 1.75,
+    "total_prompt_tokens": 0,
+    "total_completion_tokens": 0,
+    "total_tokens": 0,
+    "avg_tokens_per_case": 0.0,
+    "avg_generation_tps": 0.0,
+    "avg_total_tps": 0.0,
+    "total_tool_calls": 0,
+    "cold_start_latency_s": 0.0,
+    "region": "us-central1",
+    "target_type": "managed",
+    "notes": "Llama 4 Scout 17B-16E MoE via Vertex AI Model-as-a-Service"
+  },
+  "case_results": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "latency_s": 2.159341812133789,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'update-service-win32.com'",
+        "Missing required substring: 'DESKTOP-FIN-08'",
+        "Missing required substring: 'escalat'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent completely failed to perform the requested task. The response 'Reached maximum investigation iterations without final triage output' indicates a catastrophic failure or timeout. It did not perform any of the required steps: enrichment, analysis, decision-making, or action recommendation. The agent failed to meet any of the rubric criteria, resulting in a score of 0 across all categories: Context & Enrichment (0/25), Analysis & Decision (0/25), Action Execution (0/20), Documentation (0/15), and Operational Artifacts (0/15).",
+      "response": "Reached maximum investigation iterations without final triage output."
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "latency_s": 1.650752067565918,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: '192.0.2.100'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent completely failed to perform the requested task. It did not enrich the IP address 192.0.2.100 or provide a triage verdict. The expected response was to identify the IP as a reserved address for documentation (RFC 5737) and classify it as benign/non-routable. Instead, the agent returned a generic error message about reaching maximum iterations, which is an operational failure and provides no value to the user.",
+      "response": "Reached maximum investigation iterations without final triage output."
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "latency_s": 1.66477370262146,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'phishing'",
+        "Missing required substring: 'john.doe'",
+        "Missing required substring: 'evil.com'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent failed to produce any triage output, instead returning a system error message. It did not analyze the alert, which is a clear credential harvesting phishing attempt based on the sender domain ('evil.com') and the urgent subject line. The agent performed none of the required operational steps: it did not identify the threat, query reputations, recommend a password reset, or advise blocking the sender domain. This represents a complete failure to investigate the incident.",
+      "response": "Reached maximum investigation iterations without final triage output."
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "latency_s": 1.69814133644104,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'CASE-33279'",
+        "Missing required substring: '33279'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 0.0,
+      "passed": false,
+      "critique": "The agent completely failed to address the user's query. Instead of checking for an existing case and providing a recommendation, it returned a system error message: \"Reached maximum investigation iterations without final triage output.\" The agent did not identify the existing case (CASE-33279) nor did it recommend the correct procedure (appending findings to the existing case). This is a critical operational failure as it provided no useful information or triage decision.",
+      "response": "Reached maximum investigation iterations without final triage output."
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "latency_s": 1.572106122970581,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'ransomware'",
+        "Missing required substring: 'isolate'",
+        "Missing required substring: 'escalat'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent completely failed to address the user's urgent request. The alert clearly indicates an active ransomware infection, which is a critical security incident. The agent provided no triage steps, no identification of the threat, no containment recommendations, and no escalation path. It simply timed out or reached an internal limit. This is a catastrophic failure for a security operations tool, as it leaves the organization vulnerable to further damage and spread of the ransomware. The agent did not follow any of the required procedures outlined in the rubric.",
+      "response": "Reached maximum investigation iterations without final triage output."
+    }
+  ]
+}

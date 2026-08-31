@@ -12,6 +12,7 @@ default:
     @printf "\033[1;33mDISCOVERY, CATALOG & DASHBOARDS:\033[0m\n"
     @printf "  \033[1;32mjust status\033[0m                            \033[2mPrint unified live dashboard of all GCP resources\033[0m\n"
     @printf "  \033[1;32mjust auth-check\033[0m                        \033[2mVerify gcloud account, project, and ADC validity\033[0m\n"
+    @printf "  \033[1;32mjust env [secops|argolis]\033[0m              \033[2mSwitch active .env profile between projects\033[0m\n"
     @printf "  \033[1;32mjust model-list\033[0m                        \033[2mList models in catalog (configs/models.json) & registry\033[0m\n"
     @printf "  \033[1;32mjust cost-list\033[0m                         \033[2mDisplay pricing and compute requirements table\033[0m\n"
     @printf "  \033[1;32mjust predict \"<prompt>\" [model]\033[0m        \033[2mSend a test query to active endpoint\033[0m\n\n"
@@ -71,6 +72,16 @@ status:
 # Verify gcloud account, project configuration, and Application Default Credentials (ADC)
 auth-check:
     @./scripts/auth_check.sh
+
+# Switch active .env symlink (Usage: just env [secops|argolis])
+env TARGET="secops":
+    @if [ "{{TARGET}}" = "secops" ] || [ "{{TARGET}}" = "secops-demo-env" ]; then \
+        ln -sf .env.secops-demo-env .env && echo "[OK] Active environment switched to .env.secops-demo-env (secops-demo-env)"; \
+    elif [ "{{TARGET}}" = "argolis" ] || [ "{{TARGET}}" = "dandye-0324-chronicle" ]; then \
+        ln -sf .env.argolis .env && echo "[OK] Active environment switched to .env.argolis (dandye-0324-chronicle)"; \
+    else \
+        echo "[ERROR] Unknown target '{{TARGET}}'. Use 'secops' or 'argolis'."; exit 1; \
+    fi
 
 # List registered models in Model Registry and reference hardware sizing catalog
 model-list:
@@ -135,6 +146,11 @@ cloudrun-quota-reset:
 # Deploy Gemma to Cloud Run with scale-to-zero (Usage: just cloudrun-deploy [flavor])
 cloudrun-deploy FLAVOR="gemma-2-9b-it": auth-check cloudrun-quota-check
     @./scripts/cloudrun_deploy.sh "{{FLAVOR}}"
+
+# Run automated overnight benchmark & SOC evaluation sweep across Cloud Run single-GPU models
+cloudrun-sweep MODELS="" DRY_RUN="false": auth-check
+    @python3 scripts/run_cloudrun_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
 
 # ------------------------------------------------------------------------------
 # Terraform Infrastructure as Code

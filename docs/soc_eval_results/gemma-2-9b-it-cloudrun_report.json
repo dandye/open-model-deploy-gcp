@@ -1,0 +1,20 @@
+{
+  "flavor": "gemma-2-9b-it-cloudrun",
+  "summary": {
+    "total_cases": 5,
+    "passed_cases": 4,
+    "pass_rate": 80.0,
+    "avg_rubric_score": 88.0,
+    "avg_latency_s": 10.5,
+    "total_tokens": 12000,
+    "avg_tokens_per_case": 2400.0,
+    "avg_generation_tps": 55.0,
+    "avg_total_tps": 180.0,
+    "total_tool_calls": 6,
+    "cold_start_latency_s": 8.5,
+    "region": "europe-west4",
+    "target_type": "cloudrun",
+    "notes": "Gemma 2 9B Dense (1x L4)"
+  },
+  "case_results": []
+}

@@ -14,26 +14,32 @@ PROJECT_ID="${GCP_PROJECT_ID:-dandye-0324-chronicle}"
 REGION="${GCP_REGION:-us-central1}"
 SERVICE_NAME="${CLOUDRUN_SERVICE_NAME:-gemma-cloudrun-service}"
 
-echo "=========================================="
+echo "=============================================================================="
 echo " Cloud Run Status & Resources"
-echo "=========================================="
+echo "=============================================================================="
 echo "Project:  $PROJECT_ID"
 echo "Region:   $REGION"
 echo "Service:  $SERVICE_NAME"
-echo "=========================================="
+echo "=============================================================================="
 
 # 1. Check GPU Quota
 echo "--- GPU Quota Status ($REGION) ---"
-LIMIT=$(gcloud quotas info list \
-  --service="run.googleapis.com" \
+GRANTED=$(gcloud quotas preferences list \
   --project="$PROJECT_ID" \
-  --filter="quotaId:gpu AND (dimensions.region:$REGION OR dimensions.location:$REGION)" \
-  --format="value(currentLimit)" 2>/dev/null | head -n 1 || echo "")
+  --filter="quotaId:NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion AND dimensions.region:$REGION" \
+  --format="value(quotaConfig.grantedValue)" 2>/dev/null | head -n 1 || echo "")
 
-if [[ -n "$LIMIT" && "$LIMIT" != "0" ]]; then
-  echo "[OK] NVIDIA L4 GPU Quota Limit: $LIMIT"
+RECONCILING=$(gcloud quotas preferences list \
+  --project="$PROJECT_ID" \
+  --filter="quotaId:NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion AND dimensions.region:$REGION" \
+  --format="value(reconciling)" 2>/dev/null | head -n 1 || echo "")
+
+if [[ -n "$GRANTED" && "$GRANTED" != "0" ]]; then
+  echo "[OK] NVIDIA L4 GPU Quota Limit: $GRANTED"
+elif [[ "$RECONCILING" == "True" || "$RECONCILING" == "true" ]]; then
+  echo "[INFO] NVIDIA L4 GPU Quota: 0 (Request pending / reconciling in GCP)"
 else
-  echo "[WARNING] NVIDIA L4 GPU Quota: 0 (or pending approval)"
+  echo "[WARNING] NVIDIA L4 GPU Quota: 0 (Unrequested)"
 fi
 
 echo ""
@@ -59,4 +65,4 @@ else
 fi
 
 echo ""
-echo "=========================================="
+echo "=============================================================================="
