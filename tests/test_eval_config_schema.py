@@ -84,3 +84,42 @@ def test_eval_suite_no_emojis():
             or (0x2700 <= cp <= 0x27BF)
         )
         assert not is_emoji, f"Emoji character detected in eval config: '{char}' (U+{cp:04X})"
+
+
+def test_live_mcp_evalset_structure():
+    """Verify configs/evals/soc_live_mcp_evalset.json has valid schema and cases."""
+    live_path = ROOT_DIR / "configs" / "evals" / "soc_live_mcp_evalset.json"
+    assert live_path.exists(), f"Missing live MCP evalset at {live_path}"
+    data = json.loads(live_path.read_text(encoding="utf-8"))
+    assert data.get("evalset_id") == "soc_live_mcp_evalset"
+    assert len(data.get("eval_cases", [])) == 5
+
+    for case in data["eval_cases"]:
+        assert "eval_id" in case
+        assert "prompt" in case
+        assert "reference" in case
+        assert "grading_rubric" in case["reference"]
+        assert "assertions" in case
+        assert len(case["assertions"].get("must_contain", [])) > 0
+
+
+def test_live_mcp_evalset_no_emojis():
+    """Verify zero unicode emojis exist in soc_live_mcp_evalset.json."""
+    live_path = ROOT_DIR / "configs" / "evals" / "soc_live_mcp_evalset.json"
+    raw_text = live_path.read_text(encoding="utf-8")
+    for char in raw_text:
+        cp = ord(char)
+        is_emoji = (
+            (0x1F600 <= cp <= 0x1F64F)
+            or (0x1F300 <= cp <= 0x1F5FF)
+            or (0x1F680 <= cp <= 0x1F6FF)
+            or (0x1F700 <= cp <= 0x1F77F)
+            or (0x1F780 <= cp <= 0x1F7FF)
+            or (0x1F800 <= cp <= 0x1F8FF)
+            or (0x1F900 <= cp <= 0x1F9FF)
+            or (0x1FA00 <= cp <= 0x1FA6F)
+            or (0x1FA70 <= cp <= 0x1FAFF)
+            or (0x2600 <= cp <= 0x26FF)
+            or (0x2700 <= cp <= 0x27BF)
+        )
+        assert not is_emoji, f"Emoji character detected in live eval config: '{char}' (U+{cp:04X})"

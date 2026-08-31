@@ -1,0 +1,112 @@
+{
+  "evalset_id": "soc_live_mcp_evalset",
+  "name": "Live Google SecOps Remote MCP Benchmark Suite",
+  "description": "Evaluates self-hosted Gemma and frontier LLMs against live Google SecOps Remote MCP tools (list_cases, get_case, create_case_comment, summarize_entity, udm_search, fetch_alert_data) on the secops-demo-env Chronicle instance.",
+  "eval_cases": [
+    {
+      "eval_id": "CASE-LIVE-01-ENCODED-POWERSHELL",
+      "name": "Encoded PowerShell Network Connections Triage (Case 17305)",
+      "prompt": "Triage live SOAR Case 17305 ('Encoded Powershell Network Connections'). Fetch the case details, investigate associated UDM network telemetry, assess threat severity, and post a triage summary comment.",
+      "reference": {
+        "expected_verdict": "MALICIOUS / SUSPICIOUS",
+        "expected_case_id": "17305",
+        "recommended_action": "Isolate affected host, analyze base64-encoded command payload, and append investigative findings to Case 17305",
+        "grading_rubric": "Grade using the 100-point Live Triage Rubric: Tool Execution (25 pts for querying get_case or list_cases with 17305 and executing UDM search), Analysis & Grounding (25 pts for identifying encoded PowerShell commands and outbound network connection telemetry without hallucinating fake indicators), Action & Containment (25 pts for recommending host isolation or payload de-obfuscation), SOAR Documentation (25 pts for invoking create_case_comment or producing a markdown case comment). Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "17305",
+          "powershell"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "no existing cases"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-LIVE-02-COBALT-STRIKE-NAMEDPIPE",
+      "name": "Cobalt Strike NamedPipe Investigation (Case 17302)",
+      "prompt": "Investigate live SOAR Case 17302 ('Cobalt Strike NamedPipe'). Query the case record, determine alert priority and stage, assess adversary presence, and formulate immediate containment actions.",
+      "reference": {
+        "expected_verdict": "CRITICAL_MALICIOUS",
+        "expected_case_id": "17302",
+        "recommended_action": "Emergency host containment, memory dump collection, and Tier 2 incident response escalation",
+        "grading_rubric": "Assess whether the agent retrieves Case 17302, recognizes Cobalt Strike post-exploitation named pipe indicators, escalates severity to Critical/High, and recommends immediate network containment and memory forensics. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "17302",
+          "Cobalt Strike"
+        ],
+        "must_not_contain": [
+          "Low Severity",
+          "False Positive",
+          "BENIGN"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-LIVE-03-SCOUTSUITE-RECON",
+      "name": "ScoutSuite Cloud Reconnaissance Analysis (Case 17306)",
+      "prompt": "Triage live SOAR Case 17306 ('Potential Information Gathering by ScoutSuite'). Retrieve the case metadata, correlate cloud reconnaissance activity, and determine whether this represents authorized auditing or unauthorized enumeration.",
+      "reference": {
+        "expected_verdict": "SUSPICIOUS / RECONNAISSANCE",
+        "expected_case_id": "17306",
+        "recommended_action": "Verify service account / IAM principal identity against authorized security audit schedules",
+        "grading_rubric": "Verify that the agent inspects Case 17306, identifies ScoutSuite as an open-source cloud security auditing and enumeration tool, recommends validating if the scanner was authorized, and outlines credential rotation if unauthorized. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "17306",
+          "ScoutSuite"
+        ],
+        "must_not_contain": [
+          "ransomware",
+          "Lokibot"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-LIVE-04-BIGQUERY-EXFIL",
+      "name": "BigQuery Data Extraction Telemetry Correlation (Case 17304)",
+      "prompt": "Investigate live SOAR Case 17304 ('SCC: BigQuery Data Extraction Enriched with Other SCC Alerts from the Same IP'). Fetch the case profile and summarize multi-alert risk for the source IP.",
+      "reference": {
+        "expected_verdict": "HIGH_SEVERITY_EXFILTRATION",
+        "expected_case_id": "17304",
+        "recommended_action": "Revoke IAM BigQuery read permissions on affected datasets and block egress to external destination IP",
+        "grading_rubric": "Assess whether the agent queries Case 17304, identifies anomalous BigQuery data export telemetry, correlates multi-alert indicators from the source IP, and prescribes access revocation and data loss containment. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "17304",
+          "BigQuery"
+        ],
+        "must_not_contain": [
+          "BENIGN",
+          "Informational Only"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-LIVE-05-ACTIVE-QUEUE-TRIAGE",
+      "name": "Live SOAR Triage Queue Discovery & Prioritization",
+      "prompt": "List the most recent open cases from the live Google SecOps triage queue. Identify the top high/critical priority cases and summarize immediate triage actions required.",
+      "reference": {
+        "expected_verdict": "QUEUE_DISCOVERED",
+        "recommended_action": "Prioritize Critical and High severity cases for immediate triage",
+        "grading_rubric": "Verify that the model invokes list_cases, parses the live JSON response containing multiple cases, highlights high/critical incidents (such as windows_event_log_cleared or suspicious binary execution), and provides structured queue recommendations. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "case",
+          "priority"
+        ],
+        "must_not_contain": [
+          "error 403",
+          "unable to connect"
+        ]
+      }
+    }
+  ]
+}

@@ -5,14 +5,15 @@ Connects to the official Google Security Operations Remote MCP Server
 and tenant context.
 """
 
+import datetime
 import json
 import os
 import subprocess
 import urllib.request
 from typing import Any, Dict, Optional
 
-DEFAULT_PROJECT_ID = os.environ.get("CHRONICLE_PROJECT_ID", "dandye-0324-chronicle")
-DEFAULT_CUSTOMER_ID = os.environ.get("CHRONICLE_CUSTOMER_ID", "7e977ce4-f45d-43b2-aea0-52f8b66acd80")
+DEFAULT_PROJECT_ID = os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
+DEFAULT_CUSTOMER_ID = os.environ.get("CHRONICLE_CUSTOMER_ID", "a13f6726-efed-452e-9008-8fe0d3cb0f75")
 DEFAULT_REGION = os.environ.get("CHRONICLE_REGION", "us")
 SECOPS_MCP_ENDPOINT = os.environ.get("SECOPS_MCP_ENDPOINT", f"https://{DEFAULT_REGION}-chronicle.googleapis.com/mcp")
 
@@ -37,7 +38,6 @@ def _get_access_token() -> str:
             return token_res.stdout.strip()
         except Exception:
             return ""
-
 
 
 def call_secops_mcp(
@@ -94,16 +94,20 @@ def call_secops_mcp(
 
 
 def list_cases(
+    filter_expr: Optional[str] = None,
     page_size: int = 10,
     page_token: Optional[str] = None,
 ) -> str:
     """Lists recent SOAR cases from the live Google SecOps instance.
 
     Args:
+        filter_expr: Optional filter expression (e.g. \"Priority='PRIORITY_HIGH'\").
         page_size: Maximum number of cases to return (default 10).
         page_token: Optional pagination token.
     """
     args: Dict[str, Any] = {"pageSize": page_size}
+    if filter_expr:
+        args["filter"] = filter_expr
     if page_token:
         args["pageToken"] = page_token
     res = call_secops_mcp("list_cases", args)
@@ -112,53 +116,90 @@ def list_cases(
     return json.dumps(res)
 
 
-def get_case(case_name: str) -> str:
-    """Retrieves a single SOAR case by its resource name.
+def get_case(case_id: str) -> str:
+    """Retrieves a single SOAR case by its numeric ID or full resource name.
 
     Args:
-        case_name: Full resource name of the case (e.g. 'projects/.../cases/12345').
+        case_id: Numeric Case ID (e.g. '17305') or full resource name.
     """
-    res = call_secops_mcp("get_case", {"name": case_name})
+    clean_id = str(case_id).strip().split("/")[-1]
+    res = call_secops_mcp("get_case", {"caseId": clean_id})
     if "content" in res and res["content"]:
         return res["content"][0].get("text", json.dumps(res))
     return json.dumps(res)
 
 
-def create_case_comment(case_name: str, comment: str) -> str:
+def create_case_comment(case_id: str, comment: str) -> str:
     """Creates a new comment/investigative note on a SOAR case in Google SecOps.
 
     Args:
-        case_name: Full resource name of the case.
+        case_id: Numeric Case ID (e.g. '17305') or full resource name.
         comment: Plain text or markdown comment content.
     """
+    clean_id = str(case_id).strip().split("/")[-1]
     res = call_secops_mcp("create_case_comment", {
-        "parent": case_name,
-        "comment": {"content": comment},
+        "caseId": clean_id,
+        "comment": comment,
     })
     if "content" in res and res["content"]:
         return res["content"][0].get("text", json.dumps(res))
     return json.dumps(res)
 
 
-def summarize_entity(entity: str) -> str:
-    """Enriches and summarizes an entity (IP, domain, hostname, hash, user) in Chronicle SIEM.
+def summarize_entity(
+    query: str,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+) -> str:
+    """Enriches and summarizes an entity query in Chronicle SIEM.
 
     Args:
-        entity: Entity value to investigate (e.g. '198.51.100.42', 'evil.com', 'DESKTOP-01').
+        query: UDM query expression (e.g. 'principal.hostname = \"DESKTOP-01\"' or 'principal.ip = \"1.2.3.4\"').
+        start_time: Optional ISO-8601 start timestamp.
+        end_time: Optional ISO-8601 end timestamp.
     """
-    res = call_secops_mcp("summarize_entity", {"entity": entity})
+    args: Dict[str, Any] = {"query": query}
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if not start_time:
+        start_time = (now - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not end_time:
+        end_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    args["startTime"] = start_time
+    args["endTime"] = end_time
+
+    res = call_secops_mcp("summarize_entity", args)
     if "content" in res and res["content"]:
         return res["content"][0].get("text", json.dumps(res))
     return json.dumps(res)
 
 
-def udm_search(query: str) -> str:
+def udm_search(
+    query: str,
+    max_events: int = 10,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+) -> str:
     """Executes a UDM search query across Chronicle SIEM telemetry events.
 
     Args:
-        query: Unified Data Model (UDM) search query expression.
+        query: Unified Data Model (UDM) search query expression (e.g. 'metadata.event_type = \"NETWORK_CONNECTION\"').
+        max_events: Maximum number of events to return (default 10).
+        start_time: Optional ISO-8601 start timestamp.
+        end_time: Optional ISO-8601 end timestamp.
     """
-    res = call_secops_mcp("udm_search", {"query": query})
+    args: Dict[str, Any] = {
+        "query": query,
+        "maxEvents": max_events,
+    }
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if not start_time:
+        start_time = (now - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not end_time:
+        end_time = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    args["startTime"] = start_time
+    args["endTime"] = end_time
+
+    res = call_secops_mcp("udm_search", args)
     if "content" in res and res["content"]:
         return res["content"][0].get("text", json.dumps(res))
     return json.dumps(res)
@@ -170,7 +211,7 @@ def fetch_alert_data(siem_alert_id: str) -> str:
     Args:
         siem_alert_id: Unique alert ID from Chronicle SIEM.
     """
-    res = call_secops_mcp("fetch_alert_data", {"siemAlertId": siem_alert_id})
+    res = call_secops_mcp("fetch_alert_data", {"siemAlertId": str(siem_alert_id)})
     if "content" in res and res["content"]:
         return res["content"][0].get("text", json.dumps(res))
     return json.dumps(res)

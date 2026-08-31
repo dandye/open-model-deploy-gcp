@@ -152,11 +152,25 @@ def run_evaluation(
     project_id: str = "dandye-0324-chronicle",
     region: str = "us-central1",
     use_live_mcp: bool = False,
+    chronicle_project: Optional[str] = None,
+    chronicle_customer_id: Optional[str] = None,
+    chronicle_region: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
+    chron_proj = chronicle_project or os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
+    chron_cust = chronicle_customer_id or os.environ.get("CHRONICLE_CUSTOMER_ID", "a13f6726-efed-452e-9008-8fe0d3cb0f75")
+    chron_reg = chronicle_region or os.environ.get("CHRONICLE_REGION", "us")
+
+    if use_live_mcp:
+        os.environ["CHRONICLE_PROJECT_ID"] = chron_proj
+        os.environ["CHRONICLE_CUSTOMER_ID"] = chron_cust
+        os.environ["CHRONICLE_REGION"] = chron_reg
+
     print("==================================================================")
     print(f" Running Gemma SOC Tier 1 Evaluation: {flavor}")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
+    if use_live_mcp:
+        print(f" Chronicle Tenant: {chron_proj} ({chron_cust}) [Region: {chron_reg}]")
     print("==================================================================")
 
     with open(evalset_path, "r", encoding="utf-8") as f:
@@ -278,8 +292,11 @@ def main() -> None:
     """CLI entrypoint for running the SOC evaluation runner."""
     parser = argparse.ArgumentParser(description="Evaluate Gemma SOC Agent against Rubrics.")
     parser.add_argument("--flavor", default="local-gemma", help="Model flavor name")
-    parser.add_argument("--evalset", default="configs/evals/soc_tier1_evalset.json", help="Path to evalset JSON")
-    parser.add_argument("--live-mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
+    parser.add_argument("--evalset", default="configs/evals/soc_tier1_triage.json", help="Path to evalset JSON")
+    parser.add_argument("--live-mcp", "--use-live-mcp", dest="live_mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
+    parser.add_argument("--chronicle-project", default=os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env"), help="Google SecOps GCP Project ID")
+    parser.add_argument("--chronicle-customer-id", default=os.environ.get("CHRONICLE_CUSTOMER_ID", "a13f6726-efed-452e-9008-8fe0d3cb0f75"), help="Chronicle Customer / Instance ID")
+    parser.add_argument("--chronicle-region", default=os.environ.get("CHRONICLE_REGION", "us"), help="Chronicle Region (e.g. us, europe)")
     parser.add_argument("--endpoint", "--endpoint-id", dest="endpoint", default=None, help="Vertex AI Endpoint ID")
     parser.add_argument("--cloudrun-url", default=None, help="Cloud Run URL")
     parser.add_argument("--managed-model", default=None, help="Hosted MaaS model name")
@@ -298,6 +315,9 @@ def main() -> None:
         project_id=args.project_id,
         region=args.region,
         use_live_mcp=args.live_mcp,
+        chronicle_project=args.chronicle_project,
+        chronicle_customer_id=args.chronicle_customer_id,
+        chronicle_region=args.chronicle_region,
     )
 
     # Save JSON raw artifacts
