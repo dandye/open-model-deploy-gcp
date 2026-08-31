@@ -168,10 +168,14 @@ just vertex-undeploy
 
 ## 5. Documentation Reference
 
+* [Future Work & Strategic Roadmap](docs/future_work.md)
 * [Master Dynamic Benchmark Leaderboard](docs/soc_eval_results/OVERNIGHT_SWEEP_SUMMARY.md)
 * [Llama & Partner Model Comparative Evaluation Scorecard](docs/llama_model_comparative_evals.md)
 * [SOC Tier 1 Evaluation Plan & Methodology](docs/llama_soc_agent_evaluation_plan.md)
 * [Speculative Decoding & Prompt Lookup Guide](docs/speculative_decoding.md)
+* [Compute Engine Ephemeral Spot GPU VMs Guide](docs/benchmarking_gce_ephemeral_spot_vms.md)
+* [Vertex AI Custom Jobs Ephemeral Runner Guide](docs/benchmarking_vertex_custom_jobs.md)
+* [GKE Ray Serve & Kueue Distributed Batch Sweep Guide](docs/benchmarking_gke_ray_serve.md)
 * [Vertex AI Model Registry Master Catalog](docs/model_registry_catalog.md)
 * [Model Deployment Status & Matrix](docs/deployment_status.md)
 * [Cost Analysis & Hardware Sizing Breakdown](docs/cost_analysis.md)

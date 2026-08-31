@@ -39,7 +39,10 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 | [`vertex_deployment_notes.md`](vertex_deployment_notes.md) | `guide` | Vertex AI Online Prediction deployment & troubleshooting solutions |
 | [`vertex_cleanup_strategies.md`](vertex_cleanup_strategies.md) | `architecture` | Automated scheduled and metric-based cleanup architectures |
 | [`speculative_decoding.md`](speculative_decoding.md) | `architecture` | Speculative decoding guide, N-gram prompt lookup mechanics & Vertex AI benchmarks |
-| [`model_registry_catalog.md`](model_registry_catalog.md) | `guide` | Authoritative catalog of all registered Vertex AI models, container specs & creation commands |
+| [`future_work.md`](future_work.md) | `plan` | Strategic roadmap, hybrid model gateway, LoRA distillation, and POMDP integration tracks |
+| [`benchmarking_gce_ephemeral_spot_vms.md`](benchmarking_gce_ephemeral_spot_vms.md) | `guide` | Compute Engine Ephemeral Spot GPU VMs runner, NVMe caching & multi-zone failover |
+| [`benchmarking_vertex_custom_jobs.md`](benchmarking_vertex_custom_jobs.md) | `guide` | Vertex AI Custom Jobs ephemeral container runner & worker pool sizing |
+| [`benchmarking_gke_ray_serve.md`](benchmarking_gke_ray_serve.md) | `guide` | GKE Ray Serve and Kueue dynamic batch queuing & distributed sweep runner |
 | [`references.md`](references.md) | `reference` | Curated external guides, Google Cloud community articles & ADK references |
 
 
