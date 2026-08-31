@@ -49,7 +49,7 @@ The repository uses a single declarative source of truth at [`configs/models.jso
 
 ## 2. Master Comparative Evaluation Leaderboard
 
-All models evaluated on the un-spoiled SOC Tier 1 Benchmark Suite (5 operational triage cases covering C2 malware beaconing, RFC-5737 documentation grounding, phishing credential harvesting, SOAR deduplication, and critical ransomware escalation):
+All models evaluated on the un-spoiled SOC Tier 1 Benchmark Suite (expanded 10-case evaluation suite covering C2 malware beaconing, RFC-5737 documentation grounding, phishing credential harvesting, SOAR deduplication, critical ransomware escalation, borderline DNS tunnels, lateral movement, supply chain revoked certs, threat intelligence HTTP 503 outage resilience, and authorized vulnerability scanner noise):
 
 | Rank | Model Flavor | Provider / Serving | Pass Rate | Avg Rubric | Latency | Gen TPS | Total TPS | Tool Calls |
 | :---: | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -170,8 +170,8 @@ just vertex-undeploy
 
 * [Future Work & Strategic Roadmap](docs/future_work.md)
 * [Master Dynamic Benchmark Leaderboard](docs/soc_eval_results/OVERNIGHT_SWEEP_SUMMARY.md)
-* [Llama & Partner Model Comparative Evaluation Scorecard](docs/llama_model_comparative_evals.md)
-* [SOC Tier 1 Evaluation Plan & Methodology](docs/llama_soc_agent_evaluation_plan.md)
+* [Gemma SOC Tier 1 Evaluation Plan & Methodology (10-Case Benchmark Suite)](docs/gemma_soc_agent_evaluation_plan.md)
+* [Llama & Partner SOC Evaluation Plan](docs/llama_soc_agent_evaluation_plan.md)
 * [Speculative Decoding & Prompt Lookup Guide](docs/speculative_decoding.md)
 * [Compute Engine Ephemeral Spot GPU VMs Guide](docs/benchmarking_gce_ephemeral_spot_vms.md)
 * [Vertex AI Custom Jobs Ephemeral Runner Guide](docs/benchmarking_vertex_custom_jobs.md)

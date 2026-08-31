@@ -38,9 +38,9 @@
 | :--- | :--- |
 | [`agent/soc_tier1_agent.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/agent/soc_tier1_agent.py) | Gemma-powered Tier 1 SOC Analyst agent class with persona injection, tool definitions, and ReasoningEngine lifecycle methods. |
 | [`agent/soc_tools.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/agent/soc_tools.py) | Mockable SOC tools (`lookup_entity`, `get_ip_address_report`, `get_domain_report`, `get_file_report`, `list_cases`, `post_case_comment`) for deterministic local and remote execution. |
-| [`agent/deploy_soc_tier1.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/agent/deploy_soc_tier1.py) | Packaging and deployment script to publish `soc_tier1_agent` to Vertex AI Agent Engine. |
-| [`configs/evals/soc_tier1_evalset.json`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/configs/evals/soc_tier1_evalset.json) | Declarative test cases covering phishing triage, IOC enrichment, RFC-5737 test entities, and escalation recommendations. |
-| [`scripts/eval_soc_agent.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/scripts/eval_soc_agent.py) | Automated evaluation runner executing cases, querying the LLM Judge (`gemini-2.5-pro`), and computing rubric scorecards. |
+| [`agent/deploy_soc_tier1.py`](../agent/deploy_soc_tier1.py) | Packaging and deployment script to publish `soc_tier1_agent` to Vertex AI Agent Engine. |
+| [`configs/evals/soc_tier1_triage.json`](../configs/evals/soc_tier1_triage.json) | Declarative 10-case benchmark suite covering C2 beaconing, RFC-5737 grounding, phishing triage, duplicate detection, ransomware containment, borderline DNS tunneling, lateral movement, supply chain risks, tool outage resilience, and authorized scanner true negatives. |
+| [`scripts/eval_soc_agent.py`](../scripts/eval_soc_agent.py) | Automated evaluation runner executing cases, querying the LLM Judge (`gemini-2.5-pro`), and computing rubric scorecards. |
 | [`tests/test_soc_tier1_agent.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/tests/test_soc_tier1_agent.py) | Unit and integration tests for agent initialization, tool execution, and query routing. |
 | [`Justfile`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/Justfile) | Recipes for testing, evaluating, and deploying the SOC Tier 1 agent. |
 
@@ -366,54 +366,61 @@ git commit -m "feat(agent): implement SocTier1Agent class with persona and struc
 
 ---
 
-### Task 3: Declarative SOC Evaluation Dataset & Rubrics
+### Task 3: Declarative SOC Evaluation Dataset & Rubrics (Expanded 10-Case Benchmark Suite)
 
 **Files:**
-- Create: `configs/evals/soc_tier1_evalset.json`
-- Test: `tests/test_evalset_schema.py`
+- Create: `configs/evals/soc_tier1_triage.json`
+- Test: `tests/test_eval_config_schema.py`
 
 **Interfaces:**
-- Produces: Structured JSON evaluation set with 5 core SOC cases, assertions, reference outputs, and 100-point rubric definitions.
+- Produces: Structured JSON evaluation set with 10 core SOC cases, assertions, reference outputs, and 100-point rubric definitions covering baseline triage, grounding veracity, lateral movement, supply chain risk, failure resilience, and true negative filtering.
 
-- [ ] **Step 1: Write validation test for evalset format**
+#### Evaluation Cases Specification Matrix
+
+| Case ID | Case Name | Test Objective | Expected Verdict | Recommended Action | Rubric Criteria |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `CASE-01-LOKIBOT-C2` | Lokibot C2 Malware Beaconing Triage | Triage repeated outbound beaconing from internal host to known C2 domain. | `MALICIOUS` | Isolate host DESKTOP-FIN-08 and escalate to Tier 2 Responder. | Context & Enrichment (25 pts), Analysis & Decision (25 pts), Action Execution (20 pts), Documentation (15 pts), Operational Artifacts (15 pts). Passing >= 80 pts. |
+| `CASE-02-RFC5737-BENIGN-IP` | RFC-5737 Documentation IP Enrichment | Grounding test for reserved documentation IP (192.0.2.100) in auth log. | `BENIGN / NON-ROUTABLE` | Identify as RFC-5737 documentation address; do not hallucinate threat intel. | Verify recognition of TEST-NET-1 reserved IP, no hallucinated threat intel or C2 activity. Passing >= 85 pts. |
+| `CASE-03-PHISHING-CRED-HARVEST` | Phishing Alert & Entity Investigation | Triage password expiry credential harvesting email to employee. | `MALICIOUS / SUSPICIOUS` | Reset user credentials and block sender domain evil.com. | Recognize credential harvesting attempt, query entity/domain reputation, advise credential reset and domain block. Passing >= 80 pts. |
+| `CASE-04-DUPLICATE-SOAR-CASE` | Duplicate SOAR Case Detection | Check for existing open SOAR investigations for IP 198.51.100.42. | `EXISTING_CASE_FOUND` | Append findings to existing case CASE-33279 rather than opening duplicate. | Detect existing open case CASE-33279 and recommend appending findings rather than opening redundant case. Passing >= 80 pts. |
+| `CASE-05-RANSOMWARE-ESCALATION` | Critical Ransomware Containment Escalation | Triage active ransomware encryption with .locked files on file share server. | `CRITICAL_MALICIOUS` | Immediate network isolation and emergency escalation to Tier 2 Incident Response. | Recognize active ransomware, prioritize immediate network containment/isolation of 10.0.5.23, do not pay/reboot, escalate to IR. Passing >= 90 pts. |
+| `CASE-06-AMBIGUOUS-DNS-TUNNEL` | Ambiguous DNS Tunnel & Dynamic Domain Triage | Triage high-volume outbound DNS queries to borderline dynamic CDN domain. | `BORDERLINE_SUSPICIOUS / MONITORING` | Heightened host monitoring, DNS rate limiting, and traffic packet capture. | Identify borderline reputation (45% malicious / 55% benign), recommend targeted monitoring/rate-limiting rather than destructive host isolation or immediate benign closure. Passing >= 80 pts. |
+| `CASE-07-LATERAL-MOVEMENT` | Internal Lateral Movement with PsExec Telemetry | Triage suspicious internal SMB session and PsExec command execution telemetry. | `MALICIOUS / LATERAL_MOVEMENT` | Isolate source host DESKTOP-HR-04, revoke compromised credentials, inspect target server. | Correlate PsExec/SMB session telemetry between DESKTOP-HR-04 and 10.0.8.99, classify as lateral movement, recommend isolation and credential revocation. Passing >= 85 pts. |
+| `CASE-08-SUPPLY-CHAIN-REVOKED-CERT` | Supply Chain Software Update with Revoked Certificate | Triage signed vendor software binary with revoked digital certificate. | `SUSPICIOUS / SUPPLY_CHAIN_RISK` | Quarantine binary, block hash enterprise-wide, verify CRL status with vendor. | Identify revoked certificate status despite valid vendor signature, recognize supply chain risk, recommend binary quarantine and hash blocking. Passing >= 80 pts. |
+| `CASE-09-TOOL-FAILURE-RESILIENCE` | Threat Intelligence Service Outage (HTTP 503) Resilience | Triage domain alert during upstream threat intelligence 503 service outage. | `INCONCLUSIVE_DEGRADED / SUSPICIOUS` | Document tool degradation, analyze local host telemetry, flag for secondary re-enrichment. | Handle HTTP 503 API error gracefully without crashing or hallucinating reputation data, acknowledge degraded tool status, base assessment on local context. Passing >= 80 pts. |
+| `CASE-10-AUTHORIZED-SCANNER-TRUE-NEGATIVE` | Authorized Internal Vulnerability Scanner (True Negative) | Triage internal port probing alert originating from authorized scanner host. | `BENIGN_AUTHORIZED / TRUE_NEGATIVE` | Verify scanner change-management schedule, close alert as benign authorized activity. | Identify 10.0.99.50 as authorized vulnerability scanner (e.g. Qualys), cross-reference authorized IP ranges, close as benign authorized without host isolation. Passing >= 85 pts. |
+
+- [ ] **Step 1: Write validation test for evalset schema completeness**
 
 ```python
-# tests/test_evalset_schema.py
+# tests/test_eval_config_schema.py
 import json
 from pathlib import Path
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+CONFIG_PATH = ROOT_DIR / "configs" / "evals" / "soc_tier1_triage.json"
 
-def test_evalset_schema():
-    evalset_path = Path("configs/evals/soc_tier1_evalset.json")
-    assert evalset_path.exists()
 
-    with open(evalset_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    assert "evalset_id" in data
+def test_eval_suite_contains_ten_cases():
+    """Verify configs/evals/soc_tier1_triage.json contains exactly 10 valid cases."""
+    assert CONFIG_PATH.exists()
+    data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     assert data["evalset_id"] == "soc_tier1_triage"
-    assert len(data["eval_cases"]) >= 5
-
-    for case in data["eval_cases"]:
-        assert "eval_id" in case
-        assert "prompt" in case
-        assert "reference" in case
-        assert "grading_rubric" in case["reference"]
-        assert "assertions" in case
+    assert len(data["eval_cases"]) == 10
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [ ] **Step 2: Run test to verify it passes schema checks**
 
-Run: `pytest tests/test_evalset_schema.py -v`
-Expected: FAIL with `AssertionError: assert False where False = Path('configs/evals/soc_tier1_evalset.json').exists()`
+Run: `pytest tests/test_eval_config_schema.py -v`
+Expected: PASS
 
-- [ ] **Step 3: Create `configs/evals/soc_tier1_evalset.json`**
+- [ ] **Step 3: Create `configs/evals/soc_tier1_triage.json`**
 
 ```json
 {
   "evalset_id": "soc_tier1_triage",
   "name": "Gemma SOC Tier 1 Evaluation Suite",
-  "description": "Evaluates self-hosted Gemma models on Tier 1 SOC alert triage, IOC enrichment, RFC-5737 handling, and escalation protocol adherence.",
+  "description": "Evaluates self-hosted Gemma models on Tier 1 SOC alert triage, IOC enrichment, RFC-5737 handling, lateral movement detection, tool resilience, and escalation protocol adherence.",
   "eval_cases": [
     {
       "eval_id": "CASE-01-LOKIBOT-C2",
@@ -426,8 +433,15 @@ Expected: FAIL with `AssertionError: assert False where False = Path('configs/ev
         "grading_rubric": "Grade using the 100-point Triage Rubric: Context & Enrichment (25 pts for identifying C2 domain and internal IP), Analysis & Decision (25 pts for identifying Lokibot info-stealer malware), Action Execution (20 pts for recommending host isolation and Tier 2 escalation), Documentation (15 pts for MITRE ATT&CK mapping and clear sections), Operational Artifacts (15 pts for formatted SOAR comment). Passing >= 80 pts."
       },
       "assertions": {
-        "must_contain": ["update-service-win32.com", "DESKTOP-FIN-08", "escalat"],
-        "must_not_contain": ["BENIGN", "False Positive"]
+        "must_contain": [
+          "update-service-win32.com",
+          "DESKTOP-FIN-08",
+          "escalat"
+        ],
+        "must_not_contain": [
+          "BENIGN",
+          "False Positive"
+        ]
       }
     },
     {
@@ -439,8 +453,14 @@ Expected: FAIL with `AssertionError: assert False where False = Path('configs/ev
         "grading_rubric": "Verify the model identifies 192.0.2.100 as a reserved RFC-5737 documentation/test IP address and concludes it is benign or non-routable. The model must NOT hallucinate malicious threat intelligence or C2 activity for this address. Passing >= 85 pts."
       },
       "assertions": {
-        "must_contain": ["192.0.2.100"],
-        "must_not_contain": ["CRITICAL MALWARE", "Lokibot", "APT29"]
+        "must_contain": [
+          "192.0.2.100"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE",
+          "Lokibot",
+          "APT29"
+        ]
       }
     },
     {
@@ -453,8 +473,14 @@ Expected: FAIL with `AssertionError: assert False where False = Path('configs/ev
         "grading_rubric": "Assess whether the model recognizes the email as a credential harvesting phishing attempt, queries user and domain reputation, recommends password reset / credential revocation, and advises blocking the sender domain. Passing >= 80 pts."
       },
       "assertions": {
-        "must_contain": ["phishing", "john.doe", "evil.com"],
-        "must_not_contain": ["BENIGN"]
+        "must_contain": [
+          "phishing",
+          "john.doe",
+          "evil.com"
+        ],
+        "must_not_contain": [
+          "BENIGN"
+        ]
       }
     },
     {
@@ -466,8 +492,13 @@ Expected: FAIL with `AssertionError: assert False where False = Path('configs/ev
         "grading_rubric": "Verify that the model identifies CASE-33279 as already open for this IP and recommends appending the new findings to the existing case rather than opening a redundant duplicate case. Passing >= 80 pts."
       },
       "assertions": {
-        "must_contain": ["CASE-33279", "33279"],
-        "must_not_contain": ["no existing cases"]
+        "must_contain": [
+          "CASE-33279",
+          "33279"
+        ],
+        "must_not_contain": [
+          "no existing cases"
+        ]
       }
     },
     {
@@ -480,8 +511,118 @@ Expected: FAIL with `AssertionError: assert False where False = Path('configs/ev
         "grading_rubric": "Verify that the agent identifies active ransomware infection, prioritizes immediate network containment/isolation of 10.0.5.23, instructs not to reboot or pay ransom, and escalates to Tier 2 Incident Response. Passing >= 90 pts."
       },
       "assertions": {
-        "must_contain": ["ransomware", "isolate", "escalat"],
-        "must_not_contain": ["Low Severity", "False Positive"]
+        "must_contain": [
+          "ransomware",
+          "isolate",
+          "escalat"
+        ],
+        "must_not_contain": [
+          "Low Severity",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-06-AMBIGUOUS-DNS-TUNNEL",
+      "name": "Ambiguous DNS Tunnel & Dynamic Domain Triage",
+      "prompt": "High-volume outbound DNS queries to tunnel-data.cdn-edge-update.net from host DESKTOP-FIN-08. Assess domain reputation and recommend containment or monitoring.",
+      "reference": {
+        "expected_verdict": "BORDERLINE_SUSPICIOUS / MONITORING",
+        "recommended_action": "Place host on heightened monitoring, apply DNS query rate limiting, and capture packet payloads for offline inspection",
+        "grading_rubric": "Assess whether the model correctly identifies the borderline reputation (e.g. 45% malicious / 55% benign or CDN dynamic tunneling behavior), recommends targeted monitoring and rate-limiting rather than destructive host isolation or immediate closure as benign. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "tunnel-data.cdn-edge-update.net",
+          "tunnel"
+        ],
+        "must_not_contain": [
+          "CRITICAL RANSOMWARE",
+          "Lokibot"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-07-LATERAL-MOVEMENT",
+      "name": "Internal Lateral Movement with PsExec Telemetry",
+      "prompt": "Security alert: Suspicious internal network connection and SMB session initiated from host DESKTOP-HR-04 to server 10.0.8.99 with command execution telemetry.",
+      "reference": {
+        "expected_verdict": "MALICIOUS / LATERAL_MOVEMENT",
+        "recommended_action": "Isolate host DESKTOP-HR-04, revoke compromised credentials, and inspect server 10.0.8.99 for unauthorized service creation",
+        "grading_rubric": "Verify that the agent correlates the PsExec/SMB session telemetry between DESKTOP-HR-04 and 10.0.8.99, classifies the activity as malicious lateral movement, recommends host isolation and credential revocation, and escalates to Tier 2 IR. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "DESKTOP-HR-04",
+          "10.0.8.99",
+          "lateral"
+        ],
+        "must_not_contain": [
+          "BENIGN",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-08-SUPPLY-CHAIN-REVOKED-CERT",
+      "name": "Supply Chain Software Update with Revoked Certificate",
+      "prompt": "Triage incoming alert: Process launched binary with SHA-256 a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 signed by vendor Acme Corp. Verify certificate status.",
+      "reference": {
+        "expected_verdict": "SUSPICIOUS / SUPPLY_CHAIN_RISK",
+        "recommended_action": "Quarantine binary, block hash enterprise-wide, and verify certificate revocation list (CRL) status with vendor",
+        "grading_rubric": "Assess whether the model identifies the revoked certificate status despite valid vendor signature, recognizes supply chain compromise indicators, recommends binary quarantine and hash blocking, and escalates to Security Engineering. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "revoked",
+          "Acme Corp"
+        ],
+        "must_not_contain": [
+          "BENIGN_TRUSTED",
+          "Valid Certificate"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-09-TOOL-FAILURE-RESILIENCE",
+      "name": "Threat Intelligence Service Outage (HTTP 503) Resilience",
+      "prompt": "Triage alert for host connecting to error-503.service-unavailable.org. Note: Threat intelligence API is experiencing intermittent upstream 503 outages. Investigate with available evidence.",
+      "reference": {
+        "expected_verdict": "INCONCLUSIVE_DEGRADED / SUSPICIOUS",
+        "recommended_action": "Document tool degradation, analyze local host telemetry, and flag for secondary enrichment once service is restored",
+        "grading_rubric": "Verify that the agent handles the HTTP 503 API error gracefully without crashing or hallucinating reputation data, acknowledges degraded tool status, bases assessment on available local context, and marks the case for re-evaluation. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "503",
+          "unavailable"
+        ],
+        "must_not_contain": [
+          "Lokibot C2",
+          "confirmed clean"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-10-AUTHORIZED-SCANNER-TRUE-NEGATIVE",
+      "name": "Authorized Internal Vulnerability Scanner (True Negative)",
+      "prompt": "Triage vulnerability scanner alert: Host 10.0.99.50 observed probing multiple internal ports on subnet 10.0.4.0/24.",
+      "reference": {
+        "expected_verdict": "BENIGN_AUTHORIZED / TRUE_NEGATIVE",
+        "recommended_action": "Verify scanner change-management schedule, close alert as benign authorized activity, and document scanner exception",
+        "grading_rubric": "Verify that the agent identifies 10.0.99.50 as an authorized internal vulnerability scanner (e.g. Qualys), cross-references authorized IP ranges, closes the alert as benign authorized activity without escalating or isolating the scanner host. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "10.0.99.50",
+          "scanner"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE",
+          "isolate host",
+          "ransomware"
+        ]
       }
     }
   ]
@@ -490,14 +631,14 @@ Expected: FAIL with `AssertionError: assert False where False = Path('configs/ev
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `pytest tests/test_evalset_schema.py -v`
+Run: `pytest tests/test_eval_config_schema.py -v`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add configs/evals/soc_tier1_evalset.json tests/test_evalset_schema.py
-git commit -m "feat(evals): add declarative SOC Tier 1 evaluation dataset with rubrics and assertions"
+git add configs/evals/soc_tier1_triage.json tests/test_eval_config_schema.py
+git commit -m "feat(evals): add declarative 10-case SOC Tier 1 evaluation dataset with rubrics and assertions"
 ```
 
 ---
