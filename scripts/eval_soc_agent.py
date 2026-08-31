@@ -292,7 +292,8 @@ def main() -> None:
     """CLI entrypoint for running the SOC evaluation runner."""
     parser = argparse.ArgumentParser(description="Evaluate Gemma SOC Agent against Rubrics.")
     parser.add_argument("--flavor", default="local-gemma", help="Model flavor name")
-    parser.add_argument("--evalset", default="configs/evals/soc_tier1_triage.json", help="Path to evalset JSON")
+    parser.add_argument("--gen", "--generation", dest="gen", type=int, choices=[1, 2], default=2, help="Evaluation generation version: 1 for Gen 1 (5-case baseline), 2 for Gen 2 (10-case expanded)")
+    parser.add_argument("--evalset", default=None, help="Path to evalset JSON (overrides default for --gen)")
     parser.add_argument("--live-mcp", "--use-live-mcp", dest="live_mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
     parser.add_argument("--chronicle-project", default=os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env"), help="Google SecOps GCP Project ID")
     parser.add_argument("--chronicle-customer-id", default=os.environ.get("CHRONICLE_CUSTOMER_ID", "a13f6726-efed-452e-9008-8fe0d3cb0f75"), help="Chronicle Customer / Instance ID")
@@ -300,14 +301,25 @@ def main() -> None:
     parser.add_argument("--endpoint", "--endpoint-id", dest="endpoint", default=None, help="Vertex AI Endpoint ID")
     parser.add_argument("--cloudrun-url", default=None, help="Cloud Run URL")
     parser.add_argument("--managed-model", default=None, help="Hosted MaaS model name")
-    parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle"))
+    parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"))
     parser.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
     args = parser.parse_args()
 
+    # Determine default evalset based on generation and live MCP mode
+    if args.evalset:
+        evalset_file = Path(args.evalset)
+    elif args.gen == 1:
+        evalset_file = ROOT_DIR / "configs" / "evals" / "gen1" / "soc_tier1_triage.json"
+    else:
+        if args.live_mcp:
+            evalset_file = ROOT_DIR / "configs" / "evals" / "gen2" / "soc_live_mcp.json"
+        else:
+            evalset_file = ROOT_DIR / "configs" / "evals" / "gen2" / "soc_tier1_triage.json"
+
     eval_data = run_evaluation(
-        evalset_path=Path(args.evalset),
+        evalset_path=evalset_file,
         flavor=args.flavor,
         endpoint_id=args.endpoint,
         cloudrun_url=args.cloudrun_url,

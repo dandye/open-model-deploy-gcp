@@ -185,21 +185,21 @@ agent-deploy:
 agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" LIVE_MCP="false":
     @uv run python3 -m agent.test_agent "{{PROMPT}}" --soc {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}}
 
-# Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [endpoint] [live_mcp])
-agent-soc-eval FLAVOR="gemma-3-4b-it" ENDPOINT="" LIVE_MCP="false":
-    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
+# Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [gen] [endpoint] [live_mcp])
+agent-soc-eval FLAVOR="gemma-3-4b-it" GEN="2" ENDPOINT="" LIVE_MCP="false":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/gen{{GEN}}_{{FLAVOR}}_report.md"
 
-# Run automated SOC evaluation suite against target Llama flavor (Usage: just eval-llama [flavor] [live_mcp])
-eval-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" LIVE_MCP="false":
-    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/{{FLAVOR}}_report.md"
+# Run automated SOC evaluation suite against target Llama flavor (Usage: just eval-llama [flavor] [gen] [live_mcp])
+eval-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" GEN="2" LIVE_MCP="false":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/gen{{GEN}}_{{FLAVOR}}_report.md"
 
-# Run live evaluation suite against Google SecOps Remote MCP (Usage: just eval-live [flavor] [evalset] [project] [customer_id])
-eval-live FLAVOR="gemini-2.5-flash" EVALSET="configs/evals/soc_live_mcp_evalset.json" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
-    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --evalset "{{EVALSET}}" --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/live_{{FLAVOR}}_report.md"
+# Run live evaluation suite against Google SecOps Remote MCP (Usage: just eval-live [flavor] [gen] [project] [customer_id])
+eval-live FLAVOR="gemini-2.5-flash" GEN="2" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/gen{{GEN}}_live_{{FLAVOR}}_report.md"
 
 # Run live evaluation suite against target Llama flavor with Google SecOps Remote MCP
-eval-live-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" EVALSET="configs/evals/soc_live_mcp_evalset.json" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
-    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --evalset "{{EVALSET}}" --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/live_{{FLAVOR}}_report.md"
+eval-live-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" GEN="2" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/gen{{GEN}}_live_{{FLAVOR}}_report.md"
 
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":

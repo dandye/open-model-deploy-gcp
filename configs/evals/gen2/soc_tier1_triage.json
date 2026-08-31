@@ -1,0 +1,210 @@
+{
+  "evalset_id": "soc_tier1_triage",
+  "name": "Gemma SOC Tier 1 Evaluation Suite",
+  "description": "Evaluates self-hosted Gemma models on Tier 1 SOC alert triage, IOC enrichment, RFC-5737 handling, lateral movement detection, tool resilience, and escalation protocol adherence.",
+  "eval_cases": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Lokibot",
+        "recommended_action": "Isolate host DESKTOP-FIN-08 and escalate to Tier 2 Responder",
+        "grading_rubric": "Grade using the 100-point Triage Rubric: Context & Enrichment (25 pts for identifying C2 domain and internal IP), Analysis & Decision (25 pts for identifying Lokibot info-stealer malware), Action Execution (20 pts for recommending host isolation and Tier 2 escalation), Documentation (15 pts for MITRE ATT&CK mapping and clear sections), Operational Artifacts (15 pts for formatted SOAR comment). Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "update-service-win32.com",
+          "DESKTOP-FIN-08",
+          "escalat"
+        ],
+        "must_not_contain": [
+          "BENIGN",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "reference": {
+        "expected_verdict": "BENIGN / NON-ROUTABLE",
+        "grading_rubric": "Verify the model identifies 192.0.2.100 as a reserved RFC-5737 documentation/test IP address and concludes it is benign or non-routable. The model must NOT hallucinate malicious threat intelligence or C2 activity for this address. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "192.0.2.100"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE",
+          "Lokibot",
+          "APT29"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "reference": {
+        "expected_verdict": "MALICIOUS / SUSPICIOUS",
+        "recommended_action": "Reset user credentials and block sender domain evil.com",
+        "grading_rubric": "Assess whether the model recognizes the email as a credential harvesting phishing attempt, queries user and domain reputation, recommends password reset / credential revocation, and advises blocking the sender domain. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "phishing",
+          "john.doe",
+          "evil.com"
+        ],
+        "must_not_contain": [
+          "BENIGN"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "reference": {
+        "expected_verdict": "EXISTING_CASE_FOUND",
+        "grading_rubric": "Verify that the model identifies CASE-33279 as already open for this IP and recommends appending the new findings to the existing case rather than opening a redundant duplicate case. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "CASE-33279",
+          "33279"
+        ],
+        "must_not_contain": [
+          "no existing cases"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "reference": {
+        "expected_verdict": "CRITICAL_MALICIOUS",
+        "recommended_action": "Immediate network isolation and emergency escalation to Tier 2 / Incident Response Team",
+        "grading_rubric": "Verify that the agent identifies active ransomware infection, prioritizes immediate network containment/isolation of 10.0.5.23, instructs not to reboot or pay ransom, and escalates to Tier 2 Incident Response. Passing >= 90 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "ransomware",
+          "isolate",
+          "escalat"
+        ],
+        "must_not_contain": [
+          "Low Severity",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-06-AMBIGUOUS-DNS-TUNNEL",
+      "name": "Ambiguous DNS Tunnel & Dynamic Domain Triage",
+      "prompt": "High-volume outbound DNS queries to tunnel-data.cdn-edge-update.net from host DESKTOP-FIN-08. Assess domain reputation and recommend containment or monitoring.",
+      "reference": {
+        "expected_verdict": "BORDERLINE_SUSPICIOUS / MONITORING",
+        "recommended_action": "Place host on heightened monitoring, apply DNS query rate limiting, and capture packet payloads for offline inspection",
+        "grading_rubric": "Assess whether the model correctly identifies the borderline reputation (e.g. 45% malicious / 55% benign or CDN dynamic tunneling behavior), recommends targeted monitoring and rate-limiting rather than destructive host isolation or immediate closure as benign. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "tunnel-data.cdn-edge-update.net",
+          "tunnel"
+        ],
+        "must_not_contain": [
+          "CRITICAL RANSOMWARE",
+          "Lokibot"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-07-LATERAL-MOVEMENT",
+      "name": "Internal Lateral Movement with PsExec Telemetry",
+      "prompt": "Security alert: Suspicious internal network connection and SMB session initiated from host DESKTOP-HR-04 to server 10.0.8.99 with command execution telemetry.",
+      "reference": {
+        "expected_verdict": "MALICIOUS / LATERAL_MOVEMENT",
+        "recommended_action": "Isolate host DESKTOP-HR-04, revoke compromised credentials, and inspect server 10.0.8.99 for unauthorized service creation",
+        "grading_rubric": "Verify that the agent correlates the PsExec/SMB session telemetry between DESKTOP-HR-04 and 10.0.8.99, classifies the activity as malicious lateral movement, recommends host isolation and credential revocation, and escalates to Tier 2 IR. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "DESKTOP-HR-04",
+          "10.0.8.99",
+          "lateral"
+        ],
+        "must_not_contain": [
+          "BENIGN",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-08-SUPPLY-CHAIN-REVOKED-CERT",
+      "name": "Supply Chain Software Update with Revoked Certificate",
+      "prompt": "Triage incoming alert: Process launched binary with SHA-256 a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 signed by vendor Acme Corp. Verify certificate status.",
+      "reference": {
+        "expected_verdict": "SUSPICIOUS / SUPPLY_CHAIN_RISK",
+        "recommended_action": "Quarantine binary, block hash enterprise-wide, and verify certificate revocation list (CRL) status with vendor",
+        "grading_rubric": "Assess whether the model identifies the revoked certificate status despite valid vendor signature, recognizes supply chain compromise indicators, recommends binary quarantine and hash blocking, and escalates to Security Engineering. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "revoked",
+          "Acme Corp"
+        ],
+        "must_not_contain": [
+          "BENIGN_TRUSTED",
+          "Valid Certificate"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-09-TOOL-FAILURE-RESILIENCE",
+      "name": "Threat Intelligence Service Outage (HTTP 503) Resilience",
+      "prompt": "Triage alert for host connecting to error-503.service-unavailable.org. Note: Threat intelligence API is experiencing intermittent upstream 503 outages. Investigate with available evidence.",
+      "reference": {
+        "expected_verdict": "INCONCLUSIVE_DEGRADED / SUSPICIOUS",
+        "recommended_action": "Document tool degradation, analyze local host telemetry, and flag for secondary enrichment once service is restored",
+        "grading_rubric": "Verify that the agent handles the HTTP 503 API error gracefully without crashing or hallucinating reputation data, acknowledges degraded tool status, bases assessment on available local context, and marks the case for re-evaluation. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "503",
+          "unavailable"
+        ],
+        "must_not_contain": [
+          "Lokibot C2",
+          "confirmed clean"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-10-AUTHORIZED-SCANNER-TRUE-NEGATIVE",
+      "name": "Authorized Internal Vulnerability Scanner (True Negative)",
+      "prompt": "Triage vulnerability scanner alert: Host 10.0.99.50 observed probing multiple internal ports on subnet 10.0.4.0/24.",
+      "reference": {
+        "expected_verdict": "BENIGN_AUTHORIZED / TRUE_NEGATIVE",
+        "recommended_action": "Verify scanner change-management schedule, close alert as benign authorized activity, and document scanner exception",
+        "grading_rubric": "Verify that the agent identifies 10.0.99.50 as an authorized internal vulnerability scanner (e.g. Qualys), cross-references authorized IP ranges, closes the alert as benign authorized activity without escalating or isolating the scanner host. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "10.0.99.50",
+          "scanner"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALICIOUS",
+          "isolate host",
+          "ransomware"
+        ]
+      }
+    }
+  ]
+}

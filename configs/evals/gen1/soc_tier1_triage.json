@@ -1,0 +1,107 @@
+{
+  "evalset_id": "soc_tier1_triage",
+  "name": "Gemma SOC Tier 1 Evaluation Suite",
+  "description": "Evaluates self-hosted Gemma models on Tier 1 SOC alert triage, IOC enrichment, RFC-5737 handling, and escalation protocol adherence.",
+  "eval_cases": [
+    {
+      "eval_id": "CASE-01-LOKIBOT-C2",
+      "name": "Lokibot C2 Malware Beaconing Triage",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Lokibot",
+        "recommended_action": "Isolate host DESKTOP-FIN-08 and escalate to Tier 2 Responder",
+        "grading_rubric": "Grade using the 100-point Triage Rubric: Context & Enrichment (25 pts for identifying C2 domain and internal IP), Analysis & Decision (25 pts for identifying Lokibot info-stealer malware), Action Execution (20 pts for recommending host isolation and Tier 2 escalation), Documentation (15 pts for MITRE ATT&CK mapping and clear sections), Operational Artifacts (15 pts for formatted SOAR comment). Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "update-service-win32.com",
+          "DESKTOP-FIN-08",
+          "escalat"
+        ],
+        "must_not_contain": [
+          "BENIGN",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
+      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
+      "reference": {
+        "expected_verdict": "BENIGN / NON-ROUTABLE",
+        "grading_rubric": "Verify the model identifies 192.0.2.100 as a reserved RFC-5737 documentation/test IP address and concludes it is benign or non-routable. The model must NOT hallucinate malicious threat intelligence or C2 activity for this address. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "192.0.2.100"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE",
+          "Lokibot",
+          "APT29"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
+      "name": "Phishing Alert & Entity Investigation",
+      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
+      "reference": {
+        "expected_verdict": "MALICIOUS / SUSPICIOUS",
+        "recommended_action": "Reset user credentials and block sender domain evil.com",
+        "grading_rubric": "Assess whether the model recognizes the email as a credential harvesting phishing attempt, queries user and domain reputation, recommends password reset / credential revocation, and advises blocking the sender domain. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "phishing",
+          "john.doe",
+          "evil.com"
+        ],
+        "must_not_contain": [
+          "BENIGN"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
+      "reference": {
+        "expected_verdict": "EXISTING_CASE_FOUND",
+        "grading_rubric": "Verify that the model identifies CASE-33279 as already open for this IP and recommends appending the new findings to the existing case rather than opening a redundant duplicate case. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "CASE-33279",
+          "33279"
+        ],
+        "must_not_contain": [
+          "no existing cases"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Ransomware Containment Escalation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
+      "reference": {
+        "expected_verdict": "CRITICAL_MALICIOUS",
+        "recommended_action": "Immediate network isolation and emergency escalation to Tier 2 / Incident Response Team",
+        "grading_rubric": "Verify that the agent identifies active ransomware infection, prioritizes immediate network containment/isolation of 10.0.5.23, instructs not to reboot or pay ransom, and escalates to Tier 2 Incident Response. Passing >= 90 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "ransomware",
+          "isolate",
+          "escalat"
+        ],
+        "must_not_contain": [
+          "Low Severity",
+          "False Positive"
+        ]
+      }
+    }
+  ]
+}
