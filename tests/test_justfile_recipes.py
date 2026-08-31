@@ -70,20 +70,14 @@ class TestJustfileRecipes(unittest.TestCase):
         )
         self.assertIn("tee", content, "Recipe must use tee for live output and logfile capture")
 
-<<<<<<< HEAD
     def test_justfile_contains_gce_spot_recipes(self):
         """Verify Justfile contains gce-spot-run, gce-spot-sweep, gce-spot-status, and gce-spot-cleanup recipes."""
-=======
-    def test_justfile_contains_gke_ray_recipes(self):
-        """Verify Justfile contains GKE Ray and Kueue sweep recipes and help menu entries."""
->>>>>>> 3b205d9 (feat(gke-ray): add Justfile recipes and GKE Ray documentation)
         justfile_path = ROOT_DIR / "Justfile"
         self.assertTrue(justfile_path.exists(), "Justfile not found")
 
         content = justfile_path.read_text(encoding="utf-8")
 
         # Assert recipe definitions exist
-<<<<<<< HEAD
         self.assertIn("gce-spot-run", content, "Recipe 'gce-spot-run' not defined in Justfile")
         self.assertIn("gce-spot-sweep", content, "Recipe 'gce-spot-sweep' not defined in Justfile")
         self.assertIn("gce-spot-status", content, "Recipe 'gce-spot-status' not defined in Justfile")
