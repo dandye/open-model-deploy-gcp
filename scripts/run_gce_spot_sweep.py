@@ -156,6 +156,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=1,
         local_ssd_count=1,
         tensor_parallel_size=1,
+        extra_vllm_flags="--max-model-len=8192",
         notes="Gemma 3 1B (1x L4, 1x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -166,7 +167,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=1,
         local_ssd_count=1,
         tensor_parallel_size=1,
-        extra_vllm_flags="--speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2",
+        extra_vllm_flags="--max-model-len=8192 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2",
         notes="Gemma 3 1B Speculative (1x L4, 1x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -177,8 +178,8 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=1,
         local_ssd_count=1,
         tensor_parallel_size=1,
-        extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4",
-        notes="Gemma 3 4B Multimodal (1x L4, 1x NVMe SSD)",
+        extra_vllm_flags="--max-model-len=8192",
+        notes="Gemma 3 4B (1x L4, 1x NVMe SSD)",
     ),
     GCESpotTarget(
         flavor="gemma-3-4b-it-speculative",
@@ -188,7 +189,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=1,
         local_ssd_count=1,
         tensor_parallel_size=1,
-        extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2",
+        extra_vllm_flags="--max-model-len=8192 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2",
         notes="Gemma 3 4B Speculative (1x L4, 1x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -199,8 +200,8 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4",
-        notes="Gemma 3 12B Multimodal (4x L4, 4x NVMe SSD)",
+        extra_vllm_flags="--max-model-len=8192",
+        notes="Gemma 3 12B (4x L4, 4x NVMe SSD)",
     ),
     GCESpotTarget(
         flavor="gemma-3-12b-it-fp8",
@@ -210,7 +211,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--quantization=fp8 --limit_mm_per_prompt=image=5 --max-num-seqs=4",
+        extra_vllm_flags="--quantization=fp8 --max-model-len=8192",
         notes="Gemma 3 12B FP8 (4x L4, 4x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -221,7 +222,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--quantization=fp8 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2 --limit_mm_per_prompt=image=5 --max-num-seqs=4",
+        extra_vllm_flags="--quantization=fp8 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2 --max-model-len=8192",
         notes="Gemma 3 12B FP8 Speculative (4x L4, 4x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -232,8 +233,8 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--limit_mm_per_prompt=image=5 --max-num-seqs=4",
-        notes="Gemma 3 27B Multimodal (4x L4, 4x NVMe SSD)",
+        extra_vllm_flags="--max-model-len=8192",
+        notes="Gemma 3 27B (4x L4, 4x NVMe SSD)",
     ),
     GCESpotTarget(
         flavor="gemma-3-27b-it-fp8",
@@ -243,7 +244,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--quantization=fp8 --limit_mm_per_prompt=image=5 --max-num-seqs=4",
+        extra_vllm_flags="--quantization=fp8 --max-model-len=8192",
         notes="Gemma 3 27B FP8 (4x L4, 4x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -254,7 +255,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--quantization=fp8 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2 --limit_mm_per_prompt=image=5 --max-num-seqs=4",
+        extra_vllm_flags="--quantization=fp8 --speculative-model=[ngram] --num-speculative-tokens=5 --ngram-prompt-lookup-max=5 --ngram-prompt-lookup-min=2 --max-model-len=8192",
         notes="Gemma 3 27B FP8 Speculative (4x L4, 4x NVMe SSD)",
     ),
     GCESpotTarget(
@@ -265,7 +266,7 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         accelerator_count=4,
         local_ssd_count=4,
         tensor_parallel_size=4,
-        extra_vllm_flags="--quantization=fp8 --enable-chunked-prefill --enable-prefix-caching --limit_mm_per_prompt=image=5 --max-num-seqs=4",
+        extra_vllm_flags="--quantization=fp8 --enable-chunked-prefill --enable-prefix-caching --max-model-len=8192",
         notes="Gemma 3 27B FP8 Prefix Caching (4x L4, 4x NVMe SSD)",
     ),
 
@@ -439,8 +440,8 @@ def build_gce_spot_create_command(
     output_gcs_uri: str,
     hf_token: Optional[str] = None,
     script_template_path: Optional[Path] = None,
-    image_family: str = "common-cu124-debian-11",
-    image_project: str = "deeplearning-platform-release",
+    image_family: str = "ubuntu-2204-lts",
+    image_project: str = "ubuntu-os-cloud",
     instance_name: Optional[str] = None,
     service_account: Optional[str] = None,
     boot_disk_size: str = "100GB",
@@ -521,14 +522,14 @@ class GCESpotOrchestrator:
 
     def __init__(
         self,
-        project_id: str = "dandye-0324-chronicle",
-        zone: str = "us-central1-a",
-        output_gcs_bucket: str = "gs://dandye-0324-chronicle-evals/gce_spot_sweeps",
+        project_id: str = "secops-demo-env",
+        zone: str = "europe-west4-a",
+        output_gcs_bucket: str = "gs://secops-demo-env-evals/gce_spot_sweeps",
         hf_token: Optional[str] = None,
         dry_run: bool = False,
         timeout_seconds: int = 3600,
-        image_family: str = "common-cu124-debian-11",
-        image_project: str = "deeplearning-platform-release",
+        image_family: str = "ubuntu-2204-lts",
+        image_project: str = "ubuntu-os-cloud",
     ) -> None:
         self.project_id = project_id
         self.zone = zone
@@ -538,6 +539,7 @@ class GCESpotOrchestrator:
         self.timeout_seconds = timeout_seconds
         self.image_family = image_family
         self.image_project = image_project
+        self.active_instance_zone: str = zone
 
     def launch_instance(
         self,
@@ -553,40 +555,60 @@ class GCESpotOrchestrator:
             timestamp = int(time.time())
             instance_name = f"spot-{sanitized_flavor}-{timestamp}"
 
-        cmd = build_gce_spot_create_command(
-            target=target,
-            project_id=self.project_id,
-            zone=self.zone,
-            output_gcs_uri=self.output_gcs_bucket,
-            hf_token=self.hf_token,
-            image_family=self.image_family,
-            image_project=self.image_project,
-            instance_name=instance_name,
-        )
+        base_zone = self.zone
+        candidate_zones = [base_zone]
+        if "-" in base_zone:
+            region = "-".join(base_zone.split("-")[:-1])
+            for suffix in ["a", "b", "c"]:
+                z = f"{region}-{suffix}"
+                if z not in candidate_zones:
+                    candidate_zones.append(z)
 
-        if self.dry_run:
-            print(f"[DRY RUN] Creating GCE Spot instance '{instance_name}' for flavor '{target.flavor}'...")
-            print(f"[DRY RUN] Command: {' '.join(cmd)}")
-            return instance_name
+        last_error = ""
+        for zone in candidate_zones:
+            cmd = build_gce_spot_create_command(
+                target=target,
+                project_id=self.project_id,
+                zone=zone,
+                output_gcs_uri=self.output_gcs_bucket,
+                hf_token=self.hf_token,
+                image_family=self.image_family,
+                image_project=self.image_project,
+                instance_name=instance_name,
+            )
 
-        print(f"[INFO] Creating GCE Spot instance '{instance_name}' ({target.machine_type}, {target.accelerator_count}x {target.accelerator_type})...")
-        res = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+            if self.dry_run:
+                print(f"[DRY RUN] Creating GCE Spot instance '{instance_name}' for flavor '{target.flavor}' in zone '{zone}'...")
+                print(f"[DRY RUN] Command: {' '.join(cmd)}")
+                self.active_instance_zone = zone
+                return instance_name
 
-        stdout = str(res.stdout or "")
-        stderr = str(res.stderr or "")
-        output = f"{stdout}\n{stderr}"
-        print(output)
+            print(f"[INFO] Creating GCE Spot instance '{instance_name}' ({target.machine_type}, {target.accelerator_count}x {target.accelerator_type}) in {zone}...")
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
 
-        if res.returncode != 0:
-            raise RuntimeError(f"GCE Spot instance creation failed for {target.flavor} (code {res.returncode}):\n{output}")
+            stdout = str(res.stdout or "")
+            stderr = str(res.stderr or "")
+            output = f"{stdout}\n{stderr}"
+            print(output)
 
-        print(f"[INFO] Successfully initiated Spot VM: {instance_name}")
-        return instance_name
+            if res.returncode == 0:
+                print(f"[INFO] Successfully initiated Spot VM: {instance_name} in {zone}")
+                self.active_instance_zone = zone
+                return instance_name
+
+            last_error = output
+            if "ZONE_RESOURCE_POOL_EXHAUSTED" in output or "not have enough resources" in output:
+                print(f"[WARN] Zone '{zone}' exhausted for {target.machine_type}. Trying next candidate zone...")
+                continue
+            else:
+                break
+
+        raise RuntimeError(f"GCE Spot instance creation failed for {target.flavor} across candidate zones:\n{last_error}")
 
     def monitor_instance_serial(
         self,
@@ -598,11 +620,12 @@ class GCESpotOrchestrator:
         terminates and self-deletes or the timeout is reached.
         """
         max_timeout = timeout_seconds or self.timeout_seconds
+        zone = getattr(self, "active_instance_zone", self.zone)
         if self.dry_run:
-            print(f"[DRY RUN] Monitoring serial console for instance '{instance_name}' (timeout: {max_timeout}s)...")
+            print(f"[DRY RUN] Monitoring serial console for instance '{instance_name}' in zone '{zone}' (timeout: {max_timeout}s)...")
             return True
 
-        print(f"[INFO] Monitoring instance '{instance_name}' in zone '{self.zone}' until self-deletion...")
+        print(f"[INFO] Monitoring instance '{instance_name}' in zone '{zone}' until self-deletion...")
         start_time = time.time()
         poll_interval = 15
 
@@ -615,7 +638,7 @@ class GCESpotOrchestrator:
                     "describe",
                     instance_name,
                     f"--project={self.project_id}",
-                    f"--zone={self.zone}",
+                    f"--zone={zone}",
                     "--format=value(status)",
                 ],
                 capture_output=True,
@@ -756,7 +779,16 @@ class GCESpotOrchestrator:
 
         for target in targets:
             print(f"\n[Target: {target.flavor}] {target.notes}...")
-            instance_name = self.launch_instance(target)
+            try:
+                instance_name = self.launch_instance(target)
+            except Exception as e:
+                print(f"[WARN] Unable to launch Spot instance for {target.flavor}: {e}")
+                results.append({
+                    "flavor": target.flavor,
+                    "status": "STOCKOUT",
+                    "error": str(e),
+                })
+                continue
 
             if not wait:
                 results.append({
@@ -789,19 +821,19 @@ def main() -> None:
     )
     parser.add_argument(
         "--project-id",
-        default=os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle"),
+        default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"),
         help="Google Cloud Project ID",
     )
     parser.add_argument(
         "--zone",
-        default=os.environ.get("GCP_ZONE", "us-central1-a"),
-        help="Compute Engine Zone (e.g. us-central1-a, us-east1-c, europe-west4-a)",
+        default=os.environ.get("GCP_ZONE", "europe-west4-a"),
+        help="Compute Engine Zone (e.g. europe-west4-a, us-central1-a)",
     )
     parser.add_argument(
         "--output-gcs-bucket",
         "--output-bucket",
         dest="output_gcs_bucket",
-        default=os.environ.get("GCE_SPOT_OUTPUT_BUCKET", "gs://dandye-0324-chronicle-evals/gce_spot_sweeps"),
+        default=os.environ.get("GCE_SPOT_OUTPUT_BUCKET", "gs://secops-demo-env-evals/gce_spot_sweeps"),
         help="Target Google Cloud Storage bucket for test artifacts",
     )
     parser.add_argument(

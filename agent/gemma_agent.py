@@ -169,8 +169,18 @@ class GemmaAgent:
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
             }
+            model_name = self.model_name or "gemma"
+            try:
+                models_req = urllib.request.Request(f"{self.cloudrun_url.rstrip('/')}/v1/models", headers=headers)
+                with urllib.request.urlopen(models_req, timeout=5) as m_resp:
+                    m_data = json.loads(m_resp.read().decode("utf-8"))
+                    if m_data.get("data") and len(m_data["data"]) > 0:
+                        model_name = m_data["data"][0]["id"]
+            except Exception:
+                pass
+
             payload = {
-                "model": "gemma",
+                "model": model_name,
                 "messages": [
                     {"role": "system", "content": self.system_instruction},
                     {"role": "user", "content": prompt},
