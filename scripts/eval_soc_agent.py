@@ -32,16 +32,25 @@ class SemanticJudgeResult(BaseModel):
 
 def evaluate_assertions(
     response_text: str,
-    must_contain: List[str],
-    must_not_contain: List[str],
+    must_contain: Optional[List[str]] = None,
+    must_not_contain: Optional[List[str]] = None,
 ) -> Tuple[bool, List[str]]:
-    """Evaluates deterministic substring rules."""
+    """Evaluates deterministic substring rules case-insensitively.
+
+    Args:
+        response_text: Raw output text from the agent response.
+        must_contain: Substrings that must be present (case-insensitive).
+        must_not_contain: Prohibited substrings that must not appear (case-insensitive).
+
+    Returns:
+        Tuple of (passed: bool, failures: List[str]).
+    """
     failures: List[str] = []
-    text_lower = response_text.lower()
-    for item in must_contain:
+    text_lower = (response_text or "").lower()
+    for item in (must_contain or []):
         if item.lower() not in text_lower:
             failures.append(f"Missing required substring: '{item}'")
-    for item in must_not_contain:
+    for item in (must_not_contain or []):
         if item.lower() in text_lower:
             failures.append(f"Contained prohibited substring: '{item}'")
     return len(failures) == 0, failures
@@ -254,6 +263,12 @@ def run_evaluation(
     print(f" Output TPS:        {summary['avg_generation_tps']} tok/s (Total TPS: {summary['avg_total_tps']} tok/s)")
     print(f" Total Tokens:      {summary['total_tokens']} (Avg: {summary['avg_tokens_per_case']} / case)")
     print(f" Total Tool Calls:  {summary['total_tool_calls']}")
+    print("------------------------------------------------------------------")
+    print(f" {'Case ID':<42} | {'Status':<6} | {'Rubric':<8} | {'Latency':<7}")
+    print("------------------------------------------------------------------")
+    for r in results:
+        status_str = "PASS" if r["passed"] else "FAIL"
+        print(f" {r['eval_id']:<42} | {status_str:<6} | {r['rubric_score']:>5.1f}/100 | {r['latency_s']:>6.2f}s")
     print("==================================================================")
 
     return {"flavor": flavor, "summary": summary, "case_results": results}
