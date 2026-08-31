@@ -86,21 +86,39 @@ def test_eval_suite_no_emojis():
         assert not is_emoji, f"Emoji character detected in eval config: '{char}' (U+{cp:04X})"
 
 
+EXPECTED_LIVE_CASE_IDS = [
+    "CASE-LIVE-01-ENCODED-POWERSHELL",
+    "CASE-LIVE-02-COBALT-STRIKE-NAMEDPIPE",
+    "CASE-LIVE-03-SCOUTSUITE-RECON",
+    "CASE-LIVE-04-BIGQUERY-EXFIL",
+    "CASE-LIVE-05-ACTIVE-QUEUE-TRIAGE",
+    "CASE-LIVE-06-LOG-CLEARING-DEFENSE-EVASION",
+    "CASE-LIVE-07-ATERA-RMM-TOOL-CALLBACK",
+    "CASE-LIVE-08-POWERSHELL-IEX-OBFUSCATION",
+    "CASE-LIVE-09-OFFENSIVE-SECURITY-DISTRO",
+    "CASE-LIVE-10-APPDATA-ALPHANUMERIC-BINARY",
+]
+
+
 def test_live_mcp_evalset_structure():
-    """Verify configs/evals/soc_live_mcp_evalset.json has valid schema and cases."""
+    """Verify configs/evals/soc_live_mcp_evalset.json has valid schema and 10 cases."""
     live_path = ROOT_DIR / "configs" / "evals" / "soc_live_mcp_evalset.json"
     assert live_path.exists(), f"Missing live MCP evalset at {live_path}"
     data = json.loads(live_path.read_text(encoding="utf-8"))
     assert data.get("evalset_id") == "soc_live_mcp_evalset"
-    assert len(data.get("eval_cases", [])) == 5
+    assert len(data.get("eval_cases", [])) == 10
+
+    case_ids = [c.get("eval_id") for c in data["eval_cases"]]
+    assert case_ids == EXPECTED_LIVE_CASE_IDS
 
     for case in data["eval_cases"]:
-        assert "eval_id" in case
-        assert "prompt" in case
-        assert "reference" in case
-        assert "grading_rubric" in case["reference"]
-        assert "assertions" in case
-        assert len(case["assertions"].get("must_contain", [])) > 0
+        eval_id = case.get("eval_id", "<unknown>")
+        assert "eval_id" in case, "Live case missing eval_id"
+        assert "prompt" in case, f"{eval_id}: missing prompt"
+        assert "reference" in case, f"{eval_id}: missing reference"
+        assert "grading_rubric" in case["reference"], f"{eval_id}: missing grading rubric"
+        assert "assertions" in case, f"{eval_id}: missing assertions"
+        assert len(case["assertions"].get("must_contain", [])) > 0, f"{eval_id}: must_contain empty"
 
 
 def test_live_mcp_evalset_no_emojis():
