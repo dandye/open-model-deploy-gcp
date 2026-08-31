@@ -12,9 +12,11 @@ TENSOR_PARALLEL_SIZE="${3:-1}"
 EXTRA_FLAGS="${4:-}"
 OUTPUT_GCS_PATH="${5:-gs://secops-eval-results/custom_jobs}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-if [[ ! -f "${ROOT_DIR}/scripts/eval_soc_agent.py" && -d "/workspace" ]]; then
+if [[ ! -f "${ROOT_DIR}/scripts/eval_soc_agent.py" ]]; then
+    echo "[INFO] Syncing evaluation suite from GCS code repository..."
+    mkdir -p /workspace
+    cd /workspace
+    gcloud storage cp -r "gs://secops-demo-env-evals/code/*" /workspace/ 2>/dev/null || gsutil -m cp -r "gs://secops-demo-env-evals/code/*" /workspace/ 2>/dev/null || true
     ROOT_DIR="/workspace"
 fi
 

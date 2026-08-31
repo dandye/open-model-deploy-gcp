@@ -577,18 +577,26 @@ class VertexCustomJobOrchestrator:
             return job.get("state") == "JOB_STATE_SUCCEEDED"
 
         print(f"[INFO] Waiting for CustomJob completion (timeout: {timeout}s)...")
-        try:
-            if hasattr(job, "wait"):
-                job.wait()
-            state_name = getattr(getattr(job, "state", None), "name", str(getattr(job, "state", "UNKNOWN")))
-            if state_name in ["JOB_STATE_SUCCEEDED", "SUCCEEDED"]:
-                print(f"[INFO] CustomJob succeeded with state: {state_name}")
-                return True
-            print(f"[WARNING] CustomJob finished with non-success state: {state_name}")
-            return False
-        except Exception as e:
-            print(f"[ERROR] Error or timeout while waiting for CustomJob: {e}")
-            return False
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                if hasattr(job, "_gca_resource") and hasattr(job, "api_client"):
+                    job._gca_resource = job.api_client.get_custom_job(name=job.resource_name)
+                state_name = getattr(getattr(job, "state", None), "name", str(getattr(job, "state", "UNKNOWN")))
+                if state_name in ["JOB_STATE_SUCCEEDED", "SUCCEEDED"]:
+                    print(f"[INFO] CustomJob succeeded with state: {state_name}")
+                    return True
+                if state_name in ["JOB_STATE_FAILED", "JOB_STATE_CANCELLED", "FAILED", "CANCELLED"]:
+                    print(f"[WARNING] CustomJob ended with state: {state_name}")
+                    return False
+                print(f"[INFO] CustomJob state: {state_name}. Elapsed: {int(time.time() - start_time)}s. Checking again in 30s...")
+                time.sleep(30)
+            except Exception as e:
+                print(f"[WARNING] Error checking CustomJob state: {e}. Retrying in 30s...")
+                time.sleep(30)
+
+        print(f"[ERROR] CustomJob timed out after {timeout}s.")
+        return False
 
     def collect_results(self, target: VertexCustomJobTarget) -> Dict[str, Any]:
         """
@@ -751,25 +759,25 @@ def main() -> None:
     parser.add_argument(
         "--project-id",
         type=str,
-        default="dandye-0324-chronicle",
+        default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"),
         help="Google Cloud project ID",
     )
     parser.add_argument(
         "--region",
         type=str,
-        default="us-central1",
+        default=os.environ.get("GCP_REGION", "europe-west4"),
         help="Google Cloud region for CustomJob execution",
     )
     parser.add_argument(
         "--image-uri",
         type=str,
-        default="us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
-        help="Artifact Registry container image URI for benchmark runner",
+        default=os.environ.get("CUSTOM_JOB_IMAGE_URI", "vllm/vllm-openai:latest"),
+        help="Artifact Registry or Docker container image URI for benchmark runner",
     )
     parser.add_argument(
         "--output-gcs-bucket",
         type=str,
-        default="gs://secops-eval-results/custom_jobs",
+        default=os.environ.get("OUTPUT_GCS_BUCKET", "gs://secops-demo-env-evals/custom_jobs"),
         help="GCS bucket URI for evaluation and benchmark artifacts",
     )
     parser.add_argument(

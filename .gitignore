@@ -29,5 +29,5 @@ htmlcov/
 notes.md
 logs/
 *.log
-.venv/
 .venv
+.venv/
