@@ -1,3 +1,6 @@
 [submodule "external/adk_runbooks"]
 	path = external/adk_runbooks
 	url = git@github.com:dandye/adk_runbooks.git
+[submodule "third_party/ai-runbooks"]
+	path = third_party/ai-runbooks
+	url = /usr/local/google/home/dandye/Projects/ai-runbooks
