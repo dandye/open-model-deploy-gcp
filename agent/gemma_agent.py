@@ -17,6 +17,15 @@ import urllib.error
 
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
+os.environ["CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE"] = "false"
+
+try:
+    import google.auth.transport._mtls_helper as _mtls_helper
+    _mtls_helper.has_client_certificate = lambda: False
+    _mtls_helper.get_client_cert_and_key = lambda: (False, None, None)
+    _mtls_helper.get_client_ssl_credentials = lambda *args, **kwargs: (False, None, None, None)
+except Exception:
+    pass
 
 
 
@@ -66,7 +75,7 @@ class GemmaAgent:
             system_instruction: Custom system persona and instruction.
             tools: Optional list of Python callables for function calling.
         """
-        self.project_id = project_id or os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle")
+        self.project_id = project_id or os.environ.get("GCP_PROJECT_ID", "secops-demo-env")
         self.region = region
         self.endpoint_id = endpoint_id
         self.cloudrun_url = cloudrun_url

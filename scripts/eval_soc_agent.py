@@ -13,7 +13,17 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
+os.environ["CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE"] = "false"
+
+try:
+    import google.auth.transport._mtls_helper as _mtls_helper
+    _mtls_helper.has_client_certificate = lambda: False
+    _mtls_helper.get_client_cert_and_key = lambda: (False, None, None)
+    _mtls_helper.get_client_ssl_credentials = lambda *args, **kwargs: (False, None, None, None)
+except Exception:
+    pass
 
 from google import genai
 from google.genai import types
@@ -273,6 +283,7 @@ def run_evaluation(
     chronicle_customer_id: Optional[str] = None,
     chronicle_region: Optional[str] = None,
     gen: int = 3,
+    mcp_provider: str = "default",
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     chron_proj = chronicle_project or os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
@@ -292,6 +303,7 @@ def run_evaluation(
     print("==================================================================")
     print(f" Running Gemma SOC Tier 1 Evaluation: {flavor} (Gen {eval_gen})")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
+    print(f" MCP Tool Provider: {mcp_provider.upper()}")
     if use_live_mcp:
         print(f" Chronicle Tenant: {chron_proj} ({chron_cust}) [Region: {chron_reg}]")
     print("==================================================================")
@@ -326,6 +338,7 @@ def run_evaluation(
         managed_model=managed_model,
         use_live_mcp=use_live_mcp,
         environment=soc_env,
+        mcp_provider=mcp_provider,
     )
     agent.set_up()
 
@@ -536,6 +549,7 @@ def run_evaluation(
     return {
         "flavor": flavor,
         "generation": eval_gen,
+        "mcp_provider": mcp_provider,
         "summary": summary,
         "case_results": results,
     }
@@ -546,12 +560,14 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
     summary = eval_data["summary"]
     flavor = eval_data.get("flavor", "Unknown Model")
     eval_gen = eval_data.get("generation", 3)
+    mcp_prov = eval_data.get("mcp_provider", "default")
 
     lines = [
         f"# SOC Evaluation Report: {flavor}",
         f"\n**Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}",
         f"**Evaluation Generation:** Gen {eval_gen}",
         f"**Live SecOps MCP:** {'Enabled' if live_mcp else 'Disabled'}",
+        f"**MCP Tool Provider:** {mcp_prov.upper()}",
         "\n## 1. Executive Summary",
         f"- **Pass Rate:** {summary['pass_rate']}% ({summary['passed_cases']}/{summary['total_cases']})",
         f"- **Average Rubric Score:** {summary['avg_rubric_score']} / 100",
@@ -715,6 +731,13 @@ def main() -> None:
     parser.add_argument("--managed-model", default=None, help="Hosted MaaS model name")
     parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"))
     parser.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
+    parser.add_argument(
+        "--mcp-provider",
+        dest="mcp_provider",
+        choices=["default", "gepa"],
+        default="default",
+        help="MCP tool description source: 'default' (baseline docstrings) or 'gepa' (gusto-mcp-gepa Pareto-optimized descriptions)",
+    )
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
     args = parser.parse_args()
@@ -755,6 +778,7 @@ def main() -> None:
         chronicle_customer_id=args.chronicle_customer_id,
         chronicle_region=args.chronicle_region,
         gen=args.gen,
+        mcp_provider=args.mcp_provider,
     )
 
     # Save JSON raw artifacts

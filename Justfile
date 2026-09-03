@@ -211,6 +211,17 @@ eval-gen3 FLAVOR="gemma-3-4b-it" ENDPOINT="" LIVE_MCP="false":
 eval-gen3-live FLAVOR="gemini-2.5-flash" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/gen3_live_{{FLAVOR}}_report.md"
 
+# Run Gen 3 SOC evaluation with GEPA tool descriptions from gusto-mcp-gepa (Usage: just eval-gepa [flavor] [gen])
+eval-gepa FLAVOR="gemini-2.5-flash" GEN="3": auth-check
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} --mcp-provider gepa --output-report "docs/soc_eval_results/gen{{GEN}}_gepa_{{FLAVOR}}_report.md"
+
+# Compare baseline default vs gusto-mcp-gepa on Gen 3 evaluation suite (Usage: just eval-compare-gepa [flavor])
+eval-compare-gepa FLAVOR="gemini-2.5-flash": auth-check
+    @echo "=== Running Baseline (Default MCP) ==="
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 --mcp-provider default --output-report "docs/soc_eval_results/gen3_baseline_{{FLAVOR}}_report.md"
+    @echo "=== Running GEPA MCP (gusto-mcp-gepa) ==="
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 --mcp-provider gepa --output-report "docs/soc_eval_results/gen3_gepa_{{FLAVOR}}_report.md"
+
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":
     @USE_LIVE_MCP="{{LIVE_MCP}}" uv run python3 -m agent.deploy_soc_tier1
