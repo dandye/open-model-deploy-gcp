@@ -36,7 +36,9 @@ default:
     @printf "  \033[1;32mjust agent-test [prompt]\033[0m               \033[2mTest general Gemma ADK Agent locally\033[0m\n"
     @printf "  \033[1;32mjust agent-deploy\033[0m                      \033[2mDeploy general Gemma ADK Agent to Agent Engine\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-test [prompt] [flavor]\033[0m  \033[2mTest SOC Tier 1 Agent locally against endpoint\033[0m\n"
-    @printf "  \033[1;32mjust agent-soc-eval [flavor] [endpoint]\033[0m \033[2mRun automated SOC eval suite with LLM judge\033[0m\n"
+    @printf "  \033[1;32mjust agent-soc-eval [flavor] [gen]\033[0m     \033[2mRun automated SOC eval suite (default Gen 3)\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen3 [flavor] [endpoint]\033[0m     \033[2mRun Gen 3 interactive eval with SDT & loss metrics\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen3-live [flavor] [project]\033[0m \033[2mRun Gen 3 live interactive eval with SecOps MCP\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI CUSTOM JOBS (Ephemeral Benchmarks & \$0 Idle):\033[0m\n"
     @printf "  \033[1;32mjust custom-job-build [tag]\033[0m             \033[2mBuild & push runner Docker image to Artifact Registry\033[0m\n"
@@ -186,20 +188,28 @@ agent-soc-test PROMPT="Triage alert for IP 192.0.2.100" LIVE_MCP="false":
     @uv run python3 -m agent.test_agent "{{PROMPT}}" --soc {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}}
 
 # Run automated SOC evaluation suite with LLM judge against target Gemma flavor (Usage: just agent-soc-eval [flavor] [gen] [endpoint] [live_mcp])
-agent-soc-eval FLAVOR="gemma-3-4b-it" GEN="2" ENDPOINT="" LIVE_MCP="false":
+agent-soc-eval FLAVOR="gemma-3-4b-it" GEN="3" ENDPOINT="" LIVE_MCP="false":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/gen{{GEN}}_{{FLAVOR}}_report.md"
 
 # Run automated SOC evaluation suite against target Llama flavor (Usage: just eval-llama [flavor] [gen] [live_mcp])
-eval-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" GEN="2" LIVE_MCP="false":
+eval-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" GEN="3" LIVE_MCP="false":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/gen{{GEN}}_{{FLAVOR}}_report.md"
 
 # Run live evaluation suite against Google SecOps Remote MCP (Usage: just eval-live [flavor] [gen] [project] [customer_id])
-eval-live FLAVOR="gemini-2.5-flash" GEN="2" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
+eval-live FLAVOR="gemini-2.5-flash" GEN="3" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/gen{{GEN}}_live_{{FLAVOR}}_report.md"
 
 # Run live evaluation suite against target Llama flavor with Google SecOps Remote MCP
-eval-live-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" GEN="2" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
+eval-live-llama FLAVOR="llama-4-maverick-17b-128e-instruct-maas" GEN="3" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen {{GEN}} --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/gen{{GEN}}_live_{{FLAVOR}}_report.md"
+
+# Run Gen 3 interactive SOC evaluation suite (Convenience shortcut for agent-soc-eval GEN=3)
+eval-gen3 FLAVOR="gemma-3-4b-it" ENDPOINT="" LIVE_MCP="false":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 {{if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "" }}} {{if LIVE_MCP == "true" { "--live-mcp" } else { "" }}} --output-report "docs/soc_eval_results/gen3_{{FLAVOR}}_report.md"
+
+# Run Gen 3 live interactive evaluation suite against Google SecOps Remote MCP
+eval-gen3-live FLAVOR="gemini-2.5-flash" PROJECT="secops-demo-env" CUSTOMER_ID="a13f6726-efed-452e-9008-8fe0d3cb0f75": auth-check
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 --use-live-mcp --chronicle-project "{{PROJECT}}" --chronicle-customer-id "{{CUSTOMER_ID}}" --output-report "docs/soc_eval_results/gen3_live_{{FLAVOR}}_report.md"
 
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":
@@ -219,6 +229,16 @@ overnight-sweep MODELS="" DRY_RUN="false":
     @LOGFILE="logs/overnight_sweep_$(date +%Y%m%d_%H%M%S).log"; \
     echo "Starting overnight sweep. Logging to $LOGFILE"; \
     uv run python3 scripts/run_overnight_sweep.py {{if MODELS != "" { "--models " + MODELS } else { "" }}} {{if DRY_RUN == "true" { "--dry-run" } else { "" }}} 2>&1 | tee "$LOGFILE"
+
+# Run complete end-to-end sweep: Gemma models followed immediately by partner & OpenModels
+overnight-full-sweep: auth-check
+    @mkdir -p logs
+    @LOGFILE="logs/overnight_full_sweep_$(date +%Y%m%d_%H%M%S).log"; \
+    echo "Starting full overnight sweep (Gemma + Non-Gemma OpenModels). Logging to $LOGFILE"; \
+    uv run python3 scripts/run_overnight_sweep.py 2>&1 | tee "$LOGFILE"; \
+    echo "Gemma sweep complete. Starting Non-Gemma Partner & OpenModels sweep..." | tee -a "$LOGFILE"; \
+    uv run python3 scripts/overnight_model_sweep.py 2>&1 | tee -a "$LOGFILE"; \
+    uv run python3 scripts/run_overnight_sweep.py --rebuild-scorecard | tee -a "$LOGFILE"
 
 # ------------------------------------------------------------------------------
 # Compute Engine Spot GPU VMs (Cost-Optimized Ephemeral Benchmarks)

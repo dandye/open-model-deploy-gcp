@@ -11,7 +11,7 @@ class TestJustfileRecipes(unittest.TestCase):
     """Test suite validating Justfile recipes, syntax, and documentation integration."""
 
     def test_justfile_contains_soc_recipes(self):
-        """Verify Justfile contains agent-soc-test, agent-soc-eval, and agent-soc-deploy recipes."""
+        """Verify Justfile contains agent-soc-test, agent-soc-eval, eval-gen3, eval-gen3-live, and agent-soc-deploy recipes."""
         justfile_path = ROOT_DIR / "Justfile"
         self.assertTrue(justfile_path.exists(), "Justfile not found")
 
@@ -20,16 +20,21 @@ class TestJustfileRecipes(unittest.TestCase):
         # Assert recipe definitions exist
         self.assertIn("agent-soc-test", content, "Recipe 'agent-soc-test' not defined in Justfile")
         self.assertIn("agent-soc-eval", content, "Recipe 'agent-soc-eval' not defined in Justfile")
+        self.assertIn("eval-gen3", content, "Recipe 'eval-gen3' not defined in Justfile")
+        self.assertIn("eval-gen3-live", content, "Recipe 'eval-gen3-live' not defined in Justfile")
         self.assertIn("agent-soc-deploy", content, "Recipe 'agent-soc-deploy' not defined in Justfile")
 
         # Assert recipes are present in the help menu
         self.assertIn("just agent-soc-test", content, "Help menu missing 'just agent-soc-test'")
         self.assertIn("just agent-soc-eval", content, "Help menu missing 'just agent-soc-eval'")
+        self.assertIn("just eval-gen3", content, "Help menu missing 'just eval-gen3'")
+        self.assertIn("just eval-gen3-live", content, "Help menu missing 'just eval-gen3-live'")
         self.assertIn("just agent-soc-deploy", content, "Help menu missing 'just agent-soc-deploy'")
 
         # Assert recipes invoke expected Python targets
         self.assertIn("deploy_soc_tier1", content, "Recipe agent-soc-deploy must call deploy_soc_tier1")
         self.assertIn("eval_soc_agent", content, "Recipe agent-soc-eval must call eval_soc_agent")
+        self.assertIn('GEN="3"', content, "Default evaluation generation must be 3")
 
     def test_justfile_contains_terraform_recipes(self):
         """Verify Justfile contains tf-init, tf-plan, tf-apply, and tf-destroy recipes."""
@@ -155,6 +160,8 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertEqual(res.returncode, 0, f"Justfile syntax error: {res.stderr}")
         self.assertIn("agent-soc-test", res.stdout)
         self.assertIn("agent-soc-eval", res.stdout)
+        self.assertIn("eval-gen3", res.stdout)
+        self.assertIn("eval-gen3-live", res.stdout)
         self.assertIn("agent-soc-deploy", res.stdout)
         self.assertIn("overnight-sweep", res.stdout)
         self.assertIn("tf-plan", res.stdout)

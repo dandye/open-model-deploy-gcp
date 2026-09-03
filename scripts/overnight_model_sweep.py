@@ -10,14 +10,16 @@ import datetime
 import json
 import logging
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 CATALOG_PATH = ROOT_DIR / "configs" / "models.json"
 RESULTS_DIR = ROOT_DIR / "docs" / "soc_eval_results"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -32,21 +34,35 @@ logging.basicConfig(
 )
 logger = logging.getLogger("PartnerModelSweep")
 
-# Target new models queue
+# Target non-Gemma partner & OpenModels queue
 NEW_MODELS_QUEUE = [
-    # Front of Queue (Flash Next, MoE, GLM, DeepSeek & Kimi variants)
+    # Meta Llama Family
+    "llama-4-scout-17b-16e-instruct-maas",
+    "llama-4-maverick-17b-128e-instruct-maas",
+    "llama-3.1-8b-instruct-maas",
+    "llama-3.3-70b-instruct-maas",
+    "llama-3.1-405b-instruct-maas",
+    "llama-3.2-3b-instruct",
+    "llama-3.2-11b-vision-instruct-maas",
+    "llama-guard-3-8b",
+    "llama-3.1-nemotron-70b-instruct",
+    # Qwen Family
+    "qwen3.8-27b",
+    "qwen2.5-coder-32b-instruct",
     "qwen3.8-flash-next",
     "qwen3.8-flash-next-fp8",
     "qwen3.8-2.4t-a95b-fp8",
-    "glm-5.3-flash",
+    # Mistral, Microsoft & Thinking Machines
+    "ministral-3b-2410",
+    "phi-4",
+    "inkling-small",
+    "nemotron-3.5-lightning-bf16",
+    # Advanced Frontier & OpenModels (DeepSeek, GLM, Moonshot, xAI)
+    "deepseek-r1-distill-qwen-32b",
     "deepseek-v4-pro",
+    "glm-5.3-flash",
     "kimi-k3",
-    # Recommended Additional Llamas (End of Queue)
-    "llama-3.1-405b-instruct-maas",
-    "llama-3.2-11b-vision-instruct-maas",
-    "llama-3.2-3b-instruct",
-    "llama-guard-3-8b",
-    "llama-3.1-nemotron-70b-instruct",
+    "grok-4.6",
 ]
 
 
@@ -69,9 +85,14 @@ def run_cmd(cmd, check=True, capture=True):
     return res
 
 
-def evaluate_maas_model(flavor: str):
+def evaluate_maas_model(flavor: str, project_id: str, region: str, dry_run: bool = False):
     logger.info(f">>> Evaluating MaaS model: {flavor}")
+    if dry_run:
+        logger.info(f"[DRY RUN] Skipping evaluation for MaaS model {flavor}")
+        return True
+
     output_report = RESULTS_DIR / f"{flavor}_report.md"
+    output_json = RESULTS_DIR / f"{flavor}_report.json"
     cmd = [
         "uv",
         "run",
@@ -80,15 +101,31 @@ def evaluate_maas_model(flavor: str):
         "scripts.eval_soc_agent",
         "--flavor",
         flavor,
+        "--managed-model",
+        flavor,
         "--output-report",
         str(output_report),
+        "--output-json",
+        str(output_json),
+        "--gen",
+        "3",
+        "--project-id",
+        project_id,
+        "--region",
+        region,
+        "--evalset",
+        str(ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"),
     ]
     res = run_cmd(cmd, check=False, capture=False)
     return res.returncode == 0
 
 
-def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, region: str):
+def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, region: str, dry_run: bool = False):
     logger.info(f">>> Processing Dedicated Model Garden / OpenModel: {flavor}")
+    if dry_run:
+        logger.info(f"[DRY RUN] Skipping dedicated deployment & eval for {flavor}")
+        return True
+
     compute = spec.get("compute", {})
     machine_type = compute.get("machineType", "g2-standard-48")
     raw_accel = compute.get("acceleratorType", "NVIDIA_L4")
@@ -136,7 +173,6 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
         else:
             logger.info(f"Deploying Model Garden flavor via scripts/vertex_deploy.sh: {flavor}...")
             run_cmd([str(ROOT_DIR / "scripts" / "vertex_deploy.sh"), flavor])
-            # Find active endpoint ID
             list_res = run_cmd([
                 "gcloud",
                 "ai",
@@ -158,6 +194,7 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
 
         logger.info(f"Endpoint active: {endpoint_id}. Starting SOC evaluation...")
         output_report = RESULTS_DIR / f"{flavor}_report.md"
+        output_json = RESULTS_DIR / f"{flavor}_report.json"
         eval_cmd = [
             "uv",
             "run",
@@ -170,6 +207,16 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
             endpoint_id,
             "--output-report",
             str(output_report),
+            "--output-json",
+            str(output_json),
+            "--gen",
+            "3",
+            "--project-id",
+            project_id,
+            "--region",
+            region,
+            "--evalset",
+            str(ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"),
         ]
         eval_res = run_cmd(eval_cmd, check=False, capture=False)
         return eval_res.returncode == 0
@@ -193,7 +240,7 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
             )
 
 
-def generate_summary_table():
+def generate_summary_table(project_id: str = "secops-demo-env"):
     logger.info(">>> Generating comprehensive comparative summary table...")
     results = []
     for json_file in RESULTS_DIR.glob("*_report.json"):
@@ -239,29 +286,38 @@ def generate_summary_table():
 
     logger.info(f"Saved master summary to {summary_md}")
 
+    try:
+        from scripts.run_overnight_sweep import SweepOrchestrator
+        orchestrator = SweepOrchestrator(project_id=project_id)
+        orchestrator.rebuild_scorecard_from_reports()
+        logger.info("Rebuilt master comparative scorecard docs/soc_model_comparative_evals.md")
+    except Exception as e:
+        logger.warning(f"Could not rebuild master scorecard: {e}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run Sweep across new partner & OpenModels.")
-    parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle"))
+    parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"))
     parser.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
+    parser.add_argument("--dry-run", action="store_true", default=False, help="Dry run mode (mocks deployment and evaluation)")
     parser.add_argument("--models", nargs="*", help="List of model flavors to evaluate in sequence")
     args = parser.parse_args()
 
     catalog = load_catalog()
 
-    # Target exclusively the new models
     sweep_models = args.models or NEW_MODELS_QUEUE
 
     logger.info("==================================================================")
-    logger.info(" Starting New & Partner Model Sweep")
+    logger.info(" Starting Non-Gemma Partner & OpenModels Sweep")
     logger.info(f" Total Models in Queue: {len(sweep_models)}")
     logger.info(f" Models: {', '.join(sweep_models)}")
+    logger.info(f" Dry Run: {args.dry_run}")
     logger.info("==================================================================")
 
     for idx, flavor in enumerate(sweep_models, 1):
-        logger.info(f"\n==================================================================")
+        logger.info("\n==================================================================")
         logger.info(f" [{idx}/{len(sweep_models)}] Starting Sweep for: {flavor}")
-        logger.info(f"==================================================================")
+        logger.info("==================================================================")
 
         spec = catalog.get(flavor, {})
         target = spec.get("supportedTargets", [])
@@ -269,16 +325,16 @@ def main():
 
         try:
             if "vertex_maas" in target or model_type == "maas" or "gemini" in flavor:
-                evaluate_maas_model(flavor)
+                evaluate_maas_model(flavor, args.project_id, args.region, dry_run=args.dry_run)
             else:
-                deploy_and_eval_dedicated_model(flavor, spec, args.project_id, args.region)
+                deploy_and_eval_dedicated_model(flavor, spec, args.project_id, args.region, dry_run=args.dry_run)
         except Exception as e:
             logger.error(f"Error evaluating {flavor}: {e}", exc_info=True)
 
-        generate_summary_table()
+        generate_summary_table(project_id=args.project_id)
 
     logger.info("\n==================================================================")
-    logger.info(" New & Partner Model Sweep Finished Successfully!")
+    logger.info(" Non-Gemma Partner & OpenModels Sweep Finished Successfully!")
     logger.info("==================================================================")
 
 

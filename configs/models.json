@@ -242,6 +242,33 @@
     "modelId": "meta/llama-4-scout-17b-16e-instruct-maas",
     "supportedTargets": ["vertex_maas"]
   },
+  "muse-spark-1.3": {
+    "displayName": "Meta Muse Spark 1.3",
+    "family": "muse-spark",
+    "provider": "meta",
+    "type": "open_model",
+    "params": "14B active (agentic)",
+    "region": "global",
+    "modelId": "meta/muse-spark-1.3",
+    "openModelId": "meta-superintelligence/Muse-Spark-1.3",
+    "hfRepo": "meta-llama/Muse-Spark-1.3",
+    "compute": {
+      "machineType": "g2-standard-12",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 48,
+      "hourlyCostUsd": 1.01
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20260713_0916_RC01",
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": []
+    },
+    "supportedTargets": ["vertex_open_model", "vertex_maas"]
+  },
   "inkling-small": {
     "displayName": "Thinking Machines Inkling Small",
     "family": "inkling",

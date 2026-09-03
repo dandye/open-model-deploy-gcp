@@ -139,12 +139,12 @@ class GemmaAgent:
                     pass
         return None
 
-    def query(self, prompt: str, max_tokens: int = 512, temperature: float = 0.7) -> Dict[str, Any]:
+    def query(self, prompt: str, max_tokens: Optional[int] = None, temperature: float = 0.7) -> Dict[str, Any]:
         """Queries the configured or auto-discovered Gemma model backend.
 
         Args:
             prompt: Input user prompt.
-            max_tokens: Maximum generated tokens.
+            max_tokens: Maximum generated tokens. Defaults to None for unbounded/default headroom.
             temperature: Sampling temperature.
 
         Returns:
@@ -188,13 +188,14 @@ class GemmaAgent:
             if not model_name:
                 model_name = "google/gemma-3-1b-it"
 
+            cloudrun_max_tokens = 8192 if max_tokens is None else max_tokens
             payload = {
                 "model": model_name,
                 "messages": [
                     {"role": "system", "content": self.system_instruction},
                     {"role": "user", "content": prompt},
                 ],
-                "max_tokens": max_tokens,
+                "max_tokens": cloudrun_max_tokens,
                 "temperature": temperature,
             }
             req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
@@ -236,10 +237,11 @@ class GemmaAgent:
                 active_region = discovery["region"]
 
         if active_endpoint:
+            vertex_max_tokens = 8192 if max_tokens is None else max_tokens
             instances = [
                 {
                     "prompt": f"<start_of_turn>user\n{self.system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
-                    "max_tokens": max_tokens,
+                    "max_tokens": vertex_max_tokens,
                     "temperature": temperature,
                 }
             ]
@@ -321,18 +323,29 @@ class GemmaAgent:
                 target_region = "us-east5"
             else:
                 target_region = "us-central1"
-        elif "gemini-3.7" in target_managed_model.lower() and target_region == "us-central1":
+        elif (
+            "gemini-3.7" in target_managed_model.lower()
+            or "gemini-3.5" in target_managed_model.lower()
+            or "gemini-3.1" in target_managed_model.lower()
+            or "gemma-4" in target_managed_model.lower()
+        ) and target_region == "us-central1":
             target_region = "global"
 
         try:
             from google import genai
             from google.genai import types
             client = genai.Client(vertexai=True, project=self.project_id, location=target_region)
-            config = types.GenerateContentConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-                system_instruction=self.system_instruction,
-            )
+            if max_tokens is not None:
+                config = types.GenerateContentConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_tokens,
+                    system_instruction=self.system_instruction,
+                )
+            else:
+                config = types.GenerateContentConfig(
+                    temperature=temperature,
+                    system_instruction=self.system_instruction,
+                )
             chat = client.chats.create(model=target_managed_model, config=config)
             res = chat.send_message(prompt)
             prompt_cnt = getattr(res.usage_metadata, "prompt_token_count", int(len(prompt.split()) * 1.3))

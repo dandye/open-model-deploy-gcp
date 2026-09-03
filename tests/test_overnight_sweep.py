@@ -63,11 +63,15 @@ def test_build_model_queue_contains_all_models():
     queue = orchestrator.build_queue()
     flavors = [t.flavor for t in queue]
 
-    # Managed Baselines
-    assert "gemini-3.5-flash-lite" in flavors
+    # Managed & Partner Baselines
+    assert "gemini-2.5-flash-lite" in flavors
     assert "gemini-2.5-flash" in flavors
     assert "gemini-2.5-pro" in flavors
+    assert "gemini-3.1-flash-lite" in flavors
+    assert "gemini-3.5-flash-lite" in flavors
     assert "gemini-3.7-flash" in flavors
+    assert "gemma-4-26b-a4b-it-maas" in flavors
+    assert "muse-spark-1.3" in flavors
 
     # Gemma 4 (Dense + Speculative + Two-Model Draft)
     assert "gemma-4-e2b-it" in flavors
@@ -105,7 +109,7 @@ def test_build_model_queue_contains_all_models():
     assert "gemma-2-27b-it-fp8" in flavors
     assert "gemma-2-27b-it-speculative" in flavors
 
-    assert len(queue) == 34
+    assert len(queue) == 38
 
 
 

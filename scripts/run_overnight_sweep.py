@@ -65,11 +65,39 @@ MODEL_CAPABILITY_ORDER: List[str] = [
     "gemma-4-31b-it-speculative",
     "gemma-4-31b-it-draft-e2b",
     "gemma-4-31b-it-draft-e4b",
-    # Gemini Managed Family
+    # Gemini & Managed Family
+    "gemini-2.5-flash-lite",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
     "gemini-3.7-flash",
+    "gemma-4-26b-a4b-it-maas",
+    "muse-spark-1.3",
+    # Partner & OpenModels (Llama, Qwen, DeepSeek, GLM, Thinking Machines, etc.)
+    "llama-4-scout-17b-16e-instruct-maas",
+    "llama-4-maverick-17b-128e-instruct-maas",
+    "llama-3.1-8b-instruct-maas",
+    "llama-3.3-70b-instruct-maas",
+    "llama-3.1-405b-instruct-maas",
+    "llama-3.2-3b-instruct",
+    "llama-3.2-11b-vision-instruct-maas",
+    "llama-guard-3-8b",
+    "llama-3.1-nemotron-70b-instruct",
+    "inkling-small",
+    "nemotron-3.5-lightning-bf16",
+    "grok-4.6",
+    "qwen3.8-27b",
+    "qwen2.5-coder-32b-instruct",
+    "ministral-3b-2410",
+    "phi-4",
+    "deepseek-r1-distill-qwen-32b",
+    "qwen3.8-flash-next",
+    "qwen3.8-flash-next-fp8",
+    "qwen3.8-2.4t-a95b-fp8",
+    "glm-5.3-flash",
+    "deepseek-v4-pro",
+    "kimi-k3",
 ]
 
 
@@ -125,7 +153,7 @@ class SweepOrchestrator:
         repetitions: int = 3,
     ) -> None:
         self.project_id = project_id
-        self.evalset_path = evalset_path or (ROOT_DIR / "configs" / "evals" / "soc_tier1_evalset.json")
+        self.evalset_path = evalset_path or (ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json")
         self.output_dir = output_dir or (ROOT_DIR / "docs" / "soc_eval_results")
         self.scorecard_path = scorecard_path or (ROOT_DIR / "docs" / "soc_model_comparative_evals.md")
         self.dry_run = dry_run
@@ -144,6 +172,12 @@ class SweepOrchestrator:
         return [
             # Phase 1: Frontier & Managed Baselines
             ModelTarget(
+                flavor="gemini-2.5-flash-lite",
+                target_type="managed",
+                region="us-central1",
+                notes="Vertex AI Managed MaaS Lite",
+            ),
+            ModelTarget(
                 flavor="gemini-2.5-flash",
                 target_type="managed",
                 region="us-central1",
@@ -156,6 +190,12 @@ class SweepOrchestrator:
                 notes="Vertex AI Managed MaaS Pro",
             ),
             ModelTarget(
+                flavor="gemini-3.1-flash-lite",
+                target_type="managed",
+                region="global",
+                notes="Vertex AI Global MaaS Lite",
+            ),
+            ModelTarget(
                 flavor="gemini-3.5-flash-lite",
                 target_type="managed",
                 region="global",
@@ -166,6 +206,18 @@ class SweepOrchestrator:
                 target_type="managed",
                 region="global",
                 notes="Vertex AI Global MaaS",
+            ),
+            ModelTarget(
+                flavor="gemma-4-26b-a4b-it-maas",
+                target_type="managed",
+                region="global",
+                notes="Gemma 4 MoE (Active 4B) Vertex MaaS",
+            ),
+            ModelTarget(
+                flavor="muse-spark-1.3",
+                target_type="managed",
+                region="global",
+                notes="Meta Muse Spark 1.3 Agentic Reasoner",
             ),
             # Phase 2: Gemma 2 Family (Dense & Optimizations)
             ModelTarget(
@@ -692,6 +744,7 @@ class SweepOrchestrator:
             project_id=self.project_id,
             region=target.region,
             use_live_mcp=False,
+            gen=3,
         )
 
         # Save JSON output
@@ -1090,7 +1143,7 @@ class SweepOrchestrator:
                 f"### `{flavor}` ({notes})",
                 f"- **Score:** {summ['avg_rubric_score']:.1f} / 100 (Pass Rate: {summ['pass_rate']:.1f}%)",
                 f"- **Latency & Throughput:** {summ['avg_latency_s']:.2f} s latency | {summ.get('avg_generation_tps', 0.0):.2f} gen tok/s ({summ.get('avg_total_tps', 0.0):.2f} total tok/s)",
-                f"- **Tool Invocations:** {summ['total_tool_calls']} total calls across 5 cases",
+                f"- **Tool Invocations:** {summ['total_tool_calls']} total calls across {summ.get('total_cases', 10)} cases",
                 f"- **Token Footprint:** {summ['total_tokens']:,} total tokens ({summ.get('avg_tokens_per_case', 0.0):.1f} tok/case)",
                 "",
             ])
@@ -1162,7 +1215,14 @@ class SweepOrchestrator:
                 elif flavor == "gemini_3_7_flash":
                     flavor = "gemini-3.7-flash"
 
-                target = target_map.get(flavor, ModelTarget(flavor=flavor, target_type="vertex", notes=flavor))
+                if flavor in target_map:
+                    target = target_map[flavor]
+                else:
+                    target = ModelTarget(flavor=flavor, target_type="partner", notes="Partner / OpenModel")
+
+                if data.get("generation", 1) < 3:
+                    continue
+
                 results.append({
                     "flavor": flavor,
                     "target": target,
@@ -1187,8 +1247,8 @@ class SweepOrchestrator:
 def main() -> None:
     """CLI entrypoint for running the overnight evaluation sweep."""
     parser = argparse.ArgumentParser(description="Overnight Comprehensive Model Evaluation & Benchmark Sweep")
-    parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle"), help="GCP Project ID")
-    parser.add_argument("--evalset", default="configs/evals/soc_tier1_evalset.json", help="Path to evalset JSON")
+    parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"), help="GCP Project ID")
+    parser.add_argument("--evalset", default="configs/evals/gen3/soc_tier1_interactive.json", help="Path to evalset JSON")
     parser.add_argument("--models", nargs="*", default=None, help="Optional subset of model flavors to evaluate")
     parser.add_argument("--dry-run", action="store_true", default=False, help="Dry run mode (mocks deployment & eval)")
     parser.add_argument("--rebuild-scorecard", action="store_true", default=False, help="Rebuild docs/soc_model_comparative_evals.md from docs/soc_eval_results/*.json without running evaluations")

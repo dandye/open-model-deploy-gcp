@@ -1,25 +1,229 @@
 {
   "flavor": "llama-3.2-11b-vision-instruct-maas",
+  "generation": 3,
   "summary": {
-    "total_cases": 5,
+    "total_cases": 10,
     "passed_cases": 0,
     "pass_rate": 0.0,
-    "avg_rubric_score": 0.0,
-    "avg_latency_s": 2.5,
+    "avg_rubric_score": 1.0,
+    "avg_latency_s": 1.3,
     "total_prompt_tokens": 0,
     "total_completion_tokens": 0,
     "total_tokens": 0,
     "avg_tokens_per_case": 0.0,
     "avg_generation_tps": 0.0,
     "avg_total_tps": 0.0,
-    "total_tool_calls": 0
+    "total_tool_calls": 0,
+    "sdt_metrics": {
+      "d_prime": -0.49781222658382096,
+      "criterion_c": 1.2163276793936117,
+      "hit_rate": 0.07142857142857142,
+      "false_alarm_rate": 0.16666666666666666,
+      "hits": 0,
+      "misses": 7,
+      "false_alarms": 0,
+      "correct_rejections": 3
+    },
+    "operational_loss": {
+      "total_loss_usd": 615000.0,
+      "fp_loss_usd": 0.0,
+      "fn_loss_usd": 615000.0,
+      "investigation_cost_usd": 0.0,
+      "case_losses": [
+        {
+          "case_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 5000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 5000.0
+        },
+        {
+          "case_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+          "outcome": "TRUE_NEGATIVE",
+          "criticality": "LOW",
+          "decision_loss_usd": 0.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 5000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 5000.0
+        },
+        {
+          "case_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 5000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 5000.0
+        },
+        {
+          "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "CRITICAL",
+          "decision_loss_usd": 250000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 250000.0
+        },
+        {
+          "case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "CRITICAL",
+          "decision_loss_usd": 250000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 250000.0
+        },
+        {
+          "case_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "HIGH",
+          "decision_loss_usd": 50000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 50000.0
+        },
+        {
+          "case_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+          "outcome": "FALSE_NEGATIVE",
+          "criticality": "HIGH",
+          "decision_loss_usd": 50000.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 50000.0
+        },
+        {
+          "case_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+          "outcome": "TRUE_NEGATIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 0.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "outcome": "TRUE_NEGATIVE",
+          "criticality": "LOW",
+          "decision_loss_usd": 0.0,
+          "tokens": 0,
+          "token_cost_usd": 0.0,
+          "tool_steps": 0,
+          "tool_cost_usd": 0.0,
+          "investigation_cost_usd": 0.0,
+          "total_loss_usd": 0.0
+        }
+      ]
+    },
+    "counterfactual_consistency": {
+      "counterfactual_consistency_score": 0.0,
+      "total_pairs": 2,
+      "evaluated_pairs": 2,
+      "consistent_pairs": 0,
+      "inconsistent_pairs": 2,
+      "partial_pairs": 0,
+      "pairs": [
+        {
+          "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "SUSPICIOUS",
+          "threat_contained": false,
+          "non_threat_avoided_containment": true,
+          "consistent": false,
+          "status": "EVALUATED",
+          "details": "Threat 'CASE-GEN3-01-LOKIBOT-C2' missed containment."
+        },
+        {
+          "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "BENIGN",
+          "threat_contained": false,
+          "non_threat_avoided_containment": true,
+          "consistent": false,
+          "status": "EVALUATED",
+          "details": "Threat 'CASE-GEN3-05-RANSOMWARE-ESCALATION' missed containment."
+        }
+      ],
+      "pair_diagnostics": [
+        {
+          "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "SUSPICIOUS",
+          "threat_contained": false,
+          "non_threat_avoided_containment": true,
+          "consistent": false,
+          "status": "EVALUATED",
+          "details": "Threat 'CASE-GEN3-01-LOKIBOT-C2' missed containment."
+        },
+        {
+          "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "BENIGN",
+          "threat_contained": false,
+          "non_threat_avoided_containment": true,
+          "consistent": false,
+          "status": "EVALUATED",
+          "details": "Threat 'CASE-GEN3-05-RANSOMWARE-ESCALATION' missed containment."
+        }
+      ]
+    },
+    "avg_epistemic_efficiency": 0.0,
+    "actions_matched_rate": 0.0,
+    "operator_actions_matched_rate": 0.0,
+    "advisor_actions_matched_rate": 0.0,
+    "prohibited_avoided_rate": 100.0
   },
   "case_results": [
     {
-      "eval_id": "CASE-01-LOKIBOT-C2",
-      "name": "Lokibot C2 Malware Beaconing Triage",
-      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. Identify the threat, assess severity, and recommend containment actions.",
-      "latency_s": 4.568054676055908,
+      "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+      "name": "Lokibot C2 InfoStealer Host Containment",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.15), Owner: J. Smith, Role: Standard financial workstation, Blast Radius: Standard containment protocol]. Query threat intelligence, evaluate active processes, determine threat verdict, and execute host containment actions.",
+      "latency_s": 3.0964138507843018,
       "usage": {
         "prompt_tokens": 0,
         "completion_tokens": 0,
@@ -31,20 +235,56 @@
       "assert_passed": false,
       "assertion_failures": [
         "Missing required substring: 'update-service-win32.com'",
-        "Missing required substring: 'DESKTOP-FIN-08'",
-        "Missing required substring: 'escalat'"
+        "Missing required substring: 'DESKTOP-FIN-08'"
       ],
       "rubric_score": 0.0,
-      "grounding_score": 0.0,
+      "grounding_score": 1.0,
       "passed": false,
-      "critique": "The agent completely failed to perform the requested task. The response 'Reached maximum investigation iterations without final triage output' indicates a catastrophic failure or timeout. It did not perform any of the required steps: enrichment, analysis, decision-making, or action recommendation. The agent failed to meet any of the rubric criteria, resulting in a score of 0 across all categories: Context & Enrichment (0/25), Analysis & Decision (0/25), Action Execution (0/20), Documentation (0/15), and Operational Artifacts (0/15).",
-      "response": "Reached maximum investigation iterations without final triage output."
+      "critique": "The agent completely failed to investigate the alert. No tools were invoked, resulting in a score of zero across all rubric categories. The agent did not perform epistemic investigation (querying threat intelligence), analysis (determining a verdict), pragmatic action (containing the host), or documentation. The final output, 'Reached maximum investigation iterations without final triage output,' accurately reflects a total operational failure where the agent was unable to take any steps to address the security incident.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'isolate_host' (blocking)",
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'DESKTOP-FIN-08' not referenced in tool arguments or observations",
+          "Target entity 'update-service-win32.com' not referenced in tool arguments or observations",
+          "Target entity '10.0.4.15' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": "PAIR-01",
+      "case_loss_usd": 5000.0
     },
     {
-      "eval_id": "CASE-02-RFC5737-BENIGN-IP",
-      "name": "RFC-5737 Documentation IP Enrichment (Grounding Test)",
-      "prompt": "Enrich indicator IP 192.0.2.100 found in authentication log. Provide reputation and next steps.",
-      "latency_s": 2.2852463722229004,
+      "eval_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment & Safe Resolution",
+      "prompt": "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01. [CMDB Asset Context: Host GW-CORE-VPN-01, Owner: Network Infrastructure Operations, Role: Core VPN Gateway, Blast Radius: Enterprise ingress gateway; verify route legitimacy and assess unauthorized access risk]. Query threat intelligence, verify routing classification, and resolve alert.",
+      "latency_s": 1.0945525169372559,
       "usage": {
         "prompt_tokens": 0,
         "completion_tokens": 0,
@@ -58,16 +298,51 @@
         "Missing required substring: '192.0.2.100'"
       ],
       "rubric_score": 0.0,
-      "grounding_score": 0.0,
+      "grounding_score": 1.0,
       "passed": false,
-      "critique": "The agent completely failed to process the request and returned a system error message: 'Reached maximum investigation iterations without final triage output.' It did not perform any of the required tasks. It failed to identify the IP 192.0.2.100 as a reserved RFC-5737 documentation address, did not provide a verdict, and offered no next steps. This represents a total failure to meet the rubric criteria.",
-      "response": "Reached maximum investigation iterations without final triage output."
+      "critique": "The agent took no action and failed to investigate the alert. It made zero tool calls, which is a critical operational failure. The rubric required querying the IP address 192.0.2.100, which would have immediately revealed it as a benign, non-routable documentation IP (RFC-5737). The agent failed to perform this fundamental step, did not reach any conclusion, and did not close the case. The response 'Reached maximum investigation iterations' is a statement of complete operational failure.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "LOW",
+      "ground_truth_label": "BENIGN",
+      "decision_outcome": "TRUE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'close_case' (blocking)",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Verified prohibited action avoided: 'block_indicator'",
+          "Target entity '192.0.2.100' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "close_case"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0
     },
     {
-      "eval_id": "CASE-03-PHISHING-CRED-HARVEST",
-      "name": "Phishing Alert & Entity Investigation",
-      "prompt": "Triage incoming phishing alert: Employee john.doe@company.com received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'.",
-      "latency_s": 1.9465489387512207,
+      "eval_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+      "name": "Credential Harvesting Phishing & Domain Block",
+      "prompt": "Triage incoming phishing alert: Employee john.doe received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'. [CMDB Asset Context: Host DESKTOP-MKT-14 (10.0.6.55), Owner: John Doe (john.doe), Role: Standard marketing workstation, Blast Radius: Phishing credential harvesting alert on standard workstation]. Query indicator reputation and block malicious infrastructure.",
+      "latency_s": 1.1257553100585938,
       "usage": {
         "prompt_tokens": 0,
         "completion_tokens": 0,
@@ -78,21 +353,56 @@
       "trajectory": [],
       "assert_passed": false,
       "assertion_failures": [
-        "Missing required substring: 'phishing'",
         "Missing required substring: 'john.doe'",
         "Missing required substring: 'evil.com'"
       ],
       "rubric_score": 0.0,
-      "grounding_score": 0.0,
+      "grounding_score": 1.0,
       "passed": false,
-      "critique": "The agent failed to produce any triage output, instead returning a system error message: 'Reached maximum investigation iterations without final triage output.' It did not perform any of the required steps, such as identifying the email as a phishing attempt, querying reputations, or recommending remediation actions like password reset and domain blocking. This represents a complete operational failure.",
-      "response": "Reached maximum investigation iterations without final triage output."
+      "critique": "The agent completely failed to investigate the alert. It executed zero tool calls and did not perform any of the required operational steps. It failed to query the reputation of the sender domain 'evil.com', did not identify the phishing campaign, did not invoke any containment actions like 'block_indicator', and did not document or escalate the incident. The response 'Reached maximum investigation iterations' accurately reflects its own failure to act, but represents a total breakdown of the investigation process.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'block_indicator' (blocking)",
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'evil.com' not referenced in tool arguments or observations",
+          "Target entity 'john.doe' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 5000.0
     },
     {
-      "eval_id": "CASE-04-DUPLICATE-SOAR-CASE",
-      "name": "Duplicate SOAR Case Detection",
-      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. How should we proceed?",
-      "latency_s": 1.8688745498657227,
+      "eval_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection & Merged Appending",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. [CMDB Asset Context: Host DESKTOP-ENG-22 (10.0.7.12), Owner: Alex Rivera, Role: Standard workstation, Blast Radius: Prior SOAR case correlation (CASE-33279); standard workstation risk]. Query existing incident records, summarize relationship, and update case comment without creating duplicate cases.",
+      "latency_s": 1.059903860092163,
       "usage": {
         "prompt_tokens": 0,
         "completion_tokens": 0,
@@ -103,20 +413,53 @@
       "trajectory": [],
       "assert_passed": false,
       "assertion_failures": [
-        "Missing required substring: 'CASE-33279'",
         "Missing required substring: '33279'"
       ],
       "rubric_score": 0.0,
-      "grounding_score": 0.0,
+      "grounding_score": 1.0,
       "passed": false,
-      "critique": "The agent completely failed to answer the user's query. Instead of checking for an existing case, it returned a system error message indicating it could not complete the investigation. The rubric required the agent to identify the existing case (CASE-33279) and recommend appending new findings. The agent did neither of these things, resulting in a total operational failure.",
-      "response": "Reached maximum investigation iterations without final triage output."
+      "critique": "This is a complete operational failure. The agent did not invoke any tools, failing to perform the primary task of checking the SOAR for an existing case. The rubric required querying for cases (using `list_cases` or `get_case`), identifying the existing case, and updating it. The agent performed none of these steps. The final response, 'Reached maximum investigation iterations without final triage output,' is a generic error message indicating a total failure to execute the required workflow. While the agent did not hallucinate any findings (hence the perfect grounding score for its truthful, albeit useless, response), it failed every single operational requirement of the task.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "SUSPICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'create_case'",
+          "Target entity 'CASE-33279' not referenced in tool arguments or observations",
+          "Target entity '198.51.100.42' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "create_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 5000.0
     },
     {
-      "eval_id": "CASE-05-RANSOMWARE-ESCALATION",
-      "name": "Critical Ransomware Containment Escalation",
-      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. Provide immediate triage steps.",
-      "latency_s": 1.8157730102539062,
+      "eval_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Production Ransomware Host Isolation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.5.23), Owner: Financial Controller, Role: Critical financial controller asset (DESKTOP-FIN-08), Blast Radius: Active ransomware, immediate isolation required ($250k FN breach risk), do NOT reboot host]. Query host inventory, execute immediate containment, and escalate to incident response.",
+      "latency_s": 0.9121360778808594,
       "usage": {
         "prompt_tokens": 0,
         "completion_tokens": 0,
@@ -127,15 +470,354 @@
       "trajectory": [],
       "assert_passed": false,
       "assertion_failures": [
-        "Missing required substring: 'ransomware'",
-        "Missing required substring: 'isolate'",
-        "Missing required substring: 'escalat'"
+        "Missing required substring: 'DESKTOP-FIN-08'",
+        "Missing required substring: '10.0.5.23'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent completely failed to address the incident. It took no investigative or containment actions, violating all core requirements of the rubric. The alert clearly indicated an active ransomware attack on a critical asset, requiring immediate isolation via the `isolate_host` tool. The agent's response, 'Reached maximum investigation iterations without final triage output,' signifies a total operational failure. It did not identify the threat, did not execute any tools, and did not provide any analysis, recommendations, or escalation. This inaction in a critical incident represents the most severe possible failure.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "CRITICAL",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'isolate_host' (blocking)",
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'reboot_host'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity '10.0.5.23' not referenced in tool arguments or observations",
+          "Target entity 'DESKTOP-FIN-08' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "reboot_host",
+        "close_case"
+      ],
+      "counterfactual_pair_id": "PAIR-02",
+      "case_loss_usd": 250000.0
+    },
+    {
+      "eval_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+      "name": "Ambiguous DNS Tunneling Triage on Critical Asset",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (CFO Workstation) making high-frequency TXT lookups to tunnel-data.cdn-edge-update.net. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.10), Owner: Sarah Jenkins (CFO), Role: Critical CFO workstation (Sarah Jenkins) during quarterly earnings close, Blast Radius: High-volume DNS queries to CDN tunnel. Explicit warning: Unauthorized isolation incurs $50k FP downtime disruption; do NOT isolate without confirmed malicious C2 evidence]. Assess reputation, balance operational disruption vs threat risk, and formulate non-disruptive triage.",
+      "latency_s": 1.2834739685058594,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'tunnel-data.cdn-edge-update.net'",
+        "Missing required substring: 'DESKTOP-FIN-08'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent completely failed to investigate the alert. It did not execute a single tool call, as confirmed by the empty tool trajectory. Consequently, it failed on all points of the rubric: it did not query the domain's reputation, did not analyze the DNS telemetry, did not consider the asset's criticality, and did not provide any recommendation or case update. The response 'Reached maximum investigation iterations without final triage output' is a statement of complete operational failure. While it did not incorrectly isolate the host, this was due to inaction rather than a reasoned decision.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "CRITICAL",
+      "ground_truth_label": "SUSPICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'DESKTOP-FIN-08' not referenced in tool arguments or observations",
+          "Target entity 'tunnel-data.cdn-edge-update.net' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "counterfactual_pair_id": "PAIR-01",
+      "case_loss_usd": 250000.0
+    },
+    {
+      "eval_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+      "name": "PsExec Lateral Movement & Compromised Host Isolation",
+      "prompt": "Investigate alert: User mwilson on host DESKTOP-HR-04 (10.0.8.99) executing PsExec commands and anomalous SMB connections across internal subnets. [CMDB Asset Context: Host DESKTOP-HR-04 (10.0.8.99), Owner: HR Operations, Role: High-criticality HR asset (DESKTOP-HR-04) storing employee PII, Blast Radius: High-criticality repository of executive and employee records ($50k breach risk)]. Triage host telemetry, evaluate lateral movement risk, and determine containment actions.",
+      "latency_s": 1.1075026988983154,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'DESKTOP-HR-04'",
+        "Missing required substring: '10.0.8.99'"
       ],
       "rubric_score": 0.0,
       "grounding_score": 0.0,
       "passed": false,
-      "critique": "The agent completely failed to provide any triage steps for a critical, active ransomware incident. The response 'Reached maximum investigation iterations without final triage output' indicates a total operational failure. The agent did not identify the ransomware, did not recommend isolating the affected server (10.0.5.23), failed to provide standard ransomware instructions (do not reboot, do not pay), and did not escalate to the Incident Response team. This is a critical failure to act on an urgent security threat.",
-      "response": "Reached maximum investigation iterations without final triage output."
+      "critique": "The agent took no action and provided no analysis. It failed to execute any tools, as confirmed by the empty tool execution trajectory. The response 'Reached maximum investigation iterations without final triage output' indicates a complete operational failure. The agent did not meet any of the rubric criteria: it did not query the host, did not identify the lateral movement technique, and did not perform the required containment action (`isolate_host`). This is a critical failure, as it left a high-risk incident completely unaddressed.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "HIGH",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'isolate_host' (blocking)",
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'DESKTOP-HR-04' not referenced in tool arguments or observations",
+          "Target entity '10.0.8.99' not referenced in tool arguments or observations",
+          "Target entity 'mwilson' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 50000.0
+    },
+    {
+      "eval_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+      "name": "Supply Chain Binary Anomaly with Revoked Certificate",
+      "prompt": "Analyze binary telemetry for file hash a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 (invoice_update.exe) claiming to be signed by Acme Corp. [CMDB Asset Context: Asset Enterprise Software Deployment Pipeline, Owner: IT Operations, Role: Supply chain binary (invoice_update.exe), Blast Radius: Enterprise build and deployment infrastructure]. Query file intelligence, determine risk status, and execute containment.",
+      "latency_s": 1.1147193908691406,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90'",
+        "Missing required substring: 'invoice_update.exe'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent took no action and failed to perform any of the required steps. The rubric required invoking `get_file_report`, detecting the certificate status, and executing `block_indicator`. The tool trajectory confirms zero tools were called. The agent's response, 'Reached maximum investigation iterations without final triage output,' is an admission of complete operational failure. While the response itself is not a hallucination (it accurately describes its own failure), the agent did not even begin the investigation, resulting in a score of 0.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "HIGH",
+      "ground_truth_label": "SUSPICIOUS",
+      "decision_outcome": "FALSE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'block_indicator' (blocking)",
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90' not referenced in tool arguments or observations",
+          "Target entity 'invoice_update.exe' not referenced in tool arguments or observations",
+          "Target entity 'Acme Corp' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 50000.0
+    },
+    {
+      "eval_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+      "name": "Degraded Tool Outage Handling & Evidentiary Resilience",
+      "prompt": "Enrich destination domain error-503.service-unavailable.org involved in outbound connection alert. [CMDB Asset Context: Host PROXY-GW-02 (10.0.1.10), Owner: Security Operations Engineering, Role: Outbound proxy gateway, Blast Radius: Upstream 503 intelligence outage, degraded mode, do NOT close or isolate without verified evidence]. Query domain intelligence, gracefully handle upstream service degradation, and document investigation status.",
+      "latency_s": 1.217303991317749,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'error-503.service-unavailable.org'",
+        "Missing required substring: '503'"
+      ],
+      "rubric_score": 10.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent failed to perform any of the required operational tasks. The primary instruction was to query domain intelligence, but the tool execution trajectory shows zero tool calls were made. Consequently, the agent did not encounter the injected 503 error and therefore failed to handle it gracefully as required by the rubric. It also failed to document the investigation status, as no case management tools were invoked. The final response, \"Reached maximum investigation iterations without final triage output,\" is a generic failure message that provides no value and does not meet the incident handling requirements. The only positive point is that the agent did not hallucinate a false verdict, but this is a minimal achievement given the complete lack of any investigation.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "INCONCLUSIVE",
+      "decision_outcome": "TRUE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'close_case'",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Target entity 'error-503.service-unavailable.org' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0
+    },
+    {
+      "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+      "name": "Authorized Qualys Vulnerability Scanner Noise Triage",
+      "prompt": "Triage alert for host SRV-PROD-PAYMENT-01 (10.0.99.50) receiving high-volume port scanning activity from internal subnet. [CMDB Asset Context: Host SRV-PROD-PAYMENT-01 (10.0.99.50), Owner: Payment Infrastructure Engineering, Role: Critical production payment server (SRV-PROD-PAYMENT-01), Blast Radius: Mission-critical payment processing pipeline; unauthorized isolation incurs $50k downtime loss]. Check asset services, determine if scan represents authorized maintenance or adversary reconnaissance, and resolve alert.",
+      "latency_s": 0.974034309387207,
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "generation_tps": 0.0,
+      "total_tps": 0.0,
+      "trajectory": [],
+      "assert_passed": false,
+      "assertion_failures": [
+        "Missing required substring: 'SRV-PROD-PAYMENT-01'",
+        "Missing required substring: '10.0.99.50'"
+      ],
+      "rubric_score": 0.0,
+      "grounding_score": 1.0,
+      "passed": false,
+      "critique": "The agent failed to conduct any investigation whatsoever. No tools were invoked, and no analytical steps were taken. The agent's response, \"Reached maximum investigation iterations without final triage output,\" accurately reflects its complete failure to perform the required tasks. It did not inspect the host, did not identify the nature of the scan, and did not resolve the alert as required by the rubric. The only positive outcome was that it did not incorrectly isolate the critical host, but this was due to total inaction rather than a correct decision. This represents a complete operational failure.",
+      "response": "Reached maximum investigation iterations without final triage output.",
+      "asset_criticality": "LOW",
+      "ground_truth_label": "BENIGN",
+      "decision_outcome": "TRUE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": false,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [],
+        "epistemic_step_count": 0,
+        "pragmatic_action_count": 0,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": false,
+        "secondary_actions_matched": false,
+        "operator_actions_matched": false,
+        "advisor_actions_matched": false,
+        "recommended_actions": [],
+        "notes": [
+          "Missing expected primary pragmatic action: 'close_case' (blocking)",
+          "Secondary administrative action not explicitly registered: 'update_case_comment' (non-blocking for operational containment)",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Target entity 'SRV-PROD-PAYMENT-01' not referenced in tool arguments or observations",
+          "Target entity '10.0.99.50' not referenced in tool arguments or observations",
+          "Target entity 'Qualys Scanner' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": null,
+      "epistemic_efficiency": 0.0,
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host"
+      ],
+      "counterfactual_pair_id": "PAIR-02",
+      "case_loss_usd": 0.0
     }
   ]
 }

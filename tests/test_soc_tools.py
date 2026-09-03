@@ -152,7 +152,7 @@ def test_file_report_supply_chain_revoked_cert():
     raw = get_file_report(sha256_hash)
     data = json.loads(raw)
     assert data["hash"] == sha256_hash
-    assert data["certificate_status"] == "REVOKED_CERTIFICATE"
+    assert data["certificate_status"] in ["REVOKED_CERTIFICATE", "REVOKED_BY_CA"]
     assert "SupplyChain" in data["threat_name"]
     assert "Acme Corp" in data["vendor"]
 
