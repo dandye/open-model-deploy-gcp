@@ -177,14 +177,20 @@ class SOCTier1Response(dict):
         return dict(self)
 
 
-def load_runbook(runbook_name: str, runbooks_dir: Optional[Path] = None) -> str:
-    """Loads markdown content for a given runbook from the repository submodule."""
-    base_dir = runbooks_dir or DEFAULT_RUNBOOKS_DIR
-    target_path = base_dir / runbook_name
-    if target_path.exists():
-        return target_path.read_text(encoding="utf-8")
+def load_runbook(
+    runbook_name: str,
+    runbooks_dir: Optional[Union[Path, str]] = None,
+    runbooks_dict: Optional[Dict[str, str]] = None,
+) -> str:
+    """Loads markdown content for a given runbook from dictionary, directory, or repository submodule."""
+    if runbooks_dict is not None and runbook_name in runbooks_dict:
+        return runbooks_dict[runbook_name]
 
-    # Check fallback directory under ROOT_DIR if runbooks_dir is custom
+    if runbooks_dir is not None:
+        custom_path = Path(runbooks_dir) / runbook_name
+        if custom_path.exists():
+            return custom_path.read_text(encoding="utf-8")
+
     fallback_path = DEFAULT_RUNBOOKS_DIR / runbook_name
     if fallback_path.exists():
         return fallback_path.read_text(encoding="utf-8")
@@ -525,7 +531,8 @@ class SOCSupervisorAgent(GemmaAgent):
         managed_model: Optional[str] = None,
         use_live_mcp: bool = False,
         environment: Optional[Any] = None,
-        runbooks_dir: Optional[Path] = None,
+        runbooks_dir: Optional[Union[Path, str]] = None,
+        runbooks_dict: Optional[Dict[str, str]] = None,
         use_runbooks: bool = True,
     ):
         super().__init__(
@@ -539,7 +546,8 @@ class SOCSupervisorAgent(GemmaAgent):
         )
         self.use_live_mcp = use_live_mcp
         self.environment = environment
-        self.runbooks_dir = runbooks_dir or DEFAULT_RUNBOOKS_DIR
+        self.runbooks_dir = Path(runbooks_dir) if runbooks_dir is not None else DEFAULT_RUNBOOKS_DIR
+        self.runbooks_dict = runbooks_dict
         self.use_runbooks = use_runbooks
         self.name = "hierarchical_soc_supervisor"
         self.last_backend: str = "Unknown"
@@ -951,7 +959,7 @@ class SOCSupervisorAgent(GemmaAgent):
         # 2. Runbook Mapping & Loading
         if self.use_runbooks:
             runbook_name = self.get_runbook_for_classification(classification)
-            runbook_content = load_runbook(runbook_name, self.runbooks_dir)
+            runbook_content = load_runbook(runbook_name, self.runbooks_dir, self.runbooks_dict)
         else:
             runbook_name = "none"
             runbook_content = ""

@@ -279,6 +279,7 @@ def run_evaluation(
     gen: int = 3,
     agent_mode: str = "single",
     use_runbooks: bool = True,
+    runbooks_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     chron_proj = chronicle_project or os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
@@ -337,6 +338,7 @@ def run_evaluation(
             use_live_mcp=use_live_mcp,
             environment=soc_env,
             use_runbooks=use_runbooks,
+            runbooks_dir=Path(runbooks_dir) if runbooks_dir else None,
         )
     else:
         agent = SocTier1Agent(
@@ -754,6 +756,12 @@ def main() -> None:
         default=True,
         help="Enable procedural runbooks in hierarchical agent mode",
     )
+    parser.add_argument(
+        "--runbooks-dir",
+        type=str,
+        default=None,
+        help="Directory containing custom or evolved runbook markdown files",
+    )
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
     args = parser.parse_args()
@@ -796,6 +804,7 @@ def main() -> None:
         gen=args.gen,
         agent_mode=args.agent_mode,
         use_runbooks=args.use_runbooks,
+        runbooks_dir=args.runbooks_dir,
     )
 
     # Save JSON raw artifacts

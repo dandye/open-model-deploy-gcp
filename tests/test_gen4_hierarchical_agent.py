@@ -541,3 +541,83 @@ def test_hierarchical_agent_with_runbooks_disabled():
     assert res.worker_report["runbook_name"] == "none"
     assert len(res.trajectory) >= 2
 
+
+def test_load_runbook_with_in_memory_dict():
+    """Verify load_runbook returns custom content when runbooks_dict is provided."""
+    custom_dict = {
+        "malware_triage.md": "# Custom In-Memory Malware Triage Runbook\nCustom instructions.",
+        "basic_ioc_enrichment.md": "# Custom IOC Enrichment Runbook\nEnrichment steps.",
+    }
+
+    # Found in dict
+    content = load_runbook("malware_triage.md", runbooks_dict=custom_dict)
+    assert content == "# Custom In-Memory Malware Triage Runbook\nCustom instructions."
+
+    # Not found in dict, falls back to default directory
+    content_default = load_runbook("suspicious_login_triage.md", runbooks_dict=custom_dict)
+    assert "Suspicious Login" in content_default or "Fallback Runbook" in content_default
+
+
+def test_load_runbook_with_custom_dir(tmp_path: Path):
+    """Verify load_runbook returns content from temporary custom directory."""
+    custom_dir = tmp_path / "custom_runbooks"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+    custom_file = custom_dir / "malware_triage.md"
+    custom_file.write_text("# Temp Dir Malware Runbook\nStep 1: Check hash.", encoding="utf-8")
+
+    # Found in custom directory
+    content = load_runbook("malware_triage.md", runbooks_dir=custom_dir)
+    assert content == "# Temp Dir Malware Runbook\nStep 1: Check hash."
+
+    # String path also accepted
+    content_str = load_runbook("malware_triage.md", runbooks_dir=str(custom_dir))
+    assert content_str == "# Temp Dir Malware Runbook\nStep 1: Check hash."
+
+
+def test_hierarchical_agent_with_runbooks_dict():
+    """Verify HierarchicalSOCTier1Agent initialized with runbooks_dict passes custom runbook to worker."""
+    custom_runbook_content = (
+        "# Custom EVOLVED Malware Runbook\n"
+        "## Steps\n"
+        "1. Check file hash with `get_file_report`.\n"
+    )
+    custom_dict = {
+        "malware_triage.md": custom_runbook_content,
+    }
+
+    agent = HierarchicalSOCTier1Agent(runbooks_dict=custom_dict)
+    assert agent.runbooks_dict == custom_dict
+
+    worker_runbook_seen = None
+
+    def mock_caller(prompt, max_tokens=None, temperature=0.2):
+        nonlocal worker_runbook_seen
+        # Capture the worker agent system instruction or caller prompt
+        return (
+            '[Context & Enrichment]\nHash checked\n\n[Findings & Evidence]\nMalicious file\n\n[Preliminary Risk Assessment]\nMALICIOUS\n\n```worker_report\n{"classification": "MALWARE_HASH", "target_entities": ["e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"], "risk_level": "MALICIOUS"}\n```',
+            {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
+        )
+
+    agent._call_llm_step = mock_caller
+
+    with patch("agent.hierarchical_soc_agent.SOCRunbookWorkerAgent") as mock_worker_cls:
+        mock_worker_instance = MagicMock()
+        mock_worker_cls.return_value = mock_worker_instance
+        mock_worker_instance.investigate.return_value = (
+            WorkerInvestigationReport(
+                classification="MALWARE_HASH",
+                runbook_name="malware_triage.md",
+                target_entities=["e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"],
+                risk_level="MALICIOUS",
+            ),
+            [],
+            {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
+        )
+
+        agent.query("Suspicious file hash e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 detected on workstation")
+
+        mock_worker_cls.assert_called_once()
+        _, kwargs = mock_worker_cls.call_args
+        assert kwargs["runbook_name"] == "malware_triage.md"
+        assert "Custom EVOLVED Malware Runbook" in kwargs["runbook_content"]
+
