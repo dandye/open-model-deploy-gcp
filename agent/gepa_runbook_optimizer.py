@@ -233,7 +233,12 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         agent_factory: Optional[Callable[..., Any]] = None,
     ):
         self.task_lm = task_lm
-        self.project_id = project_id
+        self.project_id = (
+            project_id
+            or os.environ.get("PROJECT_ID")
+            or os.environ.get("GCP_PROJECT_ID")
+            or "secops-demo-env"
+        )
         self.region = region
         self.use_live_mcp = use_live_mcp
         self.max_iterations = max_iterations

@@ -119,6 +119,7 @@ class SOCTier1Response(dict):
         classification: Optional[str] = None,
         runbook: Optional[str] = None,
         worker_report: Optional[Union[WorkerInvestigationReport, Dict[str, Any]]] = None,
+        verdict: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
         traj = trajectory or []
@@ -138,8 +139,13 @@ class SOCTier1Response(dict):
             classification=classification,
             runbook=runbook,
             worker_report=serialized_worker_report,
+            verdict=verdict,
             **kwargs,
         )
+
+    @property
+    def verdict(self) -> Optional[str]:
+        return self.get("verdict")
 
     @property
     def response(self) -> str:
@@ -638,6 +644,9 @@ class SOCSupervisorAgent(GemmaAgent):
         res = super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
         usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         if isinstance(res, dict):
+            if "error" in res:
+                import sys
+                print(f"[ERROR] LLM query error: {res.get('error')}", file=sys.stderr)
             self.last_backend = res.get("backend", "Unknown")
             usage = res.get("usage", usage)
             return res.get("response", ""), usage
@@ -1027,6 +1036,7 @@ class SOCSupervisorAgent(GemmaAgent):
             classification=classification,
             runbook=runbook_name,
             worker_report=worker_report,
+            verdict=decision.verdict if decision is not None else None,
         )
 
 

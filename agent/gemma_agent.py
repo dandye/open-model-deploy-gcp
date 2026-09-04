@@ -66,7 +66,12 @@ class GemmaAgent:
             system_instruction: Custom system persona and instruction.
             tools: Optional list of Python callables for function calling.
         """
-        self.project_id = project_id or os.environ.get("GCP_PROJECT_ID", "dandye-0324-chronicle")
+        self.project_id = (
+            project_id
+            or os.environ.get("PROJECT_ID")
+            or os.environ.get("GCP_PROJECT_ID")
+            or "secops-demo-env"
+        )
         self.region = region
         self.endpoint_id = endpoint_id
         self.cloudrun_url = cloudrun_url
