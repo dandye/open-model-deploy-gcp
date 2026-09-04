@@ -183,3 +183,237 @@ def test_calculate_case_fitness_weights():
         loss_penalty=0.368,
     )
     assert fitness_low == pytest.approx(0.3736, abs=1e-3)
+
+
+def test_google_genai_lm_call():
+    from agent.gepa_runbook_optimizer import GoogleGenAILM
+    from unittest.mock import MagicMock
+
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = "Optimized runbook content"
+    mock_client.models.generate_content.return_value = mock_response
+
+    lm = GoogleGenAILM(model="gemini-2.5-pro", client=mock_client)
+    result = lm("Generate runbook")
+
+    assert result == "Optimized runbook content"
+    mock_client.models.generate_content.assert_called_once()
+    call_kwargs = mock_client.models.generate_content.call_args.kwargs
+    assert call_kwargs["model"] == "gemini-2.5-pro"
+    assert "Generate runbook" in call_kwargs["contents"]
+
+
+def test_google_genai_lm_call_list_prompt():
+    from agent.gepa_runbook_optimizer import GoogleGenAILM
+    from unittest.mock import MagicMock
+
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = "Chat response"
+    mock_client.models.generate_content.return_value = mock_response
+
+    lm = GoogleGenAILM(model="gemini-2.5-pro", client=mock_client)
+    prompt_msgs = [
+        {"role": "user", "content": "Hello"},
+        {"role": "assistant", "content": "Hi there"},
+    ]
+    result = lm(prompt_msgs)
+    assert result == "Chat response"
+    mock_client.models.generate_content.assert_called_once()
+
+
+def test_runbook_gepa_adapter_evaluate():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    from unittest.mock import MagicMock
+    import gepa
+
+    candidate = {
+        "basic_ioc_enrichment.md": "# Basic IOC Enrichment\nRules",
+        "suspicious_login_triage.md": "# Suspicious Login\nRules",
+        "malware_triage.md": "# Malware Triage\nRules",
+        "lateral_movement_hunt_psexec_wmi.md": "# Lateral Movement\nRules",
+    }
+
+    batch = [
+        {
+            "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+            "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com.",
+            "ground_truth_label": "MALICIOUS",
+            "expected_actions": ["isolate_host", "update_case_comment"],
+            "prohibited_actions": ["close_case"],
+            "assertions": {
+                "must_contain": ["update-service-win32.com", "DESKTOP-FIN-08"],
+                "must_not_contain": ["False Positive", "confirmed benign"],
+            },
+        }
+    ]
+
+    mock_agent = MagicMock()
+    mock_response = MagicMock()
+    mock_response.response = "Identified Lokibot C2 connecting to update-service-win32.com on DESKTOP-FIN-08. Isolate host."
+    mock_response.trajectory = [
+        {"tool": "get_domain_report", "args": {"domain": "update-service-win32.com"}, "observation": "Malicious C2"},
+        {"tool": "isolate_host", "args": {"hostname": "DESKTOP-FIN-08"}, "observation": "Host isolated"},
+    ]
+    mock_response.get = MagicMock(side_effect=lambda k, default="": "MALICIOUS" if k == "verdict" else default)
+    mock_agent.query.return_value = mock_response
+
+    mock_agent_factory = MagicMock(return_value=mock_agent)
+
+    adapter = RunbookGEPAAdapter(agent_factory=mock_agent_factory)
+    eval_batch = adapter.evaluate(batch, candidate, capture_traces=True)
+
+    assert isinstance(eval_batch, gepa.EvaluationBatch)
+    assert len(eval_batch.scores) == 1
+    assert len(eval_batch.outputs) == 1
+    assert eval_batch.trajectories is not None
+    assert len(eval_batch.trajectories) == 1
+    assert eval_batch.scores[0] > 0.8
+    mock_agent_factory.assert_called_once()
+    assert mock_agent_factory.call_args.kwargs["runbooks_dict"] == candidate
+
+
+def test_runbook_gepa_adapter_make_reflective_dataset_rfc5737():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    import gepa
+
+    candidate = {
+        "basic_ioc_enrichment.md": "# Basic IOC Enrichment\nRules",
+    }
+
+    trace_case = {
+        "case_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+        "alert_type": "C2_BEACON",
+        "prompt": "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01.",
+        "cmdb_context": {"asset_id": "GW-CORE-VPN-01"},
+        "expected_verdict": "BENIGN",
+        "expected_actions": ["close_case"],
+        "prohibited_actions": ["isolate_host", "block_indicator"],
+        "actual_verdict": "MALICIOUS",
+        "executed_actions": ["isolate_host"],
+        "summary": "Falsely isolated host for RFC-5737 test IP 192.0.2.100.",
+        "score": 0.45,
+        "loss_penalty": 0.3678,
+        "assert_passed": False,
+        "component_name": "basic_ioc_enrichment.md",
+    }
+
+    eval_batch = gepa.EvaluationBatch(
+        outputs=["Response text"],
+        scores=[0.45],
+        trajectories=[trace_case],
+    )
+
+    adapter = RunbookGEPAAdapter()
+    reflective_dataset = adapter.make_reflective_dataset(
+        candidate=candidate,
+        eval_batch=eval_batch,
+        components_to_update=["basic_ioc_enrichment.md"],
+    )
+
+    assert "basic_ioc_enrichment.md" in reflective_dataset
+    records = reflective_dataset["basic_ioc_enrichment.md"]
+    assert len(records) == 1
+    rec = records[0]
+    assert "Inputs" in rec
+    assert "Generated Outputs" in rec
+    assert "Feedback" in rec
+    assert "RFC-5737" in rec["Feedback"]
+    assert "isolate" in rec["Feedback"].lower() or "benign" in rec["Feedback"].lower()
+
+
+def test_runbook_gepa_adapter_make_reflective_dataset_scanner():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    import gepa
+
+    candidate = {
+        "suspicious_login_triage.md": "# Suspicious Login Triage\nRules",
+    }
+
+    trace_case = {
+        "case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+        "alert_type": "SUSPICIOUS_LOGIN",
+        "prompt": "Triage alert for host SRV-PROD-PAYMENT-01 (10.0.99.50) receiving high-volume port scanning activity from internal subnet.",
+        "cmdb_context": {"asset_id": "SRV-PROD-PAYMENT-01"},
+        "expected_verdict": "BENIGN",
+        "expected_actions": ["close_case", "update_case_comment"],
+        "prohibited_actions": ["isolate_host"],
+        "actual_verdict": "MALICIOUS",
+        "executed_actions": ["isolate_host"],
+        "summary": "Falsely isolated production payment server for Qualys vulnerability scanner.",
+        "score": 0.40,
+        "loss_penalty": 0.3678,
+        "assert_passed": False,
+        "component_name": "suspicious_login_triage.md",
+    }
+
+    eval_batch = gepa.EvaluationBatch(
+        outputs=["Response text"],
+        scores=[0.40],
+        trajectories=[trace_case],
+    )
+
+    adapter = RunbookGEPAAdapter()
+    reflective_dataset = adapter.make_reflective_dataset(
+        candidate=candidate,
+        eval_batch=eval_batch,
+        components_to_update=["suspicious_login_triage.md"],
+    )
+
+    assert "suspicious_login_triage.md" in reflective_dataset
+    records = reflective_dataset["suspicious_login_triage.md"]
+    assert len(records) == 1
+    rec = records[0]
+    assert "Inputs" in rec
+    assert "Generated Outputs" in rec
+    assert "Feedback" in rec
+    assert "Qualys" in rec["Feedback"] or "scanner" in rec["Feedback"].lower()
+
+
+def test_runbook_gepa_adapter_make_reflective_dataset_missed_containment():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    import gepa
+
+    candidate = {
+        "malware_triage.md": "# Malware Triage\nRules",
+    }
+
+    trace_case = {
+        "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+        "alert_type": "MALWARE_HASH",
+        "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23.",
+        "cmdb_context": {"asset_id": "DESKTOP-FIN-08"},
+        "expected_verdict": "MALICIOUS",
+        "expected_actions": ["isolate_host", "update_case_comment"],
+        "prohibited_actions": ["close_case"],
+        "actual_verdict": "MALICIOUS",
+        "executed_actions": ["update_case_comment"],
+        "summary": "Failed to isolate host under active ransomware threat.",
+        "score": 0.50,
+        "loss_penalty": 1.0,
+        "assert_passed": True,
+        "component_name": "malware_triage.md",
+    }
+
+    eval_batch = gepa.EvaluationBatch(
+        outputs=["Response text"],
+        scores=[0.50],
+        trajectories=[trace_case],
+    )
+
+    adapter = RunbookGEPAAdapter()
+    reflective_dataset = adapter.make_reflective_dataset(
+        candidate=candidate,
+        eval_batch=eval_batch,
+        components_to_update=["malware_triage.md"],
+    )
+
+    assert "malware_triage.md" in reflective_dataset
+    records = reflective_dataset["malware_triage.md"]
+    assert len(records) == 1
+    rec = records[0]
+    assert "Missed containment" in rec["Feedback"]
+    assert "isolate_host" in rec["Feedback"] or "host isolation" in rec["Feedback"]
+
+

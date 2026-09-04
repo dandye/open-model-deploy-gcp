@@ -4,12 +4,30 @@ This module provides data structures, seed runbook loaders, serialization utilit
 and multi-objective fitness metrics for evolving cybersecurity incident response runbooks.
 """
 
+from collections.abc import Mapping, Sequence
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+import sys
+from typing import Any, Callable, Dict, List, Optional, Union
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+import gepa
+
+try:
+    from agent.hierarchical_soc_agent import HierarchicalSOCTier1Agent
+    from agent.soc_environment import SocEnvironment
+    from agent.soc_tier1_agent import extract_soc_decision
+except ModuleNotFoundError:
+    from hierarchical_soc_agent import HierarchicalSOCTier1Agent
+    from soc_environment import SocEnvironment
+    from soc_tier1_agent import extract_soc_decision
+
+from scripts.eval_soc_agent import evaluate_assertions
+from scripts.eval_trajectory_verifier import verify_agent_trajectory
 DEFAULT_RUNBOOKS_DIR = (
     ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books"
 )
@@ -144,3 +162,288 @@ def calculate_case_fitness(
         + 0.20 * float(loss_penalty)
     )
     return fitness
+
+
+class GoogleGenAILM:
+    """LanguageModel implementation using Google GenAI SDK for GEPA reflective mutation."""
+
+    def __init__(
+        self,
+        model: str = "gemini-2.5-pro",
+        project_id: Optional[str] = None,
+        location: str = "us-central1",
+        client: Optional[Any] = None,
+    ):
+        self.model = model
+        self.project_id = project_id
+        self.location = location
+        if client is not None:
+            self.client = client
+        else:
+            try:
+                from google import genai
+                self.client = genai.Client(
+                    project=self.project_id,
+                    location=self.location,
+                    vertexai=True,
+                )
+            except Exception:
+                self.client = None
+
+    def __call__(self, prompt: Union[str, List[Dict[str, Any]]]) -> str:
+        """Execute model generation for a prompt string or chat message list."""
+        if isinstance(prompt, str):
+            contents: Any = prompt
+        elif isinstance(prompt, list):
+            parts = []
+            for item in prompt:
+                if isinstance(item, dict):
+                    role = item.get("role", "user")
+                    text = item.get("content", "")
+                    parts.append(f"{role}: {text}")
+                else:
+                    parts.append(str(item))
+            contents = "\n".join(parts)
+        else:
+            contents = str(prompt)
+
+        if self.client is None:
+            raise RuntimeError("Google GenAI client is not configured.")
+
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=contents,
+            config={"temperature": 0.2},
+        )
+        return getattr(response, "text", "") or str(response or "")
+
+
+class RunbookGEPAAdapter(gepa.GEPAAdapter):
+    """GEPA adapter for evaluating and reflectively refining incident response runbooks."""
+
+    def __init__(
+        self,
+        task_lm: str = "gemini-2.5-flash-lite",
+        project_id: Optional[str] = None,
+        region: str = "us-central1",
+        use_live_mcp: bool = False,
+        max_iterations: int = 5,
+        agent_factory: Optional[Callable[..., Any]] = None,
+    ):
+        self.task_lm = task_lm
+        self.project_id = project_id
+        self.region = region
+        self.use_live_mcp = use_live_mcp
+        self.max_iterations = max_iterations
+        self.agent_factory = agent_factory or HierarchicalSOCTier1Agent
+
+    def evaluate(
+        self,
+        batch: List[Dict[str, Any]],
+        candidate: Dict[str, str],
+        capture_traces: bool = False,
+    ) -> gepa.EvaluationBatch:
+        """Evaluates runbook candidate against a batch of evaluation cases."""
+        outputs: List[str] = []
+        scores: List[float] = []
+        trajectories: List[Dict[str, Any]] = []
+
+        for case in batch:
+            try:
+                env = None
+                if not self.use_live_mcp:
+                    env = SocEnvironment()
+
+                agent = self.agent_factory(
+                    runbooks_dict=candidate,
+                    environment=env,
+                    managed_model=self.task_lm,
+                    project_id=self.project_id,
+                    region=self.region,
+                    use_live_mcp=self.use_live_mcp,
+                )
+
+                prompt = case.get("prompt", "")
+                response = agent.query(prompt, max_iterations=self.max_iterations)
+
+                resp_text = getattr(response, "response", "") or ""
+                agent_traj = getattr(response, "trajectory", []) or []
+
+                traj_verif = verify_agent_trajectory(
+                    trajectory=agent_traj,
+                    expected_actions=case.get("expected_actions", []),
+                    prohibited_actions=case.get("prohibited_actions", []),
+                    expected_entities=case.get("expected_entities", []),
+                    response_text=resp_text,
+                )
+
+                assertions = case.get("assertions", {}) or {}
+                must_contain = assertions.get("must_contain", [])
+                must_not_contain = assertions.get("must_not_contain", [])
+                assert_passed, _ = evaluate_assertions(
+                    resp_text,
+                    must_contain=must_contain,
+                    must_not_contain=must_not_contain,
+                )
+
+                epistemic_pts = 25.0 * min(1.0, traj_verif.epistemic_step_count / 1.0)
+                if traj_verif.operator_actions_matched:
+                    action_pts = 25.0
+                elif traj_verif.advisor_actions_matched:
+                    action_pts = 12.5
+                else:
+                    action_pts = 0.0
+
+                assertion_pts = 25.0 * (1.0 if assert_passed else 0.0)
+                rubric_normalized = (epistemic_pts + action_pts + assertion_pts + 25.0) / 100.0
+
+                actual_verdict = ""
+                if hasattr(response, "get"):
+                    actual_verdict = response.get("verdict", "")
+                if not actual_verdict:
+                    decision_obj = extract_soc_decision(resp_text)
+                    if decision_obj is not None:
+                        actual_verdict = getattr(decision_obj, "verdict", "")
+
+                loss_penalty = calculate_loss_penalty(
+                    expected_label=case.get("ground_truth_label", ""),
+                    actual_verdict=actual_verdict,
+                    executed_actions=traj_verif.executed_actions,
+                    prohibited_actions=case.get("prohibited_actions", []),
+                )
+
+                op_compliance = 1.0 if traj_verif.operator_actions_matched else 0.0
+                fitness = calculate_case_fitness(
+                    rubric_score=rubric_normalized,
+                    assertions_passed=assert_passed,
+                    operator_compliance=op_compliance,
+                    loss_penalty=loss_penalty,
+                )
+
+                outputs.append(resp_text)
+                scores.append(fitness)
+
+                if capture_traces:
+                    trajectories.append({
+                        "case_id": case.get("eval_id", case.get("id", "")),
+                        "alert_type": case.get("alert_type", getattr(response, "classification", "")),
+                        "prompt": prompt,
+                        "cmdb_context": case.get("cmdb_context", {}),
+                        "expected_verdict": case.get("ground_truth_label", ""),
+                        "expected_actions": case.get("expected_actions", []),
+                        "prohibited_actions": case.get("prohibited_actions", []),
+                        "actual_verdict": actual_verdict,
+                        "executed_actions": traj_verif.executed_actions,
+                        "summary": f"Case evaluated. Fitness: {fitness:.3f}, loss_penalty: {loss_penalty:.3f}, assert_passed: {assert_passed}",
+                        "score": fitness,
+                        "loss_penalty": loss_penalty,
+                        "assert_passed": assert_passed,
+                        "component_name": getattr(response, "runbook", ""),
+                        "trajectory": agent_traj,
+                    })
+
+            except Exception as e:
+                outputs.append(f"Evaluation error: {e}")
+                scores.append(0.0)
+                if capture_traces:
+                    trajectories.append({
+                        "case_id": case.get("eval_id", case.get("id", "")),
+                        "alert_type": case.get("alert_type", ""),
+                        "prompt": case.get("prompt", ""),
+                        "cmdb_context": case.get("cmdb_context", {}),
+                        "expected_verdict": case.get("ground_truth_label", ""),
+                        "expected_actions": case.get("expected_actions", []),
+                        "prohibited_actions": case.get("prohibited_actions", []),
+                        "actual_verdict": "ERROR",
+                        "executed_actions": [],
+                        "summary": f"Exception encountered during evaluation: {e}",
+                        "score": 0.0,
+                        "loss_penalty": 0.0,
+                        "assert_passed": False,
+                        "component_name": "",
+                        "trajectory": [],
+                    })
+
+        return gepa.EvaluationBatch(
+            outputs=outputs,
+            scores=scores,
+            trajectories=trajectories if capture_traces else None,
+        )
+
+    def make_reflective_dataset(
+        self,
+        candidate: Dict[str, str],
+        eval_batch: gepa.EvaluationBatch,
+        components_to_update: List[str],
+    ) -> Mapping[str, Sequence[Mapping[str, Any]]]:
+        """Builds diagnostic reflection records for teacher model runbook revision."""
+        dataset: Dict[str, List[Dict[str, Any]]] = {name: [] for name in components_to_update}
+        trajectories = eval_batch.trajectories or []
+
+        for comp_name in components_to_update:
+            for trace in trajectories:
+                trace_comp = trace.get("component_name", "")
+                # If trace specifies component_name, check match; otherwise match via classification or allow all
+                if trace_comp and trace_comp != comp_name:
+                    continue
+
+                score = trace.get("score", 1.0)
+                loss_pen = trace.get("loss_penalty", 1.0)
+                assert_pass = trace.get("assert_passed", True)
+
+                # Filter to underperforming cases
+                if score >= 0.95 and loss_pen >= 1.0 and assert_pass:
+                    continue
+
+                prompt = trace.get("prompt", "")
+                executed_actions = trace.get("executed_actions", [])
+                prohibited_actions = trace.get("prohibited_actions", [])
+                case_id = trace.get("case_id", "")
+
+                feedback_items: List[str] = []
+
+                if "192.0.2." in prompt or "RFC-5737" in prompt or "TEST-NET-1" in prompt:
+                    feedback_items.append(
+                        "RFC-5737 false alarm: IP address is in a reserved, non-routable documentation subnet. "
+                        "The runbook must explicitly instruct the agent to treat RFC-5737 test addresses as benign "
+                        "and never execute isolate_host or block_indicator on documentation ranges."
+                    )
+                elif "qualys" in prompt.lower() or "scanner" in prompt.lower() or "10.0.99.50" in prompt:
+                    feedback_items.append(
+                        "Qualys scanner false alarm: High-volume port scanning originated from or targeted an authorized "
+                        "vulnerability scanner on a production asset. The runbook must instruct the agent to check asset "
+                        "services in CMDB/inventory and avoid isolating authorized vulnerability scanners."
+                    )
+                elif "MALICIOUS" in trace.get("expected_verdict", "").upper() and "isolate_host" not in executed_actions:
+                    feedback_items.append(
+                        "Missed containment: Confirmed active malware or C2 activity requires immediate host isolation. "
+                        "The runbook must mandate host isolation for confirmed malicious threats."
+                    )
+                else:
+                    feedback_items.append(
+                        f"Triage operational failure: score={score:.2f}, loss_penalty={loss_pen:.2f}. "
+                        f"Prohibited actions executed: {[a for a in executed_actions if a in prohibited_actions]}. "
+                        "The runbook instructions should be clarified to avoid prohibited actions and adhere to operational guardrails."
+                    )
+
+                record = {
+                    "Inputs": {
+                        "case_id": case_id,
+                        "alert_type": trace.get("alert_type", ""),
+                        "prompt": prompt,
+                        "cmdb_context": trace.get("cmdb_context", {}),
+                        "expected_verdict": trace.get("expected_verdict", ""),
+                        "expected_actions": trace.get("expected_actions", []),
+                        "prohibited_actions": prohibited_actions,
+                    },
+                    "Generated Outputs": {
+                        "actual_verdict": trace.get("actual_verdict", ""),
+                        "executed_actions": executed_actions,
+                        "summary": trace.get("summary", ""),
+                    },
+                    "Feedback": " ".join(feedback_items),
+                }
+                dataset[comp_name].append(record)
+
+        return dataset
+
