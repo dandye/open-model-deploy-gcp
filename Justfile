@@ -39,6 +39,8 @@ default:
     @printf "  \033[1;32mjust agent-soc-eval [flavor] [gen]\033[0m     \033[2mRun automated SOC eval suite (default Gen 3)\033[0m\n"
     @printf "  \033[1;32mjust eval-gen3 [flavor] [endpoint]\033[0m     \033[2mRun Gen 3 interactive eval with SDT & loss metrics\033[0m\n"
     @printf "  \033[1;32mjust eval-gen3-live [flavor] [project]\033[0m \033[2mRun Gen 3 live interactive eval with SecOps MCP\033[0m\n"
+    @printf "  \033[1;32mjust gepa-evolve [max_calls] [task_lm]\033[0m \033[2mEvolve SOC runbooks via GEPA Pareto optimization\033[0m\n"
+    @printf "  \033[1;32mjust gepa-compare [task_lm]\033[0m             \033[2mEvaluate SOC agent with GEPA-evolved runbooks\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI CUSTOM JOBS (Ephemeral Benchmarks & \$0 Idle):\033[0m\n"
     @printf "  \033[1;32mjust custom-job-build [tag]\033[0m             \033[2mBuild & push runner Docker image to Artifact Registry\033[0m\n"
@@ -214,6 +216,14 @@ eval-gen3-live FLAVOR="gemini-2.5-flash" PROJECT="secops-demo-env" CUSTOMER_ID="
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":
     @USE_LIVE_MCP="{{LIVE_MCP}}" uv run python3 -m agent.deploy_soc_tier1
+
+# Evolve SOC incident response runbooks using GEPA Pareto optimization
+gepa-evolve MAX_CALLS="15" TASK_LM="gemini-2.5-flash-lite" REFLECTION_LM="gemini-2.5-pro":
+    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --output-dir configs/runbooks/gepa_evolved
+
+# Compare and evaluate SOC agent against evalset using evolved runbooks
+gepa-compare TASK_LM="gemini-2.5-flash-lite":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{TASK_LM}}" --managed-model "{{TASK_LM}}" --gen 3 --agent-mode hierarchical --use-runbooks --runbooks-dir configs/runbooks/gepa_evolved --evalset configs/evals/gen3/soc_tier1_interactive.json --output-report "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.md" --output-json "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.json"
 
 # ------------------------------------------------------------------------------
 # Master Overnight Evaluation & Benchmark Sweep

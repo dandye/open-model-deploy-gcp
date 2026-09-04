@@ -4,9 +4,11 @@ This module provides data structures, seed runbook loaders, serialization utilit
 and multi-objective fitness metrics for evolving cybersecurity incident response runbooks.
 """
 
+import argparse
 from collections.abc import Mapping, Sequence
 import json
 import math
+import os
 from pathlib import Path
 import sys
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -446,4 +448,200 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 dataset[comp_name].append(record)
 
         return dataset
+
+
+def build_reflection_prompt_template() -> str:
+    """Build domain-specific reflection prompt template for GEPA mutation.
+
+    Instructs the reflection LM to refine the active runbook with explicit boundaries
+    for RFC-5737 documentation subnets and authorized vulnerability scanners,
+    while maintaining strict containment for active malware/C2, and forbidding emojis.
+
+    Returns:
+        Template string containing placeholders <curr_param> and <side_info>.
+    """
+    return (
+        "You are an expert Security Operations Center (SOC) engineering teacher tasked with refining\n"
+        "cybersecurity incident response runbooks to optimize Tier 1 autonomous agent performance.\n\n"
+        "Here is the active incident response runbook component to improve:\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "The following diagnostic evaluation traces contain cases where the autonomous agent underperformed,\n"
+        "including case context, inputs, actual actions, and concrete feedback:\n"
+        "```\n"
+        "<side_info>\n"
+        "```\n\n"
+        "Refinement Guidelines and Guardrails:\n"
+        "1. RFC-5737 Boundaries: Explicitly instruct the agent that IP addresses within RFC-5737\n"
+        "   documentation subnets (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24) are reserved for documentation\n"
+        "   and testing. They must be resolved as BENIGN, and the agent must never execute isolate_host or\n"
+        "   block_indicator against documentation subnets.\n"
+        "2. Authorized Vulnerability Scanner Boundaries: Explicitly instruct the agent to inspect CMDB and\n"
+        "   asset inventory before taking action. High-volume scanning activity targeting or originating from\n"
+        "   authorized scanners (e.g. 10.0.99.50) must not trigger host isolation or destructive blocking actions.\n"
+        "3. Strict Malicious Containment: Maintain unambiguous, mandatory containment protocols (e.g. isolate_host)\n"
+        "   for confirmed active malware, ransomware, or command-and-control (C2) threats.\n"
+        "4. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
+        "5. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n\n"
+        "Provide the complete revised runbook inside ```markdown blocks."
+    )
+
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Build command-line argument parser for GEPA runbook optimization.
+
+    Returns:
+        Configured ArgumentParser.
+    """
+    parser = argparse.ArgumentParser(
+        description="Evolve SOC incident response runbooks using GEPA Pareto optimization."
+    )
+    parser.add_argument(
+        "--max-metric-calls",
+        type=int,
+        default=15,
+        help="Maximum metric evaluation calls (default: 15).",
+    )
+    parser.add_argument(
+        "--task-lm",
+        type=str,
+        default="gemini-2.5-flash-lite",
+        help="Task model flavor or name for agent triage (default: gemini-2.5-flash-lite).",
+    )
+    parser.add_argument(
+        "--reflection-lm",
+        type=str,
+        default="gemini-2.5-pro",
+        help="Teacher model for reflective mutation (default: gemini-2.5-pro).",
+    )
+    project_default = os.environ.get("PROJECT_ID", "secops-demo-env")
+    region_default = os.environ.get("REGION", "us-central1")
+    parser.add_argument(
+        "--project-id",
+        type=str,
+        default=project_default,
+        help=f"Google Cloud Project ID (default: {project_default}).",
+    )
+    parser.add_argument(
+        "--region",
+        type=str,
+        default=region_default,
+        help=f"Google Cloud Region (default: {region_default}).",
+    )
+    parser.add_argument(
+        "--evalset",
+        type=str,
+        default="configs/evals/gen3/soc_tier1_interactive.json",
+        help="Path to evaluation dataset JSON (default: configs/evals/gen3/soc_tier1_interactive.json).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="configs/runbooks/gepa_evolved",
+        help="Output directory for evolved runbooks (default: configs/runbooks/gepa_evolved).",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for optimization reproducibility (default: 42).",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Execute single evaluation batch on sample cases without mutation.",
+    )
+    return parser
+
+
+def main(args: Optional[List[str]] = None) -> int:
+    """CLI entrypoint for GEPA runbook optimization.
+
+    Args:
+        args: Optional list of CLI arguments (uses sys.argv[1:] if None).
+
+    Returns:
+        0 on success, non-zero on failure.
+    """
+    parser = build_arg_parser()
+    parsed_args = parser.parse_args(args)
+
+    print(f"Loading seed runbooks from {DEFAULT_RUNBOOKS_DIR}...")
+    seed_candidate = load_seed_runbooks()
+
+    evalset_path = ROOT_DIR / parsed_args.evalset if not Path(parsed_args.evalset).is_absolute() else Path(parsed_args.evalset)
+    if not evalset_path.exists():
+        print(f"Evaluation dataset not found: {evalset_path}", file=sys.stderr)
+        return 1
+
+    eval_data = json.loads(evalset_path.read_text(encoding="utf-8"))
+    eval_cases = eval_data.get("eval_cases", [])
+    if not eval_cases:
+        print(f"No evaluation cases found in: {evalset_path}", file=sys.stderr)
+        return 1
+
+    # Split cases into train and validation sets (e.g. 6 train, 4 val)
+    split_index = min(6, len(eval_cases))
+    trainset = eval_cases[:split_index]
+    valset = eval_cases[split_index:] if split_index < len(eval_cases) else eval_cases[:split_index]
+
+    output_dir = ROOT_DIR / parsed_args.output_dir if not Path(parsed_args.output_dir).is_absolute() else Path(parsed_args.output_dir)
+
+    adapter = RunbookGEPAAdapter(
+        task_lm=parsed_args.task_lm,
+        project_id=parsed_args.project_id,
+        region=parsed_args.region,
+        agent_factory=HierarchicalSOCTier1Agent,
+    )
+
+    if parsed_args.dry_run:
+        print("Dry run mode enabled: executing single evaluation batch on 2 cases...")
+        dry_batch = eval_cases[:2]
+        eval_batch = adapter.evaluate(dry_batch, seed_candidate, capture_traces=True)
+        print(f"Dry run complete. Evaluated {len(eval_batch.scores)} cases.")
+        for i, score in enumerate(eval_batch.scores):
+            print(f"  Case {i + 1} score: {score:.3f}")
+        return 0
+
+    reflection_lm = GoogleGenAILM(
+        model=parsed_args.reflection_lm,
+        project_id=parsed_args.project_id,
+        location=parsed_args.region,
+    )
+
+    reflection_prompt_template = build_reflection_prompt_template()
+
+    print(f"Starting GEPA optimization (max_metric_calls={parsed_args.max_metric_calls}, seed={parsed_args.seed})...")
+    result = gepa.optimize(
+        seed_candidate=seed_candidate,
+        trainset=trainset,
+        valset=valset,
+        adapter=adapter,
+        reflection_lm=reflection_lm,
+        max_metric_calls=parsed_args.max_metric_calls,
+        reflection_prompt_template=reflection_prompt_template,
+        candidate_selection_strategy="pareto",
+        seed=parsed_args.seed,
+    )
+
+    best_candidate = result.best_candidate if hasattr(result, "best_candidate") else seed_candidate
+    metadata: Dict[str, Any] = {
+        "task_lm": parsed_args.task_lm,
+        "reflection_lm": parsed_args.reflection_lm,
+        "max_metric_calls": parsed_args.max_metric_calls,
+        "seed": parsed_args.seed,
+    }
+    if hasattr(result, "best_score"):
+        metadata["best_score"] = getattr(result, "best_score")
+
+    print(f"Saving evolved runbooks to {output_dir}...")
+    save_runbooks(candidate=best_candidate, output_dir=output_dir, metadata=metadata)
+    print("Runbook evolution complete.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 

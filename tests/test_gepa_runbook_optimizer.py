@@ -417,3 +417,83 @@ def test_runbook_gepa_adapter_make_reflective_dataset_missed_containment():
     assert "isolate_host" in rec["Feedback"] or "host isolation" in rec["Feedback"]
 
 
+def test_build_reflection_prompt_template():
+    from agent.gepa_runbook_optimizer import build_reflection_prompt_template
+
+    template = build_reflection_prompt_template()
+    assert isinstance(template, str)
+    assert "<curr_param>" in template
+    assert "<side_info>" in template
+    assert "192.0.2.0/24" in template
+    assert "198.51.100.0/24" in template
+    assert "203.0.113.0/24" in template
+    assert "10.0.99.50" in template
+    # Strictly NO EMOJIS
+    assert not any(ord(char) > 0x1F000 for char in template)
+
+
+def test_build_arg_parser_defaults():
+    from agent.gepa_runbook_optimizer import build_arg_parser
+
+    parser = build_arg_parser()
+    args = parser.parse_args([])
+
+    assert args.max_metric_calls == 15
+    assert args.task_lm == "gemini-2.5-flash-lite"
+    assert args.reflection_lm == "gemini-2.5-pro"
+    assert args.evalset == "configs/evals/gen3/soc_tier1_interactive.json"
+    assert args.output_dir == "configs/runbooks/gepa_evolved"
+    assert args.seed == 42
+    assert args.dry_run is False
+
+
+def test_cli_main_dry_run(tmp_path: Path):
+    from unittest.mock import MagicMock, patch
+    from agent.gepa_runbook_optimizer import main
+
+    # Mock agent and factory
+    mock_agent = MagicMock()
+    mock_response = MagicMock()
+    mock_response.response = "Case resolved cleanly."
+    mock_response.trajectory = [
+        {"tool": "close_case", "args": {}, "observation": "Case closed"}
+    ]
+    mock_response.get = MagicMock(return_value="BENIGN")
+    mock_agent.query.return_value = mock_response
+
+    mock_factory = MagicMock(return_value=mock_agent)
+
+    test_evalset = tmp_path / "test_evalset.json"
+    test_cases = {
+        "eval_cases": [
+            {
+                "eval_id": "CASE-01",
+                "prompt": "Test prompt 1",
+                "ground_truth_label": "BENIGN",
+                "expected_actions": ["close_case"],
+                "prohibited_actions": [],
+            },
+            {
+                "eval_id": "CASE-02",
+                "prompt": "Test prompt 2",
+                "ground_truth_label": "BENIGN",
+                "expected_actions": ["close_case"],
+                "prohibited_actions": [],
+            },
+        ]
+    }
+    test_evalset.write_text(json.dumps(test_cases), encoding="utf-8")
+
+    cli_args = [
+        "--dry-run",
+        "--evalset", str(test_evalset),
+        "--output-dir", str(tmp_path / "evolved_out"),
+    ]
+
+    with patch("agent.gepa_runbook_optimizer.HierarchicalSOCTier1Agent", mock_factory):
+        exit_code = main(cli_args)
+
+    assert exit_code == 0
+    assert mock_factory.call_count >= 2
+
+
