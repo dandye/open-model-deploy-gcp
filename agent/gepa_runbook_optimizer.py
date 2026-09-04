@@ -756,12 +756,21 @@ def main(args: Optional[List[str]] = None) -> int:
         seed=parsed_args.seed,
     )
 
-    # Select the Pareto-evolved candidate over the unmutated seed when proposals exist
-    best_candidate = seed_candidate
-    if hasattr(result, "candidates") and len(result.candidates) > 1:
-        best_candidate = result.candidates[-1]
-    elif hasattr(result, "best_candidate"):
-        best_candidate = result.best_candidate
+    # Select the best candidate that strictly passes anti-memorization validation
+    candidate_pool: List[Dict[str, str]] = []
+    if hasattr(result, "candidates") and isinstance(result.candidates, list):
+        candidate_pool.extend(result.candidates)
+    if hasattr(result, "best_candidate") and result.best_candidate not in candidate_pool:
+        candidate_pool.append(result.best_candidate)
+
+    valid_candidates: List[Dict[str, str]] = []
+    for cand in candidate_pool:
+        if isinstance(cand, dict):
+            is_val, _ = validate_runbook_candidate(cand)
+            if is_val:
+                valid_candidates.append(cand)
+
+    best_candidate = valid_candidates[-1] if valid_candidates else seed_candidate
     metadata: Dict[str, Any] = {
         "task_lm": parsed_args.task_lm,
         "reflection_lm": parsed_args.reflection_lm,

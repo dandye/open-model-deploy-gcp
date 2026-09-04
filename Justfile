@@ -219,7 +219,7 @@ agent-soc-deploy LIVE_MCP="true":
 
 # Evolve SOC incident response runbooks using GEPA Pareto optimization
 gepa-evolve MAX_CALLS="15" TASK_LM="gemini-2.5-flash-lite" REFLECTION_LM="gemini-2.5-pro":
-    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --output-dir configs/runbooks/gepa_evolved
+    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --output-dir configs/runbooks/gepa_evolved --split-train-val
 
 # Compare and evaluate SOC agent against evalset using evolved runbooks
 gepa-compare TASK_LM="gemini-2.5-flash-lite":
