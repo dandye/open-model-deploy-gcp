@@ -278,6 +278,7 @@ def run_evaluation(
     chronicle_region: Optional[str] = None,
     gen: int = 3,
     agent_mode: str = "single",
+    use_runbooks: bool = True,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     chron_proj = chronicle_project or os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
@@ -297,6 +298,8 @@ def run_evaluation(
     print("==================================================================")
     print(f" Running Gemma SOC Tier 1 Evaluation: {flavor} (Gen {eval_gen})")
     print(f" Agent Mode: {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})")
+    if agent_mode == "hierarchical":
+        print(f" Procedural Runbooks: {'Enabled' if use_runbooks else 'Disabled (Generic Control)'}")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
     if use_live_mcp:
         print(f" Chronicle Tenant: {chron_proj} ({chron_cust}) [Region: {chron_reg}]")
@@ -333,6 +336,7 @@ def run_evaluation(
             managed_model=managed_model,
             use_live_mcp=use_live_mcp,
             environment=soc_env,
+            use_runbooks=use_runbooks,
         )
     else:
         agent = SocTier1Agent(
@@ -554,6 +558,7 @@ def run_evaluation(
         "flavor": flavor,
         "generation": eval_gen,
         "agent_mode": agent_mode,
+        "use_runbooks": use_runbooks,
         "summary": summary,
         "case_results": results,
     }
@@ -565,12 +570,14 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
     flavor = eval_data.get("flavor", "Unknown Model")
     eval_gen = eval_data.get("generation", 3)
     agent_mode = eval_data.get("agent_mode", "single")
+    use_runbooks = eval_data.get("use_runbooks", True)
 
     lines = [
         f"# SOC Evaluation Report: {flavor}",
         f"\n**Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}",
         f"**Evaluation Generation:** Gen {eval_gen}",
         f"**Agent Architecture:** {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})",
+        f"**Procedural Runbooks:** {'Enabled' if use_runbooks else 'Disabled (Generic Investigation Control)'}",
         f"**Live SecOps MCP:** {'Enabled' if live_mcp else 'Disabled'}",
         "\n## 1. Executive Summary",
         f"- **Pass Rate:** {summary['pass_rate']}% ({summary['passed_cases']}/{summary['total_cases']})",
@@ -741,6 +748,12 @@ def main() -> None:
         default="single",
         help="Agent architecture mode: single for standard SocTier1Agent, hierarchical for HierarchicalSOCTier1Agent (supervisor-worker)",
     )
+    parser.add_argument(
+        "--use-runbooks",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable procedural runbooks in hierarchical agent mode",
+    )
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
     args = parser.parse_args()
@@ -782,6 +795,7 @@ def main() -> None:
         chronicle_region=args.chronicle_region,
         gen=args.gen,
         agent_mode=args.agent_mode,
+        use_runbooks=args.use_runbooks,
     )
 
     # Save JSON raw artifacts

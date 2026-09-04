@@ -512,3 +512,32 @@ def test_eval_soc_agent_cli_agent_mode_parameter():
         )
         mock_single_cls.assert_called_once()
         assert res_s["agent_mode"] == "single"
+
+
+def test_hierarchical_agent_with_runbooks_disabled():
+    """Verify HierarchicalSOCTier1Agent functions when runbooks are disabled (generic multi-agent control)."""
+    agent = HierarchicalSOCTier1Agent(use_runbooks=False)
+    assert agent.use_runbooks is False
+
+    mock_llm_responses = [
+        # Worker step 1
+        'Action: get_ip_address_report(ip="198.51.100.42")',
+        # Worker step 2 (concludes with worker_report)
+        'Final Answer:\n[Context & Enrichment]\nQueried 198.51.100.42\n\n[Findings & Evidence]\nMalicious C2 node.\n\n[Preliminary Risk Assessment]\nMALICIOUS\n\n```worker_report\n{"classification": "C2_BEACON", "target_entities": ["198.51.100.42"], "risk_level": "MALICIOUS"}\n```',
+        # Supervisor step
+        '[Context & Enrichment]\nConfirmed C2\n\n[Analysis & Verdict]\nMALICIOUS\n\n[Action & Escalation]\nisolate_host\n\n[SOAR Documentation]\nIsolated host.\n\n```soc_decision\n{"verdict": "MALICIOUS", "recommended_actions": ["isolate_host"], "target_entity": "DESKTOP-FIN-08", "rationale": "Confirmed C2"}\n```',
+    ]
+    call_idx = 0
+
+    def mock_caller(prompt, max_tokens=None, temperature=0.2):
+        nonlocal call_idx
+        res = mock_llm_responses[call_idx]
+        call_idx += 1
+        return res, {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20}
+
+    agent._call_llm_step = mock_caller
+    res = agent.query("Host DESKTOP-FIN-08 communicating with C2 server 198.51.100.42")
+    assert res.runbook == "none"
+    assert res.worker_report["runbook_name"] == "none"
+    assert len(res.trajectory) >= 2
+

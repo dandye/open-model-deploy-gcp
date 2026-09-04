@@ -200,8 +200,31 @@ def load_runbook(runbook_name: str, runbooks_dir: Optional[Path] = None) -> str:
     )
 
 
+def get_generic_worker_instruction(classification: str) -> str:
+    """Generates generic investigation system instructions without procedural runbook steps."""
+    return (
+        f"You are the SOC Worker Agent specializing in {classification} alert investigation.\n"
+        "Your mission is strictly epistemic investigation and evidence collection using available tools.\n\n"
+        "OPERATIONAL RULES:\n"
+        "1. Epistemic Investigation Only: Invoke tools (e.g. get_ip_address_report, get_domain_report, "
+        "get_file_report, lookup_entity, list_cases) to gather telemetry, reputation, and case history. "
+        "Do NOT execute containment actions (e.g. isolate_host, block_indicator, close_case). "
+        "Containment decisions are strictly reserved for the SOC Supervisor Agent.\n"
+        "2. Grounded Observations: You must invoke at least one investigation tool to gather verified telemetry "
+        "before concluding your investigation.\n"
+        "3. Structured Worker Report: Once investigation is complete, output a structured summary including "
+        "[Context & Enrichment], [Findings & Evidence], [Preliminary Risk Assessment], and conclude with a ```worker_report JSON block.\n\n"
+        "### Investigation Objective:\n"
+        "Investigate the technical indicators (IPs, domains, hashes, hostnames, users) referenced in the alert. "
+        "Query available tools to collect verified telemetry and report your findings.\n"
+    )
+
+
 def translate_runbook_to_system_instruction(runbook_content: str, classification: str) -> str:
     """Translates a raw runbook markdown into executable system instructions for the worker agent."""
+    if not runbook_content or runbook_content.strip() == "":
+        return get_generic_worker_instruction(classification)
+
     # Normalize tool identifiers from third-party runbook syntax to local tool function names
     translated = runbook_content
     replacements = [
@@ -503,6 +526,7 @@ class SOCSupervisorAgent(GemmaAgent):
         use_live_mcp: bool = False,
         environment: Optional[Any] = None,
         runbooks_dir: Optional[Path] = None,
+        use_runbooks: bool = True,
     ):
         super().__init__(
             project_id=project_id,
@@ -516,6 +540,7 @@ class SOCSupervisorAgent(GemmaAgent):
         self.use_live_mcp = use_live_mcp
         self.environment = environment
         self.runbooks_dir = runbooks_dir or DEFAULT_RUNBOOKS_DIR
+        self.use_runbooks = use_runbooks
         self.name = "hierarchical_soc_supervisor"
         self.last_backend: str = "Unknown"
 
@@ -625,7 +650,7 @@ class SOCSupervisorAgent(GemmaAgent):
             "You are the Lead SOC Supervisor Agent conducting final synthesis and containment decision.\n\n"
             f"Original Alert:\n{prompt}\n\n"
             f"Alert Classification: {classification}\n"
-            f"Runbook Executed: {runbook_name}\n\n"
+            f"{f'Runbook Executed: {runbook_name}' if runbook_name != 'none' else 'Mode: Generic Multi-Agent Investigation (No Procedural Runbook)'}\n\n"
             "Worker Investigation Telemetry:\n"
             f"- Target Entities: {worker_report.target_entities}\n"
             f"- Preliminary Risk: {worker_report.risk_level}\n"
@@ -693,20 +718,22 @@ class SOCSupervisorAgent(GemmaAgent):
             entities_str = ", ".join(worker_report.target_entities) if worker_report.target_entities else "None"
             evidence_str = "\n".join(f"- {e}" for e in worker_report.evidence) if worker_report.evidence else "- Investigated indicators."
             actions_str = ", ".join(decision.recommended_actions) if decision.recommended_actions else "update_case_comment"
+            runbook_display = runbook_name if runbook_name != "none" else "None (Generic Investigation)"
+            triage_doc_str = f"under {runbook_name}" if runbook_name != "none" else "via generic multi-agent investigation"
             final_text = (
                 "[Context & Enrichment]\n"
                 f"- Classification: {classification}\n"
-                f"- Runbook: {runbook_name}\n"
+                f"- Runbook: {runbook_display}\n"
                 f"- Entities: {entities_str}\n"
                 f"{evidence_str}\n\n"
                 "[Analysis & Verdict]\n"
                 f"- Threat Assessment: {decision.verdict}\n"
-                f"- Correlation: {decision.rationale or 'Telemetry analyzed across runbook steps.'}\n\n"
+                f"- Correlation: {decision.rationale or 'Telemetry analyzed across investigation steps.'}\n\n"
                 "[Action & Escalation]\n"
                 f"- Recommended Actions: {actions_str}\n"
                 f"- Escalation: {'Tier 2 Incident Response' if decision.verdict == 'MALICIOUS' else 'Resolved'}\n\n"
                 "[SOAR Documentation]\n"
-                f"Triage completed under {runbook_name}. Verdict: {decision.verdict}. Actions: {actions_str}.\n\n"
+                f"Triage completed {triage_doc_str}. Verdict: {decision.verdict}. Actions: {actions_str}.\n\n"
                 "```soc_decision\n"
                 f"{json.dumps(decision.to_dict(), indent=2)}\n"
                 "```\n"
@@ -922,8 +949,12 @@ class SOCSupervisorAgent(GemmaAgent):
         classification = self.classify_alert(prompt)
 
         # 2. Runbook Mapping & Loading
-        runbook_name = self.get_runbook_for_classification(classification)
-        runbook_content = load_runbook(runbook_name, self.runbooks_dir)
+        if self.use_runbooks:
+            runbook_name = self.get_runbook_for_classification(classification)
+            runbook_content = load_runbook(runbook_name, self.runbooks_dir)
+        else:
+            runbook_name = "none"
+            runbook_content = ""
 
         # 3. Worker Dispatch
         worker = SOCRunbookWorkerAgent(
