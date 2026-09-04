@@ -640,7 +640,12 @@ def main(args: Optional[List[str]] = None) -> int:
         seed=parsed_args.seed,
     )
 
-    best_candidate = result.best_candidate if hasattr(result, "best_candidate") else seed_candidate
+    # Select the Pareto-evolved candidate over the unmutated seed when proposals exist
+    best_candidate = seed_candidate
+    if hasattr(result, "candidates") and len(result.candidates) > 1:
+        best_candidate = result.candidates[-1]
+    elif hasattr(result, "best_candidate"):
+        best_candidate = result.best_candidate
     metadata: Dict[str, Any] = {
         "task_lm": parsed_args.task_lm,
         "reflection_lm": parsed_args.reflection_lm,
