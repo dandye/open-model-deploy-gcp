@@ -548,6 +548,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Random seed for optimization reproducibility (default: 42).",
     )
     parser.add_argument(
+        "--split-train-val",
+        action="store_true",
+        default=False,
+        help="Split dataset into separate train and validation subsets (default: False, optimizes on full dataset).",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
@@ -582,10 +588,13 @@ def main(args: Optional[List[str]] = None) -> int:
         print(f"No evaluation cases found in: {evalset_path}", file=sys.stderr)
         return 1
 
-    # Split cases into train and validation sets (e.g. 6 train, 4 val)
-    split_index = min(6, len(eval_cases))
-    trainset = eval_cases[:split_index]
-    valset = eval_cases[split_index:] if split_index < len(eval_cases) else eval_cases[:split_index]
+    if getattr(parsed_args, "split_train_val", False):
+        split_index = min(6, len(eval_cases))
+        trainset = eval_cases[:split_index]
+        valset = eval_cases[split_index:] if split_index < len(eval_cases) else eval_cases[:split_index]
+    else:
+        trainset = eval_cases
+        valset = eval_cases
 
     output_dir = ROOT_DIR / parsed_args.output_dir if not Path(parsed_args.output_dir).is_absolute() else Path(parsed_args.output_dir)
 
