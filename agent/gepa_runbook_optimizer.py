@@ -10,8 +10,9 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import sys
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -220,6 +221,73 @@ class GoogleGenAILM:
         return getattr(response, "text", "") or str(response or "")
 
 
+FORBIDDEN_EVAL_HOSTNAMES: List[str] = [
+    "GW-CORE-VPN-01",
+    "SRV-PROD-PAYMENT-01",
+    "DESKTOP-FIN-08",
+    "SRV-DATA-01",
+    "SRV-DC-01",
+    "LAPTOP-CFO-01",
+]
+
+SHORT_CIRCUIT_PATTERNS: List[str] = [
+    r"skip\s+(?:all\s+)?enrichment",
+    r"skip\s+(?:all\s+)?investigation",
+    r"skip\s+steps?\s+\d+",
+    r"proceed\s+directly\s+to\s+step\s+\d+",
+]
+
+IPV4_LITERAL_REGEX: re.Pattern = re.compile(
+    r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:/(?:[1-2]?\d|3[0-2]))?\b"
+)
+
+
+def validate_runbook_candidate(
+    candidate: Dict[str, str],
+    forbidden_hostnames: Optional[List[str]] = None,
+) -> Tuple[bool, List[str]]:
+    """Validates a candidate runbook set against anti-memorization guardrails.
+
+    Rejects candidate runbooks containing:
+    1. Literal IPv4 addresses or CIDR blocks (except 127.0.0.1/0.0.0.0).
+    2. Hardcoded evaluation benchmark hostnames.
+    3. Short-circuit / bypass directives (e.g. 'skip all enrichment').
+
+    Args:
+        candidate: Mapping of runbook filenames to markdown content.
+        forbidden_hostnames: Optional list of static hostnames to prohibit.
+
+    Returns:
+        Tuple of (is_valid: bool, violations: List[str]).
+    """
+    violations: List[str] = []
+    hostnames_to_check = forbidden_hostnames or FORBIDDEN_EVAL_HOSTNAMES
+
+    for filename, content in candidate.items():
+        cleaned_content = re.sub(r"\(e\.g\.[^)]*\)", "", content, flags=re.IGNORECASE)
+        found_ips = IPV4_LITERAL_REGEX.findall(cleaned_content)
+        for ip in found_ips:
+            if ip not in ("127.0.0.1", "0.0.0.0"):
+                violations.append(
+                    f"{filename}: Contains hardcoded IPv4 literal '{ip}'. Runbooks must express network scopes via generic variables or telemetry query classifications."
+                )
+
+        for hostname in hostnames_to_check:
+            if re.search(rf"\b{re.escape(hostname)}\b", cleaned_content, re.IGNORECASE):
+                violations.append(
+                    f"{filename}: Contains hardcoded evaluation benchmark hostname '{hostname}'. Runbooks must reference assets via dynamic context."
+                )
+
+        for pattern in SHORT_CIRCUIT_PATTERNS:
+            match = re.search(pattern, cleaned_content, re.IGNORECASE)
+            if match:
+                violations.append(
+                    f"{filename}: Contains short-circuit investigation directive '{match.group(0)}'. Epistemic enrichment tools must never be bypassed."
+                )
+
+    return (len(violations) == 0, violations)
+
+
 class RunbookGEPAAdapter(gepa.GEPAAdapter):
     """GEPA adapter for evaluating and reflectively refining incident response runbooks."""
 
@@ -262,6 +330,38 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         outputs: List[str] = []
         scores: List[float] = []
         trajectories: List[Dict[str, Any]] = []
+
+        is_valid, violations = validate_runbook_candidate(candidate)
+        if not is_valid:
+            rejection_msg = (
+                "Candidate rejected by anti-memorization validator. Violations:\n"
+                + "\n".join(f"- {v}" for v in violations)
+            )
+            for case in batch:
+                outputs.append(rejection_msg)
+                scores.append(0.0)
+                trajectories.append({
+                    "case_id": case.get("eval_id", ""),
+                    "alert_type": case.get("name", ""),
+                    "prompt": case.get("prompt", ""),
+                    "cmdb_context": case.get("cmdb_context", {}),
+                    "expected_verdict": case.get("ground_truth_label", ""),
+                    "expected_actions": case.get("expected_actions", []),
+                    "prohibited_actions": case.get("prohibited_actions", []),
+                    "actual_verdict": "REJECTED_MEMORIZED",
+                    "executed_actions": [],
+                    "summary": rejection_msg,
+                    "score": 0.0,
+                    "loss_penalty": 0.0,
+                    "assert_passed": False,
+                    "component_name": "",
+                    "trajectory": [],
+                })
+            return gepa.EvaluationBatch(
+                outputs=outputs,
+                scores=scores,
+                trajectories=trajectories,
+            )
 
         for case in batch:
             try:
@@ -419,17 +519,11 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
 
                 feedback_items: List[str] = []
 
-                if "192.0.2." in prompt or "RFC-5737" in prompt or "TEST-NET-1" in prompt:
+                if "isolate_host" in executed_actions and "isolate_host" in prohibited_actions:
                     feedback_items.append(
-                        "RFC-5737 false alarm: IP address is in a reserved, non-routable documentation subnet. "
-                        "The runbook must explicitly instruct the agent to treat RFC-5737 test addresses as benign "
-                        "and never execute isolate_host or block_indicator on documentation ranges."
-                    )
-                elif "qualys" in prompt.lower() or "scanner" in prompt.lower() or "10.0.99.50" in prompt:
-                    feedback_items.append(
-                        "Qualys scanner false alarm: High-volume port scanning originated from or targeted an authorized "
-                        "vulnerability scanner on a production asset. The runbook must instruct the agent to check asset "
-                        "services in CMDB/inventory and avoid isolating authorized vulnerability scanners."
+                        "False positive operational disruption: The agent executed prohibited host isolation on an asset requiring safe resolution. "
+                        "The runbook must guide the agent to perform epistemic verification (checking CMDB asset role, network routing classification, and corroborating SIEM events) "
+                        "before taking disruptive containment actions."
                     )
                 elif "MALICIOUS" in trace.get("expected_verdict", "").upper() and "isolate_host" not in executed_actions:
                     feedback_items.append(
@@ -440,7 +534,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     feedback_items.append(
                         f"Triage operational failure: score={score:.2f}, loss_penalty={loss_pen:.2f}. "
                         f"Prohibited actions executed: {[a for a in executed_actions if a in prohibited_actions]}. "
-                        "The runbook instructions should be clarified to avoid prohibited actions and adhere to operational guardrails."
+                        "The runbook instructions should be clarified to avoid prohibited actions, gather verified telemetry, and adhere to operational guardrails."
                     )
 
                 record = {
@@ -468,9 +562,10 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
 def build_reflection_prompt_template() -> str:
     """Build domain-specific reflection prompt template for GEPA mutation.
 
-    Instructs the reflection LM to refine the active runbook with explicit boundaries
-    for RFC-5737 documentation subnets and authorized vulnerability scanners,
-    while maintaining strict containment for active malware/C2, and forbidding emojis.
+    Instructs the reflection LM to refine the active runbook with procedural
+    epistemic verification steps, asset inventory correlation, and threat
+    intelligence reputation, while strictly forbidding hardcoded network literals,
+    hostnames, short-circuit bypasses, and emojis.
 
     Returns:
         Template string containing placeholders <curr_param> and <side_info>.
@@ -487,18 +582,17 @@ def build_reflection_prompt_template() -> str:
         "```\n"
         "<side_info>\n"
         "```\n\n"
-        "Refinement Guidelines and Guardrails:\n"
-        "1. RFC-5737 Boundaries: Explicitly instruct the agent that IP addresses within RFC-5737\n"
-        "   documentation subnets (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24) are reserved for documentation\n"
-        "   and testing. They must be resolved as BENIGN, and the agent must never execute isolate_host or\n"
-        "   block_indicator against documentation subnets.\n"
-        "2. Authorized Vulnerability Scanner Boundaries: Explicitly instruct the agent to inspect CMDB and\n"
-        "   asset inventory before taking action. High-volume scanning activity targeting or originating from\n"
-        "   authorized scanners (e.g. 10.0.99.50) must not trigger host isolation or destructive blocking actions.\n"
-        "3. Strict Malicious Containment: Maintain unambiguous, mandatory containment protocols (e.g. isolate_host)\n"
-        "   for confirmed active malware, ransomware, or command-and-control (C2) threats.\n"
-        "4. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
-        "5. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n\n"
+        "Refinement Guidelines and Operational Guardrails:\n"
+        "1. Epistemic Evidence Verification Sequence: Refine the runbook into a disciplined 4-stage procedural flow:\n"
+        "   - Stage A: Asset Identity & CMDB Context: Query lookup_entity to determine asset business role, criticality, and authorized tags.\n"
+        "   - Stage B: Network Routing & Scope Verification: Query get_ip_address_report or get_domain_report to determine if target infrastructure is public, private, or reserved documentation space.\n"
+        "   - Stage C: Threat Intelligence Reputation: Check GTI reputation scores and known malware associations.\n"
+        "   - Stage D: Corroboration of Malicious Activity: Correlate telemetry with observed behaviors (e.g. active malware, C2 beaconing vs benign scanning).\n"
+        "2. Mandatory Epistemic Investigation (No Short-Circuits): Forbid instructions that tell the analyst to 'skip all enrichment' or 'bypass investigation'. The analyst must always execute telemetry queries to substantiate their findings.\n"
+        "3. Anti-Memorization Rule (Generalization): Strictly DO NOT hardcode specific IP addresses, CIDR blocks, domain names, or hostnames in the runbook. All triage logic must rely on dynamic variables (e.g. ${IOC_VALUE}, ${ASSET_ROLE}, ${IP_ROUTING_TYPE}).\n"
+        "4. Strict Malicious Containment: Maintain unambiguous containment protocols (isolate_host, block_indicator) when high-severity malicious activity is corroborated.\n"
+        "5. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
+        "6. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n\n"
         "Provide the complete revised runbook inside ```markdown blocks."
     )
 

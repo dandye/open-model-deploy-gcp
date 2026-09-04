@@ -319,8 +319,9 @@ def test_runbook_gepa_adapter_make_reflective_dataset_rfc5737():
     assert "Inputs" in rec
     assert "Generated Outputs" in rec
     assert "Feedback" in rec
-    assert "RFC-5737" in rec["Feedback"]
-    assert "isolate" in rec["Feedback"].lower() or "benign" in rec["Feedback"].lower()
+    assert "False positive operational disruption" in rec["Feedback"]
+    assert "prohibited host isolation" in rec["Feedback"].lower()
+    assert "epistemic" in rec["Feedback"].lower()
 
 
 def test_runbook_gepa_adapter_make_reflective_dataset_scanner():
@@ -368,7 +369,9 @@ def test_runbook_gepa_adapter_make_reflective_dataset_scanner():
     assert "Inputs" in rec
     assert "Generated Outputs" in rec
     assert "Feedback" in rec
-    assert "Qualys" in rec["Feedback"] or "scanner" in rec["Feedback"].lower()
+    assert "False positive operational disruption" in rec["Feedback"]
+    assert "prohibited host isolation" in rec["Feedback"].lower()
+    assert "epistemic" in rec["Feedback"].lower()
 
 
 def test_runbook_gepa_adapter_make_reflective_dataset_missed_containment():
@@ -424,12 +427,105 @@ def test_build_reflection_prompt_template():
     assert isinstance(template, str)
     assert "<curr_param>" in template
     assert "<side_info>" in template
-    assert "192.0.2.0/24" in template
-    assert "198.51.100.0/24" in template
-    assert "203.0.113.0/24" in template
-    assert "10.0.99.50" in template
+    # De-spoiled: zero literal IP subnets or specific scanner IPs
+    assert "192.0.2.0/24" not in template
+    assert "198.51.100.0/24" not in template
+    assert "203.0.113.0/24" not in template
+    assert "10.0.99.50" not in template
+    # Procedural and anti-memorization guidelines present
+    assert "CMDB" in template or "lookup_entity" in template
+    assert "epistemic" in template.lower() or "verification" in template.lower()
+    assert "memoriz" in template.lower() or "variable" in template.lower()
     # Strictly NO EMOJIS
     assert not any(ord(char) > 0x1F000 for char in template)
+
+
+def test_validate_runbook_candidate_clean():
+    from agent.gepa_runbook_optimizer import validate_runbook_candidate
+
+    candidate = {
+        "basic_ioc_enrichment.md": (
+            "# Basic IOC Enrichment\n\n"
+            "## Steps\n"
+            "1. Extract ${IOC_VALUE} and ${IOC_TYPE}.\n"
+            "2. Query lookup_entity for asset context and check ${ASSET_ROLE}.\n"
+            "3. Query get_ip_address_report to verify routing classification.\n"
+            "4. If GTI reputation indicates active malicious malware, recommend isolate_host.\n"
+        )
+    }
+    valid, violations = validate_runbook_candidate(candidate)
+    assert valid is True
+    assert violations == []
+
+
+def test_validate_runbook_candidate_hardcoded_ip():
+    from agent.gepa_runbook_optimizer import validate_runbook_candidate
+
+    candidate = {
+        "basic_ioc_enrichment.md": (
+            "# Basic IOC Enrichment\n\n"
+            "Rule 1: If IP is 192.0.2.0/24, close case immediately.\n"
+            "Rule 2: Scanner is 10.0.99.50.\n"
+        )
+    }
+    valid, violations = validate_runbook_candidate(candidate)
+    assert valid is False
+    assert len(violations) >= 2
+    assert any("192.0.2.0/24" in v or "IPv4 literal" in v for v in violations)
+
+
+def test_validate_runbook_candidate_hardcoded_hostname():
+    from agent.gepa_runbook_optimizer import validate_runbook_candidate
+
+    candidate = {
+        "basic_ioc_enrichment.md": (
+            "# Basic IOC Enrichment\n\n"
+            "If host is GW-CORE-VPN-01 or SRV-PROD-PAYMENT-01, do not isolate.\n"
+        )
+    }
+    valid, violations = validate_runbook_candidate(candidate)
+    assert valid is False
+    assert any("GW-CORE-VPN-01" in v for v in violations)
+    assert any("SRV-PROD-PAYMENT-01" in v for v in violations)
+
+
+def test_validate_runbook_candidate_short_circuit():
+    from agent.gepa_runbook_optimizer import validate_runbook_candidate
+
+    candidate = {
+        "basic_ioc_enrichment.md": (
+            "# Basic IOC Enrichment\n\n"
+            "If asset is authorized scanner, skip all enrichment and proceed to Step 9.\n"
+        )
+    }
+    valid, violations = validate_runbook_candidate(candidate)
+    assert valid is False
+    assert any("short-circuit" in v.lower() or "skip all enrichment" in v.lower() for v in violations)
+
+
+def test_adapter_evaluate_rejects_memorized_candidate():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+
+    memorized_candidate = {
+        "basic_ioc_enrichment.md": "If IP is 192.0.2.100 or host is GW-CORE-VPN-01, skip all enrichment."
+    }
+    batch = [
+        {
+            "eval_id": "CASE-01",
+            "prompt": "Investigate alert",
+            "ground_truth_label": "BENIGN",
+            "expected_actions": ["close_case"],
+            "prohibited_actions": [],
+        }
+    ]
+
+    adapter = RunbookGEPAAdapter()
+    eval_batch = adapter.evaluate(batch=batch, candidate=memorized_candidate)
+
+    assert eval_batch.scores == [0.0]
+    assert len(eval_batch.trajectories) == 1
+    assert "rejected" in eval_batch.outputs[0].lower() or "memoriz" in eval_batch.outputs[0].lower()
+
 
 
 def test_build_arg_parser_defaults():
