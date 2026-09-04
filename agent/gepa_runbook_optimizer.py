@@ -233,12 +233,20 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         agent_factory: Optional[Callable[..., Any]] = None,
     ):
         self.task_lm = task_lm
-        self.project_id = (
+        resolved_project_id = (
             project_id
             or os.environ.get("PROJECT_ID")
             or os.environ.get("GCP_PROJECT_ID")
-            or "secops-demo-env"
+            or os.environ.get("GOOGLE_CLOUD_PROJECT")
         )
+        if not resolved_project_id:
+            try:
+                import google.auth
+                _, default_project = google.auth.default()
+                resolved_project_id = default_project
+            except Exception:
+                pass
+        self.project_id = resolved_project_id or ""
         self.region = region
         self.use_live_mcp = use_live_mcp
         self.max_iterations = max_iterations
@@ -350,6 +358,8 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     })
 
             except Exception as e:
+                import traceback
+                traceback.print_exc(file=sys.stderr)
                 outputs.append(f"Evaluation error: {e}")
                 scores.append(0.0)
                 if capture_traces:
@@ -520,7 +530,19 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="gemini-2.5-pro",
         help="Teacher model for reflective mutation (default: gemini-2.5-pro).",
     )
-    project_default = os.environ.get("PROJECT_ID", "secops-demo-env")
+    project_default = (
+        os.environ.get("PROJECT_ID")
+        or os.environ.get("GCP_PROJECT_ID")
+        or os.environ.get("GOOGLE_CLOUD_PROJECT")
+    )
+    if not project_default:
+        try:
+            import google.auth
+            _, default_project = google.auth.default()
+            project_default = default_project
+        except Exception:
+            pass
+    project_default = project_default or ""
     region_default = os.environ.get("REGION", "us-central1")
     parser.add_argument(
         "--project-id",
