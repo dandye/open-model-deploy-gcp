@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "workflow": null,
   "reviewer": null,
   "source_commit": null,
@@ -28,14 +28,28 @@
     }
   },
   "datasets": {
-    "train": { "path": null, "sha256": null },
-    "validation": { "path": null, "sha256": null },
-    "final_test": { "path": null, "sha256": null }
+    "train": {
+      "path": null,
+      "sha256": null
+    },
+    "validation": {
+      "path": null,
+      "sha256": null
+    },
+    "final_test": {
+      "path": null,
+      "sha256": null
+    }
   },
   "holdout_attestation": {
     "reviewer": null,
     "evidence": null,
     "never_used_for_optimization": null,
     "dataset_sha256": null
+  },
+  "exposure_history": {
+    "reviewer": null,
+    "evidence": null,
+    "datasets": []
   }
 }
