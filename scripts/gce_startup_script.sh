@@ -173,7 +173,6 @@ SOURCE_VERIFIER_SHA256="$(get_source_metadata "instance/attributes/source_verifi
 unset EXPERIMENT_SOURCE_VERIFIED EXPERIMENT_SOURCE_BUNDLE_SHA256 EXPERIMENT_SOURCE_COMMIT || true
 EXPERIMENT_RUN_ID="$(get_metadata "instance/attributes/run_id" "")"
 EXPERIMENT_CONFIGURATION_HASH="$(get_metadata "instance/attributes/configuration_hash" "")"
-SOURCE_COMMIT="$(get_source_metadata "instance/attributes/source_commit")" || SOURCE_METADATA_FAILED=true
 if [[ -n "${EXPERIMENT_RUN_ID}" || -n "${EXPERIMENT_CONFIGURATION_HASH}" ]]; then
   export EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
 else

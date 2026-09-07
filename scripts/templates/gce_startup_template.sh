@@ -198,14 +198,8 @@ fi
 if [[ -z "${GCS_MODEL_PATH}" ]]; then
 GCS_MODEL_PATH="$(get_metadata "instance/attributes/gcs_model_path" "")"
 fi
-if [[ -z "${SOURCE_BUNDLE_URI}" ]]; then SOURCE_METADATA_FAILED=false
-SOURCE_BUNDLE_URI="$(get_source_metadata "instance/attributes/source_bundle_uri")" || SOURCE_METADATA_FAILED=true; fi
-if [[ -z "${SOURCE_BUNDLE_SHA256}" ]]; then SOURCE_BUNDLE_SHA256="$(get_source_metadata "instance/attributes/source_bundle_sha256")" || SOURCE_METADATA_FAILED=true; fi
-if [[ -z "${SOURCE_COMMIT}" ]]; then SOURCE_COMMIT="$(get_source_metadata "instance/attributes/source_commit")" || SOURCE_METADATA_FAILED=true; fi
-if [[ -z "${SOURCE_VERIFIER_SHA256}" ]]; then SOURCE_VERIFIER_SHA256="$(get_source_metadata "instance/attributes/source_verifier_sha256")" || SOURCE_METADATA_FAILED=true; fi
 EXPERIMENT_RUN_ID="$(get_metadata "instance/attributes/run_id" "")"
 EXPERIMENT_CONFIGURATION_HASH="$(get_metadata "instance/attributes/configuration_hash" "")"
-SOURCE_COMMIT="$(get_source_metadata "instance/attributes/source_commit")" || SOURCE_METADATA_FAILED=true
 if [[ -n "${EXPERIMENT_RUN_ID}" || -n "${EXPERIMENT_CONFIGURATION_HASH}" ]]; then
 export EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
 else

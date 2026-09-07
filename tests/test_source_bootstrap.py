@@ -101,3 +101,37 @@ printf '%s' "$rc" > {shlex.quote(str(tmp_path / 'status'))}
     result = subprocess.run(['bash', '-c', program], capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stderr
     assert (tmp_path / 'status').read_text() == str(expected)
+
+
+@pytest.mark.parametrize('script', STARTUPS, ids=['startup', 'template'])
+@pytest.mark.parametrize('field', ['source_bundle_uri', 'source_bundle_sha256', 'source_commit', 'source_verifier_sha256'])
+def test_metadata_initialization_preserves_first_failure(tmp_path, script, field):
+    content = script.read_text()
+    initialization = content[:content.index('CONTAINER_NAME="vllm-server"')]
+    functions = content[content.index('source_bundle_abort() {'):content.index('\n# 2.5 Ensure Docker')]
+    marker = shlex.quote(str(tmp_path / 'failed-read'))
+    program = f'''
+curl() {{
+  local url="${{@: -1}}"
+  if [[ "$url" == */instance/attributes/source* ]]; then
+    if [[ "$url" == */{field} && ! -f {marker} ]]; then
+      touch {marker}
+      printf 'unavailable\\n503'
+    else
+      printf 'not found\\n404'
+    fi
+  fi
+}}
+{initialization}
+{functions}
+OUTPUT_DIR={shlex.quote(str(tmp_path))}; MODEL_FLAVOR=model
+REPORT_PATH="$OUTPUT_DIR/report.md"; JSON_PATH="$OUTPUT_DIR/result.json"; BENCHMARK_LOG="$OUTPUT_DIR/benchmark.log"
+SOURCE_DIR=; SOURCE_BUNDLE_STATUS=NOT_REQUESTED
+rc=0
+if prepare_source_bundle; then rc=0; else rc=$?; fi
+printf '%s\\n' "$rc" "$SOURCE_METADATA_FAILED" "$SOURCE_BUNDLE_STATUS" > "$OUTPUT_DIR/outcome"
+'''
+    result = subprocess.run(['bash', '-c', program], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / 'outcome').read_text().splitlines() == ['78', 'true', 'FAILED']
+    assert json.loads((tmp_path / 'result.json').read_text())['status'] == 'FAILED'
