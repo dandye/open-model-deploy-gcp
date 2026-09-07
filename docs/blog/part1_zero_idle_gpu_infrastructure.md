@@ -301,4 +301,4 @@ Solving the infrastructure problem is only the foundational layer. Running open-
 
 ---
 
-*The code, Terraform modules, and evaluation harnesses powering this architecture are available in the [`gemma_deploy`](https://depot.code.corp.goog/personal/gemma_deploy) repository.*
+*The code, Terraform modules, and evaluation harnesses powering this architecture are available in the [`open-model-deploy-gcp`](https://github.com/dandye/open-model-deploy-gcp) repository.*
