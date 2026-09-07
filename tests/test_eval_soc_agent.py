@@ -618,6 +618,11 @@ def test_run_evaluation_gen3_interactive_mocked():
 
         assert eval_result["flavor"] == "gemma-3-4b-it"
         assert eval_result["generation"] == 3
+        assert eval_result["provenance"]["dataset"]["sha256"]
+        assert eval_result["provenance"]["completed_at"]
+        assert eval_result["provenance"]["model"]["resolved_revision"] is None
+        assert eval_result["provenance"]["lifecycle"]["evaluation"] == "completed"
+        assert eval_result["provenance"]["lifecycle"]["cleanup"] == "unverified"
         assert eval_result["summary"]["total_cases"] == 10
         assert eval_result["summary"]["passed_cases"] == 10
         assert eval_result["summary"]["pass_rate"] == 100.0

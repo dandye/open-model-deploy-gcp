@@ -1,5 +1,7 @@
 # Empirical Evaluation Analysis: GEPA Genetic Pareto Runbook Evolution
 
+> Review addendum, September 6, 2026: this historical narrative contains unresolved discrepancies with its linked JSON results, including baseline loss and latency. See the generated [evidence reconciliation](GEPA_EVIDENCE_RECONCILIATION.md) before citing its metrics. The original analysis below is preserved for traceability. Loss values are simulated penalties, not observed savings or prevented production outages; run provenance remains unverified.
+
 **Evaluation Generation:** Gen 3 Interactive Benchmark (10 Enterprise Cases)  
 **Evaluated Model:** `gemini-2.5-flash-lite` (Managed Vertex AI Endpoint)  
 **Teacher Reflection Model:** `gemini-2.5-pro`  
@@ -129,4 +131,3 @@ The evolved runbook implemented dynamic decision rules:
    In cases where threat intelligence and CMDB show benign entities (`CASE-02` and `CASE-10`), extend Rule 3 to explicitly invoke `close_case` as the primary pragmatic action rather than escalating to Tier 2 comments, closing the remaining $50 triage loss.
 3. **Preserve Train/Val Split in Continuous Evolution:**
    Keep evaluation cases strictly partitioned between training and validation sets in future GEPA runs to continually guard against prompt and runbook overtraining.
-

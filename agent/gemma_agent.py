@@ -243,7 +243,7 @@ class GemmaAgent:
         active_endpoint = self.endpoint_id
         active_region = self.region
 
-        if not active_endpoint:
+        if not active_endpoint and not self.managed_model:
             discovery = self.discover_active_vertex_endpoint()
             if discovery:
                 active_endpoint = discovery["endpoint_id"]
@@ -380,5 +380,4 @@ class GemmaAgent:
                 "error": f"Managed model query failed: {e}",
                 "backend": "Managed Model Error",
             }
-
 

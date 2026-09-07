@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """
 Gemma Deployment Benchmark & Metrics Collector
-Measures Latency (P50, P90, P99), TTFT, ITL, Estimated Tokens,
-Tokens/Sec (TPS), and Tokens/Min (TPM) against Vertex AI Endpoints
+Measures Latency (P50, P90, P99), first-network-chunk timing, ITL,
+actual or estimated generated tokens, Tokens/Sec (TPS), and Tokens/Min (TPM)
+against Vertex AI Endpoints
 with single-stream, concurrent multi-stream, and prefix caching evaluation modes.
 """
 
 import os
 import sys
 import json
+import math
 import time
 import subprocess
 import argparse
@@ -54,23 +56,133 @@ def calculate_percentile(data: List[float], percentile: float) -> float:
     return float(sorted_data[f] + d * (sorted_data[c] - sorted_data[f]))
 
 
-def parse_output(res_body: Optional[Dict[str, Any]]) -> Tuple[str, int]:
-    """Parse generated text and estimated token count from prediction response."""
-    if not res_body:
-        return "", 0
+def _as_non_negative_int(value: Any) -> Optional[int]:
+    """Return an integer token count when a response field is trustworthy."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, float):
+        if not math.isfinite(value) or not value.is_integer() or value < 0:
+            return None
+        return int(value)
+    if not isinstance(value, str) or not value.strip() or not value.strip().isdigit():
+        return None
+    return int(value.strip())
+
+
+def _find_actual_token_count(value: Any, context: str = "root") -> Optional[int]:
+    """Find a provider-reported generated-token count without counting prompt tokens."""
+    if isinstance(value, dict):
+        # These fields are completion/output-specific across Vertex, OpenAI, and
+        # vLLM-compatible responses. Generic ``tokens`` and ``token_count`` are
+        # intentionally excluded because they can describe prompt/input tokens.
+        completion_keys = (
+            "completion_tokens",
+            "output_tokens",
+            "generated_tokens",
+            "candidatesTokenCount",
+            "completionTokenCount",
+        )
+        if context in {"usage", "prediction_details"}:
+            for key in completion_keys:
+                count = _as_non_negative_int(value.get(key))
+                if count is not None:
+                    return count
+        # A response's candidate metadata is a known Vertex location for
+        # candidatesTokenCount, while arbitrary token_count remains ambiguous.
+        if context == "root":
+            count = _as_non_negative_int(value.get("candidatesTokenCount"))
+            if count is not None:
+                return count
+        for key, child in value.items():
+            if key in {"prompt_tokens", "input_tokens", "promptTokenCount", "inputTokenCount", "total_tokens"}:
+                continue
+            child_context = context
+            if key in {"usage", "usageMetadata", "usage_metadata", "tokenUsage", "token_usage"}:
+                child_context = "usage"
+            elif key in {"details", "token_details"}:
+                child_context = "prediction_details"
+            child_count = _find_actual_token_count(
+                child,
+                child_context,
+            )
+            if child_count is not None:
+                return child_count
+    elif isinstance(value, list):
+        for child in value:
+            child_count = _find_actual_token_count(child, context)
+            if child_count is not None:
+                return child_count
+    return None
+
+
+def _prediction_text(prediction: Any) -> str:
+    """Extract text from common Vertex/OpenAI/vLLM prediction shapes."""
+    if isinstance(prediction, str):
+        return prediction
+    if not isinstance(prediction, dict):
+        return str(prediction)
+    content = prediction.get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict) and isinstance(part.get("text"), str):
+                parts.append(part["text"])
+        if parts:
+            return "".join(parts)
+    message = prediction.get("message")
+    if isinstance(message, dict):
+        message_text = _prediction_text(message)
+        if message_text:
+            return message_text
+    delta = prediction.get("delta")
+    if isinstance(delta, dict):
+        delta_text = _prediction_text(delta)
+        if delta_text:
+            return delta_text
+    for key in ("text", "generated_text", "output"):
+        if isinstance(prediction.get(key), str):
+            return prediction[key]
+    return ""
+
+
+def parse_output_details(res_body: Optional[Dict[str, Any]]) -> Tuple[str, int, str]:
+    """Parse text, token count, and provenance (``actual``/``estimated``/``none``)."""
+    if not res_body or not isinstance(res_body, dict):
+        return "", 0, "none"
     predictions = res_body.get("predictions", [])
-    output_text = ""
-    if predictions:
-        pred = predictions[0]
-        if isinstance(pred, str):
-            if "Output:\n" in pred:
-                output_text = pred.split("Output:\n", 1)[1]
-            else:
-                output_text = pred
-        elif isinstance(pred, dict):
-            output_text = pred.get("content", str(pred))
-    est_tokens = max(1, int(len(output_text) / 3.8))
-    return output_text.strip(), est_tokens
+    if not predictions:
+        # Also accept OpenAI-compatible responses used by local serving tests.
+        predictions = res_body.get("choices", [])
+    if not predictions:
+        return "", 0, "none"
+
+    output_text = _prediction_text(predictions[0]).strip()
+    if isinstance(predictions[0], str) and "Output:\n" in output_text:
+        output_text = output_text.split("Output:\n", 1)[1].strip()
+
+    actual_tokens = _find_actual_token_count(res_body)
+    if actual_tokens is not None:
+        return output_text, actual_tokens, "actual"
+    if not output_text:
+        return "", 0, "none"
+    return output_text, max(1, int(len(output_text) / 3.8)), "estimated"
+
+
+def parse_output(res_body: Optional[Dict[str, Any]]) -> Tuple[str, int]:
+    """Backward-compatible text and token-count parser.
+
+    The second value is provider-reported when available and otherwise an
+    explicitly estimated count. Use :func:`parse_output_details` when the
+    provenance label is needed.
+    """
+    output_text, token_count, _ = parse_output_details(res_body)
+    return output_text, token_count
 
 
 def calculate_summary(
@@ -81,25 +193,56 @@ def calculate_summary(
     endpoint_id: str = "",
     region: str = "",
     sample_output: str = "",
+    wall_clock_s: Optional[float] = None,
+    first_token_times: Optional[List[Optional[float]]] = None,
+    token_count_sources: Optional[List[str]] = None,
+    failed_requests: int = 0,
 ) -> Dict[str, Any]:
     """
-    Calculate summary metrics including P50, P90, P99, TPS, TPM, TTFT, and ITL.
+    Calculate summary metrics including latency percentiles, throughput, and
+    separately labelled first-chunk/first-token timing.
     """
+    source_labels = [s for s in (token_count_sources or []) if s]
+    if not source_labels:
+        token_source = "none"
+    elif all(s == "actual" for s in source_labels):
+        token_source = "actual"
+    elif all(s == "estimated" for s in source_labels):
+        token_source = "estimated"
+    else:
+        token_source = "mixed"
+
+    empty_summary = {
+        "endpoint_id": endpoint_id,
+        "region": region,
+        "concurrency": concurrency,
+        "total_requests": 0,
+        "successful_requests": 0,
+        "failed_requests": failed_requests,
+        "avg_latency_s": 0.0,
+        "p50_latency_s": 0.0,
+        "p90_latency_s": 0.0,
+        "p99_latency_s": 0.0,
+        "avg_tokens": 0.0,
+        "token_count_source": token_source,
+        "request_normalized_tps": 0.0,
+        "request_normalized_tpm": 0.0,
+        "aggregate_tps": 0.0 if wall_clock_s is not None else None,
+        "aggregate_tpm": 0.0 if wall_clock_s is not None else None,
+        "wall_clock_s": round(wall_clock_s, 3) if wall_clock_s is not None else None,
+        "wall_clock_source": "observed" if wall_clock_s is not None else "unavailable",
+        "throughput_source": "observed_wall_clock" if wall_clock_s is not None else "request_service_time_legacy",
+        "tps": 0.0,
+        "tpm": 0.0,
+        "sample_output": sample_output,
+    }
     if not latencies:
-        return {
-            "endpoint_id": endpoint_id,
-            "region": region,
-            "concurrency": concurrency,
-            "total_requests": 0,
-            "avg_latency_s": 0.0,
-            "p50_latency_s": 0.0,
-            "p90_latency_s": 0.0,
-            "p99_latency_s": 0.0,
-            "avg_tokens": 0.0,
-            "tps": 0.0,
-            "tpm": 0.0,
-            "sample_output": sample_output,
-        }
+        return empty_summary
+
+    if len(token_counts) != len(latencies):
+        raise ValueError("latencies and token_counts must have equal lengths")
+    if token_count_sources and len(token_count_sources) != len(latencies):
+        raise ValueError("token_count_sources must have one label per request")
 
     total_reqs = len(latencies)
     avg_latency = sum(latencies) / total_reqs
@@ -110,8 +253,13 @@ def calculate_summary(
     avg_tokens = sum(token_counts) / total_reqs if token_counts else 0.0
 
     total_tokens = sum(token_counts)
-    total_time = sum(latencies)
-    tps = total_tokens / total_time if total_time > 0 else 0.0
+    request_time = sum(latencies)
+    measured_wall_clock = wall_clock_s if wall_clock_s is not None and wall_clock_s > 0 else None
+    request_tps = total_tokens / request_time if request_time > 0 else 0.0
+    aggregate_tps = total_tokens / measured_wall_clock if measured_wall_clock else None
+    # ``tps`` remains the historical request-normalized rate unless the caller
+    # supplies an observed wall-clock interval. Aggregate rate is then explicit.
+    tps = aggregate_tps if aggregate_tps is not None else request_tps
     tpm = tps * 60.0
 
     summary: Dict[str, Any] = {
@@ -124,6 +272,16 @@ def calculate_summary(
         "p90_latency_s": round(p90_lat, 3),
         "p99_latency_s": round(p99_lat, 3),
         "avg_tokens": round(avg_tokens, 1),
+        "successful_requests": total_reqs,
+        "failed_requests": failed_requests,
+        "token_count_source": token_source,
+        "wall_clock_s": round(measured_wall_clock, 3) if measured_wall_clock is not None else None,
+        "wall_clock_source": "observed" if measured_wall_clock is not None else "unavailable",
+        "throughput_source": "observed_wall_clock" if measured_wall_clock is not None else "request_service_time_legacy",
+        "request_normalized_tps": round(request_tps, 1),
+        "request_normalized_tpm": round(request_tps * 60.0, 0),
+        "aggregate_tps": round(aggregate_tps, 1) if aggregate_tps is not None else None,
+        "aggregate_tpm": round(aggregate_tps * 60.0, 0) if aggregate_tps is not None else None,
         "tps": round(tps, 1),
         "tpm": round(tpm, 0),
         "sample_output": sample_output,
@@ -131,7 +289,11 @@ def calculate_summary(
 
     if ttfts and len(ttfts) == total_reqs:
         avg_ttft_s = sum(ttfts) / total_reqs
+        summary["first_chunk_ms"] = round(avg_ttft_s * 1000.0, 1)
+        # Keep ttft_ms as a compatibility alias. It is deliberately labelled
+        # so callers do not mistake a network chunk for a generated token.
         summary["ttft_ms"] = round(avg_ttft_s * 1000.0, 1)
+        summary["ttft_source"] = "first_network_chunk"
 
         itl_values = []
         for lat, ttft, tok in zip(latencies, ttfts, token_counts):
@@ -143,6 +305,21 @@ def calculate_summary(
 
         avg_itl_ms = sum(itl_values) / len(itl_values) if itl_values else 0.0
         summary["itl_ms"] = round(avg_itl_ms, 1)
+        summary["itl_source"] = "first_network_chunk"
+
+    if first_token_times and len(first_token_times) == total_reqs:
+        verified_times = [t for t in first_token_times if t is not None]
+        if verified_times:
+            summary["first_token_ms"] = round(sum(verified_times) / len(verified_times) * 1000.0, 1)
+            summary["first_token_observed_requests"] = len(verified_times)
+            summary["first_token_source"] = (
+                "verified_generated_token"
+                if len(verified_times) == total_reqs
+                else "verified_generated_token_partial"
+            )
+        else:
+            summary["first_token_ms"] = None
+            summary["first_token_source"] = "unavailable"
 
     return summary
 
@@ -161,14 +338,33 @@ def format_benchmark_table(summary: Dict[str, Any]) -> str:
     lines.append(f"   P50 Latency:      {summary.get('p50_latency_s', 0.0):.2f} s")
     lines.append(f"   P90 Latency:      {summary.get('p90_latency_s', 0.0):.2f} s")
     lines.append(f"   P99 Latency:      {summary.get('p99_latency_s', 0.0):.2f} s")
+    wall_clock = summary.get("wall_clock_s")
+    if wall_clock is None:
+        lines.append("   Wall-Clock Time:  unavailable")
+    else:
+        lines.append(f"   Wall-Clock Time:  {wall_clock:.2f} s")
     lines.append("-" * 60)
     lines.append(f"   Avg Output Len:   {summary.get('avg_tokens', 0.0):.0f} tokens")
-    lines.append(f"   Avg Generation:   {summary.get('tps', 0.0):.1f} tokens/sec (TPS)")
-    lines.append(f"   Avg Throughput:   {summary.get('tpm', 0.0):,.0f} tokens/min (TPM)")
+    lines.append(f"   Token Count:      {summary.get('token_count_source', 'none')}")
+    aggregate_tps = summary.get("aggregate_tps")
+    if aggregate_tps is None:
+        lines.append("   Aggregate Rate:   unavailable (wall-clock not supplied)")
+    else:
+        lines.append(f"   Aggregate Rate:   {aggregate_tps:.1f} tokens/sec (TPS)")
+    request_tps = summary.get("request_normalized_tps", summary.get("tps", 0.0))
+    lines.append(f"   Request-Normalized: {request_tps:.1f} tokens/sec (TPS)")
+    aggregate_tpm = summary.get("aggregate_tpm")
+    if aggregate_tpm is None:
+        lines.append("   Aggregate Rate:   unavailable (wall-clock not supplied)")
+    else:
+        lines.append(f"   Aggregate Rate:   {aggregate_tpm:,.0f} tokens/min (TPM)")
 
     if "ttft_ms" in summary:
         lines.append("-" * 60)
-        lines.append(f"   Avg TTFT:         {summary.get('ttft_ms', 0.0):.1f} ms")
+        lines.append(f"   First Chunk:      {summary.get('first_chunk_ms', summary.get('ttft_ms', 0.0)):.1f} ms")
+        lines.append(f"   Timing Label:      {summary.get('ttft_source', 'first_network_chunk')}")
+    if "first_token_ms" in summary:
+        lines.append(f"   First Token:      {summary.get('first_token_ms') if summary.get('first_token_ms') is not None else 'unavailable'} ms")
     if "itl_ms" in summary:
         lines.append(f"   Avg ITL:          {summary.get('itl_ms', 0.0):.1f} ms")
 
@@ -203,14 +399,148 @@ def send_single_request(
         return elapsed, None, str(e)
 
 
-def send_streaming_request(
+def _generated_text_from_value(value: Any) -> str:
+    """Extract generated text from one decoded streaming event."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "".join(_generated_text_from_value(item) for item in value)
+    if not isinstance(value, dict):
+        return ""
+
+    # Prefer delta/text fields so transport metadata cannot be mistaken for a
+    # generated token. Prediction/content is included for Vertex responses.
+    for key in ("text", "generated_text", "delta", "content", "output"):
+        child = value.get(key)
+        if isinstance(child, str) and child.strip():
+            return child
+        if isinstance(child, (dict, list)):
+            text = _generated_text_from_value(child)
+            if text.strip():
+                return text
+    for key in ("choices", "predictions", "candidates"):
+        child = value.get(key)
+        text = _generated_text_from_value(child)
+        if text.strip():
+            return text
+    return ""
+
+
+def _fragment_contains_generated_text(fragment: bytes) -> bool:
+    """Check a complete JSON/SSE fragment for verifiable generated content."""
+    text = fragment.decode("utf-8", errors="ignore").strip()
+    if not text:
+        return False
+    candidates = [text]
+    if text.startswith("data:"):
+        candidates = [line[5:].strip() for line in text.splitlines() if line.startswith("data:")]
+    for candidate in candidates:
+        if candidate in {"[DONE]", ""}:
+            continue
+        try:
+            decoded = json.loads(candidate)
+        except (TypeError, ValueError):
+            continue
+        if _generated_text_from_value(decoded).strip():
+            return True
+    return False
+
+
+def _append_stream_text(current: str, fragment: str) -> str:
+    """Merge delta or cumulative streaming text without duplicating prefixes."""
+    fragment = fragment or ""
+    if not fragment:
+        return current
+    if not current:
+        return fragment
+    if fragment.startswith(current):
+        return fragment
+    if current.startswith(fragment):
+        return current
+    return current + fragment
+
+
+def _stream_text_and_mode(value: Dict[str, Any]) -> Tuple[str, str]:
+    """Return stream text and whether the provider sends deltas or cumulative text."""
+    choices = value.get("choices")
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        choice = choices[0]
+        if isinstance(choice.get("delta"), dict):
+            return _prediction_text(choice["delta"]), "delta"
+        if isinstance(choice.get("text"), str):
+            return choice["text"], "delta"
+        if isinstance(choice.get("message"), dict):
+            return _prediction_text(choice["message"]), "replace"
+
+    predictions = value.get("predictions")
+    if isinstance(predictions, list) and predictions:
+        return _prediction_text(predictions[0]), "cumulative"
+    return _generated_text_from_value(value), "delta"
+
+
+def _decode_stream_response(raw_text: str) -> Optional[Dict[str, Any]]:
+    """Decode JSON, SSE, or newline-delimited JSON while retaining final usage."""
+    try:
+        decoded = json.loads(raw_text)
+        return decoded if isinstance(decoded, dict) else None
+    except (TypeError, ValueError):
+        pass
+
+    events = []
+    for line in raw_text.splitlines():
+        candidate = line.strip()
+        if candidate.startswith("data:"):
+            candidate = candidate[5:].strip()
+        if not candidate or candidate == "[DONE]":
+            continue
+        try:
+            event = json.loads(candidate)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(event, dict):
+            events.append(event)
+    if not events:
+        return None
+
+    generated = ""
+    merged_usage: Dict[str, Any] = {}
+    merged_usage_metadata: Dict[str, Any] = {}
+    for event in events:
+        event_text, mode = _stream_text_and_mode(event)
+        if mode == "cumulative":
+            generated = _append_stream_text(generated, event_text)
+        elif mode == "replace":
+            generated = event_text
+        else:
+            # Delta events are appended verbatim. Repeated text is meaningful
+            # output (for example, ``ha`` followed by ``ha``).
+            generated += event_text
+        for key in ("usage", "usage_metadata"):
+            usage = event.get(key)
+            if isinstance(usage, dict):
+                merged_usage.update(usage)
+        usage_metadata = event.get("usageMetadata")
+        if isinstance(usage_metadata, dict):
+            merged_usage_metadata.update(usage_metadata)
+
+    body: Dict[str, Any] = {"predictions": [{"content": generated}]} if generated else {"predictions": []}
+    if merged_usage:
+        body["usage"] = merged_usage
+    if merged_usage_metadata:
+        body["usageMetadata"] = merged_usage_metadata
+    return body
+
+
+def send_streaming_request_detailed(
     url: str,
     headers: Dict[str, str],
     payload: Dict[str, Any],
-) -> Tuple[float, float, Optional[Dict[str, Any]], Optional[str]]:
+) -> Tuple[float, float, Optional[float], Optional[Dict[str, Any]], Optional[str]]:
     """
-    Send HTTP POST request with streaming measurement for Time-To-First-Token (TTFT).
-    Returns (elapsed_time, ttft_time, response_body, error_message).
+    Send HTTP POST request with streaming first-network-chunk measurement.
+    Returns elapsed time, first network chunk time, verified first generated-token
+    time (when observable), response body, and error message. A first network
+    chunk is never silently presented as a generated token.
     """
     stream_headers = dict(headers)
     stream_headers["Accept"] = "text/event-stream, application/json"
@@ -223,8 +553,10 @@ def send_streaming_request(
     )
     start_time = time.perf_counter()
     ttft_time = 0.0
+    first_token_time: Optional[float] = None
     first_chunk_received = False
     chunks = []
+    fragment_buffer = b""
 
     try:
         with urllib.request.urlopen(req) as response:
@@ -236,22 +568,46 @@ def send_streaming_request(
                     ttft_time = time.perf_counter() - start_time
                     first_chunk_received = True
                 chunks.append(chunk)
+                fragment_buffer += chunk
+                if first_token_time is None:
+                    # Parse complete newline-delimited events as they arrive.
+                    lines = fragment_buffer.splitlines(keepends=True)
+                    complete = b"".join(line for line in lines if line.endswith((b"\n", b"\r")))
+                    fragment_buffer = b"".join(line for line in lines if not line.endswith((b"\n", b"\r")))
+                    if complete and _fragment_contains_generated_text(complete):
+                        first_token_time = time.perf_counter() - start_time
 
             elapsed = time.perf_counter() - start_time
             if not first_chunk_received:
                 ttft_time = elapsed
 
             raw_text = b"".join(chunks).decode("utf-8", errors="ignore")
-            # Attempt to parse JSON response
-            try:
-                res_body = json.loads(raw_text)
-            except Exception:
+            # Decode JSON/SSE while retaining usage metadata that may arrive in
+            # a final event after all generated text fragments.
+            res_body = _decode_stream_response(raw_text)
+            if res_body is None:
                 res_body = {"predictions": [{"content": raw_text}]}
 
-            return elapsed, ttft_time, res_body, None
+            # A non-delimited JSON response can only verify generated content
+            # once the body has arrived. Record that fact as a late observation,
+            # rather than reporting the first transport chunk as first-token time.
+            if first_token_time is None and _fragment_contains_generated_text(raw_text.encode("utf-8")):
+                first_token_time = elapsed
+
+            return elapsed, ttft_time, first_token_time, res_body, None
     except Exception as e:
         elapsed = time.perf_counter() - start_time
-        return elapsed, elapsed, None, str(e)
+        return elapsed, ttft_time if first_chunk_received else elapsed, first_token_time, None, str(e)
+
+
+def send_streaming_request(
+    url: str,
+    headers: Dict[str, str],
+    payload: Dict[str, Any],
+) -> Tuple[float, float, Optional[Dict[str, Any]], Optional[str]]:
+    """Backward-compatible streaming API; see detailed timing metadata helper."""
+    elapsed, first_chunk, _, res_body, error = send_streaming_request_detailed(url, headers, payload)
+    return elapsed, first_chunk, res_body, error
 
 
 class BenchmarkRunner:
@@ -332,6 +688,10 @@ class BenchmarkRunner:
         latencies: List[float],
         ttfts: Optional[List[float]] = None,
         sample_output: str = "",
+        wall_clock_s: Optional[float] = None,
+        first_token_times: Optional[List[Optional[float]]] = None,
+        token_count_sources: Optional[List[str]] = None,
+        failed_requests: int = 0,
     ) -> Dict[str, Any]:
         """Calculate summary metrics for current runner configuration."""
         return calculate_summary(
@@ -342,6 +702,10 @@ class BenchmarkRunner:
             endpoint_id=self.endpoint_id or "",
             region=self.region,
             sample_output=sample_output,
+            wall_clock_s=wall_clock_s,
+            first_token_times=first_token_times,
+            token_count_sources=token_count_sources,
+            failed_requests=failed_requests,
         )
 
     def calculate_prefix_caching_summary(
@@ -382,10 +746,24 @@ class BenchmarkRunner:
             "latency_speedup_ratio": round(latency_speedup, 2),
             "cold_ttft_ms": round(cold_ttft_ms, 1),
             "warm_avg_ttft_ms": round(warm_avg_ttft_ms, 1),
+            "cold_first_chunk_ms": round(cold_ttft_ms, 1),
+            "warm_avg_first_chunk_ms": round(warm_avg_ttft_ms, 1),
             "ttft_reduction_pct": round(ttft_reduction_pct, 1),
             "cold_tps": round(cold_tps, 1),
             "warm_avg_tps": round(warm_avg_tps, 1),
             "tps_improvement_pct": round(tps_improvement_pct, 1),
+            "token_count_source": (
+                "actual"
+                if cold_run.get("token_count_source") == "actual"
+                and warm_runs
+                and all(w.get("token_count_source") == "actual" for w in warm_runs)
+                else "estimated"
+                if cold_run.get("token_count_source") == "estimated"
+                and warm_runs
+                and all(w.get("token_count_source") == "estimated" for w in warm_runs)
+                else "mixed"
+            ),
+            "ttft_source": "first_network_chunk",
         }
 
     def run(
@@ -433,32 +811,45 @@ class BenchmarkRunner:
         latencies: List[float] = []
         token_counts: List[int] = []
         ttfts: List[float] = []
+        first_token_times: List[Optional[float]] = []
+        token_count_sources: List[str] = []
+        failed_requests = 0
+        wall_clock_s = 0.0
         sample_output = ""
 
         if c == 1:
             for i in range(r):
                 if use_stream:
-                    elapsed, ttft, res_body, err = send_streaming_request(url, headers, payload)
+                    elapsed, ttft, first_token_time, res_body, err = send_streaming_request_detailed(url, headers, payload)
                 else:
                     elapsed, res_body, err = send_single_request(url, headers, payload)
-                    ttft = elapsed / 2.0  # Estimate TTFT for non-streaming
+                    first_token_time = None
+                wall_clock_s += elapsed
 
                 if err:
+                    failed_requests += 1
                     print(f"  Run {i+1}: [ERROR] {err}", flush=True)
                     continue
 
-                output_text, est_tokens = parse_output(res_body)
+                output_text, token_count, token_source = parse_output_details(res_body)
+                if token_source == "none":
+                    failed_requests += 1
+                    print(f"  Run {i+1}: [ERROR] Empty prediction response", flush=True)
+                    continue
                 if not sample_output and output_text:
                     sample_output = output_text
 
-                tps = est_tokens / elapsed if elapsed > 0 else 0
+                tps = token_count / elapsed if elapsed > 0 else 0
                 latencies.append(elapsed)
-                token_counts.append(est_tokens)
-                ttfts.append(ttft)
+                token_counts.append(token_count)
+                token_count_sources.append(token_source)
+                if use_stream:
+                    ttfts.append(ttft)
+                    first_token_times.append(first_token_time)
 
-                ttft_str = f" | TTFT = {ttft*1000:.0f}ms" if use_stream else ""
+                ttft_str = f" | First Network Chunk = {ttft*1000:.0f}ms" if use_stream else ""
                 print(
-                    f"  Run {i+1}: Latency = {elapsed:.2f}s{ttft_str} | Est. Tokens = {est_tokens} | TPS = {tps:.1f} tok/s | TPM = {tps*60:,.0f} tok/min",
+                    f"  Run {i+1}: Latency = {elapsed:.2f}s{ttft_str} | {token_source.title()} Tokens = {token_count} | TPS = {tps:.1f} tok/s | TPM = {tps*60:,.0f} tok/min",
                     flush=True,
                 )
         else:
@@ -467,43 +858,55 @@ class BenchmarkRunner:
                 batch_start = time.perf_counter()
                 with ThreadPoolExecutor(max_workers=c) as executor:
                     if use_stream:
-                        futures = [executor.submit(send_streaming_request, url, headers, payload) for _ in range(c)]
+                        futures = [executor.submit(send_streaming_request_detailed, url, headers, payload) for _ in range(c)]
                     else:
                         futures = [executor.submit(send_single_request, url, headers, payload) for _ in range(c)]
 
                     batch_tokens = 0
-                    stream_latencies = []
-                    stream_ttfts = []
+                    batch_latencies: List[float] = []
                     for f in as_completed(futures):
-                        res = f.result()
+                        try:
+                            res = f.result()
+                        except Exception as exc:
+                            failed_requests += 1
+                            print(f"    Stream failed: {exc}", flush=True)
+                            continue
                         if use_stream:
-                            elapsed, ttft, res_body, err = res
+                            elapsed, ttft, first_token_time, res_body, err = res
                         else:
                             elapsed, res_body, err = res
-                            ttft = elapsed / 2.0
+                            ttft = None
+                            first_token_time = None
 
                         if err:
+                            failed_requests += 1
                             print(f"    Stream failed: {err}", flush=True)
                             continue
 
-                        output_text, est_tokens = parse_output(res_body)
+                        output_text, token_count, token_source = parse_output_details(res_body)
+                        if token_source == "none":
+                            failed_requests += 1
+                            print("    Stream failed: Empty prediction response", flush=True)
+                            continue
                         if not sample_output and output_text:
                             sample_output = output_text
-                        batch_tokens += est_tokens
-                        stream_latencies.append(elapsed)
-                        stream_ttfts.append(ttft)
+                        batch_tokens += token_count
+                        latencies.append(elapsed)
+                        batch_latencies.append(elapsed)
+                        token_counts.append(token_count)
+                        token_count_sources.append(token_source)
+                        if use_stream:
+                            ttfts.append(ttft)
+                            first_token_times.append(first_token_time)
 
                 batch_total_time = time.perf_counter() - batch_start
+                wall_clock_s += batch_total_time
                 batch_tps = batch_tokens / batch_total_time if batch_total_time > 0 else 0
-                avg_stream_lat = sum(stream_latencies) / len(stream_latencies) if stream_latencies else 0
-                avg_stream_ttft = sum(stream_ttfts) / len(stream_ttfts) if stream_ttfts else 0
-
-                latencies.append(avg_stream_lat)
-                token_counts.append(batch_tokens)
-                ttfts.append(avg_stream_ttft)
+                successful_in_batch = len(batch_latencies)
+                avg_stream_lat = sum(batch_latencies) / successful_in_batch if successful_in_batch else 0.0
 
                 print(f"  Total Batch Time: {batch_total_time:.2f}s | Avg Stream Latency: {avg_stream_lat:.2f}s")
-                print(f"  Batch Output:     {batch_tokens} total tokens across {len(stream_latencies)} streams")
+                print(f"  Batch Output:     {batch_tokens} total tokens across {successful_in_batch} streams")
                 print(f"  Aggregate Rate:   {batch_tps:.1f} tokens/sec (TPS) | {batch_tps*60:,.0f} tokens/min (TPM)")
 
         if not latencies:
@@ -514,6 +917,10 @@ class BenchmarkRunner:
             latencies=latencies,
             token_counts=token_counts,
             ttfts=ttfts if use_stream else None,
+            first_token_times=first_token_times if use_stream else None,
+            token_count_sources=token_count_sources,
+            wall_clock_s=wall_clock_s,
+            failed_requests=failed_requests,
             concurrency=c,
             endpoint_id=endpoint_id,
             region=self.region,
@@ -569,7 +976,7 @@ class BenchmarkRunner:
         """
         Evaluate vLLM Prefix Caching efficiency.
         Runs a Cold Request (large shared system prefix), followed by Warm Requests
-        sharing the identical prefix to quantify TTFT reduction and TPS gains.
+        sharing the identical prefix to quantify first-chunk reduction and TPS gains.
         """
         endpoint_id = self.discover_endpoint_id()
         if not endpoint_id:
@@ -631,15 +1038,19 @@ Operational Guidelines: Provide concise, technically rigorous, step-by-step diag
             print(f"[ERROR] Cold request failed: {cold_err}", flush=True)
             return None
 
-        _, cold_tokens = parse_output(cold_res)
+        _, cold_tokens, cold_token_source = parse_output_details(cold_res)
+        if cold_token_source == "none":
+            print("[ERROR] Cold request returned an empty prediction response", flush=True)
+            return None
         cold_tps = cold_tokens / cold_elapsed if cold_elapsed > 0 else 0.0
         cold_run = {
             "latency": cold_elapsed,
             "ttft": cold_ttft,
             "tokens": cold_tokens,
+            "token_count_source": cold_token_source,
             "tps": cold_tps,
         }
-        print(f"  Cold Run Result: Latency = {cold_elapsed:.2f}s | TTFT = {cold_ttft*1000:.0f}ms | Tokens = {cold_tokens} | TPS = {cold_tps:.1f} tok/s")
+        print(f"  Cold Run Result: Latency = {cold_elapsed:.2f}s | First Network Chunk = {cold_ttft*1000:.0f}ms | Tokens = {cold_tokens} ({cold_token_source}) | TPS = {cold_tps:.1f} tok/s")
 
         # Phase 2: Warm Requests (Prefix should hit KV cache in vLLM)
         print("\n[Phase 2] Executing Warm Requests (Reusing Cached System Prefix)...", flush=True)
@@ -661,15 +1072,19 @@ Operational Guidelines: Provide concise, technically rigorous, step-by-step diag
             if w_err:
                 print(f"  Warm Run {idx}: [ERROR] {w_err}", flush=True)
                 continue
-            _, w_tokens = parse_output(w_res)
+            _, w_tokens, w_token_source = parse_output_details(w_res)
+            if w_token_source == "none":
+                print(f"  Warm Run {idx}: [ERROR] Empty prediction response", flush=True)
+                continue
             w_tps = w_tokens / w_elapsed if w_elapsed > 0 else 0.0
             warm_runs.append({
                 "latency": w_elapsed,
                 "ttft": w_ttft,
                 "tokens": w_tokens,
+                "token_count_source": w_token_source,
                 "tps": w_tps,
             })
-            print(f"  Warm Run {idx} Result: Latency = {w_elapsed:.2f}s | TTFT = {w_ttft*1000:.0f}ms | Tokens = {w_tokens} | TPS = {w_tps:.1f} tok/s")
+            print(f"  Warm Run {idx} Result: Latency = {w_elapsed:.2f}s | First Network Chunk = {w_ttft*1000:.0f}ms | Tokens = {w_tokens} ({w_token_source}) | TPS = {w_tps:.1f} tok/s")
 
         if not warm_runs:
             print("[ERROR] No successful warm runs completed.", flush=True)
@@ -684,9 +1099,9 @@ Operational Guidelines: Provide concise, technically rigorous, step-by-step diag
         print(f"   Warm Avg Latency:        {comparison['warm_avg_latency_s']:.2f} s")
         print(f"   Latency Speedup:         {comparison['latency_speedup_ratio']:.2f}x")
         print("-" * 70)
-        print(f"   Cold TTFT:               {comparison['cold_ttft_ms']:.0f} ms")
-        print(f"   Warm Avg TTFT:           {comparison['warm_avg_ttft_ms']:.0f} ms")
-        print(f"   TTFT Reduction:          {comparison['ttft_reduction_pct']:.1f}%")
+        print(f"   Cold First Network Chunk: {comparison['cold_ttft_ms']:.0f} ms")
+        print(f"   Warm Avg First Chunk:     {comparison['warm_avg_ttft_ms']:.0f} ms")
+        print(f"   First Chunk Reduction:    {comparison['ttft_reduction_pct']:.1f}%")
         print("-" * 70)
         print(f"   Cold TPS:                {comparison['cold_tps']:.1f} tok/s")
         print(f"   Warm Avg TPS:            {comparison['warm_avg_tps']:.1f} tok/s")
@@ -730,7 +1145,7 @@ def main():
     parser.add_argument("--runs", type=int, default=3, help="Benchmark repetition count")
     parser.add_argument("--concurrency", "-c", type=int, default=1, help="Concurrent parallel streams count")
     parser.add_argument("--streams", type=str, default="", help="Comma-separated stream counts for sweep, e.g. '1,2,4,8'")
-    parser.add_argument("--stream", "--streaming", action="store_true", help="Measure streaming TTFT metrics")
+    parser.add_argument("--stream", "--streaming", action="store_true", help="Measure streaming first-chunk metrics")
     parser.add_argument("--prefix-caching-test", action="store_true", help="Run prefix caching evaluation test")
     parser.add_argument("--prefix-prompt", type=str, default=None, help="Custom prefix text for prefix caching test")
     args = parser.parse_args()

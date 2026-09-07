@@ -1,11 +1,16 @@
 import os
 import re
 import unittest
+from concurrent.futures import Future
+from unittest.mock import patch
 from scripts.benchmark import (
     calculate_percentile,
     calculate_summary,
     BenchmarkRunner,
     format_benchmark_table,
+    parse_output_details,
+    send_streaming_request_detailed,
+    _decode_stream_response,
 )
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -51,6 +56,150 @@ class TestBenchmarkMetrics(unittest.TestCase):
         self.assertAlmostEqual(summary["avg_tokens"], 200.0, places=1)
         self.assertAlmostEqual(summary["tps"], 100.0, places=1)  # 600 tokens / 6.0 sec = 100.0 TPS
         self.assertAlmostEqual(summary["tpm"], 6000.0, places=1)
+        self.assertIsNone(summary["aggregate_tps"])
+        self.assertEqual(summary["wall_clock_source"], "unavailable")
+        self.assertAlmostEqual(summary["request_normalized_tps"], 100.0, places=1)
+
+    def test_aggregate_throughput_uses_wall_clock_and_preserves_normalized_rate(self):
+        summary = calculate_summary(
+            latencies=[2.0, 2.0],
+            token_counts=[100, 100],
+            wall_clock_s=2.0,
+            concurrency=2,
+            token_count_sources=["actual", "actual"],
+        )
+
+        self.assertEqual(summary["token_count_source"], "actual")
+        self.assertAlmostEqual(summary["aggregate_tps"], 100.0, places=1)
+        self.assertAlmostEqual(summary["request_normalized_tps"], 50.0, places=1)
+        self.assertAlmostEqual(summary["tps"], summary["aggregate_tps"], places=1)
+        self.assertEqual(summary["wall_clock_s"], 2.0)
+
+        legacy_table = format_benchmark_table(
+            calculate_summary(latencies=[1.0], token_counts=[10])
+        )
+        self.assertIn("Wall-Clock Time:  unavailable", legacy_table)
+        self.assertIn("Aggregate Rate:   unavailable", legacy_table)
+
+    def test_token_count_and_timing_provenance_labels(self):
+        text, count, source = parse_output_details(
+            {"predictions": [{"content": "triage complete"}], "usage": {"completion_tokens": 7}}
+        )
+        self.assertEqual((text, count, source), ("triage complete", 7, "actual"))
+
+        _, _, estimated_source = parse_output_details({"predictions": [{"content": "123456789"}]})
+        _, _, empty_source = parse_output_details({"predictions": []})
+        self.assertEqual(estimated_source, "estimated")
+        self.assertEqual(empty_source, "none")
+
+        summary = calculate_summary(
+            latencies=[1.0],
+            token_counts=[10],
+            ttfts=[0.2],
+            first_token_times=[0.5],
+            token_count_sources=["estimated"],
+        )
+        self.assertEqual(summary["ttft_source"], "first_network_chunk")
+        self.assertEqual(summary["first_token_source"], "verified_generated_token")
+        self.assertEqual(summary["first_chunk_ms"], 200.0)
+        self.assertEqual(summary["first_token_ms"], 500.0)
+
+        chat_text, chat_count, chat_source = parse_output_details(
+            {
+                "choices": [{"message": {"role": "assistant", "content": "chat answer"}}],
+                "usage": {"prompt_tokens": 80, "completion_tokens": 6, "total_tokens": 86},
+            }
+        )
+        self.assertEqual((chat_text, chat_count, chat_source), ("chat answer", 6, "actual"))
+
+        _, _, ambiguous_source = parse_output_details(
+            {"predictions": [{"content": "answer", "token_count": 99}], "prompt_tokens": 400}
+        )
+        self.assertEqual(ambiguous_source, "estimated")
+        _, _, fractional_source = parse_output_details(
+            {"predictions": [{"content": "answer"}], "usage": {"completion_tokens": 7.5}}
+        )
+        self.assertEqual(fractional_source, "estimated")
+
+    def test_sse_stream_merges_cumulative_text_and_final_usage(self):
+        class Response:
+            def __init__(self, body):
+                self.chunks = [body[index:index + 17] for index in range(0, len(body), 17)]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.chunks.pop(0) if self.chunks else b""
+
+        body = b"".join(
+            [
+                b'data: {"choices":[{"delta":{"content":"he"}}]}\n\n',
+                b'data: {"choices":[{"delta":{"content":"llo"}}]}\n\n',
+                b'data: {"choices":[{"delta":{"content":"ha"}}]}\n\n',
+                b'data: {"choices":[{"delta":{"content":"ha"}}],"usage":{"prompt_tokens":20,"completion_tokens":7}}\n\n',
+                b"data: [DONE]\n\n",
+            ]
+        )
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response(body)):
+            elapsed, first_chunk, first_token, response, error = send_streaming_request_detailed(
+                "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+            )
+
+        self.assertIsNone(error)
+        self.assertGreaterEqual(first_chunk, 0.0)
+        self.assertIsNotNone(first_token)
+        self.assertLessEqual(first_token, elapsed)
+        text, count, source = parse_output_details(response)
+        self.assertEqual(text, "hellohaha")
+        self.assertEqual((count, source), (7, "actual"))
+
+        cumulative = _decode_stream_response(
+            'data: {"predictions":[{"content":"he"}]}\n\n'
+            'data: {"predictions":[{"content":"hello"}]}\n\n'
+        )
+        self.assertEqual(parse_output_details(cumulative)[0], "hello")
+
+    def test_concurrent_run_counts_errors_and_uses_successful_requests(self):
+        class ImmediateExecutor:
+            def __init__(self, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def submit(self, fn, *args):
+                future = Future()
+                future.set_result(fn(*args))
+                return future
+
+        responses = iter([
+            (0.4, {"predictions": [{"content": "ok"}], "usage": {"completion_tokens": 4}}, None),
+            (0.3, None, "upstream unavailable"),
+        ])
+        runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=2, runs=1)
+        with patch("scripts.benchmark.ThreadPoolExecutor", ImmediateExecutor), \
+             patch("scripts.benchmark.send_single_request", side_effect=lambda *args: next(responses)), \
+             patch.object(runner, "get_token", return_value="token"):
+            summary = runner.run(concurrency=2, runs=1, stream=False)
+
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary["successful_requests"], 1)
+        self.assertEqual(summary["failed_requests"], 1)
+        self.assertEqual(summary["token_count_source"], "actual")
+        self.assertGreater(summary["aggregate_tps"], 0)
+
+    def test_no_response_does_not_become_one_estimated_token(self):
+        runner = BenchmarkRunner(endpoint_id="endpoint", runs=1)
+        with patch("scripts.benchmark.send_single_request", return_value=(0.1, {"predictions": []}, None)), \
+             patch.object(runner, "get_token", return_value="token"):
+            self.assertIsNone(runner.run(runs=1, stream=False))
 
     def test_calculate_summary_empty_lists(self):
         summary = calculate_summary(latencies=[], token_counts=[], concurrency=1)
@@ -128,7 +277,7 @@ class TestBenchmarkMetrics(unittest.TestCase):
         self.assertIn("P50 Latency", table_output)
         self.assertIn("P90 Latency", table_output)
         self.assertIn("P99 Latency", table_output)
-        self.assertIn("TTFT", table_output)
+        self.assertIn("First Chunk", table_output)
         self.assertIn("ITL", table_output)
         self.assertIn("96.0 tokens/sec (TPS)", table_output)
 
