@@ -709,10 +709,17 @@ def main(args: Optional[List[str]] = None) -> int:
         print(f"No evaluation cases found in: {evalset_path}", file=sys.stderr)
         return 1
 
-    if getattr(parsed_args, "split_train_val", False):
-        split_index = min(6, len(eval_cases))
-        trainset = eval_cases[:split_index]
-        valset = eval_cases[split_index:] if split_index < len(eval_cases) else eval_cases[:split_index]
+    if parsed_args.split_train_val:
+        if len(eval_cases) <= 6:
+            print(
+                "--split-train-val requires at least 7 evaluation cases: "
+                "6 for training and at least 1 for validation. Add validation cases "
+                "before running with this flag.",
+                file=sys.stderr,
+            )
+            return 1
+        trainset = eval_cases[:6]
+        valset = eval_cases[6:]
     else:
         trainset = eval_cases
         valset = eval_cases
@@ -756,29 +763,48 @@ def main(args: Optional[List[str]] = None) -> int:
         seed=parsed_args.seed,
     )
 
-    # Select the best candidate that strictly passes anti-memorization validation
-    candidate_pool: List[Dict[str, str]] = []
-    if hasattr(result, "candidates") and isinstance(result.candidates, list):
-        candidate_pool.extend(result.candidates)
-    if hasattr(result, "best_candidate") and result.best_candidate not in candidate_pool:
-        candidate_pool.append(result.best_candidate)
+    # GEPA scores align with candidate indices; best_idx can refer to a candidate
+    # rejected by our anti-memorization validation. Rank only valid candidates.
+    candidates = result.candidates
+    scores = result.val_aggregate_scores
+    if len(candidates) != len(scores):
+        print("GEPA returned mismatched candidate and validation score counts.", file=sys.stderr)
+        return 1
 
-    valid_candidates: List[Dict[str, str]] = []
-    for cand in candidate_pool:
-        if isinstance(cand, dict):
-            is_val, _ = validate_runbook_candidate(cand)
-            if is_val:
-                valid_candidates.append(cand)
+    selected_index: Optional[int] = None
+    selected_score: Optional[float] = None
+    for index, (candidate, score) in enumerate(zip(candidates, scores)):
+        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+            print(f"GEPA returned an invalid validation score for candidate {index}.", file=sys.stderr)
+            return 1
+        if not isinstance(candidate, dict) or not candidate or not all(
+            isinstance(name, str) and isinstance(text, str)
+            for name, text in candidate.items()
+        ):
+            continue
+        is_valid, _ = validate_runbook_candidate(candidate)
+        # Strict comparison preserves the earliest candidate when scores tie.
+        if is_valid and (selected_score is None or score > selected_score):
+            selected_index = index
+            selected_score = float(score)
 
-    best_candidate = valid_candidates[-1] if valid_candidates else seed_candidate
+    best_candidate = seed_candidate if selected_index is None else candidates[selected_index]
     metadata: Dict[str, Any] = {
         "task_lm": parsed_args.task_lm,
         "reflection_lm": parsed_args.reflection_lm,
         "max_metric_calls": parsed_args.max_metric_calls,
         "seed": parsed_args.seed,
+        "selected_candidate_index": selected_index,
+        "selected_validation_score": selected_score,
+        "best_score": selected_score,
+        "selection_reason": (
+            "seed_fallback_no_valid_candidates"
+            if selected_index is None
+            else "highest_valid_validation_score"
+        ),
     }
-    if hasattr(result, "best_score"):
-        metadata["best_score"] = getattr(result, "best_score")
+    if selected_index is None:
+        print("No valid GEPA candidate remained; saving the seed without a validation score.")
 
     print(f"Saving evolved runbooks to {output_dir}...")
     save_runbooks(candidate=best_candidate, output_dir=output_dir, metadata=metadata)
@@ -788,4 +814,3 @@ def main(args: Optional[List[str]] = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -831,8 +831,10 @@ class GCESpotOrchestrator:
             }
             if success and res["monitoring"]["status"] in {"TERMINATED_NOT_DELETED", "STOPPED_NOT_DELETED"}:
                 res["evaluation_status"] = res.get("status")
-                res["status"] = "CLEANUP_UNVERIFIED"
+                res["cleanup_status"] = "UNVERIFIED"
                 res["monitoring"]["error"] = "Instance reached a terminal state but absence was not verified"
+                if res.get("status") not in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
+                    res["status"] = "CLEANUP_UNVERIFIED"
             if not success:
                 monitor_status = res["monitoring"]["status"]
                 if monitor_status == "TIMED_OUT":

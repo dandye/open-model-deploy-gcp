@@ -64,6 +64,107 @@ describe("GCE evaluation lifecycle", () => {
     }
   });
 
+  it("preserves the evaluator's rich failed JSON and report", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+    try {
+      const report = join(dir, "report.md");
+      const result = join(dir, "result.json");
+      const originalReport = "# Rich failure\n\nerror: judge unavailable\n";
+      const originalResult = JSON.stringify({
+        status: "FAILED",
+        error: { type: "RuntimeError", message: "judge unavailable" },
+        provenance: { run_id: "run-123" },
+      }, null, 2) + "\n";
+      writeFileSync(report, originalReport);
+      writeFileSync(result, originalResult);
+      const shell = runBash(`
+        set -euo pipefail
+        source ${JSON.stringify(helper)}
+        write_evaluation_failure ${JSON.stringify(report)} ${JSON.stringify(result)} model 'wrapper observed exit 1' 1
+      `);
+      expect(shell.status).toBe(0);
+      expect(readFileSync(report, "utf8")).toBe(originalReport);
+      expect(readFileSync(result, "utf8")).toBe(originalResult);
+      expect(() => readFileSync(`${result}.pre_failure`)).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves rich failed JSON and synthesizes a missing report", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+    try {
+      const report = join(dir, "report.md");
+      const result = join(dir, "result.json");
+      const originalResult = JSON.stringify({
+        status: "FAILED",
+        error: { type: "RuntimeError", message: "judge unavailable" },
+        provenance: { run_id: "run-456" },
+      }, null, 2) + "\n";
+      writeFileSync(result, originalResult);
+      const shell = runBash(`
+        set -euo pipefail
+        source ${JSON.stringify(helper)}
+        write_evaluation_failure ${JSON.stringify(report)} ${JSON.stringify(result)} model 'wrapper observed exit 1' 1
+      `);
+      expect(shell.status).toBe(0);
+      expect(readFileSync(result, "utf8")).toBe(originalResult);
+      expect(readFileSync(report, "utf8")).toContain("Status: FAILED");
+      expect(readFileSync(report, "utf8")).toContain("Evaluator exit status: 1");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("moves stale success and malformed artifacts to sidecars before fallback", () => {
+    for (const originalResult of [
+      JSON.stringify({ status: "COMPLETED", summary: { pass_rate: 100 } }),
+      "{ malformed json",
+    ]) {
+      const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+      try {
+        const report = join(dir, "report.md");
+        const result = join(dir, "result.json");
+        const originalReport = "old report\n";
+        writeFileSync(report, originalReport);
+        writeFileSync(result, originalResult);
+        const shell = runBash(`
+          set -euo pipefail
+          source ${JSON.stringify(helper)}
+          write_evaluation_failure ${JSON.stringify(report)} ${JSON.stringify(result)} model 'evaluator exited with status 7' 7
+        `);
+        expect(shell.status).toBe(0);
+        expect(readFileSync(`${report}.pre_failure`, "utf8")).toBe(originalReport);
+        expect(readFileSync(`${result}.pre_failure`, "utf8")).toBe(originalResult);
+        const fallback = JSON.parse(readFileSync(result, "utf8"));
+        expect(fallback.status).toBe("FAILED");
+        expect(fallback.evaluation.evaluator_exit_status).toBe(7);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("makes a failed fallback authoritative after a successful artifact", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+    try {
+      const report = join(dir, "report.md");
+      const result = join(dir, "result.json");
+      writeFileSync(report, "successful report\n");
+      writeFileSync(result, JSON.stringify({ status: "COMPLETED", summary: { pass_rate: 100 } }));
+      const shell = runBash(`
+        set -euo pipefail
+        source ${JSON.stringify(helper)}
+        write_evaluation_failure ${JSON.stringify(report)} ${JSON.stringify(result)} model 'nonzero after stale success' 23
+      `);
+      expect(shell.status).toBe(0);
+      expect(JSON.parse(readFileSync(result, "utf8")).status).toBe("FAILED");
+      expect(readFileSync(`${report}.pre_failure`, "utf8")).toBe("successful report\n");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("preserves successful evaluator output without inventing scores", () => {
     const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
     try {
@@ -119,6 +220,32 @@ describe("GCE evaluation lifecycle", () => {
         rm -f "$log"
       `);
       expect(result.status).toBe(0);
+    }
+  });
+
+  it("embeds rich failure preservation in each boot path", () => {
+    for (const path of startupScripts) {
+      const prefix = readFileSync(path, "utf8").split("# ==============================================================================", 1)[0];
+      const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+      try {
+        const report = join(dir, "report.md");
+        const result = join(dir, "result.json");
+        const originalResult = JSON.stringify({
+          status: "FAILED",
+          error: { type: "RuntimeError", message: "embedded evaluator failure" },
+          provenance: { run_id: "embedded-789" },
+        }, null, 2) + "\n";
+        writeFileSync(result, originalResult);
+        const shell = runBash(`${prefix}
+          set -euo pipefail
+          write_evaluation_failure ${JSON.stringify(report)} ${JSON.stringify(result)} model 'wrapper failure' 9
+        `);
+        expect(shell.status).toBe(0);
+        expect(readFileSync(result, "utf8")).toBe(originalResult);
+        expect(readFileSync(report, "utf8")).toContain("Status: FAILED");
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     }
   });
 });

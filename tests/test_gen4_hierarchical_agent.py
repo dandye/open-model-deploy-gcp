@@ -126,6 +126,89 @@ def test_worker_agent_epistemic_tool_restriction():
     assert "post_case_comment" not in tool_names
 
 
+@pytest.mark.parametrize("tool_name", [
+    "isolate_host", "isolate", "block_ip", "close_case", "post_case_comment",
+    "get_case", "unknown_tool",
+])
+def test_worker_rejects_tools_outside_allowlist_before_environment_dispatch(tool_name):
+    env = MagicMock()
+    worker = SOCRunbookWorkerAgent(
+        classification="C2_BEACON", runbook_name="basic_ioc_enrichment.md",
+        runbook_content="# Investigate evidence", managed_model="offline-model",
+        environment=env,
+    )
+    response = json.loads(worker._execute_tool_action(tool_name, {"hostname": "test-host"}))
+    assert response["status"] == "DENIED"
+    env.query_tool.assert_not_called()
+    env.execute_action.assert_not_called()
+
+
+@pytest.mark.parametrize("entrypoint", ["investigate", "query"])
+def test_worker_denied_containment_is_recorded_as_attempt_not_execution(entrypoint):
+    env = SocEnvironment()
+    before = env.get_state_snapshot()
+    worker = SOCRunbookWorkerAgent(
+        classification="C2_BEACON", runbook_name="basic_ioc_enrichment.md",
+        runbook_content="# Investigate evidence", managed_model="offline-model",
+        environment=env,
+    )
+    outputs = [
+        ('Action: isolate_host(hostname="DESKTOP-FIN-08")', {}),
+        ('Action: get_ip_address_report(ip="198.51.100.42")', {}),
+        ('Final Answer: Escalate the investigation to the supervisor.', {}),
+    ]
+    with patch.object(worker, "_call_llm_step", side_effect=outputs):
+        if entrypoint == "investigate":
+            _, trajectory, _ = worker.investigate("Investigate an alert")
+        else:
+            trajectory = worker.query("Investigate an alert")["trajectory"]
+    assert env.get_state_snapshot() == before
+    assert trajectory[0]["attempted_tool"] == "isolate_host"
+    assert trajectory[0]["execution_status"] == "DENIED"
+    assert trajectory[0]["tool"] is None
+    assert trajectory[1]["tool"] == "get_ip_address_report"
+    verification = verify_agent_trajectory(trajectory, expected_actions=["isolate_host"])
+    assert verification.executed_actions == []
+    assert verification.epistemic_step_count == 1
+    assert not verification.operator_actions_matched
+
+    from scripts.eval_cost_engine import DecisionOutcome, classify_decision_outcome
+    from agent.gepa_runbook_optimizer import calculate_loss_penalty
+
+    assert classify_decision_outcome(
+        ground_truth_threat=False,
+        executed_actions=verification.executed_actions,
+    ) == DecisionOutcome.TRUE_NEGATIVE
+    assert classify_decision_outcome(
+        ground_truth_threat=True,
+        executed_actions=verification.executed_actions,
+    ) == DecisionOutcome.FALSE_NEGATIVE
+    assert calculate_loss_penalty(
+        expected_label="BENIGN", actual_verdict="BENIGN",
+        executed_actions=verification.executed_actions, prohibited_actions=["isolate_host"],
+    ) == 1.0
+
+
+def test_inherited_worker_execute_tool_alias_enforces_permissions_and_allows_investigation():
+    env = MagicMock()
+    env.query_tool.return_value = {"status": "SUCCESS", "reputation": "UNKNOWN"}
+    worker = SOCRunbookWorkerAgent(
+        classification="C2_BEACON", runbook_name="basic_ioc_enrichment.md",
+        runbook_content="# Investigate evidence", managed_model="offline-model",
+        environment=env,
+    )
+    denied = json.loads(worker._execute_tool("isolate_host", {"hostname": "test-host"}))
+    assert denied["status"] == "DENIED"
+    env.execute_action.assert_not_called()
+    env.query_tool.assert_not_called()
+
+    args = {"ip": "198.51.100.42"}
+    allowed = json.loads(worker._execute_tool("get_ip_address_report", args))
+    assert allowed["status"] == "SUCCESS"
+    env.query_tool.assert_called_once_with("get_ip_address_report", args)
+    env.execute_action.assert_not_called()
+
+
 def test_worker_investigation_react_loop_and_report():
     """Verify worker executes investigation tools and produces WorkerInvestigationReport."""
     env = SocEnvironment()
@@ -620,4 +703,3 @@ def test_hierarchical_agent_with_runbooks_dict():
         _, kwargs = mock_worker_cls.call_args
         assert kwargs["runbook_name"] == "malware_triage.md"
         assert "Custom EVOLVED Malware Runbook" in kwargs["runbook_content"]
-

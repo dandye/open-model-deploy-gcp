@@ -418,6 +418,18 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         self.tools = worker_tools
         self.tools_dict = {tool.__name__: tool for tool in worker_tools}
 
+    def _is_tool_allowed(self, tool_name: str) -> bool:
+        return tool_name in self.tools_dict and is_epistemic_tool(tool_name)
+
+    def _execute_tool_action(self, tool_name: str, args: Dict[str, Any]) -> str:
+        """Enforce worker permissions before either simulated or live dispatch."""
+        if not self._is_tool_allowed(tool_name):
+            return json.dumps({
+                "status": "DENIED",
+                "error": f"Worker cannot execute '{tool_name}'. Use an available investigation tool; containment belongs to the supervisor.",
+            })
+        return super()._execute_tool_action(tool_name, args)
+
     def investigate(
         self,
         prompt: str,
@@ -471,13 +483,11 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             if parsed:
                 tool_name, tool_args = parsed
                 observation = self._execute_tool_action(tool_name, tool_args)
-                trajectory.append({
-                    "iteration": iteration + 1,
-                    "tool": tool_name,
-                    "args": tool_args,
-                    "observation": observation,
-                    "agent": "worker",
-                })
+                step = self._tool_trajectory_step(
+                    iteration + 1, tool_name, tool_args, observation,
+                )
+                step["agent"] = "worker"
+                trajectory.append(step)
                 current_prompt += f"{step_output}\nObservation: {observation}\n"
                 continue
 

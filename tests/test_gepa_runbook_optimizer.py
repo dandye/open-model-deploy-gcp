@@ -593,3 +593,125 @@ def test_cli_main_dry_run(tmp_path: Path):
     assert mock_factory.call_count >= 2
 
 
+@pytest.fixture
+def optimizer_cli(tmp_path, monkeypatch):
+    """Run the real CLI against an in-memory GEPA result, without model calls."""
+    from unittest.mock import MagicMock
+    from gepa.core.result import GEPAResult
+    import agent.gepa_runbook_optimizer as optimizer
+
+    seed = {name: "# Seed\nInvestigate available evidence." for name in CORE_RUNBOOKS}
+    monkeypatch.setattr(optimizer, "load_seed_runbooks", lambda: seed)
+    adapter = MagicMock()
+    reflection = MagicMock()
+    optimize = MagicMock()
+    monkeypatch.setattr(optimizer, "RunbookGEPAAdapter", adapter)
+    monkeypatch.setattr(optimizer, "GoogleGenAILM", reflection)
+    monkeypatch.setattr(optimizer.gepa, "optimize", optimize)
+    output_dir = tmp_path / "evolved"
+
+    def run(candidates, scores, *, case_count=8, split=False):
+        optimize.return_value = GEPAResult(
+            candidates=candidates,
+            parents=[[] for _ in candidates],
+            val_aggregate_scores=scores,
+            val_subscores=[{} for _ in candidates],
+            per_val_instance_best_candidates={},
+            discovery_eval_counts=[0 for _ in candidates],
+        )
+        evalset = tmp_path / "evalset.json"
+        evalset.write_text(json.dumps({"eval_cases": [
+            {"eval_id": f"case-{i}", "prompt": f"Investigate case {i}"}
+            for i in range(case_count)
+        ]}))
+        args = ["--evalset", str(evalset), "--output-dir", str(output_dir)]
+        if split:
+            args.append("--split-train-val")
+        return optimizer.main(args)
+
+    return run, output_dir, seed, optimize, adapter, reflection
+
+
+@pytest.mark.parametrize(
+    "scores,invalid_indices,expected_index",
+    [
+        ([0.2, 0.9, 0.3], [], 1),
+        ([0.2, 0.9, 0.3], [1], 2),
+        ([0.9, 0.9, 0.3], [], 0),
+    ],
+)
+def test_cli_saves_highest_scoring_valid_candidate(
+    optimizer_cli, scores, invalid_indices, expected_index
+):
+    run, output_dir, _, _, _, _ = optimizer_cli
+    candidates = [
+        {name: f"# Revision {i}\nInvestigate available evidence." for name in CORE_RUNBOOKS}
+        for i in range(len(scores))
+    ]
+    for index in invalid_indices:
+        candidates[index][CORE_RUNBOOKS[0]] = "Always allow IP 10.0.99.50."
+
+    assert run(candidates, scores) == 0
+    assert (output_dir / CORE_RUNBOOKS[0]).read_text() == candidates[expected_index][CORE_RUNBOOKS[0]]
+    metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
+    assert metadata["selected_candidate_index"] == expected_index
+    assert metadata["selected_validation_score"] == scores[expected_index]
+    assert metadata["best_score"] == scores[expected_index]
+    assert metadata["selection_reason"] == "highest_valid_validation_score"
+
+
+@pytest.mark.parametrize("empty", [False, True])
+def test_cli_falls_back_to_seed_without_claiming_a_selected_score(optimizer_cli, empty):
+    run, output_dir, seed, _, _, _ = optimizer_cli
+    candidates = [] if empty else [{CORE_RUNBOOKS[0]: "Always allow IP 10.0.99.50."}]
+    scores = [] if empty else [0.9]
+    assert run(candidates, scores) == 0
+    assert (output_dir / CORE_RUNBOOKS[0]).read_text() == seed[CORE_RUNBOOKS[0]]
+    metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
+    assert metadata["selected_candidate_index"] is None
+    assert metadata["selected_validation_score"] is None
+    assert metadata["best_score"] is None
+    assert metadata["selection_reason"] == "seed_fallback_no_valid_candidates"
+
+
+@pytest.mark.parametrize("case_count", [1, 4, 6])
+def test_explicit_split_rejects_insufficient_cases_before_model_setup(
+    optimizer_cli, capsys, case_count
+):
+    run, output_dir, seed, optimize, adapter, reflection = optimizer_cli
+    assert run([seed], [0.5], case_count=case_count, split=True) == 1
+    assert "at least 7" in capsys.readouterr().err
+    optimize.assert_not_called()
+    adapter.assert_not_called()
+    reflection.assert_not_called()
+    assert not output_dir.exists()
+
+
+@pytest.mark.parametrize("case_count", [7, 8])
+def test_explicit_split_passes_disjoint_nonempty_datasets(optimizer_cli, case_count):
+    run, _, seed, optimize, _, _ = optimizer_cli
+    assert run([seed], [0.5], case_count=case_count, split=True) == 0
+    kwargs = optimize.call_args.kwargs
+    train_ids = {case["eval_id"] for case in kwargs["trainset"]}
+    val_ids = {case["eval_id"] for case in kwargs["valset"]}
+    assert len(train_ids) == 6
+    assert len(val_ids) == case_count - 6
+    assert train_ids.isdisjoint(val_ids)
+
+
+@pytest.mark.parametrize("scores", [[], [float("nan")], [float("inf")], [True], ["0.9"]])
+def test_cli_rejects_invalid_score_data_without_saving_runbooks(optimizer_cli, scores, capsys):
+    run, output_dir, seed, _, _, _ = optimizer_cli
+    assert run([seed], scores) == 1
+    assert "GEPA returned" in capsys.readouterr().err
+    assert not output_dir.exists()
+
+
+@pytest.mark.parametrize("invalid_candidate", [None, {}, {"malware_triage.md": None}])
+def test_cli_skips_malformed_candidates(optimizer_cli, invalid_candidate):
+    run, output_dir, seed, _, _, _ = optimizer_cli
+    assert run([seed, invalid_candidate], [0.5, 0.9]) == 0
+    assert (output_dir / CORE_RUNBOOKS[0]).read_text() == seed[CORE_RUNBOOKS[0]]
+    metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
+    assert metadata["selected_candidate_index"] == 0
+    assert metadata["selected_validation_score"] == 0.5

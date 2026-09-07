@@ -438,17 +438,38 @@ def test_run_sweep_preserves_evaluation_failure_when_monitoring_times_out():
     assert result[0]["monitoring"]["status"] == "TIMED_OUT"
 
 
-def test_run_sweep_marks_terminal_instance_without_absence_verification():
-    """A stopped VM is terminal, but its deletion still needs verification."""
+@pytest.mark.parametrize("terminal_status", ["STOPPED_NOT_DELETED", "TERMINATED_NOT_DELETED"])
+@pytest.mark.parametrize("evaluation_status", ["FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"])
+def test_run_sweep_records_cleanup_concern_without_overwriting_authoritative_evaluation(
+    terminal_status, evaluation_status
+):
+    """Cleanup uncertainty is independent from every authoritative failure result."""
+    orch = GCESpotOrchestrator(dry_run=False, timeout_seconds=12)
+    target = ALL_GCE_SPOT_TARGETS[0]
+    with patch.object(orch, "launch_instance", return_value="spot-test"), \
+         patch.object(orch, "monitor_instance_serial", return_value=True), \
+         patch.object(orch, "collect_results", return_value={"flavor": target.flavor, "status": evaluation_status, "error": "evaluator failed"}):
+        orch.last_monitor_outcome = terminal_status
+        result = orch.run_sweep(models_filter=[target.flavor])
+    assert result[0]["status"] == evaluation_status
+    assert result[0]["evaluation_status"] == evaluation_status
+    assert result[0]["cleanup_status"] == "UNVERIFIED"
+    assert result[0]["monitoring"]["status"] == terminal_status
+
+
+@pytest.mark.parametrize("terminal_status", ["STOPPED_NOT_DELETED", "TERMINATED_NOT_DELETED"])
+def test_run_sweep_marks_successful_evaluation_cleanup_unverified(terminal_status):
+    """A successful evaluation gets a distinct cleanup status when deletion is unverified."""
     orch = GCESpotOrchestrator(dry_run=False, timeout_seconds=12)
     target = ALL_GCE_SPOT_TARGETS[0]
     with patch.object(orch, "launch_instance", return_value="spot-test"), \
          patch.object(orch, "monitor_instance_serial", return_value=True), \
          patch.object(orch, "collect_results", return_value={"flavor": target.flavor, "status": "COMPLETED"}):
-        orch.last_monitor_outcome = "STOPPED_NOT_DELETED"
+        orch.last_monitor_outcome = terminal_status
         result = orch.run_sweep(models_filter=[target.flavor])
     assert result[0]["status"] == "CLEANUP_UNVERIFIED"
     assert result[0]["evaluation_status"] == "COMPLETED"
+    assert result[0]["cleanup_status"] == "UNVERIFIED"
 
 
 def test_cli_main_dry_run():

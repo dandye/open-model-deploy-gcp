@@ -33,6 +33,36 @@ write_evaluation_failure() {
   local json_flavor json_reason
   json_flavor="$(json_escape "${flavor}")"
   json_reason="$(json_escape "${reason}")"
+  local existing_failure=0
+  if [[ -s "${json_path}" && -r "${json_path}" ]] && python3 - "${json_path}" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as stream:
+        value = json.load(stream)
+    raise SystemExit(0 if isinstance(value, dict) and str(value.get("status", "")).upper() == "FAILED" else 1)
+except (OSError, ValueError, TypeError):
+    raise SystemExit(1)
+PY
+  then
+    existing_failure=1
+  fi
+  if (( existing_failure )); then
+    if [[ ! -s "${report_path}" || ! -r "${report_path}" ]]; then
+      cat >"${report_path}" <<EOF
+# SOC Tier 1 Evaluation Report: ${flavor}
+
+- Status: FAILED
+- Evaluator exit status: ${evaluator_status}
+- Failure: ${reason}
+- Scores: unavailable because the evaluation did not complete
+EOF
+    fi
+    return 0
+  fi
+  if [[ -e "${json_path}" ]]; then cp -f "${json_path}" "${json_path}.pre_failure" 2>/dev/null || true; fi
+  if [[ -e "${report_path}" ]]; then cp -f "${report_path}" "${report_path}.pre_failure" 2>/dev/null || true; fi
   cat >"${report_path}" <<EOF
 # SOC Tier 1 Evaluation Report: ${flavor}
 
