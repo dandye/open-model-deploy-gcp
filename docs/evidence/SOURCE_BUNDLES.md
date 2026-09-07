@@ -1,6 +1,6 @@
 # Verified experiment source bundles
 
-New live GCE sweep CLI launches require an exact source archive URI, SHA-256 digest, and source commit. Startup verifies those bytes before running the evaluator. This establishes source identity independently of model/image identity and cleanup.
+New live GCE sweep CLI launches require an exact source archive URI, SHA-256 digest, source commit, and a [pinned serving configuration](SERVING_CONFIGURATION.md). Startup verifies those bytes before running the evaluator. This establishes source identity independently of model/image identity and cleanup.
 
 ## Build locally
 
@@ -49,6 +49,6 @@ The evaluator and startup lifecycle both record `source_bundle`. Collection requ
 
 ## Verification boundary
 
-`source_verification.status: VERIFIED` means the trusted startup wrapper verified the archive bytes and manifest before execution. Source-to-commit attribution comes from the local builder; this is not an independent Git signature verification or runtime attestation. Local source file hashes remain available in evaluator provenance. Model weights, serving container, OS image, and installed Python dependencies still need pinning before a reproducible live comparison.
+`source_verification.status: VERIFIED` means the trusted startup wrapper verified the archive bytes and manifest before execution. Source-to-commit attribution comes from the local builder; this is not an independent Git signature verification or runtime attestation. Local source file hashes remain available in evaluator provenance. The [serving configuration](SERVING_CONFIGURATION.md) separately pins requested model revisions and server/evaluator container digests. Weight-byte attestation, resolved OS identity, host dependencies, and live comparison evidence remain separate.
 
 Legacy low-level launch callers and startup scripts without source metadata remain available and explicitly unverified. New live sweep CLI launches require source pins. Dry runs need no pins and make no cloud calls. See [experiment run recovery](EXPERIMENT_RUNS.md) and the [experiment protocol](../experiment_protocol.md) for the remaining approvals and evidence requirements.

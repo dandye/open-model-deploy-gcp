@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "target_flavor": "gemma-2-2b-it",
+  "model_repository": "google/gemma-2-2b-it",
+  "model_revision": null,
+  "serving_image": null,
+  "evaluator_image": null,
+  "boot_image": null,
+  "parameters": {
+    "tensor_parallel_size": 1,
+    "max_model_len": null,
+    "gpu_memory_utilization": null
+  }
+}

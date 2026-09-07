@@ -8,6 +8,8 @@ import re
 import uuid
 from typing import Any
 
+from scripts.serving_config import validate_serving_config
+
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -78,6 +80,14 @@ def validate_run(data: dict[str, Any]) -> None:
         uri = source.get("uri")
         if not isinstance(uri, str) or not re.fullmatch(r"gs://[a-z0-9][a-z0-9._-]*/[^\s*?\[\]#]+", uri) or "|~|" in uri:
             raise ValueError("Invalid source bundle URI")
+    serving = config.get("serving_config")
+    if serving is not None:
+        if source is None:
+            raise ValueError("Serving configuration requires a pinned source bundle")
+        try:
+            validate_serving_config(serving, target=config.get("target"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid serving configuration: {exc}") from exc
     target = config.get("target", {})
     if not isinstance(target, dict):
         raise ValueError("Invalid target configuration")

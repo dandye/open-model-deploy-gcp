@@ -84,6 +84,13 @@ def capture_provenance(root: Path, dataset: Path, configuration: dict[str, Any],
     status = git("status", "--porcelain", "--untracked-files=normal")
     source_commit = git("rev-parse", "HEAD")
     source_bundle = _verified_source_bundle()
+    serving_runtime = None
+    if "EXPERIMENT_SERVING_RUNTIME" in os.environ:
+        from scripts.serving_config import serving_evidence_matches
+        serving_runtime = json.loads(os.environ["EXPERIMENT_SERVING_RUNTIME"])
+        if (not source_bundle or not isinstance(serving_runtime, dict)
+                or not serving_evidence_matches(serving_runtime, serving_runtime.get("configuration"))):
+            raise ValueError("Invalid pinned serving runtime evidence")
     if source_bundle:
         source_commit = source_bundle["source_commit"]
     sources = ["scripts/eval_soc_agent.py", "scripts/eval_cost_engine.py",
@@ -96,6 +103,7 @@ def capture_provenance(root: Path, dataset: Path, configuration: dict[str, Any],
         "run_id": effective_run_id,
         "source_commit": source_commit,
         "source_bundle": source_bundle,
+        "serving_runtime": serving_runtime,
         "source_identity": {"status": "bundle_verified_at_startup" if source_bundle else "observed" if source_commit else "unknown",
                             "reason": None if source_commit else "Git revision unavailable at capture time"},
         "source_dirty": None if source_bundle else status != "" if status is not None else None,
