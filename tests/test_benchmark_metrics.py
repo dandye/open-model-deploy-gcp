@@ -1,17 +1,70 @@
 import os
 import re
 import unittest
+from io import BufferedReader, BytesIO, RawIOBase
+from http.client import HTTPResponse
+from concurrent.futures import Future
+from unittest.mock import patch
 from scripts.benchmark import (
     calculate_percentile,
     calculate_summary,
     BenchmarkRunner,
     format_benchmark_table,
+    parse_output_details,
+    send_streaming_request_detailed,
+    _decode_stream_response,
 )
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestBenchmarkMetrics(unittest.TestCase):
+    def test_first_token_arrival_does_not_wait_for_next_http_chunk(self):
+        # Exercise the real HTTPResponse reader, including HTTP chunk framing.
+        # The raw transport advances a deterministic clock as bytes arrive.
+        clock = [0.0]
+        events = [
+            b'data: {"choices":[{"delta":{"content":"A"}}]}\n\n',
+            b'data: {"choices":[{"delta":{"content":"B"}}]}\n\n',
+            b'data: [DONE]\n\n',
+        ]
+        arrivals = [(0.0, b'HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n')]
+        arrivals += [(at, f'{len(event):x}\r\n'.encode() + event + b'\r\n')
+                     for at, event in zip([0.01, 0.25, 0.5], events)]
+        arrivals.append((0.5, b'0\r\n\r\n'))
+
+        class Transport(RawIOBase):
+            def readable(self):
+                return True
+
+            def readinto(self, buffer):
+                if not arrivals:
+                    return 0
+                at, chunk = arrivals.pop(0)
+                clock[0] = at
+                count = min(len(buffer), len(chunk))
+                buffer[:count] = chunk[:count]
+                if count < len(chunk):
+                    arrivals.insert(0, (at, chunk[count:]))
+                return count
+
+        class Socket:
+            def makefile(self, *args):
+                return BufferedReader(Transport())
+
+        response = HTTPResponse(Socket())
+        response.begin()
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=response), \
+             patch("scripts.benchmark.time.perf_counter", side_effect=lambda: clock[0]):
+            elapsed, first_chunk, first_token, body, error = send_streaming_request_detailed(
+                "https://example.test", {}, {}
+            )
+        self.assertIsNone(error)
+        self.assertEqual(first_chunk, 0.01)
+        self.assertEqual(first_token, 0.01)
+        self.assertEqual(elapsed, 0.5)
+        self.assertEqual(parse_output_details(body)[0], "AB")
+
 
     def test_calculate_percentile_known_values(self):
         # Odd number of samples
@@ -51,6 +104,301 @@ class TestBenchmarkMetrics(unittest.TestCase):
         self.assertAlmostEqual(summary["avg_tokens"], 200.0, places=1)
         self.assertAlmostEqual(summary["tps"], 100.0, places=1)  # 600 tokens / 6.0 sec = 100.0 TPS
         self.assertAlmostEqual(summary["tpm"], 6000.0, places=1)
+        self.assertIsNone(summary["aggregate_tps"])
+        self.assertEqual(summary["wall_clock_source"], "unavailable")
+        self.assertAlmostEqual(summary["request_normalized_tps"], 100.0, places=1)
+
+    def test_aggregate_throughput_uses_wall_clock_and_preserves_normalized_rate(self):
+        summary = calculate_summary(
+            latencies=[2.0, 2.0],
+            token_counts=[100, 100],
+            wall_clock_s=2.0,
+            concurrency=2,
+            token_count_sources=["actual", "actual"],
+        )
+
+        self.assertEqual(summary["token_count_source"], "actual")
+        self.assertAlmostEqual(summary["aggregate_tps"], 100.0, places=1)
+        self.assertAlmostEqual(summary["request_normalized_tps"], 50.0, places=1)
+        self.assertAlmostEqual(summary["tps"], summary["aggregate_tps"], places=1)
+        self.assertEqual(summary["wall_clock_s"], 2.0)
+
+        legacy_table = format_benchmark_table(
+            calculate_summary(latencies=[1.0], token_counts=[10])
+        )
+        self.assertIn("Wall-Clock Time:  unavailable", legacy_table)
+        self.assertIn("Aggregate Rate:   unavailable", legacy_table)
+
+    def test_token_count_and_timing_provenance_labels(self):
+        text, count, source = parse_output_details(
+            {"predictions": [{"content": "triage complete"}], "usage": {"completion_tokens": 7}}
+        )
+        self.assertEqual((text, count, source), ("triage complete", 7, "actual"))
+
+        _, _, estimated_source = parse_output_details({"predictions": [{"content": "123456789"}]})
+        _, _, empty_source = parse_output_details({"predictions": []})
+        self.assertEqual(estimated_source, "estimated")
+        self.assertEqual(empty_source, "none")
+
+        summary = calculate_summary(
+            latencies=[1.0],
+            token_counts=[10],
+            ttfts=[0.2],
+            first_token_times=[0.5],
+            token_count_sources=["estimated"],
+        )
+        self.assertEqual(summary["ttft_source"], "first_network_chunk")
+        self.assertEqual(summary["first_token_source"], "verified_generated_token")
+        self.assertEqual(summary["first_chunk_ms"], 200.0)
+        self.assertEqual(summary["first_token_ms"], 500.0)
+
+        chat_text, chat_count, chat_source = parse_output_details(
+            {
+                "choices": [{"message": {"role": "assistant", "content": "chat answer"}}],
+                "usage": {"prompt_tokens": 80, "completion_tokens": 6, "total_tokens": 86},
+            }
+        )
+        self.assertEqual((chat_text, chat_count, chat_source), ("chat answer", 6, "actual"))
+
+        _, _, ambiguous_source = parse_output_details(
+            {"predictions": [{"content": "answer", "token_count": 99}], "prompt_tokens": 400}
+        )
+        self.assertEqual(ambiguous_source, "estimated")
+        _, _, fractional_source = parse_output_details(
+            {"predictions": [{"content": "answer"}], "usage": {"completion_tokens": 7.5}}
+        )
+        self.assertEqual(fractional_source, "estimated")
+
+    def test_sse_stream_merges_cumulative_text_and_final_usage(self):
+        class Response:
+            def __init__(self, body):
+                self.chunks = [body[index:index + 17] for index in range(0, len(body), 17)]
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.chunks.pop(0) if self.chunks else b""
+
+        body = b"".join(
+            [
+                b'data: {"choices":[{"delta":{"content":"he"}}]}\n\n',
+                b'data: {"choices":[{"delta":{"content":"llo"}}]}\n\n',
+                b'data: {"choices":[{"delta":{"content":"ha"}}]}\n\n',
+                b'data: {"choices":[{"delta":{"content":"ha"}}],"usage":{"prompt_tokens":20,"completion_tokens":7}}\n\n',
+                b"data: [DONE]\n\n",
+            ]
+        )
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response(body)):
+            elapsed, first_chunk, first_token, response, error = send_streaming_request_detailed(
+                "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+            )
+
+        self.assertIsNone(error)
+        self.assertGreaterEqual(first_chunk, 0.0)
+        self.assertIsNotNone(first_token)
+        self.assertLessEqual(first_token, elapsed)
+        text, count, source = parse_output_details(response)
+        self.assertEqual(text, "hellohaha")
+        self.assertEqual((count, source), (7, "actual"))
+
+        cumulative = _decode_stream_response(
+            'data: {"predictions":[{"content":"he"}]}\n\n'
+            'data: {"predictions":[{"content":"hello"}]}\n\n'
+        )
+        self.assertEqual(parse_output_details(cumulative)[0], "hello")
+
+    def test_sse_heartbeats_metadata_and_multiline_data_are_valid(self):
+        body = (
+            ': heartbeat\n'
+            'id: 7\n'
+            'retry: 1000\n'
+            '\n'
+            'data: {"choices":[{"delta":{\n'
+            'data: "content":"hello"}}]}\n'
+            '\n'
+        )
+        decoded = _decode_stream_response(body)
+        self.assertEqual(parse_output_details(decoded)[0], "hello")
+
+    def test_stream_error_after_partial_content_preserves_diagnostic_and_fails(self):
+        class Response:
+            status = 500
+
+            def __init__(self, body):
+                self.stream = BytesIO(body)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.stream.read(size)
+
+        body = (
+            b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n'
+            b'event: error\n'
+            b'data: {"error":{"code":500,"message":"upstream exploded"}}\n\n'
+        )
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response(body)):
+            elapsed, _, _, response, error = send_streaming_request_detailed(
+                "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+            )
+        self.assertGreaterEqual(elapsed, 0.0)
+        self.assertIsNotNone(error)
+        self.assertIn("upstream exploded", error)
+        self.assertEqual(parse_output_details(response)[0], "partial")
+
+    def test_stream_error_envelope_and_immediate_error_are_failures(self):
+        class Response:
+            def __init__(self, body):
+                self.stream = BytesIO(body)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.stream.read(size)
+
+        for body, expected in [
+            (b'data: {"error":"quota exceeded"}\n\n', "quota exceeded"),
+            (b'event: error\ndata: {"data":{"error":{"message":"bad model"}}}\n\n', "bad model"),
+            (b'data: {"error":{"code":500}}\n\n', "provider error (500)"),
+            (b'data: {"error":{}}\n\n', "provider error"),
+        ]:
+            with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response(body)):
+                _, _, _, response, error = send_streaming_request_detailed(
+                    "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+                )
+            self.assertIn(expected, error)
+            self.assertEqual(parse_output_details(response)[2], "none")
+
+    def test_malformed_stream_is_not_transport_text_or_success(self):
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                if getattr(self, "done", False):
+                    return b""
+                self.done = True
+                return b'not-json-and-not-an-event'
+
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response()):
+            _, _, _, response, error = send_streaming_request_detailed(
+                "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+            )
+        self.assertIn("malformed", error)
+        self.assertEqual(parse_output_details(response)[2], "none")
+
+    def test_runner_accounts_for_real_stream_failures_single_and_concurrent(self):
+        class Response:
+            def __init__(self, body):
+                self.stream = BytesIO(body)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.stream.read(size)
+
+        success = b'data: {"choices":[{"delta":{"content":"ok"}}],"usage":{"completion_tokens":2}}\n\n'
+        failure = b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\nevent: error\ndata: {"error":{"message":"provider failed"}}\n\n'
+
+        runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=1, runs=2)
+        with patch.object(runner, "get_token", return_value="token"), \
+             patch("scripts.benchmark.urllib.request.urlopen", side_effect=[Response(success), Response(failure)]):
+            summary = runner.run(concurrency=1, runs=2, stream=True)
+        self.assertEqual(summary["successful_requests"], 1)
+        self.assertEqual(summary["failed_requests"], 1)
+        self.assertEqual(summary["avg_tokens"], 2.0)
+
+        concurrent_runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=2, runs=1)
+        with patch.object(concurrent_runner, "get_token", return_value="token"), \
+             patch("scripts.benchmark.urllib.request.urlopen", side_effect=[Response(failure), Response(failure)]):
+            summary = concurrent_runner.run(concurrency=2, runs=1, stream=True)
+        self.assertIsNone(summary)
+
+    def test_concurrent_runner_keeps_success_when_one_stream_fails(self):
+        class ImmediateExecutor:
+            def __init__(self, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def submit(self, fn, *args):
+                future = Future()
+                future.set_result(fn(*args))
+                return future
+
+        responses = iter([
+            (0.4, 0.1, 0.2, {"predictions": [{"content": "ok"}], "usage": {"completion_tokens": 4}}, None),
+            (0.3, 0.1, None, {"predictions": [{"content": "partial"}]}, "HTTP 500: provider failed"),
+        ])
+        runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=2, runs=1)
+        with patch("scripts.benchmark.ThreadPoolExecutor", ImmediateExecutor), \
+             patch("scripts.benchmark.send_streaming_request_detailed", side_effect=lambda *args: next(responses)), \
+             patch.object(runner, "get_token", return_value="token"):
+            summary = runner.run(concurrency=2, runs=1, stream=True)
+        self.assertEqual(summary["successful_requests"], 1)
+        self.assertEqual(summary["failed_requests"], 1)
+        self.assertEqual(summary["avg_tokens"], 4.0)
+
+    def test_concurrent_run_counts_errors_and_uses_successful_requests(self):
+        class ImmediateExecutor:
+            def __init__(self, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def submit(self, fn, *args):
+                future = Future()
+                future.set_result(fn(*args))
+                return future
+
+        responses = iter([
+            (0.4, {"predictions": [{"content": "ok"}], "usage": {"completion_tokens": 4}}, None),
+            (0.3, None, "upstream unavailable"),
+        ])
+        runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=2, runs=1)
+        with patch("scripts.benchmark.ThreadPoolExecutor", ImmediateExecutor), \
+             patch("scripts.benchmark.send_single_request", side_effect=lambda *args: next(responses)), \
+             patch.object(runner, "get_token", return_value="token"):
+            summary = runner.run(concurrency=2, runs=1, stream=False)
+
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary["successful_requests"], 1)
+        self.assertEqual(summary["failed_requests"], 1)
+        self.assertEqual(summary["token_count_source"], "actual")
+        self.assertGreater(summary["aggregate_tps"], 0)
+
+    def test_no_response_does_not_become_one_estimated_token(self):
+        runner = BenchmarkRunner(endpoint_id="endpoint", runs=1)
+        with patch("scripts.benchmark.send_single_request", return_value=(0.1, {"predictions": []}, None)), \
+             patch.object(runner, "get_token", return_value="token"):
+            self.assertIsNone(runner.run(runs=1, stream=False))
 
     def test_calculate_summary_empty_lists(self):
         summary = calculate_summary(latencies=[], token_counts=[], concurrency=1)
@@ -128,7 +476,7 @@ class TestBenchmarkMetrics(unittest.TestCase):
         self.assertIn("P50 Latency", table_output)
         self.assertIn("P90 Latency", table_output)
         self.assertIn("P99 Latency", table_output)
-        self.assertIn("TTFT", table_output)
+        self.assertIn("First Chunk", table_output)
         self.assertIn("ITL", table_output)
         self.assertIn("96.0 tokens/sec (TPS)", table_output)
 

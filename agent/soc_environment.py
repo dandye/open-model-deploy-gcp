@@ -318,6 +318,21 @@ class SocEnvironment:
 
         self._load_state(self._initial_state_config)
 
+    @classmethod
+    def from_eval_case(cls, case: Dict[str, Any]) -> "SocEnvironment":
+        """Create an isolated case environment with its declared tool fault."""
+        environment = cls()
+        fault = case.get("fault_injection")
+        if fault is not None:
+            if not isinstance(fault, dict) or not isinstance(fault.get("tool"), str) or not fault["tool"].strip():
+                raise ValueError("fault_injection must identify a nonempty tool name")
+            environment.inject_fault(
+                tool_name=fault["tool"],
+                status_code=fault.get("status_code", 503),
+                error=fault.get("error", "Service Unavailable"),
+            )
+        return environment
+
     def _load_state(self, state_config: Optional[Dict[str, Any]] = None) -> None:
         """Populates internal dataclasses from default state or provided config."""
         self.hosts = _get_default_hosts()

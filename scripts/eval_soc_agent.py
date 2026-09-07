@@ -31,6 +31,10 @@ from pydantic import BaseModel, Field
 
 from agent.soc_environment import SocEnvironment
 from agent.soc_tier1_agent import SocDecision, SocTier1Agent, extract_soc_decision
+try:
+    from agent.hierarchical_soc_agent import HierarchicalSOCTier1Agent
+except ModuleNotFoundError:
+    from hierarchical_soc_agent import HierarchicalSOCTier1Agent
 from scripts.eval_cost_engine import (
     AssetCriticality,
     DecisionOutcome,
@@ -50,6 +54,7 @@ from scripts.eval_trajectory_verifier import (
     is_epistemic_tool,
     verify_agent_trajectory,
 )
+from scripts.evaluation_provenance import capture_provenance, utc_now
 
 
 class SemanticJudgeResult(BaseModel):
@@ -283,9 +288,14 @@ def run_evaluation(
     chronicle_customer_id: Optional[str] = None,
     chronicle_region: Optional[str] = None,
     gen: int = 3,
+    agent_mode: str = "single",
+    use_runbooks: bool = True,
+    runbooks_dir: Optional[str] = None,
     mcp_provider: str = "default",
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
+    if agent_mode == "hierarchical" and mcp_provider != "default":
+        raise ValueError("The GEPA MCP provider is supported only in single-agent mode")
     chron_proj = chronicle_project or os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
     chron_cust = chronicle_customer_id or os.environ.get("CHRONICLE_CUSTOMER_ID", "a13f6726-efed-452e-9008-8fe0d3cb0f75")
     chron_reg = chronicle_region or os.environ.get("CHRONICLE_REGION", "us")
@@ -302,6 +312,9 @@ def run_evaluation(
 
     print("==================================================================")
     print(f" Running Gemma SOC Tier 1 Evaluation: {flavor} (Gen {eval_gen})")
+    print(f" Agent Mode: {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})")
+    if agent_mode == "hierarchical":
+        print(f" Procedural Runbooks: {'Enabled' if use_runbooks else 'Disabled (Generic Control)'}")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
     print(f" MCP Tool Provider: {mcp_provider.upper()}")
     if use_live_mcp:
@@ -326,20 +339,43 @@ def run_evaluation(
         if region == "us-central1":
             region = "us-east5"
 
+    provenance = capture_provenance(
+        ROOT_DIR, evalset_path,
+        {"flavor": flavor, "managed_model": managed_model, "endpoint_id": endpoint_id,
+         "cloudrun_url": cloudrun_url, "project_id": project_id, "region": region,
+         "generation": eval_gen, "agent_mode": agent_mode, "use_runbooks": use_runbooks,
+         "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider},
+        (Path(runbooks_dir) if runbooks_dir else ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books")
+        if agent_mode == "hierarchical" and use_runbooks else None,
+    )
+
     soc_env: Optional[SocEnvironment] = None
     if not use_live_mcp and eval_gen == 3:
         soc_env = SocEnvironment()
 
-    agent = SocTier1Agent(
-        project_id=project_id,
-        region=region,
-        endpoint_id=endpoint_id,
-        cloudrun_url=cloudrun_url,
-        managed_model=managed_model,
-        use_live_mcp=use_live_mcp,
-        environment=soc_env,
-        mcp_provider=mcp_provider,
-    )
+    if agent_mode == "hierarchical":
+        agent = HierarchicalSOCTier1Agent(
+            project_id=project_id,
+            region=region,
+            endpoint_id=endpoint_id,
+            cloudrun_url=cloudrun_url,
+            managed_model=managed_model,
+            use_live_mcp=use_live_mcp,
+            environment=soc_env,
+            use_runbooks=use_runbooks,
+            runbooks_dir=Path(runbooks_dir) if runbooks_dir else None,
+        )
+    else:
+        agent = SocTier1Agent(
+            project_id=project_id,
+            region=region,
+            endpoint_id=endpoint_id,
+            cloudrun_url=cloudrun_url,
+            managed_model=managed_model,
+            use_live_mcp=use_live_mcp,
+            environment=soc_env,
+            mcp_provider=mcp_provider,
+        )
     agent.set_up()
 
     # Judge client uses us-central1 / global for Gemini 2.5 Pro availability
@@ -352,15 +388,7 @@ def run_evaluation(
 
         # Setup per-case dynamic environment state and fault injection if in Gen 3
         if not use_live_mcp and eval_gen == 3:
-            case_env = SocEnvironment()
-            fault_cfg = case.get("fault_injection")
-            if fault_cfg and isinstance(fault_cfg, dict):
-                case_env.inject_fault(
-                    tool_name=fault_cfg.get("tool", ""),
-                    status_code=fault_cfg.get("status_code", 503),
-                    error=fault_cfg.get("error", "Service Unavailable"),
-                )
-            agent.environment = case_env
+            agent.environment = SocEnvironment.from_eval_case(case)
 
         start_time = time.time()
         res = agent.query(prompt=case["prompt"])
@@ -546,9 +574,15 @@ def run_evaluation(
         )
     print("==================================================================")
 
+    provenance["completed_at"] = utc_now()
+    provenance["lifecycle"].update({"status": "completed", "evaluation": "completed"})
     return {
+        "status": "COMPLETED",
+        "provenance": provenance,
         "flavor": flavor,
         "generation": eval_gen,
+        "agent_mode": agent_mode,
+        "use_runbooks": use_runbooks,
         "mcp_provider": mcp_provider,
         "summary": summary,
         "case_results": results,
@@ -560,12 +594,16 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
     summary = eval_data["summary"]
     flavor = eval_data.get("flavor", "Unknown Model")
     eval_gen = eval_data.get("generation", 3)
+    agent_mode = eval_data.get("agent_mode", "single")
+    use_runbooks = eval_data.get("use_runbooks", True)
     mcp_prov = eval_data.get("mcp_provider", "default")
 
     lines = [
         f"# SOC Evaluation Report: {flavor}",
         f"\n**Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}",
         f"**Evaluation Generation:** Gen {eval_gen}",
+        f"**Agent Architecture:** {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})",
+        f"**Procedural Runbooks:** {'Enabled' if use_runbooks else 'Disabled (Generic Investigation Control)'}",
         f"**Live SecOps MCP:** {'Enabled' if live_mcp else 'Disabled'}",
         f"**MCP Tool Provider:** {mcp_prov.upper()}",
         "\n## 1. Executive Summary",
@@ -708,6 +746,88 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
     return "\n".join(lines) + "\n"
 
 
+def format_failure_report(failure_data: Dict[str, Any]) -> str:
+    """Render an explicit failed-run artifact without benchmark defaults."""
+    provenance = failure_data.get("provenance", {})
+    lifecycle = provenance.get("lifecycle", {})
+    error = failure_data.get("error", {})
+    error_message = error.get("message", "Unknown evaluation failure") if isinstance(error, dict) else str(error)
+    error_type = error.get("type", "Exception") if isinstance(error, dict) else "Exception"
+    lines = [
+        f"# SOC Evaluation Failed: {failure_data.get('flavor', 'Unknown Model')}",
+        "",
+        "**Status:** FAILED",
+        f"**Generation:** {failure_data.get('generation', 'Unknown')}",
+        f"**Agent architecture:** {failure_data.get('agent_mode', 'Unknown')}",
+        "",
+        "No benchmark summary or case scores were produced because the evaluation raised an exception.",
+        "",
+        "## Failure",
+        "",
+        f"- **Exception type:** `{error_type}`",
+        f"- **Message:** {error_message}",
+        "",
+        "## Lifecycle",
+        "",
+        f"- **Evaluation:** `{lifecycle.get('evaluation', 'failed')}`",
+        f"- **Artifact collection:** `{lifecycle.get('artifact_collection', 'unverified')}`",
+        f"- **Cleanup:** `{lifecycle.get('cleanup', 'unverified')}`",
+        "",
+        "This failure artifact records observed inputs and the exception. It contains no fabricated scores, cost, latency, or cleanup claim.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _initial_cli_provenance(
+    evalset_file: Path,
+    args: argparse.Namespace,
+    eval_gen: int,
+) -> Dict[str, Any]:
+    """Capture inputs before execution so CLI failures remain attributable."""
+    runbooks_path = (
+        Path(args.runbooks_dir)
+        if args.runbooks_dir
+        else ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books"
+    ) if args.agent_mode == "hierarchical" and args.use_runbooks else None
+    return capture_provenance(
+        ROOT_DIR,
+        evalset_file,
+        {
+            "flavor": args.flavor,
+            "managed_model": args.managed_model,
+            "endpoint_id": args.endpoint,
+            "cloudrun_url": args.cloudrun_url,
+            "project_id": args.project_id,
+            "region": args.region,
+            "generation": eval_gen,
+            "agent_mode": args.agent_mode,
+            "use_runbooks": args.use_runbooks,
+            "use_live_mcp": args.live_mcp,
+            "mcp_provider": args.mcp_provider,
+        },
+        runbooks_path,
+    )
+
+
+def _write_cli_failure_artifacts(
+    failure_data: Dict[str, Any],
+    json_path: Optional[Path],
+    report_path: Optional[Path],
+) -> None:
+    """Best-effort persistence for a failed CLI invocation."""
+    if json_path:
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(failure_data, f, indent=2)
+        print(f"Failure JSON saved to: {json_path}")
+    if report_path:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(format_failure_report(failure_data))
+        print(f"Failure report saved to: {report_path}")
+
+
 def main() -> None:
     """CLI entrypoint for running the SOC evaluation runner."""
     parser = argparse.ArgumentParser(description="Evaluate Gemma SOC Agent against Rubrics, SDT, and Loss Matrix.")
@@ -731,6 +851,24 @@ def main() -> None:
     parser.add_argument("--managed-model", default=None, help="Hosted MaaS model name")
     parser.add_argument("--project-id", default=os.environ.get("GCP_PROJECT_ID", "secops-demo-env"))
     parser.add_argument("--region", default=os.environ.get("GCP_REGION", "us-central1"))
+    parser.add_argument(
+        "--agent-mode",
+        choices=["single", "hierarchical"],
+        default="single",
+        help="Agent architecture mode: single for standard SocTier1Agent, hierarchical for HierarchicalSOCTier1Agent (supervisor-worker)",
+    )
+    parser.add_argument(
+        "--use-runbooks",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable procedural runbooks in hierarchical agent mode",
+    )
+    parser.add_argument(
+        "--runbooks-dir",
+        type=str,
+        default=None,
+        help="Directory containing custom or evolved runbook markdown files",
+    )
     parser.add_argument(
         "--mcp-provider",
         dest="mcp_provider",
@@ -765,26 +903,63 @@ def main() -> None:
         else:
             evalset_file = ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"
 
-    eval_data = run_evaluation(
-        evalset_path=evalset_file,
-        flavor=args.flavor,
-        endpoint_id=args.endpoint,
-        cloudrun_url=args.cloudrun_url,
-        managed_model=args.managed_model,
-        project_id=args.project_id,
-        region=args.region,
-        use_live_mcp=args.live_mcp,
-        chronicle_project=args.chronicle_project,
-        chronicle_customer_id=args.chronicle_customer_id,
-        chronicle_region=args.chronicle_region,
-        gen=args.gen,
-        mcp_provider=args.mcp_provider,
-    )
-
-    # Save JSON raw artifacts
     json_path = Path(args.output_json) if args.output_json else (
         Path(args.output_report).with_suffix(".json") if args.output_report else None
     )
+    report_path = Path(args.output_report) if args.output_report else None
+    initial_eval_gen = int(args.gen)
+    try:
+        with open(evalset_file, "r", encoding="utf-8") as f:
+            initial_eval_gen = int(json.load(f).get("generation", initial_eval_gen))
+    except (AttributeError, OSError, TypeError, ValueError, json.JSONDecodeError):
+        # run_evaluation remains responsible for reporting malformed input.
+        pass
+    initial_provenance = _initial_cli_provenance(evalset_file, args, initial_eval_gen)
+
+    try:
+        eval_data = run_evaluation(
+            evalset_path=evalset_file,
+            flavor=args.flavor,
+            endpoint_id=args.endpoint,
+            cloudrun_url=args.cloudrun_url,
+            managed_model=args.managed_model,
+            project_id=args.project_id,
+            region=args.region,
+            use_live_mcp=args.live_mcp,
+            chronicle_project=args.chronicle_project,
+            chronicle_customer_id=args.chronicle_customer_id,
+            chronicle_region=args.chronicle_region,
+            gen=args.gen,
+            agent_mode=args.agent_mode,
+            use_runbooks=args.use_runbooks,
+            runbooks_dir=args.runbooks_dir,
+            mcp_provider=args.mcp_provider,
+        )
+    except Exception as error:
+        initial_provenance["completed_at"] = utc_now()
+        initial_provenance["lifecycle"].update({
+            "status": "failed",
+            "evaluation": "failed",
+            "artifact_collection": "unverified",
+            "cleanup": "unverified",
+        })
+        failure_data = {
+            "status": "FAILED",
+            "error": {"type": type(error).__name__, "message": str(error)},
+            "provenance": initial_provenance,
+            "flavor": args.flavor,
+            "generation": initial_eval_gen,
+            "agent_mode": args.agent_mode,
+            "use_runbooks": args.use_runbooks,
+        }
+        try:
+            _write_cli_failure_artifacts(failure_data, json_path, report_path)
+        except Exception as artifact_error:
+            print(f"Could not persist failure artifact: {artifact_error}", file=sys.stderr)
+        print(f"Evaluation failed: {type(error).__name__}: {error}", file=sys.stderr)
+        raise SystemExit(1) from error
+
+    # Save JSON raw artifacts
     if json_path:
         json_path.parent.mkdir(parents=True, exist_ok=True)
         with open(json_path, "w", encoding="utf-8") as f:
@@ -792,8 +967,7 @@ def main() -> None:
         print(f"Evaluation JSON saved to: {json_path}")
 
     # Save Markdown report
-    if args.output_report:
-        report_path = Path(args.output_report)
+    if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         report_text = format_markdown_report(eval_data, live_mcp=args.live_mcp)
         with open(report_path, "w", encoding="utf-8") as f:

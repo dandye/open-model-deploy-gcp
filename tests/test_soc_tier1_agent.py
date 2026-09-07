@@ -341,7 +341,8 @@ def test_gemma_agent_query_maas_unbounded_token_budgeting():
     mock_creds.valid = True
 
     with patch("google.auth.default", return_value=(mock_creds, "test-project")), \
-         patch("google.genai.Client", return_value=mock_client):
+         patch("google.genai.Client", return_value=mock_client), \
+         patch.object(agent, "discover_active_vertex_endpoint", side_effect=AssertionError("Explicit managed model must not discover another backend")) as discover:
         # Default max_tokens=None should omit max_output_tokens (None)
         res_default = agent.query(prompt="Complex multi-step reasoning prompt")
         assert "MaaS" in res_default["backend"]
@@ -350,6 +351,7 @@ def test_gemma_agent_query_maas_unbounded_token_budgeting():
         # Explicit max_tokens should set max_output_tokens
         res_explicit = agent.query(prompt="Targeted prompt", max_tokens=4096)
         assert captured_configs[-1].max_output_tokens == 4096
+        discover.assert_not_called()
 
 
 def test_parse_action_react_syntax():
@@ -614,7 +616,6 @@ Triage done directly."""
 
 def test_soc_persona_investigation_tool_requirement():
     assert "You must invoke at least one investigation tool" in SOC_TIER1_PERSONA
-
 
 
 

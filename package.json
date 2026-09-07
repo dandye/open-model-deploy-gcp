@@ -1,0 +1,10 @@
+{
+  "name": "open-model-deploy-gcp-evidence",
+  "private": true,
+  "scripts": {
+    "evidence:audit": "bun run tools/evidence_audit.ts",
+    "test:evidence": "bun test tests/evidence_audit.test.ts",
+    "test:preflight": "bun test tests/validate_experiment.test.ts",
+    "experiment:validate": "bun scripts/validate_experiment.ts"
+  }
+}

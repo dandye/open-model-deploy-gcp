@@ -75,7 +75,20 @@ class GemmaAgent:
             system_instruction: Custom system persona and instruction.
             tools: Optional list of Python callables for function calling.
         """
-        self.project_id = project_id or os.environ.get("GCP_PROJECT_ID", "secops-demo-env")
+        resolved_project_id = (
+            project_id
+            or os.environ.get("PROJECT_ID")
+            or os.environ.get("GCP_PROJECT_ID")
+            or os.environ.get("GOOGLE_CLOUD_PROJECT")
+        )
+        if not resolved_project_id:
+            try:
+                import google.auth
+                _, default_project = google.auth.default()
+                resolved_project_id = default_project
+            except Exception:
+                pass
+        self.project_id = resolved_project_id or ""
         self.region = region
         self.endpoint_id = endpoint_id
         self.cloudrun_url = cloudrun_url
@@ -239,7 +252,7 @@ class GemmaAgent:
         active_endpoint = self.endpoint_id
         active_region = self.region
 
-        if not active_endpoint:
+        if not active_endpoint and not self.managed_model:
             discovery = self.discover_active_vertex_endpoint()
             if discovery:
                 active_endpoint = discovery["endpoint_id"]
@@ -376,5 +389,4 @@ class GemmaAgent:
                 "error": f"Managed model query failed: {e}",
                 "backend": "Managed Model Error",
             }
-
 

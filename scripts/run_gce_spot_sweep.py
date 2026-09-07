@@ -7,7 +7,7 @@ Manages the lifecycle of ephemeral Spot GPU VMs attached to Local NVMe SSD scrat
 2. Attaches Local NVMe SSD scratch drives and configures startup automation.
 3. Streams serial console logs and monitors job progress.
 4. Collects benchmark and SOC Tier 1 evaluation outputs from Google Cloud Storage.
-5. Verifies self-deletion ($0.00 idle compute leak guarantee).
+5. Records deletion requests and checks whether the resource is absent.
 """
 
 import argparse
@@ -24,6 +24,28 @@ from typing import Any, Dict, List, Optional
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+
+
+def _artifact_evaluation_status(data: Dict[str, Any]) -> str:
+    """Resolve explicit evaluator signals; cleanup and launch identity are separate."""
+    evaluation = data.get("evaluation")
+    evaluation = evaluation if isinstance(evaluation, dict) else {}
+    provenance = data.get("provenance")
+    provenance = provenance if isinstance(provenance, dict) else {}
+    lifecycle = provenance.get("lifecycle")
+    lifecycle = lifecycle if isinstance(lifecycle, dict) else {}
+    signals = [data.get("status"), evaluation.get("status"),
+               lifecycle.get("evaluation"), lifecycle.get("status")]
+    statuses = [str(value).strip().upper() for value in signals if value is not None]
+    for status in statuses:
+        if status in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
+            return status
+    exit_status = evaluation.get("evaluator_exit_status")
+    if isinstance(exit_status, int) and not isinstance(exit_status, bool) and exit_status != 0:
+        return "FAILED"
+    if statuses and all(status == "COMPLETED" for status in statuses):
+        return "COMPLETED"
+    return "UNVERIFIED"
 
 
 @dataclass
@@ -623,6 +645,7 @@ class GCESpotOrchestrator:
         zone = getattr(self, "active_instance_zone", self.zone)
         if self.dry_run:
             print(f"[DRY RUN] Monitoring serial console for instance '{instance_name}' in zone '{zone}' (timeout: {max_timeout}s)...")
+            self.last_monitor_outcome = "SYNTHETIC"
             return True
 
         print(f"[INFO] Monitoring instance '{instance_name}' in zone '{zone}' until self-deletion...")
@@ -649,12 +672,23 @@ class GCESpotOrchestrator:
             status = check_res.stdout.strip()
             stderr = check_res.stderr
 
-            if check_res.returncode != 0 or "not found" in stderr.lower() or not status:
-                print(f"[INFO] Instance '{instance_name}' has self-deleted cleanly ($0 idle cost verified).")
-                return True
+            if check_res.returncode != 0:
+                if "not found" in stderr.lower():
+                    print(f"[INFO] Instance '{instance_name}' is absent after cleanup request.")
+                    self.last_monitor_outcome = "ABSENT_OBSERVED"
+                    return True
+                print(f"[ERROR] Could not verify instance '{instance_name}' state: {stderr.strip()}")
+                self.last_monitor_outcome = "STATE_CHECK_FAILED"
+                return False
+
+            if not status:
+                print(f"[ERROR] Instance '{instance_name}' returned no status; cleanup is unverified.")
+                self.last_monitor_outcome = "STATE_UNAVAILABLE"
+                return False
 
             if status in ["TERMINATED", "STOPPED"]:
                 print(f"[INFO] Instance '{instance_name}' is in {status} state.")
+                self.last_monitor_outcome = f"{status}_NOT_DELETED"
                 return True
 
             elapsed = int(time.time() - start_time)
@@ -662,6 +696,7 @@ class GCESpotOrchestrator:
             time.sleep(poll_interval)
 
         print(f"[WARNING] Monitoring timed out after {max_timeout}s for instance '{instance_name}'.")
+        self.last_monitor_outcome = "TIMED_OUT"
         return False
 
     def collect_results(
@@ -677,35 +712,13 @@ class GCESpotOrchestrator:
             print(f"[DRY RUN] Collecting results for flavor '{target.flavor}' from {self.output_gcs_bucket}...")
             return {
                 "flavor": target.flavor,
-                "status": "COMPLETED",
-                "summary": {
-                    "total_cases": 5,
-                    "passed_cases": 5,
-                    "pass_rate": 100.0,
-                    "avg_rubric_score": 95.0,
-                    "avg_latency_s": 11.5,
-                    "total_tokens": 12000,
-                    "avg_generation_tps": 65.0,
-                    "avg_total_tps": 220.0,
-                    "total_tool_calls": 5,
-                },
-                "case_results": [
-                    {
-                        "eval_id": f"CASE-0{i}",
-                        "name": f"Case {i}",
-                        "rubric_score": 95.0,
-                        "grounding_score": 1.0,
-                        "passed": True,
-                        "latency_s": 2.3,
-                        "generation_tps": 65.0,
-                    }
-                    for i in range(1, 6)
-                ],
-                "benchmark": {
-                    "avg_latency_s": 1.2,
-                    "tps": 70.0,
-                    "ttft_ms": 100.0,
-                },
+                "status": "SYNTHETIC",
+                "synthetic": True,
+                "summary": None,
+                "case_results": [],
+                "benchmark": None,
+                "artifact_collection": {"status": "NOT_REQUESTED", "run_identity_verified": False},
+                "error": "Dry run does not execute an evaluator or collect measured artifacts",
             }
 
         dest_dir = output_dir or (ROOT_DIR / "docs" / "soc_eval_results")
@@ -730,19 +743,54 @@ class GCESpotOrchestrator:
                 check=False,
             )
 
+        collection_error = f"Evaluation results not found in GCS at {gcs_json_uri}"
         if res.returncode == 0 and local_dest.exists():
             try:
                 with open(local_dest, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    data["status"] = "COMPLETED"
+                if not isinstance(data, dict):
+                    raise ValueError("evaluation artifact must contain a JSON object")
+                data.setdefault("flavor", target.flavor)
+                status = _artifact_evaluation_status(data)
+                data["status"] = status
+                if status in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
+                    print(f"[WARN] Evaluation artifact reports status {status}; preserving it.")
+                    data["artifact_collection"] = {
+                        "status": "COLLECTED",
+                        "source_uri": gcs_json_uri,
+                        "run_identity_verified": False,
+                        "verification_note": "The fixed per-flavor GCS path cannot prove this artifact belongs to the current launch",
+                    }
                     return data
+                if status == "COMPLETED":
+                    data["artifact_collection"] = {
+                        "status": "COLLECTED",
+                        "source_uri": gcs_json_uri,
+                        "run_identity_verified": False,
+                        "verification_note": "The fixed per-flavor GCS path cannot prove this artifact belongs to the current launch",
+                    }
+                    return data
+                data["status"] = "UNVERIFIED"
+                data["error"] = "Artifact has missing, conflicting, or incomplete evaluation status signals"
+                data["artifact_collection"] = {
+                    "status": "UNVERIFIED",
+                    "source_uri": gcs_json_uri,
+                    "run_identity_verified": False,
+                }
+                return data
             except Exception as e:
                 print(f"[ERROR] Failed to parse JSON report at {local_dest}: {e}")
+                collection_error = f"Failed to parse evaluation artifact at {local_dest}: {e}"
 
         return {
             "flavor": target.flavor,
             "status": "FAILED",
-            "error": f"Evaluation results not found in GCS at {gcs_json_uri}",
+            "error": collection_error,
+            "artifact_collection": {
+                "status": "MISSING_OR_INVALID",
+                "source_uri": gcs_json_uri,
+                "run_identity_verified": False,
+            },
         }
 
     def run_sweep(
@@ -800,8 +848,24 @@ class GCESpotOrchestrator:
 
             success = self.monitor_instance_serial(instance_name, timeout_seconds=self.timeout_seconds)
             res = self.collect_results(target)
-            if not success and res.get("status") != "COMPLETED":
-                res["status"] = "TIMED_OUT"
+            res["monitoring"] = {
+                "status": getattr(self, "last_monitor_outcome", "UNKNOWN"),
+                "completed": success,
+            }
+            if success and res["monitoring"]["status"] in {"TERMINATED_NOT_DELETED", "STOPPED_NOT_DELETED"}:
+                res["evaluation_status"] = res.get("status")
+                res["cleanup_status"] = "UNVERIFIED"
+                res["monitoring"]["error"] = "Instance reached a terminal state but absence was not verified"
+                if res.get("status") not in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
+                    res["status"] = "CLEANUP_UNVERIFIED"
+            if not success:
+                monitor_status = res["monitoring"]["status"]
+                if monitor_status == "TIMED_OUT":
+                    res["monitoring"]["error"] = f"Instance did not reach a verified terminal state within {self.timeout_seconds}s"
+                else:
+                    res["monitoring"]["error"] = "Instance state could not be verified because the status check failed"
+                if res.get("status") not in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
+                    res["status"] = "TIMED_OUT" if monitor_status == "TIMED_OUT" else "MONITORING_FAILED"
             results.append(res)
 
         print("\n==================================================================")

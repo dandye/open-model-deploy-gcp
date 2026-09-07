@@ -257,8 +257,9 @@ def test_orchestrator_dry_run_collect_results():
     res = orch.collect_results(target)
     assert isinstance(res, dict)
     assert res.get("flavor") == target.flavor
-    assert "summary" in res
-    assert res["summary"]["pass_rate"] == 100.0
+    assert res["status"] == "SYNTHETIC"
+    assert res["synthetic"] is True
+    assert res["summary"] is None
 
 
 def test_orchestrator_dry_run_sweep_execution():
@@ -269,7 +270,7 @@ def test_orchestrator_dry_run_sweep_execution():
     flavors = [r["flavor"] for r in results]
     assert "gemma-2-2b-it" in flavors
     assert "gemma-3-1b-it" in flavors
-    assert results[0]["status"] == "COMPLETED"
+    assert results[0]["status"] == "SYNTHETIC"
 
 
 def test_orchestrator_live_launch_mocked():
@@ -330,6 +331,16 @@ def test_orchestrator_live_monitor_mocked():
         assert res is True
 
 
+def test_orchestrator_live_monitor_does_not_treat_auth_error_as_deletion():
+    """A describe permission/network error cannot verify instance deletion."""
+    orch = GCESpotOrchestrator(project_id="test-proj", zone="us-central1-a", dry_run=False)
+    error = MagicMock(returncode=1, stdout="", stderr="ERROR: permission denied")
+    with patch("subprocess.run", return_value=error):
+        res = orch.monitor_instance_serial("test-inst", timeout_seconds=60)
+    assert res is False
+    assert orch.last_monitor_outcome == "STATE_CHECK_FAILED"
+
+
 def test_orchestrator_live_collect_results_mocked(tmp_path: Path):
     """Verify collect_results downloads and parses json report."""
     orch = GCESpotOrchestrator(
@@ -371,6 +382,94 @@ def test_orchestrator_live_collect_results_mocked(tmp_path: Path):
         res = orch.collect_results(target, output_dir=tmp_path)
         assert res["flavor"] == "gemma-2-2b-it"
         assert res["summary"]["pass_rate"] == 100.0
+
+
+def test_collect_results_preserves_failed_artifact_status(tmp_path: Path):
+    """A failed startup artifact must not be reclassified as completed."""
+    orch = GCESpotOrchestrator(
+        project_id="test-proj",
+        zone="us-central1-a",
+        output_gcs_bucket="gs://test-bucket/evals",
+        dry_run=False,
+    )
+    target = ALL_GCE_SPOT_TARGETS[0]
+    failed_report = {
+        "flavor": target.flavor,
+        "status": "FAILED",
+        "evaluation": {"evaluator_exit_status": 127},
+        "summary": None,
+    }
+
+    def fake_subprocess_run(cmd, **kwargs):
+        Path(cmd[-1]).write_text(json.dumps(failed_report), encoding="utf-8")
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with patch("subprocess.run", side_effect=fake_subprocess_run):
+        result = orch.collect_results(target, output_dir=tmp_path)
+    assert result["status"] == "FAILED"
+    assert result["evaluation"]["evaluator_exit_status"] == 127
+
+
+def test_collect_results_marks_missing_status_unverified(tmp_path: Path):
+    """Legacy artifacts without lifecycle status cannot claim completion."""
+    orch = GCESpotOrchestrator(output_gcs_bucket="gs://test-bucket/evals", dry_run=False)
+    target = ALL_GCE_SPOT_TARGETS[0]
+
+    def fake_subprocess_run(cmd, **kwargs):
+        Path(cmd[-1]).write_text(json.dumps({"flavor": target.flavor}), encoding="utf-8")
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with patch("subprocess.run", side_effect=fake_subprocess_run):
+        result = orch.collect_results(target, output_dir=tmp_path)
+    assert result["status"] == "UNVERIFIED"
+
+
+def test_run_sweep_preserves_evaluation_failure_when_monitoring_times_out():
+    """Monitoring timeout is recorded alongside, rather than over, evaluator failure."""
+    orch = GCESpotOrchestrator(dry_run=False, timeout_seconds=12)
+    target = ALL_GCE_SPOT_TARGETS[0]
+    with patch.object(orch, "launch_instance", return_value="spot-test"), \
+         patch.object(orch, "monitor_instance_serial", return_value=False) as monitor, \
+         patch.object(orch, "collect_results", return_value={"flavor": target.flavor, "status": "FAILED", "error": "evaluator exit 23"}):
+        orch.last_monitor_outcome = "TIMED_OUT"
+        result = orch.run_sweep(models_filter=[target.flavor])
+    monitor.assert_called_once()
+    assert result[0]["status"] == "FAILED"
+    assert result[0]["monitoring"]["status"] == "TIMED_OUT"
+
+
+@pytest.mark.parametrize("terminal_status", ["STOPPED_NOT_DELETED", "TERMINATED_NOT_DELETED"])
+@pytest.mark.parametrize("evaluation_status", ["FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"])
+def test_run_sweep_records_cleanup_concern_without_overwriting_authoritative_evaluation(
+    terminal_status, evaluation_status
+):
+    """Cleanup uncertainty is independent from every authoritative failure result."""
+    orch = GCESpotOrchestrator(dry_run=False, timeout_seconds=12)
+    target = ALL_GCE_SPOT_TARGETS[0]
+    with patch.object(orch, "launch_instance", return_value="spot-test"), \
+         patch.object(orch, "monitor_instance_serial", return_value=True), \
+         patch.object(orch, "collect_results", return_value={"flavor": target.flavor, "status": evaluation_status, "error": "evaluator failed"}):
+        orch.last_monitor_outcome = terminal_status
+        result = orch.run_sweep(models_filter=[target.flavor])
+    assert result[0]["status"] == evaluation_status
+    assert result[0]["evaluation_status"] == evaluation_status
+    assert result[0]["cleanup_status"] == "UNVERIFIED"
+    assert result[0]["monitoring"]["status"] == terminal_status
+
+
+@pytest.mark.parametrize("terminal_status", ["STOPPED_NOT_DELETED", "TERMINATED_NOT_DELETED"])
+def test_run_sweep_marks_successful_evaluation_cleanup_unverified(terminal_status):
+    """A successful evaluation gets a distinct cleanup status when deletion is unverified."""
+    orch = GCESpotOrchestrator(dry_run=False, timeout_seconds=12)
+    target = ALL_GCE_SPOT_TARGETS[0]
+    with patch.object(orch, "launch_instance", return_value="spot-test"), \
+         patch.object(orch, "monitor_instance_serial", return_value=True), \
+         patch.object(orch, "collect_results", return_value={"flavor": target.flavor, "status": "COMPLETED"}):
+        orch.last_monitor_outcome = terminal_status
+        result = orch.run_sweep(models_filter=[target.flavor])
+    assert result[0]["status"] == "CLEANUP_UNVERIFIED"
+    assert result[0]["evaluation_status"] == "COMPLETED"
+    assert result[0]["cleanup_status"] == "UNVERIFIED"
 
 
 def test_cli_main_dry_run():

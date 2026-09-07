@@ -851,6 +851,29 @@ class SocTier1Agent(GemmaAgent):
         """Executes a tool action safely (alias for _execute_tool_action)."""
         return self._execute_tool_action(tool_name, args)
 
+    def _tool_trajectory_step(
+        self, iteration: int, tool_name: str, args: Dict[str, Any], observation: str,
+    ) -> Dict[str, Any]:
+        """Record denied requests as attempts rather than executed tool calls."""
+        step: Dict[str, Any] = {
+            "iteration": iteration,
+            "tool": tool_name,
+            "args": args,
+            "observation": observation,
+        }
+        try:
+            result = json.loads(observation)
+        except json.JSONDecodeError:
+            # Tools may return plain text; preserve those observations verbatim.
+            return step
+        if isinstance(result, dict) and str(result.get("status", "")).upper() == "DENIED":
+            step.update({
+                "tool": None,
+                "attempted_tool": tool_name,
+                "execution_status": "DENIED",
+            })
+        return step
+
 
     def _call_llm_step(self, prompt: str, max_tokens: Optional[int] = None, temperature: float = 0.2) -> Tuple[str, Dict[str, int]]:
         """Invokes underlying Gemma LLM backend for a single reasoning step."""
@@ -946,12 +969,9 @@ class SocTier1Agent(GemmaAgent):
             if parsed:
                 tool_name, tool_args = parsed
                 observation = self._execute_tool_action(tool_name, tool_args)
-                trajectory.append({
-                    "iteration": iteration + 1,
-                    "tool": tool_name,
-                    "args": tool_args,
-                    "observation": observation,
-                })
+                trajectory.append(self._tool_trajectory_step(
+                    iteration + 1, tool_name, tool_args, observation,
+                ))
                 current_prompt += f"{step_output}\nObservation: {observation}\n"
                 continue
 
@@ -998,5 +1018,4 @@ class SocTier1Agent(GemmaAgent):
             "backend": self.last_backend,
             "endpoint_id": self.endpoint_id,
         }
-
 

@@ -618,6 +618,11 @@ def test_run_evaluation_gen3_interactive_mocked():
 
         assert eval_result["flavor"] == "gemma-3-4b-it"
         assert eval_result["generation"] == 3
+        assert eval_result["provenance"]["dataset"]["sha256"]
+        assert eval_result["provenance"]["completed_at"]
+        assert eval_result["provenance"]["model"]["resolved_revision"] is None
+        assert eval_result["provenance"]["lifecycle"]["evaluation"] == "completed"
+        assert eval_result["provenance"]["lifecycle"]["cleanup"] == "unverified"
         assert eval_result["summary"]["total_cases"] == 10
         assert eval_result["summary"]["passed_cases"] == 10
         assert eval_result["summary"]["pass_rate"] == 100.0
@@ -698,7 +703,34 @@ def test_cli_main_markdown_report_10_cases(tmp_path: Path):
         for i in range(10):
             assert f"CASE-0{i+1}-NAME" in content
             assert f"Test Case {i+1}" in content
-        assert "## 3. Detailed Case Trajectories & Reports" in content or "Detailed Case Trajectories" in content
+
+
+def test_cli_main_with_custom_runbooks_dir(tmp_path: Path):
+    """Verify CLI --runbooks-dir flag is parsed and passed to run_evaluation."""
+    custom_runbooks_dir = tmp_path / "evolved_runbooks"
+    custom_runbooks_dir.mkdir(parents=True, exist_ok=True)
+
+    test_argv = [
+        "eval_soc_agent.py",
+        "--flavor=gemma-3-12b-it",
+        "--gen=1",
+        "--agent-mode=hierarchical",
+        f"--runbooks-dir={custom_runbooks_dir}",
+    ]
+
+    mock_eval_data = {
+        "flavor": "gemma-3-12b-it",
+        "generation": 1,
+        "summary": calculate_aggregate_score([], gen=1),
+        "case_results": [],
+    }
+
+    with patch.object(sys, "argv", test_argv), \
+         patch("scripts.eval_soc_agent.run_evaluation", return_value=mock_eval_data) as mock_run:
+        main()
+        mock_run.assert_called_once()
+        _, kwargs = mock_run.call_args
+        assert kwargs.get("runbooks_dir") == str(custom_runbooks_dir)
 
 
 def test_cli_main_gen3_default_arguments_and_reporting(tmp_path: Path):

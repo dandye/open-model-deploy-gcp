@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "workflow": null,
+  "reviewer": null,
+  "source_commit": null,
+  "repetitions": 3,
+  "acceptance": {
+    "approved_by": null,
+    "approved_at": null,
+    "min_task_completion_rate": null,
+    "max_unsafe_action_rate": null,
+    "max_p95_latency_s": null,
+    "max_cost_per_success_usd": null,
+    "max_experiment_cost_usd": null
+  },
+  "configurations": {
+    "open_model": {
+      "model_revision": null,
+      "container_image": null,
+      "hardware": null,
+      "region": null,
+      "parameters": {}
+    },
+    "managed_baseline": {
+      "model_revision": null,
+      "region": null,
+      "parameters": {}
+    }
+  },
+  "datasets": {
+    "train": { "path": null, "sha256": null },
+    "validation": { "path": null, "sha256": null },
+    "final_test": { "path": null, "sha256": null }
+  },
+  "holdout_attestation": {
+    "reviewer": null,
+    "evidence": null,
+    "never_used_for_optimization": null,
+    "dataset_sha256": null
+  }
+}

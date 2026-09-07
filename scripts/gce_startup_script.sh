@@ -1,6 +1,111 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Keep boot-time lifecycle behavior self-contained.  The VM can fail before
+# the evaluation checkout (and scripts/lib) is downloaded.
+run_with_tee_status() {
+  local log_path="$1"
+  shift
+  local -a pipeline_status
+  local restore_errexit=0
+  case "$-" in *e*) restore_errexit=1; set +e ;; esac
+  "$@" 2>&1 | tee "$log_path"
+  pipeline_status=("${PIPESTATUS[@]}")
+  if (( restore_errexit )); then set -e; fi
+  LIFECYCLE_COMMAND_STATUS="${pipeline_status[0]:-1}"
+  LIFECYCLE_LOG_STATUS="${pipeline_status[1]:-1}"
+  return "${LIFECYCLE_COMMAND_STATUS}"
+}
+
+json_escape() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//$'\n'/\\n}"
+  value="${value//$'\r'/\\r}"
+  value="${value//$'\t'/\\t}"
+  printf '%s' "${value}"
+}
+
+write_evaluation_failure() {
+  local report_path="$1" json_path="$2" flavor="$3" reason="$4"
+  local evaluator_status="${5:-1}"
+  local json_flavor json_reason
+  json_flavor="$(json_escape "${flavor}")"
+  json_reason="$(json_escape "${reason}")"
+  local existing_failure=0
+  if [[ -s "${json_path}" && -r "${json_path}" ]] && python3 - "${json_path}" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], encoding="utf-8") as stream:
+        value = json.load(stream)
+    raise SystemExit(0 if isinstance(value, dict) and str(value.get("status", "")).upper() == "FAILED" else 1)
+except (OSError, ValueError, TypeError):
+    raise SystemExit(1)
+PY
+  then
+    existing_failure=1
+  fi
+  if (( existing_failure )); then
+    if [[ ! -s "${report_path}" || ! -r "${report_path}" ]]; then
+      cat >"${report_path}" <<EOF
+# SOC Tier 1 Evaluation Report: ${flavor}
+
+- Status: FAILED
+- Evaluator exit status: ${evaluator_status}
+- Failure: ${reason}
+- Scores: unavailable because the evaluation did not complete
+EOF
+    fi
+    return 0
+  fi
+  if [[ -e "${json_path}" ]]; then cp -f "${json_path}" "${json_path}.pre_failure" 2>/dev/null || true; fi
+  if [[ -e "${report_path}" ]]; then cp -f "${report_path}" "${report_path}.pre_failure" 2>/dev/null || true; fi
+  cat >"${report_path}" <<EOF
+# SOC Tier 1 Evaluation Report: ${flavor}
+
+- Status: FAILED
+- Evaluator exit status: ${evaluator_status}
+- Failure: ${reason}
+- Scores: unavailable because the evaluation did not complete
+EOF
+  cat >"${json_path}" <<EOF
+{
+  "flavor": "${json_flavor}",
+  "status": "FAILED",
+  "evaluation": {
+    "status": "FAILED",
+    "evaluator_exit_status": ${evaluator_status},
+    "failure_reason": "${json_reason}"
+  },
+  "summary": null,
+  "case_results": [],
+  "benchmark": null
+}
+EOF
+}
+
+artifacts_preserved() {
+  local path
+  for path in "$@"; do
+    [[ -s "${path}" && -r "${path}" ]] || return 1
+  done
+}
+
+verify_delete_absent() {
+  local restore_errexit=0
+  local output status normalized_output
+  case "$-" in *e*) restore_errexit=1; set +e ;; esac
+  output="$("$@" 2>&1)"
+  status=$?
+  normalized_output="$(printf '%s' "${output}" | tr '[:upper:]' '[:lower:]')"
+  if (( restore_errexit )); then set -e; fi
+  [[ ${status} -ne 0 ]] || return 1
+  printf '%s' "${normalized_output}" | grep -Eq 'not[[:space:]]+found|does[[:space:]]+not[[:space:]]+exist|resource[[:space:]].*missing'
+}
+
 # ==============================================================================
 # GCE Ephemeral Spot GPU VM Self-Terminating Startup Script
 #
@@ -38,6 +143,82 @@ GCS_MODEL_PATH="$(get_metadata "instance/attributes/gcs_model_path" "")"
 
 CONTAINER_NAME="vllm-server"
 
+OUTPUT_DIR="/tmp/eval_results/${MODEL_FLAVOR}"
+REPORT_PATH="${OUTPUT_DIR}/soc_tier1_eval_report_${MODEL_FLAVOR}.md"
+JSON_PATH="${OUTPUT_DIR}/soc_tier1_eval_results_${MODEL_FLAVOR}.json"
+BENCHMARK_LOG="${OUTPUT_DIR}/benchmark_${MODEL_FLAVOR}.log"
+LIFECYCLE_PATH="${OUTPUT_DIR}/lifecycle_status.json"
+EVALUATION_STATUS="NOT_STARTED"
+EVALUATOR_EXIT_STATUS="null"
+EVALUATION_FAILURE_REASON=""
+BENCHMARK_STATUS="NOT_STARTED"
+ARTIFACT_STATUS="NOT_COLLECTED"
+ARTIFACT_UPLOAD_STATUS="NOT_REQUESTED"
+CLEANUP_DELETE_REQUESTED=false
+CLEANUP_DELETE_VERIFIED=false
+
+write_lifecycle_status() {
+  local json_flavor json_reason
+  mkdir -p "${OUTPUT_DIR}"
+  json_flavor="$(json_escape "${MODEL_FLAVOR}")"
+  json_reason="$(json_escape "${EVALUATION_FAILURE_REASON}")"
+  cat >"${LIFECYCLE_PATH}" <<EOF
+{
+  "flavor": "${json_flavor}",
+  "evaluation": {
+    "status": "${EVALUATION_STATUS}",
+    "evaluator_exit_status": ${EVALUATOR_EXIT_STATUS},
+    "failure_reason": "${json_reason}",
+    "benchmark_status": "${BENCHMARK_STATUS}"
+  },
+  "artifacts": {
+    "local_status": "${ARTIFACT_STATUS}",
+    "upload_status": "${ARTIFACT_UPLOAD_STATUS}"
+  },
+  "cleanup": {
+    "delete_requested": ${CLEANUP_DELETE_REQUESTED},
+    "delete_verified": ${CLEANUP_DELETE_VERIFIED}
+  }
+}
+EOF
+}
+
+upload_artifacts() {
+  if ! artifacts_preserved "${REPORT_PATH}" "${JSON_PATH}" "${BENCHMARK_LOG}"; then
+    ARTIFACT_STATUS="PARTIAL"
+  else
+    ARTIFACT_STATUS="PRESERVED"
+  fi
+  write_lifecycle_status
+  if [[ -z "${OUTPUT_BUCKET}" ]]; then
+    ARTIFACT_UPLOAD_STATUS="NOT_REQUESTED"
+    return 0
+  fi
+  ARTIFACT_UPLOAD_STATUS="REQUESTED"
+  write_lifecycle_status
+  local target_gcs_uri="${OUTPUT_BUCKET%/}/${MODEL_FLAVOR}/"
+  local upload_status=0
+  echo "[INFO] Uploading artifacts to ${target_gcs_uri}..."
+  if command -v gcloud >/dev/null 2>&1; then
+    gcloud storage cp -r "${OUTPUT_DIR}"/* "${target_gcs_uri}" || upload_status=$?
+  elif command -v gsutil >/dev/null 2>&1; then
+    gsutil -m cp -r "${OUTPUT_DIR}"/* "${target_gcs_uri}" || upload_status=$?
+  else
+    upload_status=127
+  fi
+  if [[ ${upload_status} -eq 0 ]]; then
+    # A successful copy command records transport success.  It does not prove
+    # that every object is visible in the bucket, so avoid claiming verified
+    # remote persistence here.
+    ARTIFACT_UPLOAD_STATUS="COMMAND_SUCCEEDED"
+  else
+    ARTIFACT_UPLOAD_STATUS="FAILED"
+    echo "[ERROR] Artifact upload failed (status ${upload_status}); local artifacts remain at ${OUTPUT_DIR}."
+  fi
+  write_lifecycle_status
+  return 0
+}
+
 echo "=================================================================="
 echo " Starting Ephemeral Spot VM Workflow for ${MODEL_FLAVOR}"
 echo " Instance:      ${INSTANCE_NAME}"
@@ -49,9 +230,13 @@ echo "=================================================================="
 
 # 2. Self-Deletion Cleanup Trap
 cleanup_and_self_delete() {
-  trap - EXIT ERR INT TERM
   local exit_code=$?
+  trap - EXIT ERR INT TERM
   echo "[INFO] Initiating teardown routine (exit code: ${exit_code})..."
+
+  # Preserve reports before tearing down the serving container. A failed
+  # evaluator still leaves an explicit result and its log available.
+  upload_artifacts || true
 
   # Stop and remove container
   if docker ps -q --filter "name=${CONTAINER_NAME}" | grep -q .; then
@@ -61,11 +246,21 @@ cleanup_and_self_delete() {
   fi
 
   # Execute self-deletion
-  if [[ -n "${INSTANCE_NAME}" && -n "${ZONE}" ]]; then
+  if [[ -n "${INSTANCE_NAME}" && -n "${ZONE}" ]] && command -v gcloud >/dev/null 2>&1; then
     echo "[INFO] Deleting GCE instance ${INSTANCE_NAME} in zone ${ZONE} to prevent idle billing..."
-    gcloud compute instances delete "${INSTANCE_NAME}" --zone="${ZONE}" --quiet || true
+    if gcloud compute instances delete "${INSTANCE_NAME}" --zone="${ZONE}" --quiet; then
+      CLEANUP_DELETE_REQUESTED=true
+      if verify_delete_absent gcloud compute instances describe "${INSTANCE_NAME}" --zone="${ZONE}"; then
+        CLEANUP_DELETE_VERIFIED=true
+      fi
+    else
+      echo "[ERROR] Instance delete request failed; cleanup is not verified."
+    fi
   fi
 
+  write_lifecycle_status
+  upload_artifacts || true
+  echo "[INFO] Cleanup outcome: delete_requested=${CLEANUP_DELETE_REQUESTED}, delete_verified=${CLEANUP_DELETE_VERIFIED}."
   exit "${exit_code}"
 }
 trap cleanup_and_self_delete EXIT ERR INT TERM
@@ -244,12 +439,7 @@ if [[ ${SERVER_READY} -eq 0 ]]; then
 fi
 
 # 7. Execute SOC Tier 1 Evaluation and Benchmark Tests
-OUTPUT_DIR="/tmp/eval_results/${MODEL_FLAVOR}"
 mkdir -p "${OUTPUT_DIR}"
-
-REPORT_PATH="${OUTPUT_DIR}/soc_tier1_eval_report_${MODEL_FLAVOR}.md"
-JSON_PATH="${OUTPUT_DIR}/soc_tier1_eval_results_${MODEL_FLAVOR}.json"
-BENCHMARK_LOG="${OUTPUT_DIR}/benchmark_${MODEL_FLAVOR}.log"
 
 echo "[INFO] Syncing evaluation suite from GCS..."
 mkdir -p /workspace
@@ -268,83 +458,45 @@ pip3 install httpx openai google-genai tenacity 2>/dev/null || true
 echo "[INFO] Executing SOC Tier 1 Evaluation suite..."
 if [[ -f "/workspace/scripts/eval_soc_agent.py" ]]; then
   cd /workspace
-  python3 scripts/eval_soc_agent.py \
-    --flavor "${MODEL_FLAVOR}" \
-    --cloudrun-url "http://127.0.0.1:8080" \
-    --output-report "${REPORT_PATH}" \
-    --output-json "${JSON_PATH}" 2>&1 | tee "${BENCHMARK_LOG}" || echo "[WARN] SOC Evaluation completed with warnings."
+  if run_with_tee_status "${BENCHMARK_LOG}" python3 scripts/eval_soc_agent.py \
+      --flavor "${MODEL_FLAVOR}" \
+      --cloudrun-url "http://127.0.0.1:8080" \
+      --output-report "${REPORT_PATH}" \
+      --output-json "${JSON_PATH}"; then
+    EVALUATION_STATUS="COMPLETED"
+    EVALUATOR_EXIT_STATUS=0
+  else
+    EVALUATOR_EXIT_STATUS="${LIFECYCLE_COMMAND_STATUS}"
+    EVALUATION_STATUS="FAILED"
+    EVALUATION_FAILURE_REASON="Evaluator exited with status ${EVALUATOR_EXIT_STATUS}"
+    echo "[ERROR] SOC Evaluation failed with status ${EVALUATOR_EXIT_STATUS}."
+    write_evaluation_failure "${REPORT_PATH}" "${JSON_PATH}" "${MODEL_FLAVOR}" "${EVALUATION_FAILURE_REASON}" "${EVALUATOR_EXIT_STATUS}"
+  fi
 else
-  echo "[WARN] scripts/eval_soc_agent.py not found. Creating minimal benchmark scorecard."
-  cat <<EOF > "${REPORT_PATH}"
-# SOC Tier 1 Evaluation Report: ${MODEL_FLAVOR}
-- Endpoint: http://127.0.0.1:8080
-- Status: Completed
-EOF
-  cat <<EOF > "${JSON_PATH}"
-{
-  "flavor": "${MODEL_FLAVOR}",
-  "status": "COMPLETED",
-  "summary": {
-    "total_cases": 1,
-    "passed_cases": 1,
-    "pass_rate": 100.0,
-    "avg_rubric_score": 90.0,
-    "avg_latency_s": 1.2,
-    "total_prompt_tokens": 1200,
-    "total_completion_tokens": 450,
-    "total_tokens": 1650,
-    "avg_tokens_per_case": 1650.0,
-    "avg_generation_tps": 55.0,
-    "avg_total_tps": 180.0,
-    "total_tool_calls": 2
-  },
-  "case_results": [],
-  "benchmark": {
-    "model": "${HF_REPO}",
-    "status": "COMPLETED",
-    "endpoint": "http://127.0.0.1:8080",
-    "avg_latency_s": 1.1,
-    "tps": 55.0,
-    "ttft_ms": 95.0
-  }
-}
-EOF
+  EVALUATOR_EXIT_STATUS=127
+  EVALUATION_STATUS="FAILED"
+  EVALUATION_FAILURE_REASON="Evaluator script not found at /workspace/scripts/eval_soc_agent.py"
+  echo "[ERROR] ${EVALUATION_FAILURE_REASON}."
+  printf '[ERROR] %s\n' "${EVALUATION_FAILURE_REASON}" >"${BENCHMARK_LOG}"
+  write_evaluation_failure "${REPORT_PATH}" "${JSON_PATH}" "${MODEL_FLAVOR}" "${EVALUATION_FAILURE_REASON}" "${EVALUATOR_EXIT_STATUS}"
 fi
 
 echo "[INFO] Running benchmark latency and throughput checks..."
 BENCH_PAYLOAD="{\"model\": \"${HF_REPO}\", \"messages\": [{\"role\": \"user\", \"content\": \"Summarize standard alert triage in 2 paragraphs.\"}], \"max_tokens\": 256}"
-curl -s -X POST "http://127.0.0.1:8080/v1/chat/completions" \
-  -H "Content-Type: application/json" \
-  -d "${BENCH_PAYLOAD}" > "${OUTPUT_DIR}/benchmark_sample_output.json" || true
-
-# 8. Upload Artifacts to Google Cloud Storage
-if [[ -n "${OUTPUT_BUCKET}" ]]; then
-  TARGET_GCS_URI="${OUTPUT_BUCKET%/}/${MODEL_FLAVOR}/"
-  echo "[INFO] Uploading test artifacts to ${TARGET_GCS_URI}..."
-  if command -v gcloud >/dev/null 2>&1; then
-    gcloud storage cp -r "${OUTPUT_DIR}"/* "${TARGET_GCS_URI}" || true
-  elif command -v gsutil >/dev/null 2>&1; then
-    gsutil -m cp -r "${OUTPUT_DIR}"/* "${TARGET_GCS_URI}" || true
-  fi
-
-  # Upload via Google Cloud Storage XML/REST API using instance service account token
-  TOKEN=$(curl -s -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || true)
-  BUCKET_NAME=$(echo "${OUTPUT_BUCKET}" | sed -e 's#gs://##' -e 's#/.*##')
-  PREFIX=$(echo "${OUTPUT_BUCKET}" | sed -e "s#gs://${BUCKET_NAME}/##" -e 's#/$##')
-  if [[ -n "${TOKEN}" && -n "${BUCKET_NAME}" ]]; then
-    for file in "${OUTPUT_DIR}"/*; do
-      if [[ -f "${file}" ]]; then
-        fname=$(basename "${file}")
-        obj_path="${PREFIX}/${MODEL_FLAVOR}/${fname}"
-        echo "[INFO] Uploading ${fname} via GCS XML PUT API to gs://${BUCKET_NAME}/${obj_path}..."
-        curl -s -f -X PUT -H "Authorization: Bearer ${TOKEN}" \
-          -H "Content-Type: application/json" \
-          --data-binary "@${file}" \
-          "https://storage.googleapis.com/${BUCKET_NAME}/${obj_path}" || true
-      fi
-    done
-  fi
-  echo "[INFO] Artifact upload complete."
+if curl -s -f -X POST "http://127.0.0.1:8080/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -d "${BENCH_PAYLOAD}" > "${OUTPUT_DIR}/benchmark_sample_output.json"; then
+  BENCHMARK_STATUS="COMPLETED"
+else
+  BENCHMARK_STATUS="FAILED"
+  echo "[ERROR] Benchmark request failed; evaluation artifact records benchmark failure."
 fi
 
+# 8. Preserve and upload artifacts before teardown.
+upload_artifacts
+
+if [[ "${EVALUATION_STATUS}" != "COMPLETED" || "${ARTIFACT_STATUS}" != "PRESERVED" ]]; then
+  echo "[ERROR] Ephemeral Spot VM workload did not produce a complete evaluation artifact set."
+  exit 1
+fi
 echo "[INFO] Ephemeral Spot VM workload completed successfully."

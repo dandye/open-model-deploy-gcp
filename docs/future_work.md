@@ -1,6 +1,18 @@
 # Future Work & Strategic Roadmap
 
-This document outlines strategic enhancements, optimization tracks, and architecture extensions planned for the `gemma_deploy` framework.
+## Current priority: verified evaluation evidence
+
+Updated September 6, 2026. The next milestone is one reproducible comparison supporting a deployment decision for a bounded SOC workflow.
+
+1. Fail explicitly when evaluation cannot run; preserve evaluator status, artifacts, and cleanup outcomes independently.
+2. Reconcile historical narrative/JSON discrepancies and label missing provenance. Generate future tables from preserved result artifacts.
+3. Freeze separate train, validation, and untouched final-test datasets. Agree task completion, unsafe-action, latency, and cost acceptance criteria with an intended user before final testing.
+4. Compare one open model and a managed baseline under fixed conditions. Measure wall-clock throughput, label token estimates, preserve failed requests, and verify cleanup.
+5. Record the deployment recommendation, user review, contribution evidence, and adoption or iteration decision in [the decision record](evaluation_decision_record.md).
+
+Run `bun scripts/validate_experiment.ts configs/experiments/evidence_comparison.template.json` to inspect missing experiment inputs. The template deliberately fails until real dataset hashes, reviewer approval, configuration, and exposure-history evidence are supplied. This is offline preflight, not proof of independent evaluation or a live result.
+
+The tracks below are a historical backlog, not current delivery commitments. Their quoted measurements and platform assumptions require fresh evidence before reuse. Resume a track when the bounded comparison or an actual user need justifies it.
 
 ---
 
