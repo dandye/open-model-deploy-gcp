@@ -4,7 +4,7 @@
 
 Updated September 7, 2026. The next milestone is one reproducible comparison supporting a deployment decision for a bounded SOC workflow.
 
-Run identity implementation now provides dedicated artifact paths, persisted launch records, strict collection checks, and recovery/cleanup observations. See [GCE experiment runs](evidence/EXPERIMENT_RUNS.md). The next evidence gate is approved experiment inputs and immutable serving/source configuration; local tests do not supply live results.
+Run identity implementation now provides dedicated artifact paths, persisted launch records, strict collection checks, and recovery/cleanup observations. See [GCE experiment runs](evidence/EXPERIMENT_RUNS.md). Source bundle verification now supplies committed-code digests and rejects mismatched downloads; see [source bundles](evidence/SOURCE_BUNDLES.md). The next evidence gate is approved experiment inputs and immutable serving/model/dependency configuration; local tests do not supply live results.
 
 1. Fail explicitly when evaluation cannot run; preserve evaluator status, artifacts, and cleanup outcomes independently.
 2. Reconcile historical narrative/JSON discrepancies and label missing provenance. Generate future tables from preserved result artifacts.

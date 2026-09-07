@@ -498,6 +498,7 @@ def build_gce_spot_create_command(
     boot_disk_type: str = "pd-ssd",
     run_id: Optional[str] = None,
     configuration_hash: Optional[str] = None,
+    source_bundle: Optional[Dict[str, str]] = None,
 ) -> List[str]:
     """
     Constructs the exact gcloud compute instances create command arguments.
@@ -554,6 +555,13 @@ def build_gce_spot_create_command(
         if not re.fullmatch(r"[0-9a-f]{32}", run_id or "") or not re.fullmatch(r"[0-9a-f]{64}", configuration_hash or ""):
             raise ValueError("A valid run ID and configuration hash are required together")
         metadata_items.extend([f"run_id={run_id}", f"configuration_hash={configuration_hash}"])
+    if source_bundle:
+        metadata_items.extend([
+            f"source_bundle_uri={source_bundle['uri']}",
+            f"source_bundle_sha256={source_bundle['sha256']}",
+            f"source_commit={source_bundle['source_commit']}",
+            f"source_verifier_sha256={source_bundle['verifier_sha256']}",
+        ])
     if target.extra_vllm_flags:
         metadata_items.append(f"extra_flags={target.extra_vllm_flags}")
     if hf_token:
@@ -567,7 +575,10 @@ def build_gce_spot_create_command(
     # Startup Script file
     startup_path = script_template_path or (ROOT_DIR / "scripts" / "gce_startup_script.sh")
     if startup_path.exists():
-        cmd.append(f"--metadata-from-file=startup-script={startup_path}")
+        file_metadata = f"startup-script={startup_path}"
+        if source_bundle:
+            file_metadata += f",source-verifier={ROOT_DIR / 'scripts/source_bundle.py'}"
+        cmd.append(f"--metadata-from-file={file_metadata}")
 
     return cmd
 
@@ -590,6 +601,9 @@ class GCESpotOrchestrator:
         image_family: str = "ubuntu-2204-lts",
         image_project: str = "ubuntu-os-cloud",
         evidence_dir: Optional[Path] = None,
+        source_bundle_uri: Optional[str] = None,
+        source_bundle_sha256: Optional[str] = None,
+        source_commit: Optional[str] = None,
     ) -> None:
         self.project_id = project_id
         self.zone = zone
@@ -602,6 +616,20 @@ class GCESpotOrchestrator:
         self.active_instance_zone: str = zone
         self.evidence_dir = Path(evidence_dir) if evidence_dir else ROOT_DIR / "logs" / "experiment_runs"
         self.current_run: Optional[Dict[str, Any]] = None
+        self.source_bundle = None
+        supplied = (source_bundle_uri, source_bundle_sha256, source_commit)
+        if any(value is not None for value in supplied):
+            if not all(isinstance(value, str) and value for value in supplied):
+                raise ValueError("Source bundle URI, SHA-256, and commit are required together")
+            if not re.fullmatch(r"gs://[a-z0-9][a-z0-9._-]*/[^\s*?\[\]#]+", source_bundle_uri) or "|~|" in source_bundle_uri:
+                raise ValueError("Source bundle URI must name one gs:// object without wildcards")
+            if not re.fullmatch(r"[0-9a-f]{64}", source_bundle_sha256):
+                raise ValueError("Source bundle SHA-256 must be 64 lowercase hex characters")
+            if not re.fullmatch(r"[0-9a-f]{40}", source_commit):
+                raise ValueError("Source commit must be a full lowercase Git commit hash")
+            self.source_bundle = {"uri": source_bundle_uri, "sha256": source_bundle_sha256,
+                                  "source_commit": source_commit}
+
 
     def launch_instance(
         self,
@@ -629,6 +657,12 @@ class GCESpotOrchestrator:
                 "startup_sha256": hashlib.sha256((ROOT_DIR / "scripts/gce_startup_script.sh").read_bytes()).hexdigest(),
                 "source_identity": "unverified_mutable_gcs_code",
             }
+            if self.source_bundle:
+                configuration["source_bundle"] = {
+                    **self.source_bundle,
+                    "verifier_sha256": hashlib.sha256((ROOT_DIR / "scripts/source_bundle.py").read_bytes()).hexdigest(),
+                }
+                configuration["source_identity"] = "pinned_bundle_requested"
             run = new_run(configuration, self.output_gcs_bucket, instance_name)
             self.current_run = run
             self.active_instance_zone = zone
@@ -644,6 +678,7 @@ class GCESpotOrchestrator:
                 image_project=self.image_project,
                 instance_name=name,
                 run_id=run["run_id"], configuration_hash=run["configuration_hash"],
+                source_bundle=configuration.get("source_bundle"),
             )
 
             if self.dry_run:
@@ -951,6 +986,22 @@ class GCESpotOrchestrator:
             "identity_scope": "launch_binding_only", "records": records,
         }
         data["startup_lifecycle"] = lifecycle
+        expected_source = run["configuration"].get("source_bundle")
+        source_verified = False
+        if expected_source:
+            provenance = (evaluation or {}).get("provenance", {})
+            evaluator_source = provenance.get("source_bundle") if isinstance(provenance, dict) else None
+            startup_source = (lifecycle or {}).get("source_bundle")
+            source_verified = all(
+                isinstance(observed, dict) and observed.get("status") == "VERIFIED"
+                and observed.get("sha256") == expected_source["sha256"]
+                and observed.get("source_commit") == expected_source["source_commit"]
+                for observed in (evaluator_source, startup_source)
+            )
+        data["source_verification"] = {
+            "status": "VERIFIED" if source_verified else "UNVERIFIED" if expected_source else "NOT_REQUESTED",
+            "scope": "source_bundle_bytes_at_startup", "expected": expected_source,
+        }
         # A completed evaluator alone does not prove successful upload, benchmark, or cleanup.
         lifecycle_artifacts = (lifecycle or {}).get("artifacts")
         lifecycle_evaluation = (lifecycle or {}).get("evaluation")
@@ -961,7 +1012,8 @@ class GCESpotOrchestrator:
                         and lifecycle_artifacts.get("upload_status") == "COMMAND_SUCCEEDED"
                         and lifecycle_evaluation.get("benchmark_status") == "COMPLETED")
         data["artifact_evidence_status"] = "COMPLETE" if (
-            evaluation and lifecycle_ok and all(r["status"] == "COLLECTED" for r in records.values())
+            evaluation and lifecycle_ok and (not expected_source or source_verified)
+            and all(r["status"] == "COLLECTED" for r in records.values())
         ) else "PARTIAL"
         data["cleanup"] = {"status": "UNVERIFIED", "resource": {
             "project_id": run["configuration"]["project_id"], "zone": run["configuration"]["zone"],
@@ -1180,7 +1232,21 @@ def main() -> int:
                         help="Saved launch.json to collect and inspect; never creates a VM")
     parser.add_argument("--cleanup", action="store_true",
                         help="With --recover, request deletion only after checking VM run metadata")
+    parser.add_argument("--source-bundle-uri", help="Exact GCS object containing the committed source bundle")
+    parser.add_argument("--source-bundle-sha256", help="Expected SHA-256 of the source archive")
+    parser.add_argument("--source-commit", help="Full source commit recorded in the bundle manifest")
     args = parser.parse_args()
+    if not args.recover:
+        # Existing Just recipes inherit these pins without changing their arguments.
+        args.source_bundle_uri = args.source_bundle_uri or os.environ.get("GCE_SOURCE_BUNDLE_URI")
+        args.source_bundle_sha256 = args.source_bundle_sha256 or os.environ.get("GCE_SOURCE_BUNDLE_SHA256")
+        args.source_commit = args.source_commit or os.environ.get("GCE_SOURCE_COMMIT")
+    if not args.recover and not args.dry_run and not all(
+        (args.source_bundle_uri, args.source_bundle_sha256, args.source_commit)
+    ):
+        parser.error("Live launches require --source-bundle-uri, --source-bundle-sha256, and --source-commit")
+    if args.recover and any((args.source_bundle_uri, args.source_bundle_sha256, args.source_commit)):
+        parser.error("Recovery uses the saved source identity; source overrides are not allowed")
     if args.cleanup and not args.recover:
         parser.error("--cleanup requires --recover")
     if args.recover and (args.models or args.no_wait or args.dry_run):
@@ -1196,6 +1262,9 @@ def main() -> int:
         dry_run=args.dry_run,
         timeout_seconds=args.timeout_seconds,
         evidence_dir=args.evidence_dir,
+        source_bundle_uri=args.source_bundle_uri,
+        source_bundle_sha256=args.source_bundle_sha256,
+        source_commit=args.source_commit,
     )
 
     if args.recover:

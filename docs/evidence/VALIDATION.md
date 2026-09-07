@@ -30,6 +30,10 @@ The existing hierarchical/GEPA tests require the pinned `third_party/ai-runbooks
 
 `tests/test_experiment_run.py` covers unique same-model launches, zone retries, interrupted creation, stale/mismatched artifacts, partial uploads, saved-manifest recovery, and deletion identity checks with mocked cloud transport. Executable shell tests verify final lifecycle marker publication and upload failures in both startup scripts. Recovery regressions also cover empty logs, bounded monitoring, and preserved cleanup observations across repeated collection. See [GCE experiment runs](EXPERIMENT_RUNS.md) for the file contract and recovery commands.
 
+## Source archive verification
+
+`tests/test_source_bundle.py` verifies committed-source builds, pinned submodule objects, reproducible bytes, and rejection of unsafe or inconsistent archives. `tests/test_source_bootstrap.py` executes both actual startup verification functions with offline metadata/transport fixtures. Integration tests cover source pins in launch metadata, provenance, and collection. These tests do not attest serving images, model revisions, or installed dependencies. See [source bundles](SOURCE_BUNDLES.md).
+
 ## Evidence audit
 
 ```sh
