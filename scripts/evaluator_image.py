@@ -1,11 +1,13 @@
 """Build a dependency image or check evaluator compatibility without model calls."""
 
 import argparse
+from contextlib import contextmanager
 from functools import partial
 import hashlib
 import json
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -23,6 +25,30 @@ DIGEST_REF = re.compile(r'[a-z0-9.-]+(?::[0-9]+)?(?:/[a-z0-9._-]+)+@sha256:[0-9a
 CHECKS = {'evaluator_completed': True, 'total_cases': 1, 'case_passed': True,
           'json_output': True, 'markdown_output': True, 'provenance_without_launch_claim': True}
 OWNER_LABEL = 'open-model-deploy-gcp.preflight-attempt'
+
+
+class PreflightCancelled(Exception):
+    """A termination request that must unwind owned container cleanup."""
+
+
+@contextmanager
+def handle_termination(*, defer=False):
+    """Translate CLI SIGTERM into cancellation; allow cleanup to finish once."""
+    requested = False
+    def terminate(signum, frame):
+        nonlocal requested
+        requested = True
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        if not defer:
+            raise PreflightCancelled("Preflight terminated")
+
+    previous = signal.signal(signal.SIGTERM, terminate)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+    if requested:
+        raise PreflightCancelled("Preflight terminated")
 
 
 def container(*args, engine="docker", capture=False, check=True, timeout=120):
@@ -144,17 +170,19 @@ def check_image(reference, archive, digest, commit, *, engine="docker"):
                     'image_reference': reference, 'image_id': identity, 'source_commit': commit,
                     'source_bundle_sha256': digest, 'smoke': report}
         finally:
-            if not created:
-                # A lost create response does not prove the daemon created nothing.
-                # Never delete a conflicting container without our exact attempt label.
-                try:
-                    owner = run('inspect', '--format', '{{ index .Config.Labels "' + OWNER_LABEL + '" }}',
-                                   name, capture=True, timeout=10).stdout.strip()
-                    created = owner == attempt
-                except (OSError, subprocess.SubprocessError):
-                    pass
-            if created:
-                run('rm', '--force', '--volumes', name)
+            # A first SIGTERM during removal must not abort cleanup either.
+            with handle_termination(defer=True):
+                if not created:
+                    # A lost create response does not prove the daemon created nothing.
+                    # Never delete a conflicting container without our exact attempt label.
+                    try:
+                        owner = run('inspect', '--format', '{{ index .Config.Labels "' + OWNER_LABEL + '" }}',
+                                       name, capture=True, timeout=10).stdout.strip()
+                        created = owner == attempt
+                    except (OSError, subprocess.SubprocessError):
+                        pass
+                if created:
+                    run('rm', '--force', '--volumes', name)
 
 
 def main(argv=None):
@@ -181,12 +209,13 @@ def main(argv=None):
     initial = {'schema_version': 1, 'action': args.command, 'engine': args.engine, 'attempt_id': uuid.uuid4().hex, 'status': 'FAIL'}
     write_json(args.output, {**initial, 'error_type': 'IncompleteOperation'})
     try:
-        if args.command == 'build':
-            result = build_image(args.python_image, args.tag, engine=args.engine)
-        else:
-            result = check_image(args.image, args.archive, args.sha256, args.source_commit, engine=args.engine)
+        with handle_termination():
+            if args.command == 'build':
+                result = build_image(args.python_image, args.tag, engine=args.engine)
+            else:
+                result = check_image(args.image, args.archive, args.sha256, args.source_commit, engine=args.engine)
         result = {**initial, **result}
-    except (ValueError, OSError, subprocess.SubprocessError) as exc:
+    except (ValueError, OSError, subprocess.SubprocessError, PreflightCancelled) as exc:
         result = {**initial, 'error_type': type(exc).__name__}
     write_json(args.output, result)
     print(json.dumps(result, sort_keys=True))

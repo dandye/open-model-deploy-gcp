@@ -173,3 +173,78 @@ def test_cli_selects_and_records_engine(tmp_path, monkeypatch, engine):
     assert module.main(["build", "--engine", engine, "--python-image", IMAGE, "--output", str(output)]) == 0
     assert calls == [[engine, "version"]]
     assert json.loads(output.read_text())["engine"] == engine
+
+
+@pytest.mark.parametrize("phase", ["create", "start", "rm"])
+def test_sigterm_unwinds_owned_cleanup_and_restores_handler(tmp_path, phase):
+    import signal
+    import sys
+    import time
+
+    # A real process/signal exercises Python unwinding, not a mocked exception.
+    harness = r'''
+import json, os, signal, sys, time
+from pathlib import Path
+from types import SimpleNamespace
+from scripts import evaluator_image as module
+root, phase = Path(sys.argv[1]), sys.argv[2]
+identity = 'sha256:' + 'b' * 64
+owner = None
+output_mount = None
+module_test_release = root / 'release'
+def verify(archive, digest, commit, destination):
+    (destination / 'scripts').mkdir(parents=True)
+    (destination / 'scripts/evaluator_smoke.py').write_text('# fixture')
+def run(*args, **kwargs):
+    global owner, output_mount
+    if args[:2] == ('image', 'inspect'):
+        return SimpleNamespace(stdout=json.dumps([{'Id': identity, 'Os': 'linux', 'Architecture': 'amd64'}]))
+    if args[0] == 'create':
+        owner = args[args.index('--label') + 1].split('=', 1)[1]
+        mount = next(a for a in args if a.startswith('type=bind,src=') and a.endswith('dst=/output'))
+        output_mount = Path(mount.split('src=', 1)[1].split(',')[0])
+    if args[0] == phase and phase != 'rm':
+        (root / 'ready').touch()
+        time.sleep(30)
+        raise AssertionError('signal was not delivered')
+    if args[0] == 'inspect' and args[2] == '{{json .State}}':
+        return SimpleNamespace(stdout=json.dumps({'Running': False, 'Status': 'exited', 'ExitCode': 0, 'Error': ''}))
+    if args[0] == 'start':
+        (output_mount / 'smoke.json').write_text(json.dumps({'schema_version': 1, 'status': 'PASS', 'synthetic': True,
+            'scope': 'offline_evaluator_compatibility', 'python_version': '3.12.14', 'checks': module.CHECKS}))
+    if args[0] == 'inspect':
+        return SimpleNamespace(stdout=identity if args[2] == '{{.Image}}' else owner)
+    if args[0] == 'rm':
+        if phase == 'rm':
+            (root / 'ready').touch()
+            while not module_test_release.exists(): time.sleep(0.01)
+        # Repeated graceful termination must not interrupt the bounded cleanup.
+        os.kill(os.getpid(), signal.SIGTERM)
+        (root / 'removed').write_text(args[-1])
+    return SimpleNamespace(stdout='', returncode=0)
+module.verify_bundle, module.container = verify, run
+previous = signal.getsignal(signal.SIGTERM)
+code = module.main(['check', '--image', identity, '--archive', str(root / 'source.tar.gz'),
+                    '--sha256', 'a'*64, '--source-commit', 'c'*40, '--output', str(root / 'result.json')])
+assert signal.getsignal(signal.SIGTERM) == previous
+raise SystemExit(code)
+'''
+    process = subprocess.Popen([sys.executable, '-c', harness, str(tmp_path), phase],
+                               cwd=module.ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        deadline = time.monotonic() + 10
+        while not (tmp_path / 'ready').exists():
+            assert process.poll() is None, process.communicate()
+            assert time.monotonic() < deadline, 'checker did not reach cancellation point'
+            time.sleep(0.01)
+        process.send_signal(signal.SIGTERM)
+        (tmp_path / 'release').touch()
+        stdout, stderr = process.communicate(timeout=10)
+        assert process.returncode == 1, (stdout, stderr)
+        assert (tmp_path / 'removed').read_text().startswith('evaluator-check-')
+        report = json.loads((tmp_path / 'result.json').read_text())
+        assert report['status'] == 'FAIL' and report['error_type'] == 'PreflightCancelled'
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
