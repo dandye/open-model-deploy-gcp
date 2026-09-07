@@ -297,6 +297,86 @@ def test_worker_report_fallback_extraction():
     assert len(report.evidence) > 0
 
 
+@pytest.mark.parametrize("output", [
+    "Unable to investigate", "Final Answer: MALICIOUS", "",
+    'Action: isolate_host(hostname="DESKTOP-FIN-08")',
+    'Action: get_domain_report(domain="evil.com")',
+])
+@pytest.mark.parametrize("budget", [0, 1, 3])
+def test_query_without_investigation_evidence_cannot_contain(output, budget):
+    env = SocEnvironment()
+    env.inject_fault("get_domain_report", status_code=503, error="outage")
+    supervisor = HierarchicalSOCTier1Agent(project_id="offline", managed_model="offline", environment=env, use_runbooks=False)
+    decision = SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host"], target_entity="DESKTOP-FIN-08")
+    with patch.object(supervisor, "classify_alert", return_value="C2_BEACON"), \
+         patch.object(supervisor, "_call_llm_step", return_value=(output, {})), \
+         patch.object(supervisor, "_synthesize_verdict_and_containment", return_value=("MALICIOUS", decision, {})) as synthesize:
+        result = supervisor.query("Investigate DESKTOP-FIN-08", max_iterations=budget)
+    synthesize.assert_not_called()
+    assert env.action_history == []
+    assert verify_agent_trajectory(result.trajectory).executed_actions == []
+    assert result.verdict == "INCONCLUSIVE"
+    assert result.worker_report["evidence"] == []
+    assert "incomplete" in result.response.lower()
+
+
+def test_worker_retries_plain_text_until_real_investigation():
+    supervisor = HierarchicalSOCTier1Agent(project_id="offline", managed_model="offline", environment=SocEnvironment(), use_runbooks=False)
+    outputs = [("Unable to investigate", {}), ("Final Answer: MALICIOUS", {}),
+               ('Action: get_domain_report(domain="evil.com")', {}),
+               ('Final Answer: investigated evil.com', {}),
+               ('```soc_decision\n{"verdict":"MALICIOUS","recommended_actions":["isolate_host"],"target_entity":"DESKTOP-FIN-08"}\n```', {})]
+    with patch.object(supervisor, "classify_alert", return_value="C2_BEACON"), \
+         patch.object(supervisor, "_call_llm_step", side_effect=outputs):
+        result = supervisor.query("Investigate DESKTOP-FIN-08", max_iterations=4)
+    assert verify_agent_trajectory(result.trajectory).executed_actions == ["isolate_host"]
+    assert result.trajectory[0]["tool"] == "get_domain_report"
+
+
+@pytest.mark.parametrize("observation,verified", [
+    ({"verdict": "MALICIOUS"}, True),
+    ({"cases": [], "total": 0}, True),
+    ({"entity": "host", "status": "OPEN"}, True),
+    ({"status": "SUCCESS"}, False),
+    ({"error": {}}, False),
+    ({"status_code": 503, "detail": "outage"}, False),
+    ({"isError": True, "content": [{"text": "failed"}]}, False),
+    ({"status": "NOT_FOUND", "entity": "host"}, False),
+    ({"result": {"status": "ERROR", "message": "failed"}}, False),
+    ({"content": []}, False), ({"result": {}}, False), ({"data": None}, False),
+    ({"events": [{"status": "FAILED", "event_type": "USER_LOGIN"}]}, True),
+    ({}, False), (None, False), ("unverified prose", False),
+])
+def test_supervisor_requires_usable_tool_observation(observation, verified):
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(project_id="offline", managed_model="offline", environment=env, use_runbooks=False)
+    decision = SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host"], target_entity="DESKTOP-FIN-08")
+    with patch.object(supervisor, "classify_alert", return_value="C2_BEACON"), \
+         patch.object(supervisor, "_call_llm_step", return_value=('Action: get_domain_report(domain="evil.com")', {})), \
+         patch.object(env, "query_tool", return_value=observation), \
+         patch.object(supervisor, "_synthesize_verdict_and_containment", return_value=("MALICIOUS", decision, {})) as synthesize:
+        result = supervisor.query("Investigate DESKTOP-FIN-08", max_iterations=1)
+    assert bool(synthesize.call_count) is verified
+    assert bool(env.action_history) is verified
+    assert result.verdict == ("MALICIOUS" if verified else "INCONCLUSIVE")
+
+
+def test_retry_does_not_reuse_report_written_before_tool_evidence():
+    worker = SOCRunbookWorkerAgent(
+        classification="C2_BEACON", runbook_name="none", runbook_content="",
+        project_id="offline", managed_model="offline", environment=SocEnvironment(),
+    )
+    premature = 'Final Answer: ```worker_report\n{"classification":"C2_BEACON","risk_level":"MALICIOUS","evidence":["fabricated evidence"]}\n```'
+    with patch.object(worker, "_call_llm_step", side_effect=[
+        (premature, {}), ('Action: get_domain_report(domain="google.com")', {}),
+    ]):
+        report, trajectory, _ = worker.investigate("Investigate google.com", max_iterations=2)
+    assert len(trajectory) == 1
+    assert "fabricated evidence" not in report.evidence
+    assert premature not in report.raw_response
+    assert report.findings
+
+
 def _containment_report(entities=()):
     return WorkerInvestigationReport(
         classification="C2_BEACON", runbook_name="basic_ioc_enrichment.md",

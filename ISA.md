@@ -3,7 +3,7 @@ task: Resolve evaluation PR correctness and evidence review findings
 project: open-model-deploy-gcp
 effort: E3
 phase: verify
-progress: 13/13
+progress: 15/15
 mode: interactive
 started: 2026-09-07
 updated: 2026-09-07
@@ -11,7 +11,7 @@ updated: 2026-09-07
 
 ## Problem
 
-The first six PR review findings are resolved. A second review found five integration defects in supervisor execution, target selection, streaming errors, case fault setup, and evaluator/collector completion signals.
+The first two review rounds resolved eleven defects. A third review reproduced containment without worker evidence and first-token timing delayed by a buffered HTTP read.
 
 ## Vision
 
@@ -31,7 +31,7 @@ Evaluation artifacts accurately describe what ran and which actions executed. Pr
 
 ## Goal
 
-Resolve both rounds of review findings with regression coverage across the affected execution paths and source-linked documentation. Commit and push the verified changes to the existing PR.
+Resolve the review findings with regression coverage across the affected execution paths and source-linked documentation. Commit and push the verified changes to the existing PR.
 
 ## Criteria
 
@@ -49,6 +49,8 @@ Resolve both rounds of review findings with regression coverage across the affec
 - [x] ISC-11: Streaming provider failures are excluded from successful benchmark requests.
 - [x] ISC-12: Optimizer and evaluator apply the same per-case fault configuration.
 - [x] ISC-13: A completed evaluation artifact survives collection with its completion status.
+- [x] ISC-14: Missing or failed worker evidence cannot reach supervisor synthesis or containment.
+- [x] ISC-15: First-token measurement does not wait for a later HTTP chunk to fill a read buffer.
 
 ## Test Strategy
 
@@ -65,6 +67,8 @@ Resolve both rounds of review findings with regression coverage across the affec
 | ISC-11 | Mock HTTP streaming and runner integration tests | Explicit errors and malformed streams fail; normal SSE/NDJSON remain supported |
 | ISC-12 | Shared fixture through optimizer and evaluator | Identical fault responses; no fault leaks between cases |
 | ISC-13 | Actual evaluator output through mocked artifact transport | Completion preserved; conflicting failure wins; launch identity remains unverified |
+| ISC-14 | Full supervisor queries with plain text, denied calls, outages, and exhausted budgets | Inconclusive result and no action; real observations preserve normal execution |
+| ISC-15 | Real HTTPResponse with deterministic chunk arrivals plus localhost probe | First event observed before later token arrival |
 
 ## Features
 
@@ -78,6 +82,7 @@ Resolve both rounds of review findings with regression coverage across the affec
 | Supervisor action verification | ISC-9, ISC-10 | None | Yes |
 | Streaming error propagation | ISC-11 | None | Yes |
 | Evaluation pipeline contracts | ISC-12, ISC-13 | None | Yes |
+| Investigation evidence boundary and unbuffered observations | ISC-14, ISC-15 | None | Yes |
 
 ## Decisions
 
@@ -87,6 +92,7 @@ Resolve both rounds of review findings with regression coverage across the affec
 
 - 2026-09-07: The second review adds ISC-9 through ISC-13 without renumbering completed criteria. Backend absence records an unexecuted recommendation; this change does not add live containment support.
 - 2026-09-07: Per-case fault setup belongs in SocEnvironment so optimization and evaluation cannot diverge. Artifact completion is separate from launch identity and cleanup verification.
+- 2026-09-07: Verify investigation from actual structured tool results, independently of model-authored findings. Plain-text MCP results remain unverified because the adapter drops execution metadata. HTTP timing uses available reads rather than filling a fixed-size buffer.
 
 ## Changelog
 
@@ -94,6 +100,10 @@ Resolve both rounds of review findings with regression coverage across the affec
 - Refuted by: an offline call through inherited `query()` still recorded denied containment as executed.
 - Learned: both entry points need the same trajectory recorder at the execution boundary.
 - Criterion now: ISC-3 also probes inherited query and dispatch aliases, including downstream loss classification.
+- Conjectured: one reflection on a premature report enforced investigation before containment.
+- Refuted by: plain worker prose followed by a malicious supervisor decision isolated a host without any tool evidence.
+- Learned: the supervisor must enforce an evidence boundary independently of worker formatting and iteration budgets.
+- Criterion now: ISC-14 covers full queries, failures, denied actions, and valid negative evidence.
 
 ## Verification
 
@@ -109,3 +119,6 @@ Resolve both rounds of review findings with regression coverage across the affec
 - ISC-11: 19 benchmark tests pass. Real mocked streams exercise provider errors after partial content, immediate errors, malformed output, valid SSE metadata/multiline events, and mixed request outcomes.
 - ISC-12, ISC-13: 14 pipeline tests pass. The same tool outage is observed by evaluation and optimization, normal cases remain isolated, and actual evaluator output retains completion through collection without asserting launch identity. Contradictory failure signals remain authoritative.
 - Second-round validation: 451 Python tests and 28 Bun tests pass. Combined implementation diff reviewed; `git diff --check` passes. Historical JSON remains unchanged, and no live cloud or model workload was run.
+- ISC-14: 33 new regressions cover absent/failed/denied evidence, budgets of zero/one/three iterations, repeated premature output, valid observations, and valid empty case searches. The initial query regressions reproduced 16 failures before the guard was changed.
+- ISC-15: Deterministic HTTPResponse regression reproduced 250 ms instead of the scheduled 10 ms arrival and now passes. The localhost probe improved from approximately 266 ms to 7 ms for an immediately sent 47-byte event, with unchanged generated text.
+- Third-round validation: 485 Python tests and 28 Bun tests pass; `git diff --check` passes. No external model or cloud workload ran.

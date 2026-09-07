@@ -17,9 +17,11 @@ The existing hierarchical/GEPA tests require the pinned `third_party/ai-runbooks
 ## Execution and pipeline contracts
 
 - Supervisor containment requires an explicit, unambiguous target and a successful backend response. Missing backends or targets, denied operations, and backend failures remain visible as attempts without execution credit. Live MCP containment is not implemented; enabling live investigation does not establish containment capability.
+- The supervisor also requires usable structured evidence from an executed investigation tool. Exhausted retries, tool errors, denied calls, and unverified plain-text MCP results produce an inconclusive outcome without synthesis or containment. Valid negative observations, such as an empty case search, remain usable.
 - GEPA optimization and the evaluator construct isolated sandbox environments through `SocEnvironment.from_eval_case`, applying the same declared tool faults. Faults do not carry into subsequent cases and are not installed in live MCP mode.
 - `COMPLETED` means the evaluator finished, independently of case pass rate. Collection preserves explicit completion and failure signals, with failures taking precedence. It does not establish launch identity or successful cloud cleanup.
 - Streaming benchmark requests containing provider errors or malformed events count as failures even after partial generation. Valid SSE metadata and multiline events remain supported.
+- First-token timing reads available HTTP data without waiting for a fixed-size buffer to fill. A regression uses Python's real HTTP response reader with deterministic chunk arrivals; localhost streaming also verifies the short-event case.
 
 `tests/test_evaluation_pipeline.py` exercises real evaluator output through mocked artifact transport and compares optimizer/evaluator fault responses. Supervisor and benchmark regressions cover execution credit and mixed successful/failed requests. These checks make no cloud or model calls.
 

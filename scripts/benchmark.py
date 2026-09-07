@@ -657,8 +657,13 @@ def send_streaming_request_detailed(
     try:
         with urllib.request.urlopen(req) as response:
             response_status = getattr(response, "status", 200)
+            # HTTPResponse.read(n) fills n bytes across HTTP chunks, delaying
+            # observations until later tokens arrive. read1 returns available
+            # bytes after at most one underlying read. Keep read for adapters
+            # that do not expose the buffered-reader API.
+            read_available = getattr(response, "read1", response.read)
             while True:
-                chunk = response.read(64)
+                chunk = read_available(64)
                 if not chunk:
                     break
                 if not first_chunk_received:

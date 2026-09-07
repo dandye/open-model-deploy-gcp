@@ -73,6 +73,65 @@ CLASSIFICATION_RUNBOOK_MAP: Dict[str, str] = {
 DEFAULT_FALLBACK_RUNBOOK: str = "basic_ioc_enrichment.md"
 
 
+def _has_investigation_evidence(trajectory: List[Dict[str, Any]]) -> bool:
+    """Require structured telemetry from an executed investigation tool.
+
+    Plain text cannot distinguish live MCP errors from telemetry because its
+    adapter does not retain execution metadata. Such results remain unverified.
+    """
+    metadata = {"status", "status_code", "error", "isError", "message"}
+    envelopes = {"result", "data", "response", "body"}
+
+    def usable(value: Any) -> bool:
+        if isinstance(value, list):
+            return not value or any(usable(item) for item in value)
+        if not isinstance(value, dict):
+            return False
+        if value.get("isError") is True or value.get("error") is not None:
+            return False
+        if str(value.get("status", "")).upper() in {
+            "ERROR", "FAILED", "FAILURE", "DENIED", "NOT_FOUND", "NOT_EXECUTED",
+            "UNVERIFIED", "TIMED_OUT", "TIMEOUT", "CANCELLED", "CANCELED",
+        }:
+            return False
+        code = value.get("status_code")
+        if isinstance(code, (int, float)) and code >= 400:
+            return False
+        fields = set(value) - metadata
+        if not fields:
+            return False
+        if fields <= envelopes:
+            return any(usable(value[key]) for key in fields)
+        if fields == {"content"}:
+            # MCP text blocks are envelopes, not evidence by themselves.
+            content = value["content"]
+            if not isinstance(content, list):
+                return False
+            for block in content:
+                try:
+                    if isinstance(block, dict) and usable(json.loads(block.get("text", ""))):
+                        return True
+                except (TypeError, ValueError):
+                    continue
+            return False
+        # Do not interpret statuses inside telemetry (e.g. failed login events)
+        # as transport failures. Empty case/event lists are negative evidence.
+        return True
+
+    for step in trajectory:
+        if not step.get("tool") or not is_epistemic_tool(step["tool"]):
+            continue
+        if step.get("execution_status", "SUCCESS") != "SUCCESS":
+            continue
+        try:
+            observation = json.loads(step.get("observation", ""))
+        except (TypeError, ValueError):
+            continue
+        if usable(observation):
+            return True
+    return False
+
+
 @dataclass
 class WorkerInvestigationReport:
     """Structured report produced by SOCRunbookWorkerAgent after epistemic investigation."""
@@ -482,6 +541,9 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             # 1. Parse and execute tool invocation
             parsed = self._parse_action(step_output)
             if parsed:
+                # A report emitted before this observation must not survive a
+                # retry when the tool call consumes the remaining budget.
+                final_answer = ""
                 tool_name, tool_args = parsed
                 observation = self._execute_tool_action(tool_name, tool_args)
                 step = self._tool_trajectory_step(
@@ -492,21 +554,16 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
                 current_prompt += f"{step_output}\nObservation: {observation}\n"
                 continue
 
-            # 2. Enforce epistemic investigation on premature completion in step 0
-            if iteration == 0 and iteration < max_iterations - 1:
-                is_premature = (
-                    "Final Answer:" in step_output
-                    or "[Findings & Evidence]" in step_output
-                    or "```worker_report" in step_output
+            # Retry every premature completion, regardless of its format or
+            # iteration. Denied calls and failed tools do not satisfy the guard.
+            if not _has_investigation_evidence(trajectory):
+                final_answer = step_output.strip()
+                current_prompt += (
+                    f"{step_output}\nObservation: Investigation incomplete. "
+                    "Use an available investigation tool to gather verified telemetry "
+                    "before issuing findings; prior failed or denied calls are insufficient.\n"
                 )
-                if is_premature:
-                    reflection = (
-                        "Observation: Investigation incomplete. You have not called any investigation tools "
-                        "(e.g. get_ip_address_report, get_domain_report, get_file_report, lookup_entity, list_cases). "
-                        "You must invoke an investigation tool to gather verified telemetry before issuing findings."
-                    )
-                    current_prompt += f"{step_output}\n{reflection}\n"
-                    continue
+                continue
 
             # 3. Explicit Final Answer
             if "Final Answer:" in step_output:
@@ -524,7 +581,14 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         if not final_answer:
             final_answer = "Investigation iterations completed."
 
-        report = extract_worker_report(final_answer, self.classification, self.runbook_name, trajectory)
+        if not _has_investigation_evidence(trajectory):
+            report = WorkerInvestigationReport(
+                classification=self.classification, runbook_name=self.runbook_name,
+                risk_level="UNKNOWN", recommended_escalation="Tier 2: investigation incomplete",
+                raw_response=final_answer,
+            )
+        else:
+            report = extract_worker_report(final_answer, self.classification, self.runbook_name, trajectory)
         return report, trajectory, total_usage
 
 
@@ -998,6 +1062,28 @@ class SOCSupervisorAgent(GemmaAgent):
             max_tokens=max_tokens,
             temperature=temperature,
         )
+
+        # Enforce the boundary independently of any model-authored report. An
+        # incomplete investigation cannot reach synthesis or action dispatch.
+        if not _has_investigation_evidence(worker_trajectory):
+            incomplete_report = WorkerInvestigationReport(
+                classification=classification, runbook_name=runbook_name,
+                risk_level="UNKNOWN", recommended_escalation="Tier 2: investigation incomplete",
+                raw_response=worker_report.raw_response,
+            )
+            decision = SocDecision(
+                verdict="INCONCLUSIVE", recommended_actions=[],
+                rationale="Investigation incomplete: no verified tool evidence was obtained.",
+            )
+            return SOCTier1Response(
+                response=("Investigation incomplete: no verified tool evidence was obtained. "
+                          "Verdict: INCONCLUSIVE. No containment actions were executed. "
+                          "Escalate to Tier 2 for investigation.\n\n```soc_decision\n"
+                          + json.dumps(decision.to_dict(), indent=2) + "\n```"),
+                trajectory=worker_trajectory, usage=worker_usage, backend=self.last_backend,
+                endpoint_id=self.endpoint_id, classification=classification, runbook=runbook_name,
+                worker_report=incomplete_report, verdict="INCONCLUSIVE",
+            )
 
         # 4. Supervisor Synthesis
         final_response, decision, supervisor_usage = self._synthesize_verdict_and_containment(

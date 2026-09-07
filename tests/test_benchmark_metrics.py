@@ -1,7 +1,8 @@
 import os
 import re
 import unittest
-from io import BytesIO
+from io import BufferedReader, BytesIO, RawIOBase
+from http.client import HTTPResponse
 from concurrent.futures import Future
 from unittest.mock import patch
 from scripts.benchmark import (
@@ -18,6 +19,52 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 class TestBenchmarkMetrics(unittest.TestCase):
+    def test_first_token_arrival_does_not_wait_for_next_http_chunk(self):
+        # Exercise the real HTTPResponse reader, including HTTP chunk framing.
+        # The raw transport advances a deterministic clock as bytes arrive.
+        clock = [0.0]
+        events = [
+            b'data: {"choices":[{"delta":{"content":"A"}}]}\n\n',
+            b'data: {"choices":[{"delta":{"content":"B"}}]}\n\n',
+            b'data: [DONE]\n\n',
+        ]
+        arrivals = [(0.0, b'HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n')]
+        arrivals += [(at, f'{len(event):x}\r\n'.encode() + event + b'\r\n')
+                     for at, event in zip([0.01, 0.25, 0.5], events)]
+        arrivals.append((0.5, b'0\r\n\r\n'))
+
+        class Transport(RawIOBase):
+            def readable(self):
+                return True
+
+            def readinto(self, buffer):
+                if not arrivals:
+                    return 0
+                at, chunk = arrivals.pop(0)
+                clock[0] = at
+                count = min(len(buffer), len(chunk))
+                buffer[:count] = chunk[:count]
+                if count < len(chunk):
+                    arrivals.insert(0, (at, chunk[count:]))
+                return count
+
+        class Socket:
+            def makefile(self, *args):
+                return BufferedReader(Transport())
+
+        response = HTTPResponse(Socket())
+        response.begin()
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=response), \
+             patch("scripts.benchmark.time.perf_counter", side_effect=lambda: clock[0]):
+            elapsed, first_chunk, first_token, body, error = send_streaming_request_detailed(
+                "https://example.test", {}, {}
+            )
+        self.assertIsNone(error)
+        self.assertEqual(first_chunk, 0.01)
+        self.assertEqual(first_token, 0.01)
+        self.assertEqual(elapsed, 0.5)
+        self.assertEqual(parse_output_details(body)[0], "AB")
+
 
     def test_calculate_percentile_known_values(self):
         # Odd number of samples
