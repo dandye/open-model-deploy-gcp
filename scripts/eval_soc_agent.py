@@ -292,6 +292,7 @@ def run_evaluation(
     use_runbooks: bool = True,
     runbooks_dir: Optional[str] = None,
     mcp_provider: str = "default",
+    provenance_run_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     if agent_mode == "hierarchical" and mcp_provider != "default":
@@ -347,6 +348,7 @@ def run_evaluation(
          "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider},
         (Path(runbooks_dir) if runbooks_dir else ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books")
         if agent_mode == "hierarchical" and use_runbooks else None,
+        run_id=provenance_run_id,
     )
 
     soc_env: Optional[SocEnvironment] = None
@@ -807,6 +809,7 @@ def _initial_cli_provenance(
             "mcp_provider": args.mcp_provider,
         },
         runbooks_path,
+        run_id=None,
     )
 
 
@@ -914,9 +917,20 @@ def main() -> None:
     except (AttributeError, OSError, TypeError, ValueError, json.JSONDecodeError):
         # run_evaluation remains responsible for reporting malformed input.
         pass
-    initial_provenance = _initial_cli_provenance(evalset_file, args, initial_eval_gen)
-
+    initial_provenance: Dict[str, Any] = {
+        "schema_version": 1,
+        "run_id": None,
+        "launch_configuration_hash": None,
+        "verification_status": "invalid_launch_identity",
+        "lifecycle": {
+            "status": "failed",
+            "evaluation": "failed",
+            "artifact_collection": "unverified",
+            "cleanup": "unverified",
+        },
+    }
     try:
+        initial_provenance = _initial_cli_provenance(evalset_file, args, initial_eval_gen)
         eval_data = run_evaluation(
             evalset_path=evalset_file,
             flavor=args.flavor,
@@ -934,6 +948,7 @@ def main() -> None:
             use_runbooks=args.use_runbooks,
             runbooks_dir=args.runbooks_dir,
             mcp_provider=args.mcp_provider,
+            provenance_run_id=initial_provenance["run_id"],
         )
     except Exception as error:
         initial_provenance["completed_at"] = utc_now()

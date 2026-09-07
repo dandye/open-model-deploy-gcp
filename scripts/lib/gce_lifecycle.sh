@@ -43,9 +43,13 @@ write_evaluation_failure() {
   local reason="$4"
   local evaluator_status="${5:-1}"
 
-  local json_flavor json_reason
+  local json_flavor json_reason json_run_id json_configuration_hash
   json_flavor="$(json_escape "${flavor}")"
   json_reason="$(json_escape "${reason}")"
+  json_run_id="$(json_escape "${EXPERIMENT_RUN_ID:-}")"
+  json_configuration_hash="$(json_escape "${EXPERIMENT_CONFIGURATION_HASH:-}")"
+  if [[ -n "${json_run_id}" ]]; then json_run_id="\"${json_run_id}\""; else json_run_id="null"; fi
+  if [[ -n "${json_configuration_hash}" ]]; then json_configuration_hash="\"${json_configuration_hash}\""; else json_configuration_hash="null"; fi
 
   # The evaluator can persist a rich FAILED artifact before exiting nonzero.
   # Keep that diagnostic as the authoritative result.  If an older success,
@@ -93,6 +97,8 @@ EOF
 
   cat >"${json_path}" <<EOF
 {
+  "run_id": ${json_run_id},
+  "configuration_hash": ${json_configuration_hash},
   "flavor": "${json_flavor}",
   "status": "FAILED",
   "evaluation": {

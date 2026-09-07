@@ -30,9 +30,13 @@ json_escape() {
 write_evaluation_failure() {
   local report_path="$1" json_path="$2" flavor="$3" reason="$4"
   local evaluator_status="${5:-1}"
-  local json_flavor json_reason
+  local json_flavor json_reason json_run_id json_configuration_hash
   json_flavor="$(json_escape "${flavor}")"
   json_reason="$(json_escape "${reason}")"
+  json_run_id="$(json_escape "${EXPERIMENT_RUN_ID:-}")"
+  json_configuration_hash="$(json_escape "${EXPERIMENT_CONFIGURATION_HASH:-}")"
+  if [[ -n "${json_run_id}" ]]; then json_run_id="\"${json_run_id}\""; else json_run_id="null"; fi
+  if [[ -n "${json_configuration_hash}" ]]; then json_configuration_hash="\"${json_configuration_hash}\""; else json_configuration_hash="null"; fi
   local existing_failure=0
   if [[ -s "${json_path}" && -r "${json_path}" ]] && python3 - "${json_path}" <<'PY'
 import json
@@ -73,6 +77,8 @@ EOF
 EOF
   cat >"${json_path}" <<EOF
 {
+  "run_id": ${json_run_id},
+  "configuration_hash": ${json_configuration_hash},
   "flavor": "${json_flavor}",
   "status": "FAILED",
   "evaluation": {
@@ -167,10 +173,21 @@ fi
 if [[ -z "${GCS_MODEL_PATH}" ]]; then
   GCS_MODEL_PATH="$(get_metadata "instance/attributes/gcs_model_path" "")"
 fi
+EXPERIMENT_RUN_ID="$(get_metadata "instance/attributes/run_id" "")"
+EXPERIMENT_CONFIGURATION_HASH="$(get_metadata "instance/attributes/configuration_hash" "")"
+SOURCE_COMMIT="$(get_metadata "instance/attributes/source_commit" "")"
+if [[ -n "${EXPERIMENT_RUN_ID}" || -n "${EXPERIMENT_CONFIGURATION_HASH}" ]]; then
+  export EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
+else
+  export -n EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
+fi
 
 CONTAINER_NAME="vllm-server"
 
 OUTPUT_DIR="/tmp/eval_results/${MODEL_FLAVOR}"
+if [[ -n "${EXPERIMENT_RUN_ID}" ]]; then
+  OUTPUT_DIR="/tmp/eval_results/${EXPERIMENT_RUN_ID}/${MODEL_FLAVOR}"
+fi
 REPORT_PATH="${OUTPUT_DIR}/soc_tier1_eval_report_${MODEL_FLAVOR}.md"
 JSON_PATH="${OUTPUT_DIR}/soc_tier1_eval_results_${MODEL_FLAVOR}.json"
 BENCHMARK_LOG="${OUTPUT_DIR}/benchmark_${MODEL_FLAVOR}.log"
@@ -185,12 +202,24 @@ CLEANUP_DELETE_REQUESTED=false
 CLEANUP_DELETE_VERIFIED=false
 
 write_lifecycle_status() {
-  local json_flavor json_reason
+  local json_flavor json_reason json_run_id json_configuration_hash json_source_commit
   mkdir -p "${OUTPUT_DIR}"
   json_flavor="$(json_escape "${MODEL_FLAVOR}")"
   json_reason="$(json_escape "${EVALUATION_FAILURE_REASON}")"
+  json_run_id="$(json_escape "${EXPERIMENT_RUN_ID}")"
+  json_configuration_hash="$(json_escape "${EXPERIMENT_CONFIGURATION_HASH}")"
+  json_source_commit="$(json_escape "${SOURCE_COMMIT}")"
+  [[ -n "${json_run_id}" ]] || json_run_id="null"
+  [[ -n "${json_configuration_hash}" ]] || json_configuration_hash="null"
+  [[ -n "${json_source_commit}" ]] || json_source_commit="null"
+  [[ "${json_run_id}" == "null" ]] || json_run_id="\"${json_run_id}\""
+  [[ "${json_configuration_hash}" == "null" ]] || json_configuration_hash="\"${json_configuration_hash}\""
+  [[ "${json_source_commit}" == "null" ]] || json_source_commit="\"${json_source_commit}\""
   cat >"${LIFECYCLE_PATH}" <<EOF
 {
+  "run_id": ${json_run_id},
+  "configuration_hash": ${json_configuration_hash},
+  "requested_source_commit": ${json_source_commit},
   "flavor": "${json_flavor}",
   "evaluation": {
     "status": "${EVALUATION_STATUS}",
@@ -237,11 +266,30 @@ upload_artifacts() {
     # A successful copy command records transport success. It does not prove
     # every object is visible in the bucket, so do not claim remote verification.
     ARTIFACT_UPLOAD_STATUS="COMMAND_SUCCEEDED"
+    write_lifecycle_status
+    # Publish the final marker after the bulk copy so collectors can distinguish
+    # a complete upload from an interrupted transfer.
+    if command -v gcloud >/dev/null 2>&1; then
+      gcloud storage cp "${LIFECYCLE_PATH}" "${target_gcs_uri}lifecycle_status.json" || upload_status=$?
+    elif command -v gsutil >/dev/null 2>&1; then
+      gsutil cp "${LIFECYCLE_PATH}" "${target_gcs_uri}lifecycle_status.json" || upload_status=$?
+    else
+      upload_status=127
+    fi
+    if [[ ${upload_status} -ne 0 ]]; then
+      ARTIFACT_UPLOAD_STATUS="FAILED"
+      write_lifecycle_status
+      echo "[ERROR] Final lifecycle marker upload failed (status ${upload_status})."
+      return "${upload_status}"
+    fi
   else
     ARTIFACT_UPLOAD_STATUS="FAILED"
     echo "[ERROR] Artifact upload failed (status ${upload_status}); local artifacts remain at ${OUTPUT_DIR}."
   fi
   write_lifecycle_status
+  if [[ ${upload_status} -ne 0 ]]; then
+    return "${upload_status}"
+  fi
   return 0
 }
 
@@ -517,8 +565,12 @@ else
 fi
 
 # 8. Preserve and upload artifacts before teardown.
-upload_artifacts
-if [[ "${EVALUATION_STATUS}" != "COMPLETED" || "${ARTIFACT_STATUS}" != "PRESERVED" ]]; then
+if ! upload_artifacts; then
+  UPLOAD_FAILED=true
+else
+  UPLOAD_FAILED=false
+fi
+if [[ "${EVALUATION_STATUS}" != "COMPLETED" || "${ARTIFACT_STATUS}" != "PRESERVED" || "${UPLOAD_FAILED}" == "true" ]]; then
   echo "[ERROR] Ephemeral Spot VM workload did not produce a complete evaluation artifact set."
   exit 1
 fi

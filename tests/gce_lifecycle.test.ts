@@ -64,6 +64,48 @@ describe("GCE evaluation lifecycle", () => {
     }
   });
 
+  it("propagates experiment identity into failed artifacts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+    try {
+      const report = join(dir, "report.md");
+      const result = join(dir, "result.json");
+      const shell = runBash(`
+        set -euo pipefail
+        source ${JSON.stringify(helper)}
+        export EXPERIMENT_RUN_ID=0123456789abcdef0123456789abcdef
+        export EXPERIMENT_CONFIGURATION_HASH=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        write_evaluation_failure ${JSON.stringify(report)} ${JSON.stringify(result)} model 'interrupted' 143
+      `);
+      expect(shell.status).toBe(0);
+      const parsed = JSON.parse(readFileSync(result, "utf8"));
+      expect(parsed.run_id).toBe("0123456789abcdef0123456789abcdef");
+      expect(parsed.configuration_hash).toBe("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+      expect(parsed.status).toBe("FAILED");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("embeds identity in fallback failures for both boot paths", () => {
+    for (const path of startupScripts) {
+      const prefix = readFileSync(path, "utf8").split("# ==============================================================================", 1)[0];
+      const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
+      try {
+        const result = join(dir, "result.json");
+        const shell = runBash(`${prefix}
+          set -euo pipefail
+          export EXPERIMENT_RUN_ID=0123456789abcdef0123456789abcdef
+          export EXPERIMENT_CONFIGURATION_HASH=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+          write_evaluation_failure ${JSON.stringify(join(dir, "report.md"))} ${JSON.stringify(result)} model interrupted 143
+          python3 -c 'import json; d=json.load(open("${result}")); assert d["run_id"] == "0123456789abcdef0123456789abcdef"; assert d["configuration_hash"] == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"'
+        `);
+        expect(shell.status).toBe(0);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  });
+
   it("preserves the evaluator's rich failed JSON and report", () => {
     const dir = mkdtempSync(join(tmpdir(), "gce-lifecycle-"));
     try {
@@ -201,10 +243,67 @@ describe("GCE evaluation lifecycle", () => {
       expect(content).toContain("delete_verified");
       expect(content).toContain("COMMAND_SUCCEEDED");
       expect(content).toContain("REQUESTED");
+      expect(content).toContain('instance/attributes/run_id');
+      expect(content).toContain('instance/attributes/configuration_hash');
+      expect(content).toContain('OUTPUT_DIR="/tmp/eval_results/${EXPERIMENT_RUN_ID}/${MODEL_FLAVOR}"');
+      expect(content).toContain('"run_id": ${json_run_id}');
+      expect(content).toContain('"configuration_hash": ${json_configuration_hash}');
+      expect(content).toContain('"requested_source_commit": ${json_source_commit}');
+      expect(content).toContain('lifecycle_status.json" || upload_status=$?');
+      expect(content).toContain('return "${upload_status}"');
       expect(content).not.toContain('ARTIFACT_UPLOAD_STATUS="UPLOADED"');
       expect(content).not.toContain("Creating minimal benchmark scorecard");
       expect(content).not.toContain('"avg_rubric_score": 90.0');
     }
+  });
+
+  it("publishes the final lifecycle marker after bulk upload", () => {
+    for (const path of startupScripts) {
+      const content = readFileSync(path, "utf8");
+      const bulk = content.indexOf('gcloud storage cp -r "${OUTPUT_DIR}"/*');
+      const marker = content.indexOf('gcloud storage cp "${LIFECYCLE_PATH}"');
+      const failedReturn = content.indexOf('return "${upload_status}"');
+      expect(bulk).toBeGreaterThan(-1);
+      expect(marker).toBeGreaterThan(bulk);
+      expect(failedReturn).toBeGreaterThan(marker);
+      expect(content).toContain('UPLOAD_FAILED=true');
+    }
+  });
+
+  it("does not export empty identity to legacy evaluator processes", () => {
+    for (const path of startupScripts) {
+      const content = readFileSync(path, "utf8");
+      const start = content.indexOf('EXPERIMENT_RUN_ID="$(get_metadata');
+      const end = content.indexOf("\n\nCONTAINER_NAME", start);
+      const identityBlock = content.slice(start, end);
+      const result = runBash(`
+        export EXPERIMENT_RUN_ID=old EXPERIMENT_CONFIGURATION_HASH=old
+        get_metadata() { printf ''; }
+        ${identityBlock}
+        set -euo pipefail
+        python3 -c 'import os; assert "EXPERIMENT_RUN_ID" not in os.environ; assert "EXPERIMENT_CONFIGURATION_HASH" not in os.environ'
+      `);
+      expect(result.status).toBe(0);
+    }
+  });
+
+  it("exports populated identity and preserves one-sided failure semantics", () => {
+    const content = readFileSync(startupScripts[0], "utf8");
+    const start = content.indexOf('EXPERIMENT_RUN_ID="$(get_metadata');
+    const end = content.indexOf("\n\nCONTAINER_NAME", start);
+    const identityBlock = content.slice(start, end);
+    const populated = runBash(`
+      get_metadata() { case "$1" in instance/attributes/run_id) printf '0123456789abcdef0123456789abcdef';; instance/attributes/configuration_hash) printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';; *) printf ''; esac; }
+      ${identityBlock}
+      python3 -c 'import os; assert os.environ["EXPERIMENT_RUN_ID"] == "0123456789abcdef0123456789abcdef"; assert len(os.environ["EXPERIMENT_CONFIGURATION_HASH"]) == 64'
+    `);
+    expect(populated.status).toBe(0);
+    const oneSided = runBash(`
+      get_metadata() { case "$1" in instance/attributes/run_id) printf '0123456789abcdef0123456789abcdef';; *) printf ''; esac; }
+      ${identityBlock}
+      python3 -c 'import os; assert os.environ["EXPERIMENT_RUN_ID"]; assert os.environ["EXPERIMENT_CONFIGURATION_HASH"] == ""'
+    `);
+    expect(oneSided.status).toBe(0);
   });
 
   it("embeds the same status and deletion verification behavior in each boot path", () => {

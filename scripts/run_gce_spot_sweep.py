@@ -11,7 +11,7 @@ Manages the lifecycle of ephemeral Spot GPU VMs attached to Local NVMe SSD scrat
 """
 
 import argparse
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass
 import json
 import os
 from pathlib import Path
@@ -19,11 +19,16 @@ import re
 import subprocess
 import sys
 import time
+import tempfile
+import hashlib
 from typing import Any, Dict, List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+
+
+from scripts.experiment_run import new_run, load_run, validate_run, identity_error, write_json, now
 
 
 def _artifact_evaluation_status(data: Dict[str, Any]) -> str:
@@ -46,6 +51,29 @@ def _artifact_evaluation_status(data: Dict[str, Any]) -> str:
     if statuses and all(status == "COMPLETED" for status in statuses):
         return "COMPLETED"
     return "UNVERIFIED"
+
+
+def _reject_nonfinite(value: str):
+    raise ValueError(f"Non-finite JSON number: {value}")
+
+
+def _benchmark_error(data: Any) -> Optional[str]:
+    """The startup sample is a non-streaming OpenAI-compatible completion."""
+    if not isinstance(data, dict):
+        return "Benchmark sample must be a JSON object"
+    if data.get("error") or data.get("errors") or str(data.get("status", "")).lower() in {"failed", "error"}:
+        return "Benchmark sample contains a provider error"
+    choices = data.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return "Benchmark sample contains no output choices"
+    for choice in choices:
+        if not isinstance(choice, dict) or choice.get("error") or choice.get("finish_reason") == "error":
+            return "Benchmark sample contains an invalid or failed choice"
+        message = choice.get("message")
+        content = choice.get("text") if "text" in choice else message.get("content") if isinstance(message, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            return "Benchmark sample contains no generated text"
+    return None
 
 
 @dataclass
@@ -468,6 +496,8 @@ def build_gce_spot_create_command(
     service_account: Optional[str] = None,
     boot_disk_size: str = "100GB",
     boot_disk_type: str = "pd-ssd",
+    run_id: Optional[str] = None,
+    configuration_hash: Optional[str] = None,
 ) -> List[str]:
     """
     Constructs the exact gcloud compute instances create command arguments.
@@ -520,12 +550,19 @@ def build_gce_spot_create_command(
         f"tp_size={target.tensor_parallel_size}",
         f"output_bucket={output_gcs_uri}",
     ]
+    if run_id is not None or configuration_hash is not None:
+        if not re.fullmatch(r"[0-9a-f]{32}", run_id or "") or not re.fullmatch(r"[0-9a-f]{64}", configuration_hash or ""):
+            raise ValueError("A valid run ID and configuration hash are required together")
+        metadata_items.extend([f"run_id={run_id}", f"configuration_hash={configuration_hash}"])
     if target.extra_vllm_flags:
         metadata_items.append(f"extra_flags={target.extra_vllm_flags}")
     if hf_token:
         metadata_items.append(f"hf_token={hf_token}")
 
-    cmd.append(f"--metadata={','.join(metadata_items)}")
+    delimiter = "|~|"
+    if any(delimiter in item for item in metadata_items):
+        raise ValueError("Metadata contains reserved delimiter")
+    cmd.append(f"--metadata=^{delimiter}^{delimiter.join(metadata_items)}")
 
     # Startup Script file
     startup_path = script_template_path or (ROOT_DIR / "scripts" / "gce_startup_script.sh")
@@ -552,6 +589,7 @@ class GCESpotOrchestrator:
         timeout_seconds: int = 3600,
         image_family: str = "ubuntu-2204-lts",
         image_project: str = "ubuntu-os-cloud",
+        evidence_dir: Optional[Path] = None,
     ) -> None:
         self.project_id = project_id
         self.zone = zone
@@ -562,6 +600,8 @@ class GCESpotOrchestrator:
         self.image_family = image_family
         self.image_project = image_project
         self.active_instance_zone: str = zone
+        self.evidence_dir = Path(evidence_dir) if evidence_dir else ROOT_DIR / "logs" / "experiment_runs"
+        self.current_run: Optional[Dict[str, Any]] = None
 
     def launch_instance(
         self,
@@ -572,11 +612,6 @@ class GCESpotOrchestrator:
         Launches an ephemeral Spot VM instance for the target model.
         Returns the created instance name.
         """
-        if not instance_name:
-            sanitized_flavor = target.flavor.replace(".", "-")
-            timestamp = int(time.time())
-            instance_name = f"spot-{sanitized_flavor}-{timestamp}"
-
         base_zone = self.zone
         candidate_zones = [base_zone]
         if "-" in base_zone:
@@ -588,43 +623,69 @@ class GCESpotOrchestrator:
 
         last_error = ""
         for zone in candidate_zones:
+            configuration = {
+                "target": asdict(target), "project_id": self.project_id, "zone": zone,
+                "image_family": self.image_family, "image_project": self.image_project,
+                "startup_sha256": hashlib.sha256((ROOT_DIR / "scripts/gce_startup_script.sh").read_bytes()).hexdigest(),
+                "source_identity": "unverified_mutable_gcs_code",
+            }
+            run = new_run(configuration, self.output_gcs_bucket, instance_name)
+            self.current_run = run
+            self.active_instance_zone = zone
+            name = run["instance_name"]
+            self._save_launch(run)
             cmd = build_gce_spot_create_command(
                 target=target,
                 project_id=self.project_id,
                 zone=zone,
-                output_gcs_uri=self.output_gcs_bucket,
+                output_gcs_uri=run["artifact_uri"].rsplit("/", 1)[0],
                 hf_token=self.hf_token,
                 image_family=self.image_family,
                 image_project=self.image_project,
-                instance_name=instance_name,
+                instance_name=name,
+                run_id=run["run_id"], configuration_hash=run["configuration_hash"],
             )
 
             if self.dry_run:
-                print(f"[DRY RUN] Creating GCE Spot instance '{instance_name}' for flavor '{target.flavor}' in zone '{zone}'...")
-                print(f"[DRY RUN] Command: {' '.join(cmd)}")
+                run["launch_status"] = "SYNTHETIC"
+                print(f"[DRY RUN] Creating GCE Spot instance '{name}' for flavor '{target.flavor}' in zone '{zone}'...")
+                safe_cmd = [re.sub(r"hf_token=.*?(?=\|~\||$)", "hf_token=<redacted>", arg) for arg in cmd]
+                print(f"[DRY RUN] Command: {' '.join(safe_cmd)}")
                 self.active_instance_zone = zone
-                return instance_name
+                return name
 
-            print(f"[INFO] Creating GCE Spot instance '{instance_name}' ({target.machine_type}, {target.accelerator_count}x {target.accelerator_type}) in {zone}...")
-            res = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+            print(f"[INFO] Creating GCE Spot instance '{name}' ({target.machine_type}, {target.accelerator_count}x {target.accelerator_type}) in {zone}...")
+            run["launch_status"] = "CREATE_REQUESTED"
+            self._save_launch(run)
+            try:
+                res = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)
+            except BaseException as exc:
+                run["launch_status"] = "CREATE_OUTCOME_UNKNOWN"
+                self._save_launch(run)
+                if isinstance(exc, Exception):
+                    # Subprocess exceptions include argv, which may contain an HF token.
+                    raise RuntimeError(f"Create outcome unknown ({type(exc).__name__}); recover using the saved launch manifest") from None
+                raise
 
             stdout = str(res.stdout or "")
             stderr = str(res.stderr or "")
             output = f"{stdout}\n{stderr}"
+            output = output.replace(self.hf_token, "<redacted>") if self.hf_token else output
             print(output)
 
             if res.returncode == 0:
-                print(f"[INFO] Successfully initiated Spot VM: {instance_name} in {zone}")
+                run["launch_status"] = "LAUNCHED"
+                self._save_launch(run)
+                print(f"[INFO] Successfully initiated Spot VM: {name} in {zone}")
                 self.active_instance_zone = zone
-                return instance_name
+                return name
 
             last_error = output
+            run["launch_status"] = "CREATE_OUTCOME_UNKNOWN"
+            self._save_launch(run)
             if "ZONE_RESOURCE_POOL_EXHAUSTED" in output or "not have enough resources" in output:
+                run["launch_status"] = "STOCKOUT"
+                self._save_launch(run)
                 print(f"[WARN] Zone '{zone}' exhausted for {target.machine_type}. Trying next candidate zone...")
                 continue
             else:
@@ -649,31 +710,37 @@ class GCESpotOrchestrator:
             return True
 
         print(f"[INFO] Monitoring instance '{instance_name}' in zone '{zone}' until self-deletion...")
-        start_time = time.time()
+        start_time = time.monotonic()
         poll_interval = 15
 
-        while (time.time() - start_time) < max_timeout:
-            check_res = subprocess.run(
-                [
-                    "gcloud",
-                    "compute",
-                    "instances",
-                    "describe",
-                    instance_name,
-                    f"--project={self.project_id}",
-                    f"--zone={zone}",
-                    "--format=value(status)",
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
+        while (time.monotonic() - start_time) < max_timeout:
+            try:
+                check_res = subprocess.run(
+                    [
+                        "gcloud",
+                        "compute",
+                        "instances",
+                        "describe",
+                        instance_name,
+                        f"--project={self.project_id}",
+                        f"--zone={zone}",
+                        "--format=value(status)",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=min(60, max(0.01, max_timeout - (time.monotonic() - start_time))),
+                )
+            except (OSError, subprocess.SubprocessError) as exc:
+                self.last_monitor_outcome = "STATE_CHECK_FAILED"
+                print(f"[ERROR] Instance status check failed: {type(exc).__name__}")
+                return False
 
             status = check_res.stdout.strip()
             stderr = check_res.stderr
 
             if check_res.returncode != 0:
-                if "not found" in stderr.lower():
+                if re.search(r"(?:the resource(?: .*?)? was not found|notfound:.*instances/)", stderr, re.I | re.S):
                     print(f"[INFO] Instance '{instance_name}' is absent after cleanup request.")
                     self.last_monitor_outcome = "ABSENT_OBSERVED"
                     return True
@@ -691,9 +758,9 @@ class GCESpotOrchestrator:
                 self.last_monitor_outcome = f"{status}_NOT_DELETED"
                 return True
 
-            elapsed = int(time.time() - start_time)
+            elapsed = int(time.monotonic() - start_time)
             print(f"[INFO] Instance '{instance_name}' status: {status} (elapsed: {elapsed}s / {max_timeout}s)...")
-            time.sleep(poll_interval)
+            time.sleep(min(poll_interval, max(0, max_timeout - (time.monotonic() - start_time))))
 
         print(f"[WARNING] Monitoring timed out after {max_timeout}s for instance '{instance_name}'.")
         self.last_monitor_outcome = "TIMED_OUT"
@@ -703,6 +770,7 @@ class GCESpotOrchestrator:
         self,
         target: GCESpotTarget,
         output_dir: Optional[Path] = None,
+        run: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Downloads and parses the SOC Tier 1 evaluation and benchmark results JSON
@@ -721,9 +789,17 @@ class GCESpotOrchestrator:
                 "error": "Dry run does not execute an evaluator or collect measured artifacts",
             }
 
+        run = run or self.current_run
+        if run is not None:
+            validate_run(run)
+            if target.flavor != run["configuration"]["target"]["flavor"]:
+                raise ValueError("Target does not match saved launch")
+            return self._collect_run(run, output_dir)
+
         dest_dir = output_dir or (ROOT_DIR / "docs" / "soc_eval_results")
         dest_dir.mkdir(parents=True, exist_ok=True)
         local_dest = dest_dir / f"gce_spot_{target.flavor}_report.json"
+        local_dest.unlink(missing_ok=True)
         gcs_json_uri = f"{self.output_gcs_bucket.rstrip('/')}/{target.flavor}/soc_tier1_eval_results_{target.flavor}.json"
 
         print(f"[INFO] Fetching evaluation artifacts from '{gcs_json_uri}'...")
@@ -793,6 +869,164 @@ class GCESpotOrchestrator:
             },
         }
 
+    def _run_dir(self, run):
+        return self.evidence_dir / run["run_id"]
+
+    def _save_launch(self, run):
+        if not self.dry_run:
+            write_json(self._run_dir(run) / "launch.json", run)
+
+    def _download(self, uri, destination):
+        """Each transport attempt gets a fresh file; partial copies never get reused."""
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        errors = []
+        for prefix in (["gcloud", "storage", "cp"], ["gsutil", "cp"]):
+            with tempfile.TemporaryDirectory(dir=destination.parent) as scratch:
+                temporary = Path(scratch) / "download"
+                try:
+                    response = subprocess.run([*prefix, uri, str(temporary)],
+                                              capture_output=True, text=True, check=False, timeout=60)
+                    if response.returncode == 0 and temporary.is_file():
+                        raw = temporary.read_bytes()
+                        temporary.replace(destination)
+                        return {"status": "COLLECTED", "source_uri": uri,
+                                "sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
+                    errors.append(f"{prefix[0]} exit {response.returncode}; file present: {temporary.is_file()}")
+                except (OSError, subprocess.SubprocessError) as exc:
+                    errors.append(f"{prefix[0]}: {type(exc).__name__}")
+        return {"status": "MISSING_OR_INVALID", "source_uri": uri, "errors": errors}
+
+    def _collect_run(self, run, output_dir=None):
+        # Snapshot directories preserve earlier collection attempts and their diagnostics.
+        base = Path(output_dir) if output_dir else self._run_dir(run)
+        base.mkdir(parents=True, exist_ok=True)
+        snapshot = Path(tempfile.mkdtemp(prefix="collection-", dir=base))
+        flavor = run["configuration"]["target"]["flavor"]
+        names = {"evaluation": f"soc_tier1_eval_results_{flavor}.json",
+                 "lifecycle": "lifecycle_status.json", "logs": f"benchmark_{flavor}.log",
+                 "benchmark": "benchmark_sample_output.json"}
+        records, artifacts = {}, {}
+        for kind, filename in names.items():
+            destination = snapshot / filename
+            record = self._download(f"{run['artifact_uri']}/{filename}", destination)
+            records[kind] = record
+            if record["status"] != "COLLECTED":
+                continue
+            record["local_path"] = str(destination)
+            if record["bytes"] == 0:
+                record.update(status="REJECTED", error="Artifact is empty")
+                continue
+            if kind in {"evaluation", "lifecycle", "benchmark"}:
+                try:
+                    data = json.loads(destination.read_text(), parse_constant=_reject_nonfinite)
+                    error = _benchmark_error(data) if kind == "benchmark" else identity_error(data, run)
+                    if error:
+                        record.update(status="REJECTED", error=error)
+                    else:
+                        artifacts[kind] = data
+                        if kind == "benchmark":
+                            record["identity_scope"] = "dedicated_run_path_only"
+                        else:
+                            record["run_identity_verified"] = True
+                except (ValueError, OSError) as exc:
+                    record.update(status="REJECTED", error=f"Invalid JSON: {exc}")
+            else:
+                record["identity_scope"] = "dedicated_run_path_only"
+
+        evaluation = artifacts.get("evaluation")
+        lifecycle = artifacts.get("lifecycle")
+        data = dict(evaluation) if evaluation else {
+            "flavor": flavor, "status": "UNVERIFIED", "summary": None, "case_results": [],
+            "error": "Evaluation artifact missing or rejected; see artifact_collection.records",
+        }
+        data["status"] = _artifact_evaluation_status(data)
+        data["evaluation_status"] = data["status"]
+        data["launch"] = run
+        data["collected_at"] = now()
+        data["collection_directory"] = str(snapshot)
+        data["artifact_collection"] = {
+            "status": "COLLECTED" if evaluation else "MISSING_OR_REJECTED",
+            "run_identity_verified": evaluation is not None,
+            "lifecycle_identity_verified": lifecycle is not None,
+            "identity_scope": "launch_binding_only", "records": records,
+        }
+        data["startup_lifecycle"] = lifecycle
+        # A completed evaluator alone does not prove successful upload, benchmark, or cleanup.
+        lifecycle_artifacts = (lifecycle or {}).get("artifacts")
+        lifecycle_evaluation = (lifecycle or {}).get("evaluation")
+        lifecycle_ok = (lifecycle is not None
+                        and isinstance(lifecycle_artifacts, dict)
+                        and isinstance(lifecycle_evaluation, dict)
+                        and _artifact_evaluation_status(lifecycle) == "COMPLETED"
+                        and lifecycle_artifacts.get("upload_status") == "COMMAND_SUCCEEDED"
+                        and lifecycle_evaluation.get("benchmark_status") == "COMPLETED")
+        data["artifact_evidence_status"] = "COMPLETE" if (
+            evaluation and lifecycle_ok and all(r["status"] == "COLLECTED" for r in records.values())
+        ) else "PARTIAL"
+        data["cleanup"] = {"status": "UNVERIFIED", "resource": {
+            "project_id": run["configuration"]["project_id"], "zone": run["configuration"]["zone"],
+            "instance_name": run["instance_name"]}}
+        data["verification_status"] = "partial_launch_evidence"
+        write_json(snapshot / "evidence.json", data)
+        write_json(base / "evidence.json", data)
+        return data
+
+    def recover_run(self, manifest_path, cleanup=False):
+        """Collect and observe an existing launch without creating a resource."""
+        run = load_run(manifest_path)
+        if run.get("launch_status") in {"SYNTHETIC", "PREPARED", "STOCKOUT"}:
+            raise ValueError("Manifest does not describe a possibly created resource")
+        if self.dry_run:
+            raise ValueError("Recovery requires read-only cloud access; do not combine with dry-run")
+        self.current_run = run
+        evidence = self._collect_run(run, Path(manifest_path).parent)
+        evidence["cleanup"] = self.observe_cleanup(run, request_delete=cleanup)
+        write_json(Path(evidence["collection_directory"]) / "evidence.json", evidence)
+        write_json(Path(manifest_path).parent / "evidence.json", evidence)
+        return evidence
+
+    def observe_cleanup(self, run, request_delete=False):
+        """Delete only a VM whose metadata matches the launch, then verify absence."""
+        validate_run(run)
+        config = run["configuration"]
+        resource = {"project_id": config["project_id"], "zone": config["zone"],
+                    "instance_name": run["instance_name"]}
+        result = {"status": "UNVERIFIED", "resource": resource, "observed_at": now(),
+                  "delete_requested": False}
+        args = [run["instance_name"], f"--project={config['project_id']}", f"--zone={config['zone']}"]
+        try:
+            response = subprocess.run(["gcloud", "compute", "instances", "describe", *args, "--format=json"],
+                                      capture_output=True, text=True, check=False, timeout=60)
+            if response.returncode != 0:
+                # Require provider's resource error, not generic 'not found' (e.g. missing account).
+                if re.search(r"(?:the resource(?: .*?)? was not found|notfound:.*instances/)", response.stderr, re.I | re.S):
+                    result["status"] = "ABSENT_OBSERVED"
+                else:
+                    result["status"] = "STATE_CHECK_FAILED"
+                return result
+            instance = json.loads(response.stdout)
+            metadata = {item["key"]: item.get("value") for item in instance.get("metadata", {}).get("items", [])}
+            result["resource"]["provider_id"] = instance.get("id")
+            if metadata.get("run_id") != run["run_id"] or metadata.get("configuration_hash") != run["configuration_hash"]:
+                result["status"] = "IDENTITY_MISMATCH"
+                return result
+            result["status"] = "PRESENT"
+            result["instance_status"] = instance.get("status")
+            if request_delete:
+                result["delete_requested"] = True
+                result["delete_command_succeeded"] = None
+                deleted = subprocess.run(["gcloud", "compute", "instances", "delete", *args, "--quiet"],
+                                         capture_output=True, text=True, check=False, timeout=60)
+                observed = self.observe_cleanup(run)
+                observed["resource"]["provider_id"] = instance.get("id")
+                observed["delete_requested"] = True
+                observed["delete_command_succeeded"] = deleted.returncode == 0
+                return observed
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError) as exc:
+            result.update(status="DELETE_OUTCOME_UNKNOWN" if result["delete_requested"] else "STATE_CHECK_FAILED",
+                          error=type(exc).__name__)
+        return result
+
     def run_sweep(
         self,
         models_filter: Optional[List[str]] = None,
@@ -827,13 +1061,15 @@ class GCESpotOrchestrator:
 
         for target in targets:
             print(f"\n[Target: {target.flavor}] {target.notes}...")
+            self.current_run = None
             try:
                 instance_name = self.launch_instance(target)
             except Exception as e:
                 print(f"[WARN] Unable to launch Spot instance for {target.flavor}: {e}")
                 results.append({
                     "flavor": target.flavor,
-                    "status": "STOCKOUT",
+                    "status": (self.current_run or {}).get("launch_status", "LAUNCH_FAILED"),
+                    "launch": self.current_run,
                     "error": str(e),
                 })
                 continue
@@ -842,12 +1078,22 @@ class GCESpotOrchestrator:
                 results.append({
                     "flavor": target.flavor,
                     "instance_name": instance_name,
-                    "status": "LAUNCHED",
+                    "status": "SYNTHETIC" if self.dry_run else "LAUNCHED",
+                    "launch": self.current_run,
                 })
                 continue
 
-            success = self.monitor_instance_serial(instance_name, timeout_seconds=self.timeout_seconds)
-            res = self.collect_results(target)
+            try:
+                success = self.monitor_instance_serial(instance_name, timeout_seconds=self.timeout_seconds)
+                res = self.collect_results(target)
+            except BaseException as exc:
+                if self.current_run and not self.dry_run:
+                    write_json(self._run_dir(self.current_run) / "interruption.json", {
+                        "run_id": self.current_run["run_id"], "configuration_hash": self.current_run["configuration_hash"],
+                        "status": "INTERRUPTED", "error_type": type(exc).__name__, "at": now(),
+                        "cleanup_status": "UNVERIFIED",
+                    })
+                raise
             res["monitoring"] = {
                 "status": getattr(self, "last_monitor_outcome", "UNKNOWN"),
                 "completed": success,
@@ -866,6 +1112,11 @@ class GCESpotOrchestrator:
                     res["monitoring"]["error"] = "Instance state could not be verified because the status check failed"
                 if res.get("status") not in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
                     res["status"] = "TIMED_OUT" if monitor_status == "TIMED_OUT" else "MONITORING_FAILED"
+            if self.current_run and not self.dry_run:
+                res["cleanup"] = self.observe_cleanup(self.current_run)
+                res["cleanup_status"] = res["cleanup"]["status"]
+                write_json(Path(res["collection_directory"]) / "evidence.json", res)
+                write_json(self._run_dir(self.current_run) / "evidence.json", res)
             results.append(res)
 
         print("\n==================================================================")
@@ -875,7 +1126,7 @@ class GCESpotOrchestrator:
         return results
 
 
-def main() -> None:
+def main() -> int:
     """CLI Entrypoint for GCE Spot sweep orchestration."""
     parser = argparse.ArgumentParser(description="GCE Ephemeral Spot GPU Sweep Orchestrator")
     parser.add_argument(
@@ -923,7 +1174,17 @@ def main() -> None:
         default=3600,
         help="Maximum duration in seconds to wait per Spot VM instance",
     )
+    parser.add_argument("--evidence-dir", type=Path, default=None,
+                        help="Local launch records and evidence (default: logs/experiment_runs)")
+    parser.add_argument("--recover", type=Path, default=None,
+                        help="Saved launch.json to collect and inspect; never creates a VM")
+    parser.add_argument("--cleanup", action="store_true",
+                        help="With --recover, request deletion only after checking VM run metadata")
     args = parser.parse_args()
+    if args.cleanup and not args.recover:
+        parser.error("--cleanup requires --recover")
+    if args.recover and (args.models or args.no_wait or args.dry_run):
+        parser.error("--recover cannot be combined with --models, --no-wait, or --dry-run")
 
     models_filter = [m.strip() for m in args.models.split(",") if m.strip()] if args.models else None
 
@@ -934,13 +1195,29 @@ def main() -> None:
         hf_token=args.hf_token,
         dry_run=args.dry_run,
         timeout_seconds=args.timeout_seconds,
+        evidence_dir=args.evidence_dir,
     )
 
-    orchestrator.run_sweep(
+    if args.recover:
+        result = orchestrator.recover_run(args.recover, cleanup=args.cleanup)
+        print(json.dumps(result, indent=2))
+        return 0 if (result.get("evaluation_status") == "COMPLETED"
+                     and result.get("artifact_evidence_status") == "COMPLETE"
+                     and result["cleanup"]["status"] == "ABSENT_OBSERVED") else 1
+
+    results = orchestrator.run_sweep(
         models_filter=models_filter,
         wait=not args.no_wait,
     )
 
+    return 0 if results and all(
+        item.get("status") in {"SYNTHETIC", "LAUNCHED"} or (
+            item.get("evaluation_status") == "COMPLETED"
+            and item.get("artifact_evidence_status") == "COMPLETE"
+            and item.get("cleanup", {}).get("status") == "ABSENT_OBSERVED"
+        ) for item in results
+    ) else 1
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

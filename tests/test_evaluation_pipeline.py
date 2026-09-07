@@ -1,6 +1,7 @@
 """Exercise evaluator/optimizer/collector contracts without cloud or model calls."""
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -11,6 +12,7 @@ from agent.gepa_runbook_optimizer import CORE_RUNBOOKS, RunbookGEPAAdapter
 from agent.hierarchical_soc_agent import SOCTier1Response
 from agent.soc_environment import SocEnvironment
 from scripts.eval_soc_agent import SemanticJudgeResult, run_evaluation
+from scripts.experiment_run import new_run
 from scripts.run_gce_spot_sweep import ALL_GCE_SPOT_TARGETS, GCESpotOrchestrator
 
 
@@ -66,16 +68,30 @@ def test_optimizer_and_evaluator_apply_identical_faults_without_case_leakage(pip
     assert observations[1]['verdict'] == 'MALICIOUS'
 
 
-def collect_artifact(tmp_path, artifact):
+def collect_artifact(tmp_path, artifact, run=None):
     def fake_copy(command, **kwargs):
         # The collector owns the output filename and creates its directory.
         destination = Path(command[-1])
-        destination.write_text(json.dumps(artifact))
+        if destination.name == "lifecycle_status.json":
+            payload = {
+                "run_id": run["run_id"],
+                "configuration_hash": run["configuration_hash"],
+                "evaluation": {"status": "COMPLETED", "benchmark_status": "COMPLETED"},
+                "artifacts": {"upload_status": "COMMAND_SUCCEEDED"},
+            } if run else artifact
+        elif destination.name.endswith(".log"):
+            destination.write_text("offline benchmark log")
+            return SimpleNamespace(returncode=0)
+        elif destination.name == "benchmark_sample_output.json":
+            destination.write_text(json.dumps({"choices": [{"text": "hello"}]}))
+            return SimpleNamespace(returncode=0)
+        else:
+            destination.write_text(json.dumps(artifact))
         return SimpleNamespace(returncode=0)
 
     collector = GCESpotOrchestrator(dry_run=False, output_gcs_bucket='gs://offline-fixture')
     with patch('scripts.run_gce_spot_sweep.subprocess.run', side_effect=fake_copy):
-        return collector.collect_results(ALL_GCE_SPOT_TARGETS[0], output_dir=tmp_path)
+        return collector.collect_results(ALL_GCE_SPOT_TARGETS[0], output_dir=tmp_path, run=run)
 
 
 def test_actual_evaluator_result_round_trips_through_collector(pipeline, tmp_path):
@@ -87,6 +103,44 @@ def test_actual_evaluator_result_round_trips_through_collector(pipeline, tmp_pat
     assert collected['case_results'] == result['case_results']
     assert collected['artifact_collection']['status'] == 'COLLECTED'
     assert collected['artifact_collection']['run_identity_verified'] is False
+
+
+def test_launch_bound_evaluator_metrics_are_accepted_by_manifest_collector(tmp_path, monkeypatch):
+    """A real mocked evaluation retains metrics through manifest-bound collection."""
+    target = ALL_GCE_SPOT_TARGETS[0]
+    configuration = {"target": asdict(target), "project_id": "offline-project", "zone": "us-central1-a"}
+    run = new_run(configuration, "gs://offline-fixture")
+    monkeypatch.setenv("EXPERIMENT_RUN_ID", run["run_id"])
+    monkeypatch.setenv("EXPERIMENT_CONFIGURATION_HASH", run["configuration_hash"])
+
+    class ProbeAgent:
+        def __init__(self, **kwargs):
+            pass
+        def set_up(self):
+            pass
+        def query(self, prompt, **kwargs):
+            return SOCTier1Response(
+                response="INCONCLUSIVE",
+                verdict="INCONCLUSIVE",
+                trajectory=[{"tool": "get_domain_report", "args": {"domain": "evil.com"}, "observation": "503"}],
+            )
+
+    case = {"eval_id": "identity", "name": "Identity", "prompt": "Investigate evil.com",
+            "ground_truth_label": "INCONCLUSIVE", "reference": {"grading_rubric": "Report outage"}}
+    evalset = tmp_path / "cases.json"
+    evalset.write_text(json.dumps({"generation": 3, "eval_cases": [case]}))
+    judge = SemanticJudgeResult(rubric_score=90, passed=True, grounding_score=1, critique="offline")
+    with patch("scripts.eval_soc_agent.SocTier1Agent", ProbeAgent), \
+         patch("scripts.eval_soc_agent.genai.Client"), \
+         patch("scripts.eval_soc_agent.judge_response_with_llm", return_value=judge):
+        result = run_evaluation(evalset, target.flavor, managed_model="offline-model", project_id="offline-project")
+
+    assert result["provenance"]["run_id"] == run["run_id"]
+    assert result["provenance"]["launch_configuration_hash"] == run["configuration_hash"]
+    collected = collect_artifact(tmp_path / "collected", result, run=run)
+    assert collected["status"] == "COMPLETED"
+    assert collected["artifact_collection"]["run_identity_verified"] is True
+    assert collected["case_results"] == result["case_results"]
 
 
 @pytest.mark.parametrize('signals,expected', [
