@@ -11,6 +11,7 @@ Manages the lifecycle of ephemeral Spot GPU VMs attached to Local NVMe SSD scrat
 """
 
 import argparse
+import copy
 from dataclasses import asdict, dataclass
 import json
 import os
@@ -29,6 +30,8 @@ if str(ROOT_DIR) not in sys.path:
 
 
 from scripts.experiment_run import new_run, load_run, validate_run, identity_error, write_json, now
+from scripts.serving_config import (load_serving_config, serving_config_hash,
+                                     serving_evidence_matches, validate_serving_config)
 
 
 def _artifact_evaluation_status(data: Dict[str, Any]) -> str:
@@ -499,6 +502,8 @@ def build_gce_spot_create_command(
     run_id: Optional[str] = None,
     configuration_hash: Optional[str] = None,
     source_bundle: Optional[Dict[str, str]] = None,
+    serving_config: Optional[Dict[str, Any]] = None,
+    serving_config_path: Optional[Path] = None,
 ) -> List[str]:
     """
     Constructs the exact gcloud compute instances create command arguments.
@@ -508,6 +513,10 @@ def build_gce_spot_create_command(
     (--maintenance-policy=TERMINATE), attached local NVMe SSDs, and startup
     metadata configuration.
     """
+    if serving_config is not None:
+        if source_bundle is None:
+            raise ValueError("Serving configuration requires a pinned source bundle")
+        validate_serving_config(serving_config, target=asdict(target))
     if not instance_name:
         sanitized_flavor = target.flavor.replace(".", "-")
         instance_name = f"spot-{sanitized_flavor}"
@@ -534,9 +543,13 @@ def build_gce_spot_create_command(
     for _ in range(target.local_ssd_count):
         cmd.append("--local-ssd=interface=NVME")
 
-    # Base Deep Learning VM OS image
-    cmd.append(f"--image-family={image_family}")
-    cmd.append(f"--image-project={image_project}")
+    # A pinned serving configuration names the exact boot image. Legacy launches
+    # retain the image family/project behavior.
+    if serving_config:
+        cmd.append(f"--image={serving_config['boot_image']}")
+    else:
+        cmd.append(f"--image-family={image_family}")
+        cmd.append(f"--image-project={image_project}")
     cmd.append(f"--boot-disk-size={boot_disk_size}")
     cmd.append(f"--boot-disk-type={boot_disk_type}")
     cmd.append("--scopes=cloud-platform")
@@ -562,6 +575,11 @@ def build_gce_spot_create_command(
             f"source_commit={source_bundle['source_commit']}",
             f"source_verifier_sha256={source_bundle['verifier_sha256']}",
         ])
+    if serving_config:
+        if not serving_config_path:
+            raise ValueError("Serving configuration sidecar is required")
+        serving_hash = serving_config_hash(serving_config)
+        metadata_items.append(f"serving_config_sha256={serving_hash}")
     if target.extra_vllm_flags:
         metadata_items.append(f"extra_flags={target.extra_vllm_flags}")
     if hf_token:
@@ -578,6 +596,8 @@ def build_gce_spot_create_command(
         file_metadata = f"startup-script={startup_path}"
         if source_bundle:
             file_metadata += f",source-verifier={ROOT_DIR / 'scripts/source_bundle.py'}"
+        if serving_config:
+            file_metadata += f",serving-config={serving_config_path}"
         cmd.append(f"--metadata-from-file={file_metadata}")
 
     return cmd
@@ -604,6 +624,7 @@ class GCESpotOrchestrator:
         source_bundle_uri: Optional[str] = None,
         source_bundle_sha256: Optional[str] = None,
         source_commit: Optional[str] = None,
+        serving_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.project_id = project_id
         self.zone = zone
@@ -629,6 +650,13 @@ class GCESpotOrchestrator:
                 raise ValueError("Source commit must be a full lowercase Git commit hash")
             self.source_bundle = {"uri": source_bundle_uri, "sha256": source_bundle_sha256,
                                   "source_commit": source_commit}
+        self.serving_config = None
+        if serving_config is not None:
+            if self.source_bundle is None:
+                raise ValueError("Serving configuration requires a pinned source bundle")
+            snapshot = copy.deepcopy(serving_config)
+            validate_serving_config(snapshot)
+            self.serving_config = snapshot
 
 
     def launch_instance(
@@ -641,6 +669,8 @@ class GCESpotOrchestrator:
         Returns the created instance name.
         """
         base_zone = self.zone
+        if self.serving_config is not None:
+            validate_serving_config(self.serving_config, target=asdict(target))
         candidate_zones = [base_zone]
         if "-" in base_zone:
             region = "-".join(base_zone.split("-")[:-1])
@@ -657,6 +687,10 @@ class GCESpotOrchestrator:
                 "startup_sha256": hashlib.sha256((ROOT_DIR / "scripts/gce_startup_script.sh").read_bytes()).hexdigest(),
                 "source_identity": "unverified_mutable_gcs_code",
             }
+            if self.serving_config is not None:
+                configuration["serving_config"] = copy.deepcopy(self.serving_config)
+                configuration.pop("image_family")
+                configuration.pop("image_project")
             if self.source_bundle:
                 configuration["source_bundle"] = {
                     **self.source_bundle,
@@ -666,8 +700,10 @@ class GCESpotOrchestrator:
             run = new_run(configuration, self.output_gcs_bucket, instance_name)
             self.current_run = run
             self.active_instance_zone = zone
+            serving_config_path = None
+            if self.serving_config is not None:
+                serving_config_path = self._run_dir(run) / "serving-config.json"
             name = run["instance_name"]
-            self._save_launch(run)
             cmd = build_gce_spot_create_command(
                 target=target,
                 project_id=self.project_id,
@@ -679,6 +715,8 @@ class GCESpotOrchestrator:
                 instance_name=name,
                 run_id=run["run_id"], configuration_hash=run["configuration_hash"],
                 source_bundle=configuration.get("source_bundle"),
+                serving_config=configuration.get("serving_config"),
+                serving_config_path=serving_config_path,
             )
 
             if self.dry_run:
@@ -688,6 +726,13 @@ class GCESpotOrchestrator:
                 print(f"[DRY RUN] Command: {' '.join(safe_cmd)}")
                 self.active_instance_zone = zone
                 return name
+
+            if self.serving_config is not None:
+                serving_config_path.parent.mkdir(parents=True, exist_ok=True)
+                serving_config_path.write_bytes(
+                    json.dumps(self.serving_config, sort_keys=True, separators=(",", ":"),
+                               allow_nan=False).encode("utf-8"))
+            self._save_launch(run)
 
             print(f"[INFO] Creating GCE Spot instance '{name}' ({target.machine_type}, {target.accelerator_count}x {target.accelerator_type}) in {zone}...")
             run["launch_status"] = "CREATE_REQUESTED"
@@ -1002,6 +1047,25 @@ class GCESpotOrchestrator:
             "status": "VERIFIED" if source_verified else "UNVERIFIED" if expected_source else "NOT_REQUESTED",
             "scope": "source_bundle_bytes_at_startup", "expected": expected_source,
         }
+        expected_serving = run["configuration"].get("serving_config")
+        serving_verified = False
+        if expected_serving:
+            provenance = (evaluation or {}).get("provenance", {})
+            evaluator_runtime = provenance.get("serving_runtime") if isinstance(provenance, dict) else None
+            startup_runtime = (lifecycle or {}).get("serving_runtime")
+            serving_verified = all(
+                serving_evidence_matches(observed, expected_serving)
+                for observed in (evaluator_runtime, startup_runtime)
+            )
+            if serving_verified:
+                serving_verified = (
+                    evaluator_runtime.get("serving_image_id") == startup_runtime.get("serving_image_id")
+                    and evaluator_runtime.get("evaluator_image_id") == startup_runtime.get("evaluator_image_id")
+                )
+        data["serving_verification"] = {
+            "status": "VERIFIED" if serving_verified else "UNVERIFIED" if expected_serving else "NOT_REQUESTED",
+            "expected": expected_serving,
+        }
         # A completed evaluator alone does not prove successful upload, benchmark, or cleanup.
         lifecycle_artifacts = (lifecycle or {}).get("artifacts")
         lifecycle_evaluation = (lifecycle or {}).get("evaluation")
@@ -1013,6 +1077,7 @@ class GCESpotOrchestrator:
                         and lifecycle_evaluation.get("benchmark_status") == "COMPLETED")
         data["artifact_evidence_status"] = "COMPLETE" if (
             evaluation and lifecycle_ok and (not expected_source or source_verified)
+            and (not expected_serving or serving_verified)
             and all(r["status"] == "COLLECTED" for r in records.values())
         ) else "PARTIAL"
         data["cleanup"] = {"status": "UNVERIFIED", "resource": {
@@ -1098,6 +1163,10 @@ class GCESpotOrchestrator:
                         targets.append(m)
         else:
             targets = list(ALL_GCE_SPOT_TARGETS)
+
+        if self.serving_config is not None:
+            for target in targets:
+                validate_serving_config(self.serving_config, target=asdict(target))
 
         print("==================================================================")
         print(" Starting Compute Engine (GCE) Ephemeral Spot GPU Sweep")
@@ -1235,18 +1304,29 @@ def main() -> int:
     parser.add_argument("--source-bundle-uri", help="Exact GCS object containing the committed source bundle")
     parser.add_argument("--source-bundle-sha256", help="Expected SHA-256 of the source archive")
     parser.add_argument("--source-commit", help="Full source commit recorded in the bundle manifest")
+    parser.add_argument("--serving-config", type=Path,
+                        help="JSON file pinning the serving and boot configuration")
     args = parser.parse_args()
     if not args.recover:
         # Existing Just recipes inherit these pins without changing their arguments.
         args.source_bundle_uri = args.source_bundle_uri or os.environ.get("GCE_SOURCE_BUNDLE_URI")
         args.source_bundle_sha256 = args.source_bundle_sha256 or os.environ.get("GCE_SOURCE_BUNDLE_SHA256")
         args.source_commit = args.source_commit or os.environ.get("GCE_SOURCE_COMMIT")
+        serving_config_path = args.serving_config or (Path(os.environ["GCE_SERVING_CONFIG"])
+                                                       if os.environ.get("GCE_SERVING_CONFIG") else None)
+    else:
+        serving_config_path = None
+    serving_config = load_serving_config(serving_config_path) if serving_config_path else None
     if not args.recover and not args.dry_run and not all(
         (args.source_bundle_uri, args.source_bundle_sha256, args.source_commit)
     ):
         parser.error("Live launches require --source-bundle-uri, --source-bundle-sha256, and --source-commit")
+    if not args.recover and not args.dry_run and serving_config is None:
+        parser.error("Live launches require --serving-config or GCE_SERVING_CONFIG")
     if args.recover and any((args.source_bundle_uri, args.source_bundle_sha256, args.source_commit)):
         parser.error("Recovery uses the saved source identity; source overrides are not allowed")
+    if args.recover and args.serving_config:
+        parser.error("Recovery uses the saved serving configuration; overrides are not allowed")
     if args.cleanup and not args.recover:
         parser.error("--cleanup requires --recover")
     if args.recover and (args.models or args.no_wait or args.dry_run):
@@ -1265,6 +1345,7 @@ def main() -> int:
         source_bundle_uri=args.source_bundle_uri,
         source_bundle_sha256=args.source_bundle_sha256,
         source_commit=args.source_commit,
+        serving_config=serving_config,
     )
 
     if args.recover:

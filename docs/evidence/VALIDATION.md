@@ -52,3 +52,7 @@ bun run experiment:validate configs/experiments/evidence_comparison.template.jso
 The template intentionally fails. Supply real workflow/reviewer information, approved thresholds, model configuration, frozen dataset paths/hashes, and final-test exposure evidence in a separate completed manifest. A successful offline preflight checks structure, hashes, and exact overlap; it cannot prove unseen-case history, serving identity, cloud cleanup, or reviewer approval authenticity.
 
 See [the experiment protocol](../experiment_protocol.md) and [decision record](../evaluation_decision_record.md) for the remaining live evidence requirements.
+
+## Serving configuration pins
+
+`tests/test_serving_config.py`, `tests/test_serving_launch.py`, `tests/test_serving_runtime.py`, and `tests/test_serving_bootstrap.py` cover strict configuration, metadata initialization in both startup scripts, mocked Docker commands and image inspection, evaluator failures, and conflicting collected evidence. These checks are offline and do not prove an image is available, compatible, or deployed. See [serving configuration](SERVING_CONFIGURATION.md).

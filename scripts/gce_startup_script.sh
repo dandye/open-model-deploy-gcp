@@ -171,6 +171,11 @@ SOURCE_BUNDLE_SHA256="$(get_source_metadata "instance/attributes/source_bundle_s
 SOURCE_COMMIT="$(get_source_metadata "instance/attributes/source_commit")" || SOURCE_METADATA_FAILED=true
 SOURCE_VERIFIER_SHA256="$(get_source_metadata "instance/attributes/source_verifier_sha256")" || SOURCE_METADATA_FAILED=true
 unset EXPERIMENT_SOURCE_VERIFIED EXPERIMENT_SOURCE_BUNDLE_SHA256 EXPERIMENT_SOURCE_COMMIT || true
+SERVING_METADATA_FAILED=false
+SERVING_CONFIG_SHA256="$(get_source_metadata "instance/attributes/serving_config_sha256")" || SERVING_METADATA_FAILED=true
+SERVING_CONFIG_PATH=""
+SERVING_EVIDENCE_PATH=""
+unset EXPERIMENT_SERVING_RUNTIME || true
 EXPERIMENT_RUN_ID="$(get_metadata "instance/attributes/run_id" "")"
 EXPERIMENT_CONFIGURATION_HASH="$(get_metadata "instance/attributes/configuration_hash" "")"
 if [[ -n "${EXPERIMENT_RUN_ID}" || -n "${EXPERIMENT_CONFIGURATION_HASH}" ]]; then
@@ -229,11 +234,16 @@ write_lifecycle_status() {
   [[ "${json_configuration_hash}" == "null" ]] || json_configuration_hash="\"${json_configuration_hash}\""
   [[ "${json_source_commit}" == "null" ]] || json_source_commit="\"${json_source_commit}\""
   [[ "${json_bundle_sha}" == "null" ]] || json_bundle_sha="\"${json_bundle_sha}\""
+  local json_serving_runtime="null"
+  if [[ -n "${SERVING_EVIDENCE_PATH:-}" && -f "${SERVING_EVIDENCE_PATH}" ]]; then
+    json_serving_runtime="$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1]))))' "${SERVING_EVIDENCE_PATH}")" || json_serving_runtime='{"status":"UNVERIFIED"}'
+  fi
   cat >"${LIFECYCLE_PATH}" <<EOF
 {
   "run_id": ${json_run_id},
   "configuration_hash": ${json_configuration_hash},
   "requested_source_commit": ${json_source_commit},
+  "serving_runtime": ${json_serving_runtime},
   "source_bundle": {
     "status": "${SOURCE_BUNDLE_STATUS:-NOT_REQUESTED}",
     "sha256": ${json_bundle_sha},
@@ -425,6 +435,49 @@ prepare_source_bundle() {
   export EXPERIMENT_SOURCE_BUNDLE_SHA256="${SOURCE_BUNDLE_SHA256}" EXPERIMENT_SOURCE_COMMIT="${SOURCE_COMMIT}" EXPERIMENT_SOURCE_VERIFIED=1
 }
 
+
+serving_abort() {
+  EVALUATION_STATUS="FAILED"
+  EVALUATOR_EXIT_STATUS=78
+  EVALUATION_FAILURE_REASON="$1"
+  mkdir -p "${OUTPUT_DIR}"
+  if [[ -n "${SERVING_EVIDENCE_PATH:-}" ]]; then
+    printf '%s\n' '{"status":"FAILED"}' > "${SERVING_EVIDENCE_PATH}"
+  fi
+  printf '[ERROR] %s\n' "${EVALUATION_FAILURE_REASON}" > "${BENCHMARK_LOG}"
+  write_evaluation_failure "${REPORT_PATH}" "${JSON_PATH}" "${MODEL_FLAVOR}" "${EVALUATION_FAILURE_REASON}" 78
+  return 78
+}
+
+run_pinned_runtime() {
+  HF_TOKEN="${HF_TOKEN:-}" python3 "${SOURCE_DIR}/scripts/serving_runtime.py" "$1" \
+    --config "${SERVING_CONFIG_PATH}" --sha256 "${SERVING_CONFIG_SHA256}" \
+    --flavor "${MODEL_FLAVOR}" --model-repository "${HF_REPO}" --tp-size "${TP_SIZE}" \
+    --extra-flags="${EXTRA_FLAGS}" --evidence "${SERVING_EVIDENCE_PATH}" \
+    --cache "${HF_HOME:-/tmp/hf_cache}" --source-root "${SOURCE_DIR}" --output-dir "${OUTPUT_DIR}"
+}
+
+prepare_serving_config() {
+  if [[ "${SERVING_METADATA_FAILED:-false}" == true ]]; then
+    serving_abort "Serving metadata could not be read"; return 78
+  fi
+  if [[ -z "${SERVING_CONFIG_SHA256:-}" ]]; then return 0; fi
+  if [[ ! "${SERVING_CONFIG_SHA256}" =~ ^[0-9a-f]{64}$ || "${SOURCE_BUNDLE_STATUS}" != VERIFIED || -n "${GCS_MODEL_PATH}" ]]; then
+    serving_abort "Pinned serving requires verified source and no mutable GCS model cache"; return 78
+  fi
+  local stage actual
+  stage="$(mktemp -d /tmp/serving-config.XXXXXX)" || { serving_abort "Serving staging failed"; return 78; }
+  SERVING_CONFIG_PATH="${stage}/serving-config.json"
+  SERVING_EVIDENCE_PATH="${stage}/serving-runtime.json"
+  curl -fsS --connect-timeout 5 --max-time 10 -H "Metadata-Flavor: Google" \
+    "${METADATA_URL}instance/attributes/serving-config" > "${SERVING_CONFIG_PATH}" || { serving_abort "Serving configuration download failed"; return 78; }
+  actual="$(sha256sum "${SERVING_CONFIG_PATH}" | awk '{print $1}')" || { serving_abort "Serving configuration hashing failed"; return 78; }
+  if [[ "${actual}" != "${SERVING_CONFIG_SHA256}" ]]; then
+    serving_abort "Serving configuration hash mismatch"; return 78
+  fi
+  run_pinned_runtime validate || { serving_abort "Invalid serving configuration or incompatible source bundle"; return 78; }
+}
+
 # 2.5 Ensure Docker, gcloud, and NVIDIA Container Toolkit are installed and running
 if ! command -v docker >/dev/null 2>&1; then
   echo "[INFO] Installing Docker..."
@@ -468,6 +521,9 @@ fi
 systemctl start docker || service docker start || true
 
 if ! prepare_source_bundle; then
+  exit 78
+fi
+if ! prepare_serving_config; then
   exit 78
 fi
 
@@ -539,6 +595,12 @@ systemctl restart docker || service docker restart || true
 sleep 3
 
 # 5. Launch Containerized vLLM Server
+if [[ -n "${SERVING_CONFIG_PATH}" ]]; then
+  if ! run_pinned_runtime start; then
+    serving_abort "Pinned serving startup failed" || true
+    exit 78
+  fi
+else
 echo "[INFO] Launching vLLM container (vllm/vllm-openai:latest) on port 8080..."
 
 DOCKER_CMD=(
@@ -570,6 +632,8 @@ if [[ -n "${EXTRA_FLAGS}" ]]; then
 fi
 
 "${DOCKER_CMD[@]}"
+
+fi
 
 # 6. Poll Health Endpoint
 echo "[INFO] Waiting for vLLM API server to become ready on http://127.0.0.1:8080..."
@@ -619,19 +683,23 @@ else
   fi
 fi
 
+if [[ -z "${SERVING_CONFIG_PATH}" ]]; then
 if ! command -v pip3 >/dev/null 2>&1; then
   apt-get update -y && apt-get install -y python3-pip || true
 fi
 pip3 install httpx openai google-genai tenacity 2>/dev/null || true
 
+fi
+
 echo "[INFO] Executing SOC Tier 1 Evaluation suite..."
 if [[ -f "${EVAL_ROOT}/scripts/eval_soc_agent.py" ]]; then
   cd "${EVAL_ROOT}"
-  if run_with_tee_status "${BENCHMARK_LOG}" python3 scripts/eval_soc_agent.py \
-      --flavor "${MODEL_FLAVOR}" \
-      --cloudrun-url "http://127.0.0.1:8080" \
-      --output-report "${REPORT_PATH}" \
-      --output-json "${JSON_PATH}"; then
+  EVALUATOR_COMMAND=(python3 scripts/eval_soc_agent.py --flavor "${MODEL_FLAVOR}"
+      --cloudrun-url "http://127.0.0.1:8080" --output-report "${REPORT_PATH}" --output-json "${JSON_PATH}")
+  if [[ -n "${SERVING_CONFIG_PATH}" ]]; then
+    EVALUATOR_COMMAND=(run_pinned_runtime evaluate)
+  fi
+  if run_with_tee_status "${BENCHMARK_LOG}" "${EVALUATOR_COMMAND[@]}"; then
     EVALUATION_STATUS="COMPLETED"
     EVALUATOR_EXIT_STATUS=0
   else

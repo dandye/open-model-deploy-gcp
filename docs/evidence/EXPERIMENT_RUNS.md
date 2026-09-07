@@ -10,7 +10,7 @@ Preview one target without creating cloud resources:
 .venv/bin/python scripts/run_gce_spot_sweep.py --models gemma-2-2b-it --dry-run
 ```
 
-For an approved live experiment, use the same entry point with explicit project, zone, output bucket, selected model, and the required [source bundle pins](SOURCE_BUNDLES.md). Removing `--dry-run` provisions resources and incurs charges. First complete the [experiment protocol](../experiment_protocol.md), including the reviewer, budget, frozen cases, and acceptance thresholds.
+For an approved live experiment, use the same entry point with explicit project, zone, output bucket, selected model, and the required [source bundle pins](SOURCE_BUNDLES.md) and [serving configuration](SERVING_CONFIGURATION.md). Removing `--dry-run` provisions resources and incurs charges. First complete the [experiment protocol](../experiment_protocol.md), including the reviewer, budget, frozen cases, and acceptance thresholds.
 
 Before each create command, the launcher atomically writes:
 
