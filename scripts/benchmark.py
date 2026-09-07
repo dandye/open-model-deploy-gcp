@@ -478,34 +478,122 @@ def _stream_text_and_mode(value: Dict[str, Any]) -> Tuple[str, str]:
     return _generated_text_from_value(value), "delta"
 
 
-def _decode_stream_response(raw_text: str) -> Optional[Dict[str, Any]]:
-    """Decode JSON, SSE, or newline-delimited JSON while retaining final usage."""
+def _stream_error_message(value: Any) -> Optional[str]:
+    """Extract an explicit provider error from common SSE/envelope shapes."""
+    if not isinstance(value, dict):
+        return None
+    error = value.get("error")
+    if isinstance(error, str) and error.strip():
+        return error.strip()
+    if isinstance(error, dict):
+        message = error.get("message") or error.get("detail") or error.get("type")
+        if message:
+            code = error.get("code") or error.get("status")
+            return f"{message} ({code})" if code else str(message)
+        code = error.get("code") or error.get("status")
+        return f"provider error ({code})" if code else "provider error"
+    if str(value.get("event", "")).lower() == "error":
+        data = value.get("data")
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except ValueError:
+                return data.strip() or "stream error"
+        nested = _stream_error_message(data)
+        return nested or (str(data).strip() if data else "stream error")
+    for key in ("data", "response", "body"):
+        nested = _stream_error_message(value.get(key))
+        if nested:
+            return nested
+    return None
+
+
+def _decode_stream_response_detailed(raw_text: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Decode JSON, SSE, or newline-delimited JSON and report explicit errors."""
     try:
         decoded = json.loads(raw_text)
-        return decoded if isinstance(decoded, dict) else None
+        if not isinstance(decoded, dict):
+            return None, "stream response must be a JSON object"
+        return decoded, _stream_error_message(decoded)
     except (TypeError, ValueError):
         pass
 
     events = []
-    for line in raw_text.splitlines():
-        candidate = line.strip()
-        if candidate.startswith("data:"):
-            candidate = candidate[5:].strip()
-        if not candidate or candidate == "[DONE]":
-            continue
+    malformed_lines = False
+    event_name = ""
+    data_lines = []
+
+    def flush_sse_event() -> None:
+        nonlocal event_name, data_lines, malformed_lines
+        if not data_lines:
+            event_name = ""
+            return
+        candidate = "\n".join(data_lines).strip()
         try:
             event = json.loads(candidate)
         except (TypeError, ValueError):
+            malformed_lines = True
+            event_name = ""
+            data_lines = []
+            return
+        if isinstance(event, dict):
+            if event_name:
+                # Set the protocol event name after copying the payload so a
+                # payload's own ``event`` field cannot overwrite it.
+                wrapped = dict(event)
+                wrapped["event"] = event_name
+                wrapped["data"] = event
+                event = wrapped
+            events.append(event)
+        else:
+            malformed_lines = True
+        event_name = ""
+        data_lines = []
+
+    for line in raw_text.splitlines():
+        candidate = line.strip()
+        if not candidate:
+            flush_sse_event()
+            continue
+        if candidate.startswith(":"):
+            continue
+        if candidate.startswith("event:"):
+            event_name = candidate[6:].strip()
+            continue
+        if candidate.startswith(("id:", "retry:")):
+            continue
+        if candidate.startswith("data:"):
+            data_value = candidate[5:].lstrip()
+            if data_value == "[DONE]":
+                data_lines = []
+                event_name = ""
+            else:
+                data_lines.append(data_value)
+            continue
+        if not candidate or candidate == "[DONE]":
+            continue
+        # A non-SSE line is a complete NDJSON event. Any pending SSE data is
+        # terminated before parsing it.
+        flush_sse_event()
+        try:
+            event = json.loads(candidate)
+        except (TypeError, ValueError):
+            malformed_lines = True
             continue
         if isinstance(event, dict):
             events.append(event)
+        else:
+            malformed_lines = True
+    flush_sse_event()
     if not events:
-        return None
+        return None, "malformed or empty streaming response"
 
     generated = ""
     merged_usage: Dict[str, Any] = {}
     merged_usage_metadata: Dict[str, Any] = {}
+    stream_error = None
     for event in events:
+        stream_error = stream_error or _stream_error_message(event)
         event_text, mode = _stream_text_and_mode(event)
         if mode == "cumulative":
             generated = _append_stream_text(generated, event_text)
@@ -528,6 +616,14 @@ def _decode_stream_response(raw_text: str) -> Optional[Dict[str, Any]]:
         body["usage"] = merged_usage
     if merged_usage_metadata:
         body["usageMetadata"] = merged_usage_metadata
+    if malformed_lines and stream_error is None:
+        stream_error = "malformed streaming event"
+    return body, stream_error
+
+
+def _decode_stream_response(raw_text: str) -> Optional[Dict[str, Any]]:
+    """Backward-compatible stream decoder that omits explicit error metadata."""
+    body, _ = _decode_stream_response_detailed(raw_text)
     return body
 
 
@@ -560,6 +656,7 @@ def send_streaming_request_detailed(
 
     try:
         with urllib.request.urlopen(req) as response:
+            response_status = getattr(response, "status", 200)
             while True:
                 chunk = response.read(64)
                 if not chunk:
@@ -584,9 +681,12 @@ def send_streaming_request_detailed(
             raw_text = b"".join(chunks).decode("utf-8", errors="ignore")
             # Decode JSON/SSE while retaining usage metadata that may arrive in
             # a final event after all generated text fragments.
-            res_body = _decode_stream_response(raw_text)
+            res_body, stream_error = _decode_stream_response_detailed(raw_text)
             if res_body is None:
-                res_body = {"predictions": [{"content": raw_text}]}
+                res_body = {"predictions": []}
+            if isinstance(response_status, int) and response_status >= 400:
+                status_error = f"HTTP {response_status}"
+                stream_error = f"{status_error}: {stream_error}" if stream_error else status_error
 
             # A non-delimited JSON response can only verify generated content
             # once the body has arrived. Record that fact as a late observation,
@@ -594,7 +694,18 @@ def send_streaming_request_detailed(
             if first_token_time is None and _fragment_contains_generated_text(raw_text.encode("utf-8")):
                 first_token_time = elapsed
 
-            return elapsed, ttft_time, first_token_time, res_body, None
+            return elapsed, ttft_time, first_token_time, res_body, stream_error
+    except urllib.error.HTTPError as e:
+        elapsed = time.perf_counter() - start_time
+        diagnostic = str(e)
+        try:
+            raw_text = e.read().decode("utf-8", errors="ignore")
+            body, stream_error = _decode_stream_response_detailed(raw_text)
+            if stream_error:
+                diagnostic = f"{diagnostic}: {stream_error}"
+            return elapsed, ttft_time if first_chunk_received else elapsed, first_token_time, body, diagnostic
+        except Exception:
+            return elapsed, ttft_time if first_chunk_received else elapsed, first_token_time, None, diagnostic
     except Exception as e:
         elapsed = time.perf_counter() - start_time
         return elapsed, ttft_time if first_chunk_received else elapsed, first_token_time, None, str(e)

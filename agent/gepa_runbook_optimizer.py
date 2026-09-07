@@ -367,7 +367,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
             try:
                 env = None
                 if not self.use_live_mcp:
-                    env = SocEnvironment()
+                    env = SocEnvironment.from_eval_case(case)
 
                 agent = self.agent_factory(
                     runbooks_dict=candidate,

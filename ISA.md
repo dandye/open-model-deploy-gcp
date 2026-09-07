@@ -2,8 +2,8 @@
 task: Resolve evaluation PR correctness and evidence review findings
 project: open-model-deploy-gcp
 effort: E3
-phase: complete
-progress: 8/8
+phase: verify
+progress: 13/13
 mode: interactive
 started: 2026-09-07
 updated: 2026-09-07
@@ -11,7 +11,7 @@ updated: 2026-09-07
 
 ## Problem
 
-PR #1 contains six confirmed review findings despite passing its original tests. Candidate selection, split handling, worker permissions, lifecycle reporting, and documentation need correction.
+The first six PR review findings are resolved. A second review found five integration defects in supervisor execution, target selection, streaming errors, case fault setup, and evaluator/collector completion signals.
 
 ## Vision
 
@@ -31,7 +31,7 @@ Evaluation artifacts accurately describe what ran and which actions executed. Pr
 
 ## Goal
 
-Resolve the six review findings with regression coverage for the five code defects and source-linked corrections for the documentation. Commit and push the verified changes to the existing PR.
+Resolve both rounds of review findings with regression coverage across the affected execution paths and source-linked documentation. Commit and push the verified changes to the existing PR.
 
 ## Criteria
 
@@ -44,6 +44,12 @@ Resolve the six review findings with regression coverage for the five code defec
 - [x] ISC-7: Anti: historical source JSON remains byte-for-byte unchanged.
 - [x] ISC-8: Anti: the working branch has no prefix.
 
+- [x] ISC-9: Supervisor actions without a confirmed successful backend receive no execution credit.
+- [x] ISC-10: Supervisor actions require an unambiguous target identified by the investigation.
+- [x] ISC-11: Streaming provider failures are excluded from successful benchmark requests.
+- [x] ISC-12: Optimizer and evaluator apply the same per-case fault configuration.
+- [x] ISC-13: A completed evaluation artifact survives collection with its completion status.
+
 ## Test Strategy
 
 | Criteria | Probe | Required result |
@@ -55,6 +61,10 @@ Resolve the six review findings with regression coverage for the five code defec
 | ISC-6 | Read summary and article against evidence reconciliation | Claims are qualified and sources linked |
 | ISC-7 | Git diff of historical JSON | No changed source artifacts |
 | ISC-8 | `git branch --show-current` | Branch remains `evaluation-evidence` |
+| ISC-9, ISC-10 | Supervisor execution and target-resolution regressions | No fabricated success, arbitrary inventory action, or failed-action credit |
+| ISC-11 | Mock HTTP streaming and runner integration tests | Explicit errors and malformed streams fail; normal SSE/NDJSON remain supported |
+| ISC-12 | Shared fixture through optimizer and evaluator | Identical fault responses; no fault leaks between cases |
+| ISC-13 | Actual evaluator output through mocked artifact transport | Completion preserved; conflicting failure wins; launch identity remains unverified |
 
 ## Features
 
@@ -65,12 +75,18 @@ Resolve the six review findings with regression coverage for the five code defec
 | Lifecycle evidence preservation | ISC-4, ISC-5 | None | Yes |
 | Documentation reconciliation | ISC-6, ISC-7 | Current source artifacts | Yes |
 | Verification and PR update | ISC-8 | All fixes | No |
+| Supervisor action verification | ISC-9, ISC-10 | None | Yes |
+| Streaming error propagation | ISC-11 | None | Yes |
+| Evaluation pipeline contracts | ISC-12, ISC-13 | None | Yes |
 
 ## Decisions
 
 - 2026-09-07: Keep eight concrete review criteria instead of expanding the soft criterion floor; the scoped defects each have a direct regression probe.
 - 2026-09-07: Fix authorization at worker dispatch, candidate selection at optimizer output ingestion, and failure preservation before fallback writing. Denied tool attempts remain visible without being represented as executed actions.
 - 2026-09-07: Reuse the revised article from the sibling worktree and update its implementation descriptions. Leave that sibling file unchanged.
+
+- 2026-09-07: The second review adds ISC-9 through ISC-13 without renumbering completed criteria. Backend absence records an unexecuted recommendation; this change does not add live containment support.
+- 2026-09-07: Per-case fault setup belongs in SocEnvironment so optimization and evaluation cannot diverge. Artifact completion is separate from launch identity and cleanup verification.
 
 ## Changelog
 
@@ -88,4 +104,8 @@ Resolve the six review findings with regression coverage for the five code defec
 - ISC-6: Read summary and article against the reconciliation; local document links resolve and contradictory headline figures are removed. Platform lifecycle references were checked against official Google Cloud documentation.
 - ISC-7: Git diff confirms no historical source JSON changed. The sibling article worktree retains its original uncommitted diff.
 - ISC-8: `git branch --show-current` returns `evaluation-evidence`.
-- Final validation: 371 Python tests and 28 Bun tests pass. Shell syntax and `git diff --check` pass. The strict historical audit and unfilled experiment template still reject unresolved inputs as intended. No live GPU/model workload was run.
+- First-round validation: 371 Python tests and 28 Bun tests pass. Shell syntax and `git diff --check` pass. The strict historical audit and unfilled experiment template still reject unresolved inputs as intended. No live GPU/model workload was run.
+- ISC-9, ISC-10: 130 related tests pass, including 60 new regressions for absent backends, missing/ambiguous targets, shared inventory addresses, backend failures, downstream loss accounting, and successful sandbox operations.
+- ISC-11: 19 benchmark tests pass. Real mocked streams exercise provider errors after partial content, immediate errors, malformed output, valid SSE metadata/multiline events, and mixed request outcomes.
+- ISC-12, ISC-13: 14 pipeline tests pass. The same tool outage is observed by evaluation and optimization, normal cases remain isolated, and actual evaluator output retains completion through collection without asserting launch identity. Contradictory failure signals remain authoritative.
+- Second-round validation: 451 Python tests and 28 Bun tests pass. Combined implementation diff reviewed; `git diff --check` passes. Historical JSON remains unchanged, and no live cloud or model workload was run.

@@ -8,6 +8,7 @@ Implements Approach 3:
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 import inspect
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -770,102 +771,84 @@ class SOCSupervisorAgent(GemmaAgent):
 
         return final_text, decision, usage
 
+    def _record_containment_action(
+        self, action: str, args: Dict[str, Any], reason: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Give execution credit only to an explicit successful backend result."""
+        if reason is None and self.environment is None:
+            reason = "No containment execution backend is configured."
+        if reason is not None:
+            result: Any = {"status": "NOT_EXECUTED", "action": action, "reason": reason}
+        else:
+            try:
+                result = self.environment.execute_action(action, args)
+            except Exception as exc:
+                result = {"status": "ERROR", "action": action, "error": f"{type(exc).__name__}: {exc}"}
+
+        step: Dict[str, Any] = {
+            "tool": None,
+            "args": args,
+            "observation": json.dumps(result) if isinstance(result, (dict, list)) else str(result),
+            "agent": "supervisor",
+        }
+        status = str(result.get("status", "")).upper() if isinstance(result, dict) else ""
+        if status == "SUCCESS" and not result.get("error"):
+            step["tool"] = action
+            step["execution_status"] = "SUCCESS"
+        else:
+            # Keep failed attempts visible without feeding the attempted action to
+            # trajectory verifiers that use the tool field as execution evidence.
+            step["attempted_tool"] = action
+            step["execution_status"] = status if status and status != "SUCCESS" else "UNVERIFIED"
+            step["reason"] = (
+                result.get("error") or result.get("reason") or "Backend did not confirm successful execution."
+                if isinstance(result, dict) else "Backend returned an invalid action result."
+            )
+        return step
+
     def _execute_containment_decisions(
         self,
         decision: SocDecision,
         worker_report: WorkerInvestigationReport,
         prompt: str,
     ) -> List[Dict[str, Any]]:
-        """Executes containment actions against SocEnvironment or records them for trajectory verifier."""
-        executed_steps: List[Dict[str, Any]] = []
+        """Execute supported actions only with an unambiguous target and backend."""
+        steps: List[Dict[str, Any]] = []
         seen_actions: Set[str] = set()
-
         for action in decision.recommended_actions:
-            canonical_act = LOCAL_CANONICAL_MAP.get(action, action)
-            if canonical_act in seen_actions:
+            canonical_action = LOCAL_CANONICAL_MAP.get(action, action)
+            if canonical_action in seen_actions:
                 continue
-            seen_actions.add(canonical_act)
+            seen_actions.add(canonical_action)
+            args: Dict[str, Any] = {}
+            reason: Optional[str] = None
 
-            # 1. Isolate Host
-            if canonical_act == "isolate_host":
-                target_host = self._resolve_target_host(decision, worker_report, prompt)
-                if target_host:
-                    args = {"hostname": target_host}
-                    if self.environment is not None:
-                        obs = self.environment.execute_action("isolate_host", args)
-                    else:
-                        obs = {"status": "SUCCESS", "action": "isolate_host", "hostname": target_host, "message": f"Host '{target_host}' isolated."}
-                    executed_steps.append({
-                        "tool": "isolate_host",
-                        "args": args,
-                        "observation": json.dumps(obs) if isinstance(obs, dict) else str(obs),
-                        "agent": "supervisor",
-                    })
-
-            # 2. Block Indicator
-            elif canonical_act == "block_indicator":
-                target_indicator = self._resolve_target_indicator(decision, worker_report, prompt)
-                if target_indicator:
-                    args = {"indicator": target_indicator}
-                    if self.environment is not None:
-                        obs = self.environment.execute_action("block_indicator", args)
-                    else:
-                        obs = {"status": "SUCCESS", "action": "block_indicator", "indicator": target_indicator, "message": f"Indicator '{target_indicator}' blocked."}
-                    executed_steps.append({
-                        "tool": "block_indicator",
-                        "args": args,
-                        "observation": json.dumps(obs) if isinstance(obs, dict) else str(obs),
-                        "agent": "supervisor",
-                    })
-
-            # 3. Close Case
-            elif canonical_act == "close_case":
-                target_case = self._resolve_target_case(prompt)
-                args = {"case_id": target_case, "verdict": decision.verdict}
-                if self.environment is not None:
-                    obs = self.environment.execute_action("close_case", args)
+            if canonical_action in {"isolate_host", "unblock_host"}:
+                target = self._resolve_target_host(decision, worker_report, prompt)
+                if target is None:
+                    reason = "Host target is missing or ambiguous across decision, report, and prompt."
                 else:
-                    obs = {"status": "SUCCESS", "action": "close_case", "case_id": target_case, "message": f"Case '{target_case}' closed."}
-                executed_steps.append({
-                    "tool": "close_case",
-                    "args": args,
-                    "observation": json.dumps(obs) if isinstance(obs, dict) else str(obs),
-                    "agent": "supervisor",
-                })
-
-            # 4. Update Case Comment
-            elif canonical_act == "update_case_comment":
-                target_case = self._resolve_target_case(prompt)
-                comment_text = decision.rationale or f"Runbook investigation complete. Verdict: {decision.verdict}."
-                args = {"case_id": target_case, "comment": comment_text}
-                if self.environment is not None:
-                    obs = self.environment.execute_action("update_case_comment", args)
+                    args["hostname"] = target
+            elif canonical_action == "block_indicator":
+                target = self._resolve_target_indicator(decision, worker_report, prompt)
+                if target is None:
+                    reason = "Indicator target is missing or ambiguous across decision, report, and prompt."
                 else:
-                    obs = {"status": "SUCCESS", "action": "update_case_comment", "case_id": target_case, "message": "Case comment posted."}
-                executed_steps.append({
-                    "tool": "update_case_comment",
-                    "args": args,
-                    "observation": json.dumps(obs) if isinstance(obs, dict) else str(obs),
-                    "agent": "supervisor",
-                })
-
-            # 5. Unblock Host
-            elif canonical_act == "unblock_host":
-                target_host = self._resolve_target_host(decision, worker_report, prompt)
-                if target_host:
-                    args = {"hostname": target_host}
-                    if self.environment is not None:
-                        obs = self.environment.execute_action("unblock_host", args)
+                    args["indicator"] = target
+            elif canonical_action in {"close_case", "update_case_comment"}:
+                target = self._resolve_target_case(prompt, decision, worker_report)
+                if target is None:
+                    reason = "Case target is missing or ambiguous across decision, report, and prompt."
+                else:
+                    args["case_id"] = target
+                    if canonical_action == "close_case":
+                        args["verdict"] = decision.verdict
                     else:
-                        obs = {"status": "SUCCESS", "action": "unblock_host", "hostname": target_host, "message": f"Host '{target_host}' unblocked."}
-                    executed_steps.append({
-                        "tool": "unblock_host",
-                        "args": args,
-                        "observation": json.dumps(obs) if isinstance(obs, dict) else str(obs),
-                        "agent": "supervisor",
-                    })
-
-        return executed_steps
+                        args["comment"] = decision.rationale or f"Runbook investigation complete. Verdict: {decision.verdict}."
+            else:
+                reason = f"Unsupported containment action '{canonical_action}'."
+            steps.append(self._record_containment_action(canonical_action, args, reason))
+        return steps
 
     def _resolve_target_host(
         self,
@@ -873,32 +856,41 @@ class SOCSupervisorAgent(GemmaAgent):
         worker_report: WorkerInvestigationReport,
         prompt: str,
     ) -> Optional[str]:
-        """Resolves target hostname from decision, worker report entities, or alert prompt."""
-        known_hosts = set()
-        if self.environment is not None and hasattr(self.environment, "hosts"):
-            known_hosts = set(self.environment.hosts.keys())
+        """Require one named host; inventory only normalizes explicit references."""
+        aliases: Dict[str, Set[str]] = {}
+        if self.environment is not None:
+            for hostname, host in self.environment.hosts.items():
+                aliases.setdefault(hostname.lower(), set()).add(hostname)
+                try:
+                    ip_alias = str(ipaddress.ip_address(host.ip))
+                except ValueError:
+                    # Missing or invalid inventory IPs are not target references.
+                    continue
+                aliases.setdefault(ip_alias, set()).add(hostname)
 
-        # Check target_entity from decision
+        host_pattern = r"(?:DESKTOP|SRV|GW)-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+        candidates: Set[str] = set()
+        entities = list(worker_report.target_entities)
         if decision.target_entity:
-            ent = str(decision.target_entity).strip()
-            if ent in known_hosts or ent.startswith("DESKTOP-") or ent.startswith("SRV-") or ent.startswith("GW-"):
-                return ent
+            entities.append(str(decision.target_entity))
+        for entity in entities:
+            cleaned = str(entity).strip()
+            if cleaned.lower() in aliases:
+                candidates.update(aliases[cleaned.lower()])
+            elif re.fullmatch(host_pattern, cleaned, re.IGNORECASE):
+                candidates.add(cleaned.upper())
 
-        # Check worker report target entities
-        for ent in worker_report.target_entities:
-            clean_ent = str(ent).strip()
-            if clean_ent in known_hosts or clean_ent.startswith("DESKTOP-") or clean_ent.startswith("SRV-") or clean_ent.startswith("GW-"):
-                return clean_ent
-
-        # Regex search in prompt
-        host_matches = re.findall(r"\b(DESKTOP-[A-Z0-9\-]+|SRV-[A-Z0-9\-]+|GW-[A-Z0-9\-]+)\b", prompt)
-        if host_matches:
-            return host_matches[0]
-
-        if known_hosts:
-            return sorted(list(known_hosts))[0]
-
-        return None
+        # Dot and hyphen boundaries prevent treating SRV-WEB.example.com or a
+        # substring of another identifier as an explicitly referenced host.
+        boundary = r"[A-Za-z0-9_.-]"
+        end_boundary = r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])"
+        for match in re.finditer(rf"(?<!{boundary})({host_pattern}){end_boundary}", prompt, re.IGNORECASE):
+            cleaned = match.group(1)
+            candidates.update(aliases.get(cleaned.lower(), {cleaned.upper()}))
+        for alias, hostnames in aliases.items():
+            if re.search(rf"(?<!{boundary}){re.escape(alias)}{end_boundary}", prompt, re.IGNORECASE):
+                candidates.update(hostnames)
+        return next(iter(candidates)) if len(candidates) == 1 else None
 
     def _resolve_target_indicator(
         self,
@@ -906,48 +898,49 @@ class SOCSupervisorAgent(GemmaAgent):
         worker_report: WorkerInvestigationReport,
         prompt: str,
     ) -> Optional[str]:
-        """Resolves target indicator (domain, IP, or hash) from decision, worker, or prompt."""
+        """Require one explicit IP, domain, or file hash; reject case/host names."""
+        domain_pattern = r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,63}"
+        hash_pattern = r"(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{40}|[a-fA-F0-9]{64})"
+        ip_pattern = r"(?:\d{1,3}\.){3}\d{1,3}"
+        entities = list(worker_report.target_entities)
         if decision.target_entity:
-            ent = str(decision.target_entity).strip()
-            if not (ent.startswith("DESKTOP-") or ent.startswith("SRV-") or ent.startswith("GW-")):
-                return ent
+            entities.append(str(decision.target_entity))
+        entities.extend(re.findall(
+            rf"(?<![A-Za-z0-9_.-])({domain_pattern}|{hash_pattern}|{ip_pattern})(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])",
+            prompt,
+        ))
+        candidates: Set[str] = set()
+        for entity in entities:
+            cleaned = str(entity).strip()
+            if re.fullmatch(ip_pattern, cleaned):
+                try:
+                    candidates.add(str(ipaddress.ip_address(cleaned)))
+                except ValueError:
+                    # A malformed IP must not become an executable block target.
+                    continue
+            elif re.fullmatch(domain_pattern, cleaned) or re.fullmatch(hash_pattern, cleaned):
+                candidates.add(cleaned.lower())
+        return next(iter(candidates)) if len(candidates) == 1 else None
 
-        for ent in worker_report.target_entities:
-            clean_ent = str(ent).strip()
-            if not (clean_ent.startswith("DESKTOP-") or clean_ent.startswith("SRV-") or clean_ent.startswith("GW-")):
-                return clean_ent
-
-        # Regex search for domain
-        domain_matches = re.findall(r"\b([a-zA-Z0-9_\-]+\.(?:com|org|net|io|co|biz|info|xyz|site))\b", prompt)
-        if domain_matches:
-            return domain_matches[0]
-
-        # Regex search for IP
-        ip_matches = re.findall(r"\b(\d{1,3}(?:\.\d{1,3}){3})\b", prompt)
-        if ip_matches:
-            # Prefer non-RFC1918 public IP if available
-            for ip in ip_matches:
-                if not (ip.startswith("10.") or ip.startswith("192.168.") or ip.startswith("172.16.")):
-                    return ip
-            return ip_matches[0]
-
-        # Regex search for file hash
-        hash_matches = re.findall(r"\b([a-fA-F0-9]{32,64})\b", prompt)
-        if hash_matches:
-            return hash_matches[0]
-
-        return None
-
-    def _resolve_target_case(self, prompt: str) -> str:
-        """Resolves target SOAR case ID from prompt or environment inventory."""
-        case_match = re.search(r"\b(CASE-[A-Z0-9\-]+)\b", prompt)
-        if case_match:
-            return case_match.group(1)
-
-        if self.environment is not None and hasattr(self.environment, "cases") and self.environment.cases:
-            return list(self.environment.cases.keys())[0]
-
-        return "CASE-101"
+    def _resolve_target_case(
+        self, prompt: str, decision: Optional[SocDecision] = None,
+        worker_report: Optional[WorkerInvestigationReport] = None,
+    ) -> Optional[str]:
+        """Require one explicitly referenced case instead of choosing inventory."""
+        pattern = r"CASE-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+        candidates = {
+            match.upper() for match in re.findall(
+                rf"(?<![A-Za-z0-9_.-])({pattern})(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])", prompt, re.IGNORECASE,
+            )
+        }
+        entities = list(worker_report.target_entities) if worker_report is not None else []
+        if decision is not None and decision.target_entity:
+            entities.append(str(decision.target_entity))
+        for entity in entities:
+            cleaned = str(entity).strip()
+            if re.fullmatch(pattern, cleaned, re.IGNORECASE):
+                candidates.add(cleaned.upper())
+        return next(iter(candidates)) if len(candidates) == 1 else None
 
     def format_triage_prompt(self, query: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Formats an operational triage request with optional case metadata."""

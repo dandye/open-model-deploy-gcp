@@ -1,6 +1,7 @@
 import os
 import re
 import unittest
+from io import BytesIO
 from concurrent.futures import Future
 from unittest.mock import patch
 from scripts.benchmark import (
@@ -162,6 +163,157 @@ class TestBenchmarkMetrics(unittest.TestCase):
             'data: {"predictions":[{"content":"hello"}]}\n\n'
         )
         self.assertEqual(parse_output_details(cumulative)[0], "hello")
+
+    def test_sse_heartbeats_metadata_and_multiline_data_are_valid(self):
+        body = (
+            ': heartbeat\n'
+            'id: 7\n'
+            'retry: 1000\n'
+            '\n'
+            'data: {"choices":[{"delta":{\n'
+            'data: "content":"hello"}}]}\n'
+            '\n'
+        )
+        decoded = _decode_stream_response(body)
+        self.assertEqual(parse_output_details(decoded)[0], "hello")
+
+    def test_stream_error_after_partial_content_preserves_diagnostic_and_fails(self):
+        class Response:
+            status = 500
+
+            def __init__(self, body):
+                self.stream = BytesIO(body)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.stream.read(size)
+
+        body = (
+            b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\n'
+            b'event: error\n'
+            b'data: {"error":{"code":500,"message":"upstream exploded"}}\n\n'
+        )
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response(body)):
+            elapsed, _, _, response, error = send_streaming_request_detailed(
+                "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+            )
+        self.assertGreaterEqual(elapsed, 0.0)
+        self.assertIsNotNone(error)
+        self.assertIn("upstream exploded", error)
+        self.assertEqual(parse_output_details(response)[0], "partial")
+
+    def test_stream_error_envelope_and_immediate_error_are_failures(self):
+        class Response:
+            def __init__(self, body):
+                self.stream = BytesIO(body)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.stream.read(size)
+
+        for body, expected in [
+            (b'data: {"error":"quota exceeded"}\n\n', "quota exceeded"),
+            (b'event: error\ndata: {"data":{"error":{"message":"bad model"}}}\n\n', "bad model"),
+            (b'data: {"error":{"code":500}}\n\n', "provider error (500)"),
+            (b'data: {"error":{}}\n\n', "provider error"),
+        ]:
+            with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response(body)):
+                _, _, _, response, error = send_streaming_request_detailed(
+                    "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+                )
+            self.assertIn(expected, error)
+            self.assertEqual(parse_output_details(response)[2], "none")
+
+    def test_malformed_stream_is_not_transport_text_or_success(self):
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                if getattr(self, "done", False):
+                    return b""
+                self.done = True
+                return b'not-json-and-not-an-event'
+
+        with patch("scripts.benchmark.urllib.request.urlopen", return_value=Response()):
+            _, _, _, response, error = send_streaming_request_detailed(
+                "https://example.test", {}, {"instances": [{"prompt": "hi"}]}
+            )
+        self.assertIn("malformed", error)
+        self.assertEqual(parse_output_details(response)[2], "none")
+
+    def test_runner_accounts_for_real_stream_failures_single_and_concurrent(self):
+        class Response:
+            def __init__(self, body):
+                self.stream = BytesIO(body)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, size):
+                return self.stream.read(size)
+
+        success = b'data: {"choices":[{"delta":{"content":"ok"}}],"usage":{"completion_tokens":2}}\n\n'
+        failure = b'data: {"choices":[{"delta":{"content":"partial"}}]}\n\nevent: error\ndata: {"error":{"message":"provider failed"}}\n\n'
+
+        runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=1, runs=2)
+        with patch.object(runner, "get_token", return_value="token"), \
+             patch("scripts.benchmark.urllib.request.urlopen", side_effect=[Response(success), Response(failure)]):
+            summary = runner.run(concurrency=1, runs=2, stream=True)
+        self.assertEqual(summary["successful_requests"], 1)
+        self.assertEqual(summary["failed_requests"], 1)
+        self.assertEqual(summary["avg_tokens"], 2.0)
+
+        concurrent_runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=2, runs=1)
+        with patch.object(concurrent_runner, "get_token", return_value="token"), \
+             patch("scripts.benchmark.urllib.request.urlopen", side_effect=[Response(failure), Response(failure)]):
+            summary = concurrent_runner.run(concurrency=2, runs=1, stream=True)
+        self.assertIsNone(summary)
+
+    def test_concurrent_runner_keeps_success_when_one_stream_fails(self):
+        class ImmediateExecutor:
+            def __init__(self, max_workers):
+                self.max_workers = max_workers
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def submit(self, fn, *args):
+                future = Future()
+                future.set_result(fn(*args))
+                return future
+
+        responses = iter([
+            (0.4, 0.1, 0.2, {"predictions": [{"content": "ok"}], "usage": {"completion_tokens": 4}}, None),
+            (0.3, 0.1, None, {"predictions": [{"content": "partial"}]}, "HTTP 500: provider failed"),
+        ])
+        runner = BenchmarkRunner(endpoint_id="endpoint", concurrency=2, runs=1)
+        with patch("scripts.benchmark.ThreadPoolExecutor", ImmediateExecutor), \
+             patch("scripts.benchmark.send_streaming_request_detailed", side_effect=lambda *args: next(responses)), \
+             patch.object(runner, "get_token", return_value="token"):
+            summary = runner.run(concurrency=2, runs=1, stream=True)
+        self.assertEqual(summary["successful_requests"], 1)
+        self.assertEqual(summary["failed_requests"], 1)
+        self.assertEqual(summary["avg_tokens"], 4.0)
 
     def test_concurrent_run_counts_errors_and_uses_successful_requests(self):
         class ImmediateExecutor:

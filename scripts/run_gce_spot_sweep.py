@@ -7,7 +7,7 @@ Manages the lifecycle of ephemeral Spot GPU VMs attached to Local NVMe SSD scrat
 2. Attaches Local NVMe SSD scratch drives and configures startup automation.
 3. Streams serial console logs and monitors job progress.
 4. Collects benchmark and SOC Tier 1 evaluation outputs from Google Cloud Storage.
-5. Verifies self-deletion ($0.00 idle compute leak guarantee).
+5. Records deletion requests and checks whether the resource is absent.
 """
 
 import argparse
@@ -24,6 +24,28 @@ from typing import Any, Dict, List, Optional
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+
+
+def _artifact_evaluation_status(data: Dict[str, Any]) -> str:
+    """Resolve explicit evaluator signals; cleanup and launch identity are separate."""
+    evaluation = data.get("evaluation")
+    evaluation = evaluation if isinstance(evaluation, dict) else {}
+    provenance = data.get("provenance")
+    provenance = provenance if isinstance(provenance, dict) else {}
+    lifecycle = provenance.get("lifecycle")
+    lifecycle = lifecycle if isinstance(lifecycle, dict) else {}
+    signals = [data.get("status"), evaluation.get("status"),
+               lifecycle.get("evaluation"), lifecycle.get("status")]
+    statuses = [str(value).strip().upper() for value in signals if value is not None]
+    for status in statuses:
+        if status in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
+            return status
+    exit_status = evaluation.get("evaluator_exit_status")
+    if isinstance(exit_status, int) and not isinstance(exit_status, bool) and exit_status != 0:
+        return "FAILED"
+    if statuses and all(status == "COMPLETED" for status in statuses):
+        return "COMPLETED"
+    return "UNVERIFIED"
 
 
 @dataclass
@@ -729,7 +751,8 @@ class GCESpotOrchestrator:
                 if not isinstance(data, dict):
                     raise ValueError("evaluation artifact must contain a JSON object")
                 data.setdefault("flavor", target.flavor)
-                status = str(data.get("status", "")).upper()
+                status = _artifact_evaluation_status(data)
+                data["status"] = status
                 if status in {"FAILED", "ERROR", "TIMED_OUT", "STOCKOUT"}:
                     print(f"[WARN] Evaluation artifact reports status {status}; preserving it.")
                     data["artifact_collection"] = {
@@ -748,7 +771,7 @@ class GCESpotOrchestrator:
                     }
                     return data
                 data["status"] = "UNVERIFIED"
-                data["error"] = "Artifact has no explicit completed or failed status"
+                data["error"] = "Artifact has missing, conflicting, or incomplete evaluation status signals"
                 data["artifact_collection"] = {
                     "status": "UNVERIFIED",
                     "source_uri": gcs_json_uri,

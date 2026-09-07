@@ -388,15 +388,7 @@ def run_evaluation(
 
         # Setup per-case dynamic environment state and fault injection if in Gen 3
         if not use_live_mcp and eval_gen == 3:
-            case_env = SocEnvironment()
-            fault_cfg = case.get("fault_injection")
-            if fault_cfg and isinstance(fault_cfg, dict):
-                case_env.inject_fault(
-                    tool_name=fault_cfg.get("tool", ""),
-                    status_code=fault_cfg.get("status_code", 503),
-                    error=fault_cfg.get("error", "Service Unavailable"),
-                )
-            agent.environment = case_env
+            agent.environment = SocEnvironment.from_eval_case(case)
 
         start_time = time.time()
         res = agent.query(prompt=case["prompt"])
@@ -585,6 +577,7 @@ def run_evaluation(
     provenance["completed_at"] = utc_now()
     provenance["lifecycle"].update({"status": "completed", "evaluation": "completed"})
     return {
+        "status": "COMPLETED",
         "provenance": provenance,
         "flavor": flavor,
         "generation": eval_gen,

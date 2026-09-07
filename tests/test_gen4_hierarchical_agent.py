@@ -297,6 +297,235 @@ def test_worker_report_fallback_extraction():
     assert len(report.evidence) > 0
 
 
+def _containment_report(entities=()):
+    return WorkerInvestigationReport(
+        classification="C2_BEACON", runbook_name="basic_ioc_enrichment.md",
+        target_entities=list(entities),
+    )
+
+
+def _assert_no_containment_credit(steps, action):
+    from scripts.eval_cost_engine import DecisionOutcome, classify_decision_outcome
+    verification = verify_agent_trajectory(steps, expected_actions=[action])
+    assert verification.executed_actions == []
+    assert not verification.operator_actions_matched
+    assert classify_decision_outcome(
+        ground_truth_threat=True, executed_actions=verification.executed_actions,
+    ) == DecisionOutcome.FALSE_NEGATIVE
+
+
+@pytest.mark.parametrize("use_live_mcp", [False, True])
+@pytest.mark.parametrize("action", [
+    "isolate_host", "unblock_host", "block_indicator", "close_case", "update_case_comment",
+])
+def test_supervisor_without_backend_never_claims_execution(use_live_mcp, action):
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", use_live_mcp=use_live_mcp)
+    decision = SocDecision(verdict="MALICIOUS", recommended_actions=[action])
+    report = _containment_report(["DESKTOP-FIN-08", "198.51.100.42", "CASE-33279"])
+    steps = supervisor._execute_containment_decisions(decision, report, "Investigate alert")
+    assert len(steps) == 1
+    assert steps[0]["tool"] is None
+    assert steps[0]["attempted_tool"] == action
+    assert steps[0]["execution_status"] == "NOT_EXECUTED"
+    assert "backend" in steps[0]["reason"].lower()
+    assert json.loads(steps[0]["observation"])["status"] == "NOT_EXECUTED"
+    _assert_no_containment_credit(steps, action)
+
+
+@pytest.mark.parametrize("action", ["isolate_host", "unblock_host", "close_case", "update_case_comment", "block_indicator"])
+def test_supervisor_missing_targets_never_mutates_inventory(action):
+    env = SocEnvironment()
+    before = env.get_state_snapshot()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=[action]),
+        _containment_report(), "Investigate an alert without identified entities",
+    )
+    assert env.get_state_snapshot() == before
+    assert env.action_history == []
+    assert len(steps) == 1
+    assert steps[0]["execution_status"] == "NOT_EXECUTED"
+    assert "target" in steps[0]["reason"].lower()
+    _assert_no_containment_credit(steps, action)
+
+
+@pytest.mark.parametrize("action,target,entities,prompt", [
+    ("isolate_host", "DESKTOP-FIN-08", ["GW-CORE-VPN-01"], "Investigate alert"),
+    ("isolate_host", None, [], "Compare DESKTOP-FIN-08 and GW-CORE-VPN-01"),
+    ("close_case", "CASE-33279", ["CASE-17305"], "Investigate alert"),
+    ("update_case_comment", None, [], "Compare CASE-33279 with CASE-17305"),
+    ("isolate_host", "CASE-33279", ["update-service-win32.com"], "Investigate alert"),
+    ("isolate_host", "SRV-WEB.example.com", [], "Investigate SRV-WEB.example.com"),
+    ("block_indicator", "CASE-33279", [], "Investigate case"),
+    ("block_indicator", "198.51.100.42", ["192.0.2.100"], "Investigate alert"),
+    ("block_indicator", "999.1.1.1", [], "Investigate alert"),
+])
+def test_supervisor_rejects_ambiguous_or_wrong_type_targets(action, target, entities, prompt):
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=[action], target_entity=target),
+        _containment_report(entities), prompt,
+    )
+    assert env.action_history == []
+    assert len(steps) == 1
+    assert steps[0]["execution_status"] == "NOT_EXECUTED"
+    _assert_no_containment_credit(steps, action)
+
+
+@pytest.mark.parametrize("action,target,arg_key", [
+    ("isolate_host", "DESKTOP-FIN-08", "hostname"),
+    ("unblock_host", "DESKTOP-FIN-08", "hostname"),
+    ("close_case", "CASE-33279", "case_id"),
+    ("update_case_comment", "CASE-33279", "case_id"),
+    ("block_indicator", "198.51.100.42", "indicator"),
+])
+@pytest.mark.parametrize("source", ["decision", "report", "prompt"])
+def test_supervisor_executes_only_explicit_successful_targets(action, target, arg_key, source):
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=[action],
+                    target_entity=target if source == "decision" else None),
+        _containment_report([target] if source == "report" else []),
+        f"Investigate {target}" if source == "prompt" else "Investigate alert",
+    )
+    assert steps[0]["tool"] == action
+    assert steps[0]["args"][arg_key] == target
+    assert json.loads(steps[0]["observation"])["status"] == "SUCCESS"
+    assert verify_agent_trajectory(steps).executed_actions == [action]
+    assert len(env.action_history) == 1
+
+
+@pytest.mark.parametrize("result", [
+    {"status": "ERROR", "error": "host unavailable"},
+    {"status": "FAILED", "reason": "operation failed"},
+    {"status": "DENIED", "error": "permission denied"},
+    {"status": "SUCCESS", "error": "conflicting backend response"},
+    {"message": "request submitted"},
+    "backend returned invalid output",
+])
+def test_supervisor_failed_or_unverified_backend_results_get_no_execution_credit(result):
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    with patch.object(env, "execute_action", return_value=result) as execute:
+        steps = supervisor._execute_containment_decisions(
+            SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host"], target_entity="DESKTOP-FIN-08"),
+            _containment_report(), "Investigate alert",
+        )
+    execute.assert_called_once_with("isolate_host", {"hostname": "DESKTOP-FIN-08"})
+    assert steps[0]["tool"] is None
+    assert steps[0]["attempted_tool"] == "isolate_host"
+    assert steps[0]["reason"]
+    assert steps[0]["observation"] == (json.dumps(result) if isinstance(result, dict) else result)
+    _assert_no_containment_credit(steps, "isolate_host")
+
+
+@pytest.mark.parametrize("action,target", [
+    ("isolate_host", "DESKTOP-FIN-08"), ("close_case", "CASE-33279"),
+    ("block_indicator", "198.51.100.42"), ("block_indicator", "example.com"),
+    ("block_indicator", "a" * 64),
+])
+def test_supervisor_resolves_sentence_final_targets(action, target):
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=SocEnvironment())
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=[action]),
+        _containment_report(), f"Investigate {target}.",
+    )
+    assert steps[0]["tool"] == action
+
+
+@pytest.mark.parametrize("action,target", [
+    ("isolate_host", "DESKTOP-UNKNOWN"), ("close_case", "CASE-UNKNOWN"),
+])
+def test_supervisor_preserves_real_sandbox_failures_without_execution_credit(action, target):
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=SocEnvironment())
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=[action], target_entity=target),
+        _containment_report(), "Investigate alert",
+    )
+    assert steps[0]["execution_status"] == "ERROR"
+    assert "not found" in json.loads(steps[0]["observation"])["error"]
+    _assert_no_containment_credit(steps, action)
+
+
+def test_supervisor_backend_exception_is_preserved_without_execution_credit():
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    with patch.object(env, "execute_action", side_effect=RuntimeError("backend unavailable")):
+        steps = supervisor._execute_containment_decisions(
+            SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host"], target_entity="DESKTOP-FIN-08"),
+            _containment_report(), "Investigate alert",
+        )
+    assert steps[0]["execution_status"] == "ERROR"
+    assert steps[0]["reason"] == "RuntimeError: backend unavailable"
+    _assert_no_containment_credit(steps, "isolate_host")
+
+
+@pytest.mark.parametrize("use_live_mcp", [False, True])
+def test_supervisor_targetless_request_without_backend_is_not_executed(use_live_mcp):
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", use_live_mcp=use_live_mcp)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host", "close_case"]),
+        _containment_report(), "Investigate alert",
+    )
+    assert len(steps) == 2
+    assert all(step["execution_status"] == "NOT_EXECUTED" for step in steps)
+    assert verify_agent_trajectory(steps).executed_actions == []
+
+
+def test_supervisor_shared_host_ip_does_not_select_arbitrary_inventory_entry():
+    env = SocEnvironment()
+    env.hosts["SRV-PROD-PAYMENT-01"].ip = env.hosts["DESKTOP-FIN-08"].ip
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host"],
+                    target_entity=env.hosts["DESKTOP-FIN-08"].ip),
+        _containment_report(), "Investigate alert",
+    )
+    assert env.action_history == []
+    _assert_no_containment_credit(steps, "isolate_host")
+
+
+@pytest.mark.parametrize("invalid_ip", ["", "none"])
+def test_supervisor_missing_inventory_ip_does_not_create_target(invalid_ip):
+    env = SocEnvironment()
+    env.hosts["DESKTOP-FIN-08"].ip = invalid_ip
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host"]),
+        _containment_report(), "Target host: none given.",
+    )
+    assert env.action_history == []
+    _assert_no_containment_credit(steps, "isolate_host")
+
+
+def test_supervisor_normalizes_repeated_grounded_host_and_action_aliases():
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=["isolate_host", "isolate"],
+                    target_entity="desktop-fin-08"),
+        _containment_report([env.hosts["DESKTOP-FIN-08"].ip]), "Investigate DESKTOP-FIN-08.",
+    )
+    assert len(steps) == 1
+    assert steps[0]["tool"] == "isolate_host"
+    assert len(env.action_history) == 1
+
+
+def test_supervisor_records_unsupported_action_without_dispatching():
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    steps = supervisor._execute_containment_decisions(
+        SocDecision(verdict="MALICIOUS", recommended_actions=["delete_host"], target_entity="DESKTOP-FIN-08"),
+        _containment_report(), "Investigate alert",
+    )
+    assert env.action_history == []
+    assert steps[0]["execution_status"] == "NOT_EXECUTED"
+    assert steps[0]["attempted_tool"] == "delete_host"
+    assert "Unsupported" in steps[0]["reason"]
+
+
 def test_supervisor_synthesis_and_unified_trajectory():
     """Verify supervisor coordinates worker, executes containment, and builds unified trajectory."""
     env = SocEnvironment()
@@ -350,7 +579,7 @@ def test_supervisor_synthesis_and_unified_trajectory():
     ]
 
     prompt = (
-        "Triage alert: Host DESKTOP-FIN-08 connecting repeatedly to C2 IP 198.51.100.42. "
+        "Triage CASE-33279 alert: Host DESKTOP-FIN-08 connecting repeatedly to C2 IP 198.51.100.42. "
         "Investigate indicators, verify threat, and execute containment."
     )
 
@@ -444,7 +673,7 @@ def test_trajectory_verifier_compliance():
     ]
 
     prompt = (
-        "Triage alert for host DESKTOP-FIN-08 connecting repeatedly to update-service-win32.com. "
+        "Triage CASE-33279 alert for host DESKTOP-FIN-08 connecting repeatedly to update-service-win32.com. "
         "Query threat intelligence, determine threat verdict, and execute host containment actions."
     )
 
@@ -509,7 +738,7 @@ def test_benign_safe_resolution_flow():
     ]
 
     prompt = (
-        "Triage authentication log alert: connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01. "
+        "Triage CASE-17305 authentication log alert: connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01. "
         "Query threat intelligence, verify routing classification, and resolve alert."
     )
 
