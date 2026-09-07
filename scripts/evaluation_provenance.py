@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
+import re
 from pathlib import Path
 import subprocess
 from typing import Any, Optional
@@ -44,6 +46,19 @@ def _launch_identity() -> tuple[Optional[str], Optional[str]]:
     return raw_run_id, raw_config_hash
 
 
+
+def _verified_source_bundle() -> dict[str, Any] | None:
+    """Record the trusted startup wrapper's byte verification, not serving identity."""
+    verified = os.environ.get("EXPERIMENT_SOURCE_VERIFIED")
+    sha256 = os.environ.get("EXPERIMENT_SOURCE_BUNDLE_SHA256")
+    commit = os.environ.get("EXPERIMENT_SOURCE_COMMIT")
+    if verified is None and sha256 is None and commit is None:
+        return None
+    if verified != "1" or not re.fullmatch(r"[0-9a-f]{64}", sha256 or "") or not re.fullmatch(r"[0-9a-f]{40}", commit or ""):
+        raise ValueError("Incomplete or invalid verified source bundle identity")
+    return {"status": "VERIFIED", "sha256": sha256, "source_commit": commit,
+            "scope": "source_bundle_bytes_at_startup"}
+
 def capture_provenance(root: Path, dataset: Path, configuration: dict[str, Any],
                        runbooks_dir: Path | None = None,
                        run_id: Optional[str] = None) -> dict[str, Any]:
@@ -68,6 +83,9 @@ def capture_provenance(root: Path, dataset: Path, configuration: dict[str, Any],
 
     status = git("status", "--porcelain", "--untracked-files=normal")
     source_commit = git("rev-parse", "HEAD")
+    source_bundle = _verified_source_bundle()
+    if source_bundle:
+        source_commit = source_bundle["source_commit"]
     sources = ["scripts/eval_soc_agent.py", "scripts/eval_cost_engine.py",
                "scripts/eval_trajectory_verifier.py", "agent/soc_tier1_agent.py",
                "agent/hierarchical_soc_agent.py", "agent/soc_environment.py",
@@ -77,9 +95,10 @@ def capture_provenance(root: Path, dataset: Path, configuration: dict[str, Any],
         "schema_version": 1,
         "run_id": effective_run_id,
         "source_commit": source_commit,
-        "source_identity": {"status": "observed" if source_commit else "unknown",
+        "source_bundle": source_bundle,
+        "source_identity": {"status": "bundle_verified_at_startup" if source_bundle else "observed" if source_commit else "unknown",
                             "reason": None if source_commit else "Git revision unavailable at capture time"},
-        "source_dirty": status != "" if status is not None else None,
+        "source_dirty": None if source_bundle else status != "" if status is not None else None,
         "model": {"requested": configuration.get("managed_model") or configuration.get("flavor"),
                   "resolved_revision": None, "identity_status": "requested_only"},
         "configuration": configuration,

@@ -139,6 +139,25 @@ get_metadata() {
 }
 
 # 1. Instance Identification & Parameters
+# Source metadata may be absent (legacy), but transport failures must fail closed.
+get_source_verifier() {
+  curl -fsS --connect-timeout 5 --max-time 10 -H "Metadata-Flavor: Google" \
+    "${METADATA_URL}instance/attributes/source-verifier"
+}
+
+get_source_metadata() {
+  local response status value
+  response="$(curl -sS --connect-timeout 5 --max-time 10 -H "Metadata-Flavor: Google" \
+      -w $'\n%{http_code}' "${METADATA_URL}$1")" || return 1
+  status="${response##*$'\n'}"
+  value="${response%$'\n'*}"
+  if [[ "${status}" == "404" ]]; then
+    return 0
+  fi
+  [[ "${status}" == "200" && -n "${value}" ]] || return 1
+  printf '%s' "${value}"
+}
+
 INSTANCE_NAME="$(get_metadata "instance/name" "$(hostname)")"
 ZONE_PATH="$(get_metadata "instance/zone" "projects/_/zones/us-central1-a")"
 ZONE="$(basename "${ZONE_PATH}")"
@@ -151,6 +170,12 @@ EXTRA_FLAGS="{{EXTRA_FLAGS}}"
 OUTPUT_BUCKET="{{OUTPUT_BUCKET}}"
 HF_TOKEN="{{HF_TOKEN}}"
 GCS_MODEL_PATH="{{GCS_MODEL_PATH}}"
+SOURCE_METADATA_FAILED=false
+SOURCE_BUNDLE_URI="$(get_source_metadata "instance/attributes/source_bundle_uri")" || SOURCE_METADATA_FAILED=true
+SOURCE_BUNDLE_SHA256="$(get_source_metadata "instance/attributes/source_bundle_sha256")" || SOURCE_METADATA_FAILED=true
+SOURCE_COMMIT="$(get_source_metadata "instance/attributes/source_commit")" || SOURCE_METADATA_FAILED=true
+SOURCE_VERIFIER_SHA256="$(get_source_metadata "instance/attributes/source_verifier_sha256")" || SOURCE_METADATA_FAILED=true
+unset EXPERIMENT_SOURCE_VERIFIED EXPERIMENT_SOURCE_BUNDLE_SHA256 EXPERIMENT_SOURCE_COMMIT || true
 
 if [[ -z "${MODEL_FLAVOR}" ]]; then
   MODEL_FLAVOR="$(get_metadata "instance/attributes/model_flavor" "gemma-2-9b-it")"
@@ -171,13 +196,12 @@ if [[ -z "${HF_TOKEN}" ]]; then
   HF_TOKEN="$(get_metadata "instance/attributes/hf_token" "")"
 fi
 if [[ -z "${GCS_MODEL_PATH}" ]]; then
-  GCS_MODEL_PATH="$(get_metadata "instance/attributes/gcs_model_path" "")"
+GCS_MODEL_PATH="$(get_metadata "instance/attributes/gcs_model_path" "")"
 fi
 EXPERIMENT_RUN_ID="$(get_metadata "instance/attributes/run_id" "")"
 EXPERIMENT_CONFIGURATION_HASH="$(get_metadata "instance/attributes/configuration_hash" "")"
-SOURCE_COMMIT="$(get_metadata "instance/attributes/source_commit" "")"
 if [[ -n "${EXPERIMENT_RUN_ID}" || -n "${EXPERIMENT_CONFIGURATION_HASH}" ]]; then
-  export EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
+export EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
 else
   export -n EXPERIMENT_RUN_ID EXPERIMENT_CONFIGURATION_HASH
 fi
@@ -200,26 +224,37 @@ ARTIFACT_STATUS="NOT_COLLECTED"
 ARTIFACT_UPLOAD_STATUS="NOT_REQUESTED"
 CLEANUP_DELETE_REQUESTED=false
 CLEANUP_DELETE_VERIFIED=false
+SOURCE_BUNDLE_STATUS="NOT_REQUESTED"
+SOURCE_DIR=""
+if [[ -n "${SOURCE_BUNDLE_URI}" || -n "${SOURCE_BUNDLE_SHA256}" || -n "${SOURCE_COMMIT}" || -n "${SOURCE_VERIFIER_SHA256}" ]]; then
+  if [[ -z "${SOURCE_BUNDLE_URI}" || -z "${SOURCE_BUNDLE_SHA256}" || -z "${SOURCE_COMMIT}" || -z "${SOURCE_VERIFIER_SHA256}" ]] || [[ ! "${SOURCE_BUNDLE_URI}" =~ ^gs://[^[:space:]]+$ ]] || [[ ! "${SOURCE_BUNDLE_SHA256}" =~ ^[0-9a-f]{64}$ ]] || [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]] || [[ ! "${SOURCE_VERIFIER_SHA256}" =~ ^[0-9a-f]{64}$ ]]; then
+    SOURCE_BUNDLE_STATUS="FAILED"; EVALUATION_STATUS="FAILED"; EVALUATION_FAILURE_REASON="Incomplete or invalid source bundle metadata"
+  fi
+fi
 
 write_lifecycle_status() {
-  local json_flavor json_reason json_run_id json_configuration_hash json_source_commit
+  local json_flavor json_reason json_run_id json_configuration_hash json_source_commit json_bundle_sha
   mkdir -p "${OUTPUT_DIR}"
   json_flavor="$(json_escape "${MODEL_FLAVOR}")"
   json_reason="$(json_escape "${EVALUATION_FAILURE_REASON}")"
   json_run_id="$(json_escape "${EXPERIMENT_RUN_ID}")"
   json_configuration_hash="$(json_escape "${EXPERIMENT_CONFIGURATION_HASH}")"
   json_source_commit="$(json_escape "${SOURCE_COMMIT}")"
+  json_bundle_sha="$(json_escape "${SOURCE_BUNDLE_SHA256:-}")"
   [[ -n "${json_run_id}" ]] || json_run_id="null"
   [[ -n "${json_configuration_hash}" ]] || json_configuration_hash="null"
   [[ -n "${json_source_commit}" ]] || json_source_commit="null"
+  [[ -n "${json_bundle_sha}" ]] || json_bundle_sha="null"
   [[ "${json_run_id}" == "null" ]] || json_run_id="\"${json_run_id}\""
   [[ "${json_configuration_hash}" == "null" ]] || json_configuration_hash="\"${json_configuration_hash}\""
   [[ "${json_source_commit}" == "null" ]] || json_source_commit="\"${json_source_commit}\""
+  [[ "${json_bundle_sha}" == "null" ]] || json_bundle_sha="\"${json_bundle_sha}\""
   cat >"${LIFECYCLE_PATH}" <<EOF
 {
   "run_id": ${json_run_id},
   "configuration_hash": ${json_configuration_hash},
   "requested_source_commit": ${json_source_commit},
+  "source_bundle": {"status": "${SOURCE_BUNDLE_STATUS:-NOT_REQUESTED}", "sha256": ${json_bundle_sha}, "source_commit": ${json_source_commit}},
   "flavor": "${json_flavor}",
   "evaluation": {
     "status": "${EVALUATION_STATUS}",
@@ -337,6 +372,74 @@ cleanup_and_self_delete() {
 
 trap cleanup_and_self_delete EXIT ERR INT TERM
 
+source_bundle_abort() {
+  SOURCE_BUNDLE_STATUS="FAILED"
+  SOURCE_DIR=""
+  unset EXPERIMENT_SOURCE_VERIFIED EXPERIMENT_SOURCE_BUNDLE_SHA256 EXPERIMENT_SOURCE_COMMIT
+  EVALUATION_STATUS="FAILED"
+  EVALUATOR_EXIT_STATUS=78
+  EVALUATION_FAILURE_REASON="$1"
+  mkdir -p "${OUTPUT_DIR}"
+  printf '[ERROR] %s\n' "${EVALUATION_FAILURE_REASON}" >"${BENCHMARK_LOG}"
+  write_evaluation_failure "${REPORT_PATH}" "${JSON_PATH}" "${MODEL_FLAVOR}" "${EVALUATION_FAILURE_REASON}" 78
+  return 78
+}
+
+prepare_source_bundle() {
+  if [[ "${SOURCE_METADATA_FAILED:-false}" == "true" ]]; then
+    source_bundle_abort "Source metadata could not be read"
+    return 78
+  fi
+  # Every failure returns explicitly: callers use `if`, which disables errexit.
+  if [[ -z "${SOURCE_BUNDLE_URI}" && -z "${SOURCE_BUNDLE_SHA256}" && -z "${SOURCE_COMMIT}" && -z "${SOURCE_VERIFIER_SHA256}" ]]; then
+    return 0
+  fi
+  if [[ -z "${SOURCE_BUNDLE_URI}" || -z "${SOURCE_BUNDLE_SHA256}" || -z "${SOURCE_COMMIT}" || -z "${SOURCE_VERIFIER_SHA256}" ]] ||
+     [[ ! "${SOURCE_BUNDLE_URI}" =~ ^gs://[^[:space:]]+$ ]] ||
+     [[ ! "${SOURCE_BUNDLE_SHA256}" =~ ^[0-9a-f]{64}$ ]] ||
+     [[ ! "${SOURCE_COMMIT}" =~ ^[0-9a-f]{40}$ ]] ||
+     [[ ! "${SOURCE_VERIFIER_SHA256}" =~ ^[0-9a-f]{64}$ ]]; then
+    source_bundle_abort "Incomplete or invalid source bundle metadata"
+    return 78
+  fi
+  case "${SOURCE_BUNDLE_URI}" in
+    *'*'*|*'?'*|*'['*|*']'*|*'#'*)
+      source_bundle_abort "Source bundle URI must name one object"
+      return 78 ;;
+  esac
+  local bootstrap archive actual verifier destination
+  bootstrap="$(mktemp -d /tmp/source-bootstrap.XXXXXX)" || { source_bundle_abort "Source staging failed"; return 78; }
+  archive="${bootstrap}/source.bundle"
+  verifier="${bootstrap}/source_bundle.py"
+  destination="${bootstrap}/source"
+  get_source_verifier >"${verifier}" || { source_bundle_abort "Source verifier download failed"; return 78; }
+  actual="$(sha256sum "${verifier}" | awk '{print $1}')" || { source_bundle_abort "Source verifier hashing failed"; return 78; }
+  if [[ "${actual}" != "${SOURCE_VERIFIER_SHA256}" ]]; then
+    source_bundle_abort "Source verifier hash mismatch"
+    return 78
+  fi
+  if command -v gcloud >/dev/null 2>&1; then
+    gcloud storage cp "${SOURCE_BUNDLE_URI}" "${archive}" || { source_bundle_abort "Source bundle download failed"; return 78; }
+  elif command -v gsutil >/dev/null 2>&1; then
+    gsutil cp "${SOURCE_BUNDLE_URI}" "${archive}" || { source_bundle_abort "Source bundle download failed"; return 78; }
+  else
+    source_bundle_abort "No GCS downloader available"
+    return 78
+  fi
+  actual="$(sha256sum "${archive}" | awk '{print $1}')" || { source_bundle_abort "Source bundle hashing failed"; return 78; }
+  if [[ "${actual}" != "${SOURCE_BUNDLE_SHA256}" ]]; then
+    source_bundle_abort "Source bundle hash mismatch"
+    return 78
+  fi
+  python3 "${verifier}" verify --archive "${archive}" --sha256 "${SOURCE_BUNDLE_SHA256}" --source-commit "${SOURCE_COMMIT}" --destination "${destination}" || {
+    source_bundle_abort "Source bundle verification failed"
+    return 78
+  }
+  SOURCE_DIR="${destination}"
+  SOURCE_BUNDLE_STATUS="VERIFIED"
+  export EXPERIMENT_SOURCE_BUNDLE_SHA256="${SOURCE_BUNDLE_SHA256}" EXPERIMENT_SOURCE_COMMIT="${SOURCE_COMMIT}" EXPERIMENT_SOURCE_VERIFIED=1
+}
+
 # 2.5 Ensure Docker, gcloud, and NVIDIA Container Toolkit are installed and running
 if ! command -v docker >/dev/null 2>&1; then
   echo "[INFO] Installing Docker..."
@@ -378,6 +481,10 @@ if ! command -v nvidia-ctk >/dev/null 2>&1; then
   systemctl restart docker || service docker restart || true
 fi
 systemctl start docker || service docker start || true
+
+if ! prepare_source_bundle; then
+  exit 78
+fi
 
 # 3. Mount and Format Local NVMe SSD Scratch Storage
 MOUNT_DIR="/mnt/disks/nvme"
@@ -513,13 +620,18 @@ fi
 # 7. Execute SOC Tier 1 Evaluation and Benchmark Tests
 mkdir -p "${OUTPUT_DIR}"
 
-echo "[INFO] Syncing evaluation suite from GCS..."
-mkdir -p /workspace
-cd /workspace
-if command -v gcloud >/dev/null 2>&1; then
-  gcloud storage cp -r "gs://secops-demo-env-evals/code/*" /workspace/ || true
-elif command -v gsutil >/dev/null 2>&1; then
-  gsutil -m cp -r "gs://secops-demo-env-evals/code/*" /workspace/ || true
+if [[ -n "${SOURCE_DIR}" ]]; then
+  EVAL_ROOT="${SOURCE_DIR}"
+else
+  echo "[INFO] Syncing evaluation suite from GCS..."
+  EVAL_ROOT="/workspace"
+  mkdir -p "${EVAL_ROOT}"
+  cd "${EVAL_ROOT}"
+  if command -v gcloud >/dev/null 2>&1; then
+    gcloud storage cp -r "gs://secops-demo-env-evals/code/*" "${EVAL_ROOT}/" || true
+  elif command -v gsutil >/dev/null 2>&1; then
+    gsutil -m cp -r "gs://secops-demo-env-evals/code/*" "${EVAL_ROOT}/" || true
+  fi
 fi
 
 if ! command -v pip3 >/dev/null 2>&1; then
@@ -528,8 +640,8 @@ fi
 pip3 install httpx openai google-genai tenacity 2>/dev/null || true
 
 echo "[INFO] Executing SOC Tier 1 Evaluation suite..."
-if [[ -f "/workspace/scripts/eval_soc_agent.py" ]]; then
-  cd /workspace
+if [[ -f "${EVAL_ROOT}/scripts/eval_soc_agent.py" ]]; then
+  cd "${EVAL_ROOT}"
   if run_with_tee_status "${BENCHMARK_LOG}" python3 scripts/eval_soc_agent.py \
       --flavor "${MODEL_FLAVOR}" \
       --cloudrun-url "http://127.0.0.1:8080" \
@@ -547,7 +659,7 @@ if [[ -f "/workspace/scripts/eval_soc_agent.py" ]]; then
 else
   EVALUATOR_EXIT_STATUS=127
   EVALUATION_STATUS="FAILED"
-  EVALUATION_FAILURE_REASON="Evaluator script not found at /workspace/scripts/eval_soc_agent.py"
+  EVALUATION_FAILURE_REASON="Evaluator script not found at ${EVAL_ROOT}/scripts/eval_soc_agent.py"
   echo "[ERROR] ${EVALUATION_FAILURE_REASON}."
   printf '[ERROR] %s\n' "${EVALUATION_FAILURE_REASON}" >"${BENCHMARK_LOG}"
   write_evaluation_failure "${REPORT_PATH}" "${JSON_PATH}" "${MODEL_FLAVOR}" "${EVALUATION_FAILURE_REASON}" "${EVALUATOR_EXIT_STATUS}"

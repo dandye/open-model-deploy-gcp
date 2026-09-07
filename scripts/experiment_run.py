@@ -67,6 +67,17 @@ def validate_run(data: dict[str, Any]) -> None:
     for key in ("project_id", "zone"):
         if not isinstance(config.get(key), str) or not re.fullmatch(r"[a-z0-9-]+", config[key]):
             raise ValueError(f"Invalid {key}")
+    source = config.get("source_bundle")
+    if source is not None:
+        if not isinstance(source, dict):
+            raise ValueError("Invalid source bundle configuration")
+        for field, length in (("sha256", 64), ("verifier_sha256", 64), ("source_commit", 40)):
+            value = source.get(field)
+            if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{" + str(length) + r"}", value):
+                raise ValueError(f"Invalid source bundle {field}")
+        uri = source.get("uri")
+        if not isinstance(uri, str) or not re.fullmatch(r"gs://[a-z0-9][a-z0-9._-]*/[^\s*?\[\]#]+", uri) or "|~|" in uri:
+            raise ValueError("Invalid source bundle URI")
     target = config.get("target", {})
     if not isinstance(target, dict):
         raise ValueError("Invalid target configuration")

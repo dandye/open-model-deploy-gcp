@@ -10,7 +10,7 @@ Preview one target without creating cloud resources:
 .venv/bin/python scripts/run_gce_spot_sweep.py --models gemma-2-2b-it --dry-run
 ```
 
-For an approved live experiment, use the same entry point with explicit project, zone, output bucket, and selected model. Removing `--dry-run` provisions resources and incurs charges. First complete the [experiment protocol](../experiment_protocol.md), including the reviewer, budget, frozen cases, and acceptance thresholds.
+For an approved live experiment, use the same entry point with explicit project, zone, output bucket, selected model, and the required [source bundle pins](SOURCE_BUNDLES.md). Removing `--dry-run` provisions resources and incurs charges. First complete the [experiment protocol](../experiment_protocol.md), including the reviewer, budget, frozen cases, and acceptance thresholds.
 
 Before each create command, the launcher atomically writes:
 
@@ -48,4 +48,4 @@ CLI success requires completed evaluation, complete artifact evidence, and obser
 
 ## Remaining limits
 
-Identity verification means **launch binding only**. Startup still retrieves mutable GCS code, and image families/model names are not immutable serving revisions. The manifest records this source limitation explicitly. Benchmark/log files are associated through the dedicated path and downloaded byte hashes; they have no embedded run attestation. Costs, missing token fields, source attestation, and held-out dataset history are not inferred. A controlled comparison still needs approved inputs, fixed serving revisions, actual measurements, and reviewer judgment.
+Identity verification means **launch binding only**. Pinned launches now verify source archives before execution and require matching source evidence from both producers. Legacy low-level callers may still retrieve mutable GCS code. Image families, model names, and installed dependencies remain unpinned; source verification does not establish their identities. Benchmark/log files are associated through the dedicated path and downloaded byte hashes; they have no embedded run attestation. Costs, missing token fields, source attestation, and held-out dataset history are not inferred. A controlled comparison still needs approved inputs, fixed serving revisions, actual measurements, and reviewer judgment.
