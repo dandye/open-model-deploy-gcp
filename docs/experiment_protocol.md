@@ -39,6 +39,8 @@ not create a holdout. Do not invent a holdout from the existing exposed
 benchmark cases. If an untouched inventory does not exist, the final-test
 result is unavailable and the experiment must stop at protocol preparation.
 
+Use [dataset preparation](evidence/DATASET_PREPARATION.md) to snapshot explicitly supplied files into a private review packet. Experiment schema 2 requires a reviewer-supplied exposure history with hashed historical datasets; final-test ID or exact-content overlap with that inventory is rejected, including unknown exposure.
+
 Use [`scripts/validate_experiment.ts`](../scripts/validate_experiment.ts) for
 offline preflight. It checks the manifest schema, full source commit, pinned
 configuration fields, numeric acceptance fields, repeated runs, dataset
