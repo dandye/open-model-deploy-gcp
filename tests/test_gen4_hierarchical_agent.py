@@ -297,6 +297,61 @@ def test_worker_report_fallback_extraction():
     assert len(report.evidence) > 0
 
 
+@pytest.mark.parametrize("domain,expected", [("google.com", "BENIGN"), ("evil.com", "MALICIOUS")])
+def test_exhausted_worker_and_empty_synthesis_use_actual_domain_verdict(domain, expected):
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(
+        project_id="offline", managed_model="offline", environment=env, use_runbooks=False,
+    )
+    with patch.object(supervisor, "_call_llm_step", side_effect=[
+        (f'Action: get_domain_report(domain="{domain}")', {}), ("", {}),
+    ]):
+        result = supervisor.query(f"Investigate {domain} on DESKTOP-FIN-08", max_iterations=1)
+    assert result.worker_report["risk_level"] == expected
+    assert result.verdict == expected
+    actions = verify_agent_trajectory(result.trajectory).executed_actions
+    if expected == "BENIGN":
+        assert env.action_history == []
+        assert actions == []
+    else:
+        assert "isolate_host" in actions
+        assert "block_indicator" in actions
+
+
+@pytest.mark.parametrize("observations,expected", [
+    ([{"verdict": "BENIGN", "malicious_votes": 0, "notes": "PSEXEC TROJAN MALICIOUS"}], "BENIGN"),
+    ([{"reputation": "SUSPICIOUS", "notes": "BENIGN"}], "SUSPICIOUS"),
+    ([{"verdict": "NOT MALICIOUS", "malicious_votes": 0}], "UNKNOWN"),
+    ([{"malicious_votes": 0, "harmless_votes": 100}], "UNKNOWN"),
+    ([{"verdict": "BENIGN"}, {"status": "ERROR", "verdict": "MALICIOUS"}], "BENIGN"),
+    ([{"verdict": "BENIGN"}, {"status_code": 503, "error": "MALICIOUS lookup failed"}], "BENIGN"),
+    ([{"result": {"reputation": " benign "}}], "BENIGN"),
+    ([{"verdict": "BENIGN"}, {"verdict": "MALICIOUS"}], "MALICIOUS"),
+    ([{"verdict": "BENIGN"}, {"verdict": "SUSPICIOUS"}], "SUSPICIOUS"),
+    ([{"verdict": "POTENTIALLY_MALICIOUS"}], "SUSPICIOUS"),
+    ([{"reputation": "BENIGN_AUTHORIZED"}], "BENIGN"),
+    ([{"verdict": "SAFE"}], "BENIGN"),
+    ([{"reputation": "BENIGN / NON-ROUTABLE"}], "BENIGN"),
+    ([{"verdict": "NEUTRAL", "reputation": "UNKNOWN"}], "UNKNOWN"),
+    ([{"events": [{"verdict": "MALICIOUS"}], "process": "PSEXEC"}], "UNKNOWN"),
+    ([{"result": [{"verdict": "BENIGN"}, {"isError": True, "verdict": "MALICIOUS"}]}], "BENIGN"),
+    ([{"error": "failed", "data": {"verdict": "MALICIOUS"}}], "UNKNOWN"),
+    ([{"content": [{"text": '{"reputation":"BENIGN"}'}]}], "BENIGN"),
+])
+def test_fallback_risk_uses_explicit_values_from_successful_observations(observations, expected):
+    trajectory = [{"tool": "get_domain_report", "args": {"domain": "google.com"},
+                   "observation": json.dumps(value)} for value in observations]
+    report = extract_worker_report("Investigation iterations completed.", "C2_BEACON", "none", trajectory)
+    assert report.risk_level == expected
+
+
+def test_denied_attempt_cannot_supply_fallback_risk():
+    trajectory = [{"tool": None, "attempted_tool": "get_domain_report", "execution_status": "DENIED",
+                   "observation": '{"verdict":"MALICIOUS"}'}]
+    report = extract_worker_report("Iterations completed.", "C2_BEACON", "none", trajectory)
+    assert report.risk_level == "UNKNOWN"
+
+
 @pytest.mark.parametrize("output", [
     "Unable to investigate", "Final Answer: MALICIOUS", "",
     'Action: isolate_host(hostname="DESKTOP-FIN-08")',

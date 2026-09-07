@@ -3,7 +3,7 @@ task: Resolve evaluation PR correctness and evidence review findings
 project: open-model-deploy-gcp
 effort: E3
 phase: verify
-progress: 15/15
+progress: 16/16
 mode: interactive
 started: 2026-09-07
 updated: 2026-09-07
@@ -11,7 +11,7 @@ updated: 2026-09-07
 
 ## Problem
 
-The first two review rounds resolved eleven defects. A third review reproduced containment without worker evidence and first-token timing delayed by a buffered HTTP read.
+Three review rounds resolved thirteen defects. A fourth review reproduced benign evidence becoming malicious because the fallback classifier matched a field name rather than its value.
 
 ## Vision
 
@@ -51,6 +51,7 @@ Resolve the review findings with regression coverage across the affected executi
 - [x] ISC-13: A completed evaluation artifact survives collection with its completion status.
 - [x] ISC-14: Missing or failed worker evidence cannot reach supervisor synthesis or containment.
 - [x] ISC-15: First-token measurement does not wait for a later HTTP chunk to fill a read buffer.
+- [x] ISC-16: Fallback risk uses explicit successful assessment values without inferring threats from keys or errors.
 
 ## Test Strategy
 
@@ -69,6 +70,7 @@ Resolve the review findings with regression coverage across the affected executi
 | ISC-13 | Actual evaluator output through mocked artifact transport | Completion preserved; conflicting failure wins; launch identity remains unverified |
 | ISC-14 | Full supervisor queries with plain text, denied calls, outages, and exhausted budgets | Inconclusive result and no action; real observations preserve normal execution |
 | ISC-15 | Real HTTPResponse with deterministic chunk arrivals plus localhost probe | First event observed before later token arrival |
+| ISC-16 | Full query with exhausted worker budget and empty synthesis; explicit-value fixtures | Benign lookup never isolates or blocks; actual malicious evidence remains actionable |
 
 ## Features
 
@@ -83,6 +85,7 @@ Resolve the review findings with regression coverage across the affected executi
 | Streaming error propagation | ISC-11 | None | Yes |
 | Evaluation pipeline contracts | ISC-12, ISC-13 | None | Yes |
 | Investigation evidence boundary and unbuffered observations | ISC-14, ISC-15 | None | Yes |
+| Explicit fallback assessment extraction | ISC-16 | Investigation evidence validation | No |
 
 ## Decisions
 
@@ -93,6 +96,7 @@ Resolve the review findings with regression coverage across the affected executi
 - 2026-09-07: The second review adds ISC-9 through ISC-13 without renumbering completed criteria. Backend absence records an unexecuted recommendation; this change does not add live containment support.
 - 2026-09-07: Per-case fault setup belongs in SocEnvironment so optimization and evaluation cannot diverge. Artifact completion is separate from launch identity and cleanup verification.
 - 2026-09-07: Verify investigation from actual structured tool results, independently of model-authored findings. Plain-text MCP results remain unverified because the adapter drops execution metadata. HTTP timing uses available reads rather than filling a fixed-size buffer.
+- 2026-09-07: Fallback assessments use exact tool-value mappings and recognized response envelopes. Failed records and unrelated telemetry prose cannot contribute risk. Explicit malicious assessments outrank suspicious assessments, which outrank benign assessments.
 
 ## Changelog
 
@@ -104,6 +108,10 @@ Resolve the review findings with regression coverage across the affected executi
 - Refuted by: plain worker prose followed by a malicious supervisor decision isolated a host without any tool evidence.
 - Learned: the supervisor must enforce an evidence boundary independently of worker formatting and iteration budgets.
 - Criterion now: ISC-14 covers full queries, failures, denied actions, and valid negative evidence.
+- Conjectured: keyword scanning tool observations recovered a reasonable fallback assessment.
+- Refuted by: a BENIGN google.com lookup with malicious_votes equal to zero produced MALICIOUS and triggered containment.
+- Learned: serialized keys and diagnostic prose cannot establish the semantics of a tool's assessment.
+- Criterion now: ISC-16 checks explicit assessment values through the complete fallback path.
 
 ## Verification
 
@@ -122,3 +130,5 @@ Resolve the review findings with regression coverage across the affected executi
 - ISC-14: 33 new regressions cover absent/failed/denied evidence, budgets of zero/one/three iterations, repeated premature output, valid observations, and valid empty case searches. The initial query regressions reproduced 16 failures before the guard was changed.
 - ISC-15: Deterministic HTTPResponse regression reproduced 250 ms instead of the scheduled 10 ms arrival and now passes. The localhost probe improved from approximately 266 ms to 7 ms for an immediately sent 47-byte event, with unchanged generated text.
 - Third-round validation: 485 Python tests and 28 Bun tests pass; `git diff --check` passes. No external model or cloud workload ran.
+- ISC-16: 21 new regressions pass, including benign and malicious full-query paths, failed/denied observations, response envelopes, exact label mappings, and unknown values. Eight initial regressions failed before the correction.
+- Fourth-round validation: 506 Python tests and 28 Bun tests pass. The scoped diff was independently reviewed with no remaining findings; `git diff --check` passes. Historical JSON remains unchanged and no cloud/model calls ran.

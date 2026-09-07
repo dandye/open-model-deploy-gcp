@@ -132,6 +132,51 @@ def _has_investigation_evidence(trajectory: List[Dict[str, Any]]) -> bool:
     return False
 
 
+def _risk_from_observations(trajectory: List[Dict[str, Any]]) -> str:
+    """Read exact assessment values from successful tool results, never prose."""
+    labels = {
+        "MALICIOUS": "MALICIOUS",
+        "SUSPICIOUS": "SUSPICIOUS",
+        "BORDERLINE_SUSPICIOUS": "SUSPICIOUS",
+        "POTENTIALLY_MALICIOUS": "SUSPICIOUS",
+        "BENIGN": "BENIGN",
+        "SAFE": "BENIGN",
+        "BENIGN_AUTHORIZED": "BENIGN",
+        "BENIGN / NON-ROUTABLE": "BENIGN",
+    }
+    risks: Set[str] = set()
+    for step in trajectory:
+        if not _has_investigation_evidence([step]):
+            continue
+        pending = [json.loads(step["observation"])]
+        while pending:
+            value = pending.pop()
+            # Validate each result envelope independently: one successful
+            # result must not make a failed sibling's assessment authoritative.
+            if not _has_investigation_evidence([{**step, "observation": json.dumps(value)}]):
+                continue
+            if isinstance(value, list):
+                pending.extend(value)
+                continue
+            for field in ("verdict", "reputation"):
+                label = value.get(field)
+                if isinstance(label, str) and label.strip().upper() in labels:
+                    risks.add(labels[label.strip().upper()])
+            for field in ("result", "data", "response", "body"):
+                if isinstance(value.get(field), (dict, list)):
+                    pending.append(value[field])
+            content = value.get("content")
+            if isinstance(content, list):
+                for block in content:
+                    if isinstance(block, dict):
+                        try:
+                            pending.append(json.loads(block.get("text", "")))
+                        except (TypeError, ValueError):
+                            pass
+    # A genuine higher-risk assessment takes precedence across result records.
+    return next((risk for risk in ("MALICIOUS", "SUSPICIOUS", "BENIGN") if risk in risks), "UNKNOWN")
+
+
 @dataclass
 class WorkerInvestigationReport:
     """Structured report produced by SOCRunbookWorkerAgent after epistemic investigation."""
@@ -399,14 +444,7 @@ def extract_worker_report(
     if verdict_match:
         risk_level = _normalize_verdict(verdict_match.group(1))
     else:
-        # Fallback to trajectory observations
-        all_obs_text = " ".join(str(s.get("observation") or "") for s in trajectory).upper()
-        if any(term in all_obs_text for term in ("MALICIOUS", "C2_SERVER", "TROJAN", "LOKIBOT", "PSEXEC")):
-            risk_level = "MALICIOUS"
-        elif any(term in all_obs_text for term in ("BENIGN", "SAFE", "RFC-5737", "AUTHORIZED SCANNER")):
-            risk_level = "BENIGN"
-        elif "SUSPICIOUS" in all_obs_text:
-            risk_level = "SUSPICIOUS"
+        risk_level = _risk_from_observations(trajectory)
 
     return WorkerInvestigationReport(
         classification=classification,
