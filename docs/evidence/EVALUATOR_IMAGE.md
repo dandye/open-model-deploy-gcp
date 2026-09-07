@@ -1,6 +1,6 @@
 # Prepare and check an evaluator image
 
-The GCE pinned runtime needs a compatible Linux AMD64 evaluator image. This workflow builds its dependency environment and checks the actual evaluator entrypoint without a GPU, model requests, or cloud credentials. Docker must be installed and connected to a daemon you control. The check does not pull images automatically.
+The GCE pinned runtime needs a compatible Linux AMD64 evaluator image. This workflow builds its dependency environment and checks the actual evaluator entrypoint without a GPU, model requests, or cloud credentials. Docker or Podman must be installed and connected to a local daemon or machine you control. Docker is the default; add `--engine podman` to either command to use Podman. An ARM64 host needs AMD64 emulation for this image. The check does not pull images automatically.
 
 ## Dependency lock and build
 
@@ -22,7 +22,7 @@ Choose a trusted Python 3.12 Linux AMD64 base, such as an official slim image, a
   --tag evaluator-preflight:local --output logs/evaluator-build.json
 ```
 
-The builder sends only snapshots of `Dockerfile.evaluator` and the lock file to Docker. Untracked files and repository credentials cannot enter its build context. Docker installs wheels using `--require-hashes --only-binary=:all:` and runs `pip check`; the base must supply Python 3.12. The build can download the base image and locked packages. The resulting record contains the build input hashes and local image ID. A local image ID is not a registry manifest digest.
+The builder sends only snapshots of `Dockerfile.evaluator` and the lock file to the selected engine. Untracked files and repository credentials cannot enter its build context. The build installs wheels using `--require-hashes --only-binary=:all:` and runs `pip check`; the base must supply Python 3.12. The build can download the base image and locked packages. The resulting record contains the build input hashes, local image ID, and engine name. A local image ID is not a registry manifest digest.
 
 ## Check before publishing
 
@@ -36,6 +36,8 @@ Commit the source revision you intend to run, then build its [source bundle](SOU
   --output logs/evaluator-preflight.json
 ```
 
+On macOS with Podman, temporary bind mounts must be shared with its Linux machine. If the default temporary directory is not shared, create `logs/podman-tmp` and prefix the check command with `TMPDIR="$PWD/logs/podman-tmp"`. Remote daemons without access to the same source/output paths are unsupported.
+
 The checker verifies the source archive before mounting it read-only. It requires an existing Linux AMD64 image, inspects the actual created container, disables pulls and networking, makes the container root read-only, and allows writes only to temporary storage and its output mount. It executes the evaluator in isolated Python mode against one synthetic case, with model and judge calls replaced by deterministic fixtures. Experiment identity and cloud credential environment variables are cleared. The checker requires a successful container exit and a fresh, complete synthetic report, then removes the owned container and its anonymous volumes. Uncertain create outcomes use an attempt label to identify owned resources before cleanup.
 
 For a quick host-only dependency check, run:
@@ -45,6 +47,10 @@ For a quick host-only dependency check, run:
 ```
 
 A host-only pass is not a container pass. A container pass verifies this limited evaluator/import/output profile, not model quality, all optional integrations, or cloud authentication. Reports explicitly mark synthetic evidence. Failed attempts replace stale success with a failure record and return a nonzero exit code.
+
+## Recorded Podman validation
+
+The [September 7, 2026 record](podman_preflight.json) captures a successful Podman 5.8.2 build and synthetic check of committed source `8320b6e`. The Linux AMD64 image ran under QEMU on an ARM64 Podman machine with Python 3.12.14. The default macOS temporary directory was shared successfully on this host. Image checks and cleanup passed; Docker and GCE execution remain separate validation steps.
 
 ## Use a checked image
 

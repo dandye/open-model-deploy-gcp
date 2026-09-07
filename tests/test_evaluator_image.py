@@ -1,4 +1,4 @@
-"""Offline image orchestration tests: never start Docker or call a provider."""
+"""Offline image orchestration tests: never start containers or call a provider."""
 import copy
 import hashlib
 import json
@@ -24,8 +24,10 @@ def response(value='', code=0):
     return SimpleNamespace(stdout=value, returncode=code)
 
 
+@pytest.mark.parametrize('engine', ['docker', 'podman'])
 @pytest.mark.parametrize('problem', [None, 'arch', 'digest', 'container', 'create', 'attach', 'timeout', 'missing', 'schema', 'cleanup'])
-def test_checker_gates_execution_and_report(tmp_path, monkeypatch, problem):
+def test_checker_gates_execution_and_report(tmp_path, monkeypatch, problem, engine):
+    inspected_id = ID if engine == "docker" else ID.removeprefix("sha256:")
     calls = []
     mounts = {}
     def verify(archive, digest, commit, destination):
@@ -33,9 +35,10 @@ def test_checker_gates_execution_and_report(tmp_path, monkeypatch, problem):
         (destination / 'scripts/evaluator_smoke.py').write_text('# fixture')
     monkeypatch.setattr(module, 'verify_bundle', verify)
     def docker(*args, **kwargs):
+        assert kwargs["engine"] == engine
         calls.append(args)
         if args[:2] == ('image', 'inspect'):
-            return response(json.dumps([{'Id': ID, 'Os': 'linux', 'Architecture': 'arm64' if problem == 'arch' else 'amd64',
+            return response(json.dumps([{'Id': inspected_id, 'Os': 'linux', 'Architecture': 'arm64' if problem == 'arch' else 'amd64',
                                         'RepoDigests': [IMAGE if problem != 'digest' else 'wrong@sha256:' + 'c' * 64]}]))
         if args[0] == 'create':
             if problem == 'create': raise subprocess.CalledProcessError(1, args)
@@ -44,7 +47,7 @@ def test_checker_gates_execution_and_report(tmp_path, monkeypatch, problem):
                     mounts[arg.split('dst=', 1)[1].split(',')[0]] = Path(arg.split('src=', 1)[1].split(',')[0])
             return response('created')
         if args[:3] == ('inspect', '--format', '{{.Image}}'):
-            return response(ID if problem != 'container' else 'sha256:' + 'd' * 64)
+            return response(inspected_id if problem != 'container' else 'sha256:' + 'd' * 64)
         if args[0] == 'start':
             if problem == 'timeout': raise subprocess.TimeoutExpired(args, 120)
             if problem != 'missing':
@@ -56,12 +59,12 @@ def test_checker_gates_execution_and_report(tmp_path, monkeypatch, problem):
             return response(json.dumps({'Running': False, 'Status': 'exited', 'ExitCode': 0, 'Error': ''}))
         if args[0] == 'rm' and problem == 'cleanup': raise subprocess.CalledProcessError(1, args)
         return response()
-    monkeypatch.setattr(module, 'docker', docker)
+    monkeypatch.setattr(module, 'container', docker)
     if problem:
         with pytest.raises((ValueError, subprocess.SubprocessError)):
-            module.check_image(IMAGE, tmp_path / 'archive', 'e'*64, 'f'*40)
+            module.check_image(IMAGE, tmp_path / 'archive', 'e'*64, 'f'*40, engine=engine)
     else:
-        report = module.check_image(IMAGE, tmp_path / 'archive', 'e'*64, 'f'*40)
+        report = module.check_image(IMAGE, tmp_path / 'archive', 'e'*64, 'f'*40, engine=engine)
         assert report['status'] == 'PASS' and report['synthetic'] is True
         assert report['image_id'] == ID and report['image_reference'] == IMAGE
     created = next((c for c in calls if c[0] == 'create'), None)
@@ -74,30 +77,32 @@ def test_checker_gates_execution_and_report(tmp_path, monkeypatch, problem):
     assert any(c[0] == 'rm' for c in calls) == (problem not in ('arch', 'digest', 'create'))
 
 
-def test_build_sends_only_snapshotted_inputs(tmp_path, monkeypatch):
+@pytest.mark.parametrize("engine", ["docker", "podman"])
+def test_build_sends_only_snapshotted_inputs(tmp_path, monkeypatch, engine):
     (tmp_path / 'docker').mkdir()
     inputs = {'Dockerfile.evaluator': b'FROM fixture', 'requirements-evaluator.lock': b'fixture==1 --hash=sha256:abc'}
     for name, content in inputs.items(): (tmp_path / 'docker' / name).write_bytes(content)
     (tmp_path / 'docker' / 'credentials.json').write_text('must not send')
     monkeypatch.setattr(module, 'ROOT', tmp_path)
     def docker(*args, **kwargs):
+        assert kwargs['engine'] == engine
         if args[0] == 'build':
             context = Path(args[-1])
             assert sorted(p.name for p in context.iterdir()) == ['Dockerfile', 'requirements-evaluator.lock']
             assert (context / 'Dockerfile').read_bytes() == inputs['Dockerfile.evaluator']
             assert '--platform=linux/amd64' in args
-            Path(args[args.index('--iidfile') + 1]).write_text(ID)
+            Path(args[args.index('--iidfile') + 1]).write_text(ID if engine == "docker" else ID.removeprefix("sha256:"))
             return response()
         return response(json.dumps([{'Id': ID, 'Os': 'linux', 'Architecture': 'amd64'}]))
-    monkeypatch.setattr(module, 'docker', docker)
-    result = module.build_image(IMAGE, 'evaluator:local')
+    monkeypatch.setattr(module, 'container', docker)
+    result = module.build_image(IMAGE, 'evaluator:local', engine=engine)
     assert result['registry_digest'] is None
     assert result['inputs']['Dockerfile.evaluator'] == hashlib.sha256(inputs['Dockerfile.evaluator']).hexdigest()
 
 
 @pytest.mark.parametrize('value', ['latest', 'image:tag', 'registry/image@sha256:short', 'registry/image@sha256:' + 'A'*64])
 def test_mutable_or_invalid_images_fail_before_docker(monkeypatch, value):
-    monkeypatch.setattr(module, 'docker', lambda *a, **kw: pytest.fail('unexpected Docker call'))
+    monkeypatch.setattr(module, 'container', lambda *a, **kw: pytest.fail('unexpected Docker call'))
     with pytest.raises(ValueError): module.inspect_image(value)
 
 
@@ -110,7 +115,7 @@ def test_report_requires_exact_offline_contract(field, value):
 
 def test_stale_success_becomes_failed_attempt(tmp_path, monkeypatch):
     output = tmp_path / 'result.json'; output.write_text('{"status":"PASS"}')
-    monkeypatch.setattr(module, 'build_image', lambda *a: (_ for _ in ()).throw(FileNotFoundError('docker')))
+    monkeypatch.setattr(module, 'build_image', lambda *a, **kw: (_ for _ in ()).throw(FileNotFoundError('docker')))
     assert module.main(['build', '--python-image', IMAGE, '--output', str(output)]) == 1
     report = json.loads(output.read_text())
     assert report['status'] == 'FAIL' and report['error_type'] == 'FileNotFoundError'
@@ -141,7 +146,30 @@ def test_unknown_create_outcome_cleans_only_owned_container(tmp_path, monkeypatc
             raise subprocess.TimeoutExpired(args, 120)
         if args[0] == 'inspect': return response(names['attempt'] if owned else 'someone-else')
         return response()
-    monkeypatch.setattr(module, 'docker', docker)
+    monkeypatch.setattr(module, 'container', docker)
     with pytest.raises(subprocess.TimeoutExpired):
         module.check_image(IMAGE, tmp_path / 'archive', 'e'*64, 'f'*40)
     assert any(c[:3] == ('rm', '--force', '--volumes') for c in calls) is owned
+
+
+@pytest.mark.parametrize("identity", ["b"*12, "B"*64, "sha256:short", None])
+def test_normalization_rejects_invalid_ids(identity):
+    with pytest.raises(ValueError):
+        module.normalize_image_id(identity)
+
+
+@pytest.mark.parametrize("engine", ["docker", "podman"])
+def test_cli_selects_and_records_engine(tmp_path, monkeypatch, engine):
+    calls = []
+    def run(argv, **kwargs):
+        calls.append(argv)
+        return response()
+    monkeypatch.setattr(module.subprocess, "run", run)
+    def build(image, tag, *, engine):
+        module.container("version", engine=engine)
+        return {"status": "BUILT_LOCAL"}
+    monkeypatch.setattr(module, "build_image", build)
+    output = tmp_path / "result.json"
+    assert module.main(["build", "--engine", engine, "--python-image", IMAGE, "--output", str(output)]) == 0
+    assert calls == [[engine, "version"]]
+    assert json.loads(output.read_text())["engine"] == engine
