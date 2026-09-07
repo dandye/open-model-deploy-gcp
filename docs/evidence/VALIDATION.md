@@ -12,7 +12,7 @@ bun test
 git diff --check
 ```
 
-The existing hierarchical/GEPA tests require the pinned `third_party/ai-runbooks` submodule. Its current `.gitmodules` entry points to a machine-specific local checkout. Initialize it from an accessible copy containing the recorded commit; do not silently substitute another revision. The validation in this worktree used the existing sibling `ai-runbooks` repository at the pinned commit. This is a pre-existing portability limitation.
+The existing hierarchical/GEPA tests require the pinned `third_party/ai-runbooks` submodule. Initialize it with `git submodule update --init third_party/ai-runbooks`; access to `dandye/ai-runbooks` is required. Its GitHub URL replaces the former machine-specific local path, and the pinned commit was verified on GitHub. Initial validation in this worktree used the existing sibling repository at that same commit.
 
 ## Evidence audit
 

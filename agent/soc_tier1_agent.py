@@ -15,6 +15,7 @@ try:
         lookup_entity,
         post_case_comment,
     )
+    from agent.mcp_provider import McpToolProvider
     from agent.secops_mcp_tools import (
         SECOPS_MCP_TOOLS,
         create_case_comment as secops_create_case_comment,
@@ -26,6 +27,7 @@ try:
     )
 except ModuleNotFoundError:
     from gemma_agent import GemmaAgent
+    from mcp_provider import McpToolProvider
     from soc_tools import (
         get_domain_report,
         get_file_report,
@@ -583,6 +585,7 @@ class SocTier1Agent(GemmaAgent):
         managed_model: Optional[str] = None,
         use_live_mcp: bool = False,
         environment: Optional[Any] = None,
+        mcp_provider: str = "default",
     ):
         if use_live_mcp:
             from agent.secops_mcp_tools import (
@@ -621,6 +624,8 @@ class SocTier1Agent(GemmaAgent):
         )
         self.use_live_mcp = use_live_mcp
         self.environment = environment
+        self.mcp_provider_name = mcp_provider
+        self.mcp_provider = McpToolProvider(provider=mcp_provider)
         self.name = "soc_analyst_tier1"
         self.tools_dict: Dict[str, Callable] = {tool.__name__: tool for tool in (self.tools or [])}
         self.last_backend: str = "Unknown"
@@ -630,9 +635,9 @@ class SocTier1Agent(GemmaAgent):
         descriptions = []
         for name, func in self.tools_dict.items():
             doc = inspect.getdoc(func) or "No description available."
-            first_line = doc.splitlines()[0]
+            desc = self.mcp_provider.get_description(name, default_doc=doc)
             sig = inspect.signature(func)
-            descriptions.append(f"- {name}{sig}: {first_line}")
+            descriptions.append(f"- {name}{sig}: {desc}")
         if self.environment is not None:
             env_actions = [
                 "- isolate_host(hostname: str): Isolates host from enterprise network to contain active adversary threat.",

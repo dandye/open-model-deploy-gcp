@@ -13,7 +13,17 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-os.environ.setdefault("GOOGLE_API_USE_CLIENT_CERTIFICATE", "false")
+os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
+os.environ["CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE"] = "false"
+
+try:
+    import google.auth.transport._mtls_helper as _mtls_helper
+    _mtls_helper.has_client_certificate = lambda: False
+    _mtls_helper.get_client_cert_and_key = lambda: (False, None, None)
+    _mtls_helper.get_client_ssl_credentials = lambda *args, **kwargs: (False, None, None, None)
+except Exception:
+    pass
 
 from google import genai
 from google.genai import types
@@ -281,8 +291,11 @@ def run_evaluation(
     agent_mode: str = "single",
     use_runbooks: bool = True,
     runbooks_dir: Optional[str] = None,
+    mcp_provider: str = "default",
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
+    if agent_mode == "hierarchical" and mcp_provider != "default":
+        raise ValueError("The GEPA MCP provider is supported only in single-agent mode")
     chron_proj = chronicle_project or os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env")
     chron_cust = chronicle_customer_id or os.environ.get("CHRONICLE_CUSTOMER_ID", "a13f6726-efed-452e-9008-8fe0d3cb0f75")
     chron_reg = chronicle_region or os.environ.get("CHRONICLE_REGION", "us")
@@ -303,6 +316,7 @@ def run_evaluation(
     if agent_mode == "hierarchical":
         print(f" Procedural Runbooks: {'Enabled' if use_runbooks else 'Disabled (Generic Control)'}")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
+    print(f" MCP Tool Provider: {mcp_provider.upper()}")
     if use_live_mcp:
         print(f" Chronicle Tenant: {chron_proj} ({chron_cust}) [Region: {chron_reg}]")
     print("==================================================================")
@@ -330,7 +344,7 @@ def run_evaluation(
         {"flavor": flavor, "managed_model": managed_model, "endpoint_id": endpoint_id,
          "cloudrun_url": cloudrun_url, "project_id": project_id, "region": region,
          "generation": eval_gen, "agent_mode": agent_mode, "use_runbooks": use_runbooks,
-         "use_live_mcp": use_live_mcp},
+         "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider},
         (Path(runbooks_dir) if runbooks_dir else ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books")
         if agent_mode == "hierarchical" and use_runbooks else None,
     )
@@ -360,6 +374,7 @@ def run_evaluation(
             managed_model=managed_model,
             use_live_mcp=use_live_mcp,
             environment=soc_env,
+            mcp_provider=mcp_provider,
         )
     agent.set_up()
 
@@ -575,6 +590,7 @@ def run_evaluation(
         "generation": eval_gen,
         "agent_mode": agent_mode,
         "use_runbooks": use_runbooks,
+        "mcp_provider": mcp_provider,
         "summary": summary,
         "case_results": results,
     }
@@ -587,6 +603,7 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
     eval_gen = eval_data.get("generation", 3)
     agent_mode = eval_data.get("agent_mode", "single")
     use_runbooks = eval_data.get("use_runbooks", True)
+    mcp_prov = eval_data.get("mcp_provider", "default")
 
     lines = [
         f"# SOC Evaluation Report: {flavor}",
@@ -595,6 +612,7 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
         f"**Agent Architecture:** {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})",
         f"**Procedural Runbooks:** {'Enabled' if use_runbooks else 'Disabled (Generic Investigation Control)'}",
         f"**Live SecOps MCP:** {'Enabled' if live_mcp else 'Disabled'}",
+        f"**MCP Tool Provider:** {mcp_prov.upper()}",
         "\n## 1. Executive Summary",
         f"- **Pass Rate:** {summary['pass_rate']}% ({summary['passed_cases']}/{summary['total_cases']})",
         f"- **Average Rubric Score:** {summary['avg_rubric_score']} / 100",
@@ -793,6 +811,7 @@ def _initial_cli_provenance(
             "agent_mode": args.agent_mode,
             "use_runbooks": args.use_runbooks,
             "use_live_mcp": args.live_mcp,
+            "mcp_provider": args.mcp_provider,
         },
         runbooks_path,
     )
@@ -857,6 +876,13 @@ def main() -> None:
         default=None,
         help="Directory containing custom or evolved runbook markdown files",
     )
+    parser.add_argument(
+        "--mcp-provider",
+        dest="mcp_provider",
+        choices=["default", "gepa"],
+        default="default",
+        help="MCP tool description source: 'default' (baseline docstrings) or 'gepa' (gusto-mcp-gepa Pareto-optimized descriptions)",
+    )
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
     args = parser.parse_args()
@@ -914,6 +940,7 @@ def main() -> None:
             agent_mode=args.agent_mode,
             use_runbooks=args.use_runbooks,
             runbooks_dir=args.runbooks_dir,
+            mcp_provider=args.mcp_provider,
         )
     except Exception as error:
         initial_provenance["completed_at"] = utc_now()

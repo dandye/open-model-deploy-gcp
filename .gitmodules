@@ -3,4 +3,4 @@
 	url = git@github.com:dandye/adk_runbooks.git
 [submodule "third_party/ai-runbooks"]
 	path = third_party/ai-runbooks
-	url = /usr/local/google/home/dandye/Projects/ai-runbooks
+	url = https://github.com/dandye/ai-runbooks.git
