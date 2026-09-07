@@ -93,6 +93,22 @@ describe("dataset preparation", () => {
     expect(report.status).toBe("DRAFT");
     expect(report.datasets[0].errors.length).toBeGreaterThan(0);
   });
+  test("invalid UTF-8 dataset cannot qualify as ready", () => {
+    const bytes = Buffer.concat([Buffer.from('{"eval_cases":[{"id":"train","prompt":"'),
+      Buffer.from([0xff]), Buffer.from('"}]}')]);
+    writeFileSync(join(dir, "train.json"), bytes); manifest.datasets.train.sha256 = null;
+    const report = prepare();
+    expect(report.status).toBe("DRAFT");
+    expect(report.datasets[0].errors.join()).toContain("UTF-8");
+  });
+  test("invalid UTF-8 manifest fails without replacing identity text", () => {
+    save();
+    const bytes = readFileSync(join(dir, "draft.json"));
+    const offset = bytes.indexOf(Buffer.from("Fixture"));
+    writeFileSync(join(dir, "draft.json"), Buffer.concat([bytes.subarray(0, offset), Buffer.from([0xff]), bytes.subarray(offset + 1)]));
+    expect(() => prepareExperiment(join(dir, "draft.json"), join(dir, "packet"))).toThrow();
+    expect(existsSync(join(dir, "packet"))).toBeFalse();
+  });
   test("rejects legacy manifests and excessive history", () => {
     manifest.schema_version = 1; expect(prepare).toThrow("schema_version 2");
     manifest.schema_version = 2;

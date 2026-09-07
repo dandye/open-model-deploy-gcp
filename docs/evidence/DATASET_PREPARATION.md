@@ -24,7 +24,7 @@ bun run experiment:prepare logs/draft-experiment.json logs/review-packet
 bun run experiment:validate logs/review-packet/manifest.json
 ```
 
-Preparation copies only the explicitly supplied dataset files into a **new** private directory. It hashes the bytes it copies, records case IDs and content fingerprints, and writes portable relative paths. Null hashes are filled from those bytes; a supplied mismatching hash is an error, never silently replaced. Inputs must be regular files, not symlinks, at most 16 MiB each and 64 MiB total, with at most 100 history datasets.
+Preparation copies only the explicitly supplied dataset files into a **new** private directory. It hashes the bytes it copies, records case IDs and content fingerprints, and writes portable relative paths. Null hashes are filled from those bytes; a supplied mismatching hash is an error, never silently replaced. Manifests and datasets must contain strict UTF-8 JSON without a byte-order mark. Invalid manifest encoding fails preparation; invalid dataset encoding keeps the packet DRAFT. Inputs must be regular files, not symlinks, at most 16 MiB each and 64 MiB total, with at most 100 history datasets.
 
 The output contains `manifest.json`, `preparation.json`, `datasets/`, and `history/` as applicable. Existing output directories are never overwritten. Missing supplied files and mismatched hashes fail preparation; missing paths and approvals produce a `DRAFT` packet. An interrupted packet can retain `INCOMPLETE` status and must not be treated as ready.
 

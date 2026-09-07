@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sha256, validateExperiment } from "../scripts/validate_experiment";
+import { inspectDataset, sha256, validateExperiment } from "../scripts/validate_experiment";
 
 let dir: string;
 let manifest: any;
@@ -96,6 +96,27 @@ describe("experiment preflight", () => {
   test("rejects changed frozen dataset", () => {
     writeFileSync(join(dir, "train.json"), JSON.stringify({ eval_cases: [{ id: "other", prompt: "tampered" }] }));
     expect(validateExperiment(manifest, dir).join()).toContain("content hash mismatch");
+  });
+  test("rejects invalid UTF-8 in correctly hashed exposure history", () => {
+    const bytes = Buffer.concat([Buffer.from('{"eval_cases":[{"id":"history","prompt":"'),
+      Buffer.from([0xff]), Buffer.from('"}]}')]);
+    writeFileSync(join(dir, "history.json"), bytes);
+    manifest.exposure_history.datasets[0].sha256 = sha256(bytes);
+    expect(validateExperiment(manifest, dir).join()).toContain("invalid UTF-8");
+  });
+  test("retains valid Unicode and rejects a BOM unsupported by the evaluator", () => {
+    const bytes = Buffer.from(JSON.stringify({ eval_cases: [{ id: "unicode", prompt: "分析 café 🔎" }] }));
+    expect(inspectDataset(bytes, "fixture").errors).toEqual([]);
+    expect(inspectDataset(Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), bytes]), "fixture").errors.length).toBeGreaterThan(0);
+  });
+  test("CLI rejects invalid UTF-8 manifest text", () => {
+    const bytes = Buffer.from(JSON.stringify(manifest));
+    const offset = bytes.indexOf(Buffer.from("Synthetic fixture"));
+    const path = join(dir, "manifest.json");
+    writeFileSync(path, Buffer.concat([bytes.subarray(0, offset), Buffer.from([0xff]), bytes.subarray(offset + 1)]));
+    const result = Bun.spawnSync(["bun", "scripts/validate_experiment.ts", path]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr.toString()).toContain("Cannot validate manifest");
   });
   test("rejects missing files and malformed JSON", () => {
     rmSync(join(dir, "train.json")); writeFileSync(join(dir, "validation.json"), "{");

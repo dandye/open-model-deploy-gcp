@@ -7,6 +7,11 @@ export function sha256(text: string | Buffer): string {
   return createHash("sha256").update(text).digest("hex");
 }
 
+export function parseJsonBytes(bytes: Buffer): unknown {
+  // Preserve a BOM so JSON.parse rejects it, matching the evaluator's text reader.
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
+}
+
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value && typeof value === "object") {
@@ -25,8 +30,8 @@ export function inspectDataset(bytes: Buffer, label: string): { sha256: string; 
   const errors: string[] = [];
   const cases: Array<{ id: string; content_sha256: string }> = [];
   let data: unknown;
-  try { data = JSON.parse(bytes.toString("utf8")); }
-  catch { return { sha256: sha256(bytes), cases, errors: [`${label}: cannot read JSON (malformed JSON).`] }; }
+  try { data = parseJsonBytes(bytes); }
+  catch { return { sha256: sha256(bytes), cases, errors: [`${label}: cannot read JSON (invalid UTF-8 or malformed JSON).`] }; }
   const values = isRecord(data) ? data.eval_cases : undefined;
   if (!Array.isArray(values) || values.length === 0) return { sha256: sha256(bytes), cases, errors: [`${label}: eval_cases must be a nonempty array.`] };
   const ids = new Map<string, number>();
@@ -146,7 +151,7 @@ if (import.meta.main) {
     process.exitCode = 2;
   } else {
     try {
-      const errors = validateExperiment(JSON.parse(readFileSync(path, "utf8")), dirname(resolve(path)));
+      const errors = validateExperiment(parseJsonBytes(readFileSync(path)), dirname(resolve(path)));
       if (errors.length) {
         console.error(errors.map(error => `FAIL: ${error}`).join("\n"));
         process.exitCode = 1;

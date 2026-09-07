@@ -1,7 +1,7 @@
 /** Freeze explicitly supplied dataset bytes into a private review packet; never approve or launch. */
 import { closeSync, constants, existsSync, fstatSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { inspectDataset, sha256, validateExperiment } from "./validate_experiment";
+import { inspectDataset, parseJsonBytes, sha256, validateExperiment } from "./validate_experiment";
 
 const splits = ["train", "validation", "final_test"] as const;
 const record = (value: unknown): value is Record<string, any> =>
@@ -12,7 +12,7 @@ export function prepareExperiment(inputPath: string, destination: string) {
   inputPath = resolve(inputPath);
   destination = resolve(destination);
   if (existsSync(destination)) throw new Error("Destination already exists; use a new review directory.");
-  const manifest = JSON.parse(readFileSync(inputPath, "utf8"));
+  const manifest = parseJsonBytes(readFileSync(inputPath));
   if (!record(manifest) || manifest.schema_version !== 2) throw new Error("Use an experiment schema_version 2 manifest.");
   if (!record(manifest.datasets)) throw new Error("datasets must be an object.");
   if (!record(manifest.exposure_history) || !Array.isArray(manifest.exposure_history.datasets)) {
