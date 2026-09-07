@@ -1,0 +1,3 @@
+# Evaluator runtime dependencies; optional GEPA optimization is outside this image.
+-r ../agent/requirements.txt
+httpx>=0.27

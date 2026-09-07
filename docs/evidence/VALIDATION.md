@@ -56,3 +56,7 @@ See [the experiment protocol](../experiment_protocol.md) and [decision record](.
 ## Serving configuration pins
 
 `tests/test_serving_config.py`, `tests/test_serving_launch.py`, `tests/test_serving_runtime.py`, and `tests/test_serving_bootstrap.py` cover strict configuration, metadata initialization in both startup scripts, mocked Docker commands and image inspection, evaluator failures, and conflicting collected evidence. These checks are offline and do not prove an image is available, compatible, or deployed. See [serving configuration](SERVING_CONFIGURATION.md).
+
+## Evaluator image preparation
+
+`tests/test_evaluator_smoke.py` executes the evaluator with synthetic fixtures and network guards, including its isolated Python entrypoint. `tests/test_evaluator_image.py` checks allowlisted build inputs, image identity/platform, fresh report validation, and cleanup through mocked Docker calls. The host smoke also passes in an environment containing only the hash-locked dependencies. Docker was unavailable on the implementation host, so no container build or container compatibility result is claimed. See [image preparation](EVALUATOR_IMAGE.md).
