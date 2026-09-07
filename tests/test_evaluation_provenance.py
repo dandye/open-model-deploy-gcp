@@ -1,6 +1,7 @@
 import hashlib
 from pathlib import Path
 import subprocess
+import uuid
 
 from scripts.evaluation_provenance import capture_provenance
 
@@ -48,3 +49,46 @@ def test_git_dirty_state_preserved(tmp_path: Path):
     dataset.write_text("{}")
     provenance = capture_provenance(tmp_path, dataset, {})
     assert provenance["source_dirty"] is True
+
+
+def test_launch_identity_is_reused_and_keeps_launch_hash_separate(tmp_path: Path, monkeypatch):
+    run_id = str(uuid.uuid4())
+    launch_hash = "a" * 64
+    monkeypatch.setenv("EXPERIMENT_RUN_ID", run_id)
+    monkeypatch.setenv("EXPERIMENT_CONFIGURATION_HASH", launch_hash)
+
+    provenance = capture_provenance(tmp_path, tmp_path / "dataset.json", {"flavor": "fixture"})
+
+    assert provenance["run_id"] == run_id
+    assert provenance["launch_configuration_hash"] == launch_hash
+    assert provenance["configuration_hash"] != launch_hash
+
+
+def test_launch_identity_requires_both_valid_values(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("EXPERIMENT_RUN_ID", str(uuid.uuid4()))
+    monkeypatch.delenv("EXPERIMENT_CONFIGURATION_HASH", raising=False)
+    try:
+        capture_provenance(tmp_path, tmp_path / "dataset.json", {})
+    except ValueError as exc:
+        assert "supplied together" in str(exc)
+    else:
+        raise AssertionError("incomplete launch identity must be rejected")
+
+    monkeypatch.setenv("EXPERIMENT_CONFIGURATION_HASH", "A" * 64)
+    try:
+        capture_provenance(tmp_path, tmp_path / "dataset.json", {})
+    except ValueError as exc:
+        assert "lowercase hexadecimal" in str(exc)
+    else:
+        raise AssertionError("unsafe launch configuration hash must be rejected")
+
+
+def test_standalone_captures_get_independent_ids_without_launch_claim(tmp_path: Path, monkeypatch):
+    monkeypatch.delenv("EXPERIMENT_RUN_ID", raising=False)
+    monkeypatch.delenv("EXPERIMENT_CONFIGURATION_HASH", raising=False)
+    first = capture_provenance(tmp_path, tmp_path / "dataset.json", {})
+    second = capture_provenance(tmp_path, tmp_path / "dataset.json", {})
+
+    assert first["run_id"] != second["run_id"]
+    assert first["launch_configuration_hash"] is None
+    assert second["launch_configuration_hash"] is None

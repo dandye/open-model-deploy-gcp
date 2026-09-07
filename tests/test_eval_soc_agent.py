@@ -705,6 +705,62 @@ def test_cli_main_markdown_report_10_cases(tmp_path: Path):
             assert f"Test Case {i+1}" in content
 
 
+def test_cli_reuses_initial_provenance_id_on_success_and_failure(tmp_path: Path, monkeypatch):
+    """CLI passes its preflight identity into either evaluation outcome."""
+    import scripts.eval_soc_agent as eval_module
+
+    evalset = tmp_path / "eval.json"
+    evalset.write_text(json.dumps({"generation": 1, "eval_cases": []}), encoding="utf-8")
+    run_id = "12345678-1234-4234-8234-123456789abc"
+    initial = {"run_id": run_id, "lifecycle": {"status": "running", "evaluation": "running"}}
+    monkeypatch.setattr(eval_module, "_initial_cli_provenance", lambda *args: dict(initial))
+    monkeypatch.setattr(sys, "argv", ["eval_soc_agent.py", "--evalset", str(evalset), "--flavor", "fixture"])
+
+    seen = []
+    monkeypatch.setattr(eval_module, "_write_cli_failure_artifacts", lambda *args: None)
+
+    def fail(**kwargs):
+        seen.append(kwargs["provenance_run_id"])
+        raise RuntimeError("fixture failure")
+
+    monkeypatch.setattr(eval_module, "run_evaluation", fail)
+    with pytest.raises(SystemExit) as failure:
+        eval_module.main()
+    assert failure.value.code == 1
+    assert seen == [run_id]
+
+    def succeed(**kwargs):
+        seen.append(kwargs["provenance_run_id"])
+        return {"status": "COMPLETED"}
+
+    monkeypatch.setattr(eval_module, "run_evaluation", succeed)
+    eval_module.main()
+    assert seen == [run_id, run_id]
+
+
+def test_cli_persists_failure_when_launch_identity_is_malformed(tmp_path: Path, monkeypatch):
+    """Malformed startup identity produces a durable failure artifact."""
+    import scripts.eval_soc_agent as eval_module
+
+    evalset = tmp_path / "eval.json"
+    evalset.write_text(json.dumps({"generation": 1, "eval_cases": []}), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", [
+        "eval_soc_agent.py", "--evalset", str(evalset), "--flavor", "fixture",
+        "--output-json", str(tmp_path / "failure.json"),
+    ])
+    monkeypatch.setenv("EXPERIMENT_RUN_ID", "not-a-uuid")
+    monkeypatch.setenv("EXPERIMENT_CONFIGURATION_HASH", "a" * 64)
+
+    with pytest.raises(SystemExit) as failure:
+        eval_module.main()
+
+    assert failure.value.code == 1
+    artifact = json.loads((tmp_path / "failure.json").read_text(encoding="utf-8"))
+    assert artifact["status"] == "FAILED"
+    assert artifact["error"]["type"] == "ValueError"
+    assert artifact["provenance"]["verification_status"] == "invalid_launch_identity"
+
+
 def test_cli_main_with_custom_runbooks_dir(tmp_path: Path):
     """Verify CLI --runbooks-dir flag is parsed and passed to run_evaluation."""
     custom_runbooks_dir = tmp_path / "evolved_runbooks"

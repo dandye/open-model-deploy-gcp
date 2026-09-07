@@ -20,11 +20,15 @@ The existing hierarchical/GEPA tests require the pinned `third_party/ai-runbooks
 - The supervisor also requires usable structured evidence from an executed investigation tool. Exhausted retries, tool errors, denied calls, and unverified plain-text MCP results produce an inconclusive outcome without synthesis or containment. Valid negative observations, such as an empty case search, remain usable.
 - When the worker cannot produce a final assessment, fallback risk comes from exact `verdict` and `reputation` values in successful results. Vote field names, process names, arbitrary prose, and failed responses do not establish risk. Unrecognized values remain unknown; explicit malicious and suspicious assessments take precedence over benign assessments across results.
 - GEPA optimization and the evaluator construct isolated sandbox environments through `SocEnvironment.from_eval_case`, applying the same declared tool faults. Faults do not carry into subsequent cases and are not installed in live MCP mode.
-- `COMPLETED` means the evaluator finished, independently of case pass rate. Collection preserves explicit completion and failure signals, with failures taking precedence. It does not establish launch identity or successful cloud cleanup.
+- `COMPLETED` means the evaluator finished, independently of case pass rate. Collection preserves explicit completion and failure signals, with failures taking precedence. Legacy collection does not establish launch identity or successful cloud cleanup. Manifest-bound GCE collection validates run ID/configuration hash separately from evaluator success and resource absence.
 - Streaming benchmark requests containing provider errors or malformed events count as failures even after partial generation. Valid SSE metadata and multiline events remain supported.
 - First-token timing reads available HTTP data without waiting for a fixed-size buffer to fill. A regression uses Python's real HTTP response reader with deterministic chunk arrivals; localhost streaming also verifies the short-event case.
 
 `tests/test_evaluation_pipeline.py` exercises real evaluator output through mocked artifact transport and compares optimizer/evaluator fault responses. Supervisor and benchmark regressions cover execution credit and mixed successful/failed requests. These checks make no cloud or model calls.
+
+## Run identity and recovery
+
+`tests/test_experiment_run.py` covers unique same-model launches, zone retries, interrupted creation, stale/mismatched artifacts, partial uploads, saved-manifest recovery, and deletion identity checks with mocked cloud transport. Executable shell tests verify final lifecycle marker publication and upload failures in both startup scripts. Recovery regressions also cover empty logs, bounded monitoring, and preserved cleanup observations across repeated collection. See [GCE experiment runs](EXPERIMENT_RUNS.md) for the file contract and recovery commands.
 
 ## Evidence audit
 
