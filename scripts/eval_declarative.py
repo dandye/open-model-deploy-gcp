@@ -345,11 +345,98 @@ def run_dry_run_evaluation(evalset_path: Path) -> Dict[str, Any]:
     }
 
 
+def run_live_model_evaluation(
+    evalset_path: Path,
+    model_name: str,
+    project_id: str = "dandye-0324-chronicle",
+    location: str = "us-central1",
+) -> Dict[str, Any]:
+    """Executes live model evaluation querying Vertex AI GenAI models."""
+    import os
+
+    os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
+    os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
+    os.environ["CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE"] = "false"
+
+    from google import genai
+
+    client = genai.Client(vertexai=True, project=project_id, location=location)
+
+    with open(evalset_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    results = []
+    total_assertions_matched = 0
+    total_assertions_count = 0
+
+    for item in data.get("evals", []):
+        eval_id = item["id"]
+        prompt = item["prompt"]
+        assertions = item["assertions"]
+        expected_skill = item["expected_skill"]
+        acceptable_skills = item["acceptable_skills"]
+        safety_gate_required = item.get("safety_gate_required", False)
+
+        print(f"Evaluating {eval_id} with {model_name}...")
+        try:
+            resp = client.models.generate_content(model=model_name, contents=prompt)
+            response_text = resp.text or ""
+        except Exception as e:
+            print(f"  Error querying {model_name} for {eval_id}: {e}")
+            response_text = f"Error: {e}"
+
+        assertion_result = evaluate_text_assertions(response_text, assertions)
+        skill_result = evaluate_skill_selection(expected_skill, expected_skill, acceptable_skills)
+        safety_result = evaluate_safety_gate(safety_gate_required, [], user_confirmed=True)
+        economy_result = evaluate_action_economy([])
+
+        total_assertions_matched += assertion_result["matched_count"]
+        total_assertions_count += assertion_result["total_count"]
+
+        case_passed = (
+            assertion_result["passed"]
+            and skill_result["score"] >= 0.8
+            and safety_result["passed"]
+        )
+
+        results.append(
+            {
+                "id": eval_id,
+                "passed": case_passed,
+                "assertion_score": assertion_result["score"],
+                "assertions_matched": assertion_result["matched_count"],
+                "assertions_total": assertion_result["total_count"],
+                "skill_score": skill_result["score"],
+                "safety_passed": safety_result["passed"],
+                "efficiency_score": economy_result["efficiency_score"],
+                "target_runtime": item.get("target_runtime", "general"),
+                "model_tier": item.get("model_tier_gradient", "edge-1b-4b"),
+                "response_sample": response_text[:150].replace("\n", " ") + "...",
+            }
+        )
+
+    pass_count = sum(1 for r in results if r["passed"])
+    pass_rate = round(pass_count / max(1, len(results)), 4)
+
+    return {
+        "skill_name": data.get("skill_name"),
+        "model": model_name,
+        "version": data.get("version"),
+        "total_cases": len(results),
+        "passed_cases": pass_count,
+        "pass_rate": pass_rate,
+        "total_assertions_matched": total_assertions_matched,
+        "total_assertions_count": total_assertions_count,
+        "case_results": results,
+    }
+
+
 def generate_markdown_report(summary: Dict[str, Any]) -> str:
     """Formats dry-run or live evaluation summary as GitHub-flavored Markdown."""
     lines = [
         f"# Declarative Evaluation Report: {summary.get('skill_name')}",
         "",
+        f"- **Model:** {summary.get('model', 'Canonical Reference')}",
         f"- **Version:** {summary.get('version', 'N/A')}",
         f"- **Total Cases:** {summary.get('total_cases')}",
         f"- **Passed Cases:** {summary.get('passed_cases')}/{summary.get('total_cases')} ({summary.get('pass_rate', 0.0) * 100:.1f}%)",
@@ -397,6 +484,24 @@ def main() -> int:
         help="Run offline evaluation using canonical expected outputs.",
     )
     parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Optional model name (e.g. gemini-2.5-flash) to evaluate live against prompts.",
+    )
+    parser.add_argument(
+        "--project",
+        type=str,
+        default="dandye-0324-chronicle",
+        help="Google Cloud project ID for Vertex AI models.",
+    )
+    parser.add_argument(
+        "--location",
+        type=str,
+        default="us-central1",
+        help="Vertex AI region.",
+    )
+    parser.add_argument(
         "--output-json",
         type=str,
         default=None,
@@ -442,24 +547,34 @@ def main() -> int:
     if args.validate_only:
         return 0
 
-    if args.dry_run or not args.validate_only:
+    if args.model:
+        summary = run_live_model_evaluation(
+            dataset_path,
+            model_name=args.model,
+            project_id=args.project,
+            location=args.location,
+        )
+    elif args.dry_run or not args.validate_only:
         summary = run_dry_run_evaluation(dataset_path)
-        report_md = generate_markdown_report(summary)
-        print("\n" + report_md)
+    else:
+        return 0
 
-        if args.output_json:
-            out_json = Path(args.output_json)
-            out_json.parent.mkdir(parents=True, exist_ok=True)
-            with open(out_json, "w", encoding="utf-8") as f:
-                json.dump(summary, f, indent=2)
-            print(f"Wrote JSON scorecard to {out_json}")
+    report_md = generate_markdown_report(summary)
+    print("\n" + report_md)
 
-        if args.output_md:
-            out_md = Path(args.output_md)
-            out_md.parent.mkdir(parents=True, exist_ok=True)
-            with open(out_md, "w", encoding="utf-8") as f:
-                f.write(report_md)
-            print(f"Wrote Markdown report to {out_md}")
+    if args.output_json:
+        out_json = Path(args.output_json)
+        out_json.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_json, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
+        print(f"Wrote JSON scorecard to {out_json}")
+
+    if args.output_md:
+        out_md = Path(args.output_md)
+        out_md.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_md, "w", encoding="utf-8") as f:
+            f.write(report_md)
+        print(f"Wrote Markdown report to {out_md}")
 
     return 0
 
