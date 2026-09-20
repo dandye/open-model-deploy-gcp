@@ -41,6 +41,7 @@ default:
     @printf "  \033[1;32mjust eval-gen3-live [flavor] [project]\033[0m \033[2mRun Gen 3 live interactive eval with SecOps MCP\033[0m\n"
     @printf "  \033[1;32mjust eval-gen4 [dataset] [dry_run]\033[0m     \033[2mRun Gen 4 declarative eval suite\033[0m\n"
     @printf "  \033[1;32mjust eval-gen4-validate [dataset]\033[0m     \033[2mValidate Gen 4 eval dataset against schema\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen4-compare [model]\033[0m        \033[2mRun Gen 4 A/B ablation (with vs without skills)\033[0m\n"
     @printf "  \033[1;32mjust gepa-evolve [max_calls] [task_lm]\033[0m \033[2mEvolve SOC runbooks via GEPA Pareto optimization\033[0m\n"
     @printf "  \033[1;32mjust gepa-compare [task_lm]\033[0m             \033[2mEvaluate SOC agent with GEPA-evolved runbooks\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
@@ -233,6 +234,10 @@ eval-gen4 DATASET="evals/gemma-deploy/evals.json" DRY_RUN="true":
 # Validate Gen 4 declarative evaluation datasets against schema (Usage: just eval-gen4-validate [dataset])
 eval-gen4-validate DATASET="evals/gemma-deploy/evals.json":
     @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --validate-only
+
+# Run Gen 4 A/B ablation comparison (Usage: just eval-gen4-compare [model] [dataset] [project] [region])
+eval-gen4-compare MODEL="gemini-2.5-flash" DATASET="evals/gemma-deploy/evals.json" PROJECT="dandye-0324-chronicle" REGION="us-central1":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --model "{{MODEL}}" --compare --project "{{PROJECT}}" --location "{{REGION}}" --output-json "docs/eval_results/gen4/{{MODEL}}_ablation_comparison.json" --output-md "docs/eval_results/gen4/{{MODEL}}_ablation_comparison.md"
 
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":

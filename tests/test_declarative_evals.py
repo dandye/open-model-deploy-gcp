@@ -198,3 +198,41 @@ def test_dry_run_evaluation_full_pass():
     assert summary["pass_rate"] == 1.0
     assert summary["total_assertions_matched"] == 48
     assert summary["total_assertions_count"] == 48
+
+
+def test_skills_directory_and_loading():
+    """Verifies that all 10 domain skills exist and load cleanly."""
+    from scripts.eval_declarative import load_skill_content
+
+    expected_skills = [
+        "cloudrun-deploy",
+        "vertex-prediction",
+        "gcloud",
+        "gcp-auth",
+        "cloud-safety",
+        "gce-spot",
+        "cloudrun-quota",
+        "agent-engine",
+        "secops-triage",
+        "model-catalog",
+    ]
+    for skill_name in expected_skills:
+        content = load_skill_content(skill_name, skills_dir=Path("skills"))
+        assert content is not None, f"Failed to load skill: {skill_name}"
+        assert len(content) > 50, f"Skill content too short: {skill_name}"
+
+
+def test_ablation_comparison_dry_run():
+    """Verifies dry-run A/B ablation comparison generation."""
+    from scripts.eval_declarative import generate_comparison_markdown_report, run_ablation_comparison
+
+    comp = run_ablation_comparison(EVALS_JSON_PATH, model_name=None, skills_dir=Path("skills"))
+    assert comp["total_cases"] == 12
+    assert "baseline_pass_rate" in comp
+    assert "treatment_pass_rate" in comp
+    assert "net_pass_lift" in comp
+    assert len(comp["paired_cases"]) == 12
+
+    report_md = generate_comparison_markdown_report(comp)
+    assert "A/B Ablation Evaluation Report" in report_md
+    assert "| Scenario ID |" in report_md

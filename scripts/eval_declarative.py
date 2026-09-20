@@ -345,9 +345,21 @@ def run_dry_run_evaluation(evalset_path: Path) -> Dict[str, Any]:
     }
 
 
+def load_skill_content(
+    skill_name: str, skills_dir: Path = Path("skills")
+) -> Optional[str]:
+    """Loads skill markdown documentation from skills/<skill_name>/SKILL.md."""
+    candidate = skills_dir / skill_name / "SKILL.md"
+    if candidate.exists():
+        return candidate.read_text(encoding="utf-8")
+    return None
+
+
 def run_live_model_evaluation(
     evalset_path: Path,
     model_name: str,
+    with_skills: bool = False,
+    skills_dir: Path = Path("skills"),
     project_id: str = "dandye-0324-chronicle",
     location: str = "us-central1",
 ) -> Dict[str, Any]:
@@ -369,6 +381,9 @@ def run_live_model_evaluation(
     total_assertions_matched = 0
     total_assertions_count = 0
 
+    arm_label = "WITH_SKILLS" if with_skills else "BASELINE"
+    print(f"Starting live evaluation on {model_name} (Arm: {arm_label})...")
+
     for item in data.get("evals", []):
         eval_id = item["id"]
         prompt = item["prompt"]
@@ -377,12 +392,26 @@ def run_live_model_evaluation(
         acceptable_skills = item["acceptable_skills"]
         safety_gate_required = item.get("safety_gate_required", False)
 
-        print(f"Evaluating {eval_id} with {model_name}...")
+        if with_skills:
+            skill_doc = load_skill_content(expected_skill, skills_dir)
+            if skill_doc:
+                query_prompt = (
+                    "You are an expert Google Cloud operations and deployment assistant.\n"
+                    "Adhere strictly to the operational rules, parameter syntax, and guardrails from this skill:\n\n"
+                    f"{skill_doc}\n\n"
+                    f"Task:\n{prompt}"
+                )
+            else:
+                query_prompt = prompt
+        else:
+            query_prompt = prompt
+
+        print(f"  Evaluating {eval_id}...")
         try:
-            resp = client.models.generate_content(model=model_name, contents=prompt)
+            resp = client.models.generate_content(model=model_name, contents=query_prompt)
             response_text = resp.text or ""
         except Exception as e:
-            print(f"  Error querying {model_name} for {eval_id}: {e}")
+            print(f"    Error querying {model_name} for {eval_id}: {e}")
             response_text = f"Error: {e}"
 
         assertion_result = evaluate_text_assertions(response_text, assertions)
@@ -421,6 +450,8 @@ def run_live_model_evaluation(
     return {
         "skill_name": data.get("skill_name"),
         "model": model_name,
+        "arm": arm_label,
+        "with_skills": with_skills,
         "version": data.get("version"),
         "total_cases": len(results),
         "passed_cases": pass_count,
@@ -431,12 +462,129 @@ def run_live_model_evaluation(
     }
 
 
+def run_ablation_comparison(
+    evalset_path: Path,
+    model_name: Optional[str] = None,
+    skills_dir: Path = Path("skills"),
+    project_id: str = "dandye-0324-chronicle",
+    location: str = "us-central1",
+) -> Dict[str, Any]:
+    """Runs paired A/B evaluation across both arms: Baseline (No Skills) vs Treatment (With Skills)."""
+    if model_name:
+        print(f"\n=======================================================")
+        print(f" ARM A: BASELINE (Without Skills) - {model_name}")
+        print(f"=======================================================")
+        baseline_run = run_live_model_evaluation(
+            evalset_path,
+            model_name=model_name,
+            with_skills=False,
+            skills_dir=skills_dir,
+            project_id=project_id,
+            location=location,
+        )
+        print(f"\n=======================================================")
+        print(f" ARM B: TREATMENT (With Skills) - {model_name}")
+        print(f"=======================================================")
+        treatment_run = run_live_model_evaluation(
+            evalset_path,
+            model_name=model_name,
+            with_skills=True,
+            skills_dir=skills_dir,
+            project_id=project_id,
+            location=location,
+        )
+    else:
+        baseline_run = run_dry_run_evaluation(evalset_path)
+        treatment_run = run_dry_run_evaluation(evalset_path)
+
+    paired_cases = []
+    for b_case, t_case in zip(baseline_run["case_results"], treatment_run["case_results"]):
+        eval_id = b_case["id"]
+        b_pass = b_case["passed"]
+        t_pass = t_case["passed"]
+        b_score = b_case["assertion_score"]
+        t_score = t_case["assertion_score"]
+        delta_score = round(t_score - b_score, 4)
+
+        if not b_pass and t_pass:
+            lift_status = "POSITIVE_LIFT (+)"
+        elif b_pass and not t_pass:
+            lift_status = "REGRESSION (-)"
+        elif b_pass and t_pass:
+            lift_status = "BOTH_PASSED (=)"
+        else:
+            lift_status = "BOTH_FAILED (=)"
+
+        paired_cases.append(
+            {
+                "id": eval_id,
+                "baseline_passed": b_pass,
+                "treatment_passed": t_pass,
+                "lift_status": lift_status,
+                "baseline_score": b_score,
+                "treatment_score": t_score,
+                "delta_score": delta_score,
+                "baseline_assertions": f"{b_case['assertions_matched']}/{b_case['assertions_total']}",
+                "treatment_assertions": f"{t_case['assertions_matched']}/{t_case['assertions_total']}",
+                "target_runtime": t_case["target_runtime"],
+                "model_tier": t_case["model_tier"],
+            }
+        )
+
+    net_pass_lift = round(treatment_run["pass_rate"] - baseline_run["pass_rate"], 4)
+    total_assertion_delta = treatment_run["total_assertions_matched"] - baseline_run["total_assertions_matched"]
+
+    return {
+        "skill_name": baseline_run["skill_name"],
+        "model": model_name or "Dry-Run Baseline vs Treatment",
+        "version": baseline_run["version"],
+        "total_cases": len(paired_cases),
+        "baseline_pass_rate": baseline_run["pass_rate"],
+        "treatment_pass_rate": treatment_run["pass_rate"],
+        "net_pass_lift": net_pass_lift,
+        "baseline_assertions_matched": baseline_run["total_assertions_matched"],
+        "treatment_assertions_matched": treatment_run["total_assertions_matched"],
+        "total_assertions_count": treatment_run["total_assertions_count"],
+        "total_assertion_delta": total_assertion_delta,
+        "paired_cases": paired_cases,
+    }
+
+
+def generate_comparison_markdown_report(comp: Dict[str, Any]) -> str:
+    """Formats paired A/B ablation evaluation report as GitHub-flavored Markdown."""
+    lines = [
+        f"# Gen 4 A/B Ablation Evaluation Report: {comp.get('skill_name')}",
+        "",
+        f"- **Model Under Test:** {comp.get('model')}",
+        f"- **Version:** {comp.get('version', 'N/A')}",
+        f"- **Baseline Pass Rate (Without Skills):** {comp.get('baseline_pass_rate', 0.0) * 100:.1f}%",
+        f"- **Treatment Pass Rate (With Skills):** {comp.get('treatment_pass_rate', 0.0) * 100:.1f}%",
+        f"- **Net Capability Lift (Δ):** {comp.get('net_pass_lift', 0.0) * 100:+.1f}%",
+        f"- **Assertion Matches:** {comp.get('baseline_assertions_matched')} -> {comp.get('treatment_assertions_matched')} / {comp.get('total_assertions_count')} (+{comp.get('total_assertion_delta')})",
+        "",
+        "| Scenario ID | Baseline | With Skills | Net Lift (Δ) | Baseline Assertions | With Skills Assertions | Runtime | Tier |",
+        "| :--- | :---: | :---: | :---: | :---: | :---: | :--- | :--- |",
+    ]
+
+    for c in comp.get("paired_cases", []):
+        b_st = "PASS" if c["baseline_passed"] else "FAIL"
+        t_st = "PASS" if c["treatment_passed"] else "FAIL"
+        delta_str = f"{c['delta_score'] * 100:+.1f}%"
+        lines.append(
+            f"| `{c['id']}` | {b_st} | **{t_st}** | **{c['lift_status']}** ({delta_str}) | {c['baseline_assertions']} | {c['treatment_assertions']} | `{c['target_runtime']}` | `{c['model_tier']}` |"
+        )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def generate_markdown_report(summary: Dict[str, Any]) -> str:
     """Formats dry-run or live evaluation summary as GitHub-flavored Markdown."""
     lines = [
         f"# Declarative Evaluation Report: {summary.get('skill_name')}",
         "",
         f"- **Model:** {summary.get('model', 'Canonical Reference')}",
+        f"- **Arm:** {summary.get('arm', 'Canonical')}",
         f"- **Version:** {summary.get('version', 'N/A')}",
         f"- **Total Cases:** {summary.get('total_cases')}",
         f"- **Passed Cases:** {summary.get('passed_cases')}/{summary.get('total_cases')} ({summary.get('pass_rate', 0.0) * 100:.1f}%)",
@@ -474,6 +622,12 @@ def main() -> int:
         help="Path to JSON schema file.",
     )
     parser.add_argument(
+        "--skills-dir",
+        type=str,
+        default="skills",
+        help="Directory containing specialized skills.",
+    )
+    parser.add_argument(
         "--validate-only",
         action="store_true",
         help="Validate the dataset against schema without running evaluations.",
@@ -488,6 +642,16 @@ def main() -> int:
         type=str,
         default=None,
         help="Optional model name (e.g. gemini-2.5-flash) to evaluate live against prompts.",
+    )
+    parser.add_argument(
+        "--with-skills",
+        action="store_true",
+        help="Run live evaluation with specialized domain skills loaded.",
+    )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        help="Run both arms (Baseline without skills vs Treatment with skills) and output paired ablation delta.",
     )
     parser.add_argument(
         "--project",
@@ -547,19 +711,33 @@ def main() -> int:
     if args.validate_only:
         return 0
 
-    if args.model:
-        summary = run_live_model_evaluation(
+    skills_dir = Path(args.skills_dir)
+
+    if args.compare:
+        summary = run_ablation_comparison(
             dataset_path,
             model_name=args.model,
+            skills_dir=skills_dir,
             project_id=args.project,
             location=args.location,
         )
+        report_md = generate_comparison_markdown_report(summary)
+    elif args.model:
+        summary = run_live_model_evaluation(
+            dataset_path,
+            model_name=args.model,
+            with_skills=args.with_skills,
+            skills_dir=skills_dir,
+            project_id=args.project,
+            location=args.location,
+        )
+        report_md = generate_markdown_report(summary)
     elif args.dry_run or not args.validate_only:
         summary = run_dry_run_evaluation(dataset_path)
+        report_md = generate_markdown_report(summary)
     else:
         return 0
 
-    report_md = generate_markdown_report(summary)
     print("\n" + report_md)
 
     if args.output_json:
