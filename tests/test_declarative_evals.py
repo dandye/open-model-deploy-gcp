@@ -236,3 +236,15 @@ def test_ablation_comparison_dry_run():
     report_md = generate_comparison_markdown_report(comp)
     assert "A/B Ablation Evaluation Report" in report_md
     assert "| Scenario ID |" in report_md
+
+
+def test_run_gemma_sweep_generation(tmp_path):
+    """Verifies that run_gemma_sweep generates reports for all 10 Gemma variants."""
+    from scripts.eval_declarative import run_gemma_sweep
+
+    sweep_res = run_gemma_sweep(EVALS_JSON_PATH, skills_dir=Path("skills"), output_dir=tmp_path)
+    assert len(sweep_res["sweep"]) == 10
+    assert (tmp_path / "gemma_sweep_summary.md").exists()
+    assert (tmp_path / "gemma_sweep_summary.json").exists()
+    assert (tmp_path / "gemma-3-4b-it_report.md").exists()
+    assert (tmp_path / "gemma-4-31b-it_report.md").exists()

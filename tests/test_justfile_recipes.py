@@ -25,6 +25,7 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("eval-gen4", content, "Recipe 'eval-gen4' not defined in Justfile")
         self.assertIn("eval-gen4-validate", content, "Recipe 'eval-gen4-validate' not defined in Justfile")
         self.assertIn("eval-gen4-compare", content, "Recipe 'eval-gen4-compare' not defined in Justfile")
+        self.assertIn("eval-gen4-gemma-sweep", content, "Recipe 'eval-gen4-gemma-sweep' not defined in Justfile")
         self.assertIn("agent-soc-deploy", content, "Recipe 'agent-soc-deploy' not defined in Justfile")
 
         # Assert recipes are present in the help menu
@@ -35,6 +36,7 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("just eval-gen4", content, "Help menu missing 'just eval-gen4'")
         self.assertIn("just eval-gen4-validate", content, "Help menu missing 'just eval-gen4-validate'")
         self.assertIn("just eval-gen4-compare", content, "Help menu missing 'just eval-gen4-compare'")
+        self.assertIn("just eval-gen4-gemma-sweep", content, "Help menu missing 'just eval-gen4-gemma-sweep'")
         self.assertIn("just agent-soc-deploy", content, "Help menu missing 'just agent-soc-deploy'")
 
         # Assert recipes invoke expected Python targets
