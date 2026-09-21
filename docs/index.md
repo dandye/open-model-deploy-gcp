@@ -43,6 +43,7 @@ This directory forms an Open Knowledge Format (OKF) compliant knowledge bundle f
 | [`benchmarking_gce_ephemeral_spot_vms.md`](benchmarking_gce_ephemeral_spot_vms.md) | `guide` | Compute Engine Ephemeral Spot GPU VMs runner, NVMe caching & multi-zone failover |
 | [`benchmarking_vertex_custom_jobs.md`](benchmarking_vertex_custom_jobs.md) | `guide` | Vertex AI Custom Jobs ephemeral container runner & worker pool sizing |
 | [`benchmarking_gke_ray_serve.md`](benchmarking_gke_ray_serve.md) | `guide` | GKE Ray Serve and Kueue dynamic batch queuing & distributed sweep runner |
+| [`research_plan_secops_skill_evolution.md`](research_plan_secops_skill_evolution.md) | `plan` | Calibrated evaluation rigs & evolving efficient domain skills for SecOps agents |
 | [`references.md`](references.md) | `reference` | Curated external guides, Google Cloud community articles & ADK references |
 
 
