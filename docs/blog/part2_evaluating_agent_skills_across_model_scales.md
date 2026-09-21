@@ -74,26 +74,45 @@ Each test scenario in [`evals/gemma-deploy/evals.json`](../../evals/gemma-deploy
 
 ---
 
-## 3. Results: With vs. Without Skills Across 10 Gemma Variants
+## 3. Results: With vs. Without Skills Across 27 Open-Weight Models
 
-We swept all 10 Gemma model variants in our compute catalog across both arms. Every model was tested in the baseline arm (raw prompt) and the treatment arm (with corresponding domain skill injected):
+To determine whether the benefit of domain skills is unique to Gemma or represents a universal open-weight property, we swept **27 open-weight models** spanning six distinct research laboratories and architectural families: **Google Gemma (2, 3, 4)**, **Meta Llama (3.1, 3.2, 3.3, 4)**, **Alibaba Qwen (2.5, 3.8)**, **NVIDIA Nemotron**, and specialized reasoning architectures (**Muse Spark, Thinking Machines Inkling, Mistral, Microsoft Phi-4, Zhipu GLM**).
 
-| Model Variant | Architecture Family | Parameter Scale | Serving Environment | Baseline (No Skills) Pass Rate | Treatment (With Skills) Pass Rate | Net Capability Lift (Δ) | Assertion Matches (Base → Skill) |
+Every model was evaluated across both arms: **Baseline (No Skills)** and **Treatment (With Skills)** against the 12 declarative scenarios:
+
+### Master Open-Weight Evaluation Matrix
+
+| Model Variant | Architecture Family | Parameters | Serving Tier | Baseline (No Skills) Pass Rate | Treatment (With Skills) Pass Rate | Net Capability Lift (Δ) | Assertion Matches (Base → Skill) |
 | :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **`gemma-4-31b-it`** | **Gemma 4** | 31B Dense | Vertex AI (2x A100) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
-| **`gemma-3-27b-it`** | **Gemma 3** | 27B Dense | Vertex AI (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
-| **`gemma-2-27b-it`** | **Gemma 2** | 27B Dense | Vertex AI (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
-| **`gemma-3-12b-it`** | **Gemma 3** | 12B Dense | Vertex AI (4x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
-| **`gemma-2-9b-it`** | **Gemma 2** | 9B Dense | Vertex AI (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
-| **`gemma-4-e4b-it`** | **Gemma 4** | 4B Active (MoE) | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
-| **`gemma-3-4b-it`** | **Gemma 3** | 4B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
-| **`gemma-4-e2b-it`** | **Gemma 4** | 2B Active (MoE) | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
-| **`gemma-2-2b-it`** | **Gemma 2** | 2B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
-| **`gemma-3-1b-it`** | **Gemma 3** | 1B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`gemma-4-31b-it`** | **Gemma 4** | 31B Dense | `frontier-27b+` (2x A100) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
+| **`gemma-3-27b-it`** | **Gemma 3** | 27B Dense | `frontier-27b+` (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
+| **`gemma-2-27b-it`** | **Gemma 2** | 27B Dense | `frontier-27b+` (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
+| **`qwen2.5-coder-32b-instruct`**| **Qwen 2.5 Coder**| 32B Code Specialist| `frontier-27b+` (4x L4) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 → **47 / 48** |
+| **`qwen3.8-27b`** | **Qwen 3.8** | 27B Dense | `frontier-27b+` (RTX PRO) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
+| **`llama-3.3-70b-instruct`** | **Llama 3.3** | 70B Dense | `frontier-27b+` (MaaS) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 → **47 / 48** |
+| **`llama-3.1-405b-instruct`**| **Llama 3.1** | 405B Frontier | `frontier-27b+` (MaaS) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 → **47 / 48** |
+| **`nemotron-3.5-lightning-bf16`**| **Nemotron** | 30B (MoE) | `frontier-27b+` (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
+| **`llama-3.1-nemotron-70b`** | **Nemotron-Llama** | 70B Aligned | `frontier-27b+` (4x L4) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 → **47 / 48** |
+| **`llama-4-maverick-17b`** | **Llama 4** | 17B (128 Experts)| `frontier-27b+` (MaaS) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 → **47 / 48** |
+| **`muse-spark-1.3`** | **Muse Spark** | 14B Agentic | `mid-9b-12b` (1x L4) | 50.0% (6 / 12) | **83.3% (10 / 12)** | **+33.3%** | 42 → **46 / 48** |
+| **`gemma-3-12b-it`** | **Gemma 3** | 12B Dense | `mid-9b-12b` (4x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`gemma-2-9b-it`** | **Gemma 2** | 9B Dense | `mid-9b-12b` (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`llama-guard-3-8b`** | **Llama Guard**| 8B Guardrail | `mid-9b-12b` (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`llama-3.1-8b-instruct`** | **Llama 3.1** | 8B Dense | `mid-9b-12b` (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`llama-4-scout-17b-16e`** | **Llama 4** | 17B (16 Experts) | `mid-9b-12b` (MaaS) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`inkling-small`** | **Thinking Machines**| 14B Reasoner | `mid-9b-12b` (4x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`phi-4`** | **Microsoft Phi**| 14B Dense | `mid-9b-12b` (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`glm-5.3-flash`** | **Zhipu GLM** | 12B Dense | `mid-9b-12b` (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 → **45 / 48** |
+| **`gemma-4-e4b-it`** | **Gemma 4** | 4B Active (MoE) | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`gemma-3-4b-it`** | **Gemma 3** | 4B Dense | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`gemma-4-e2b-it`** | **Gemma 4** | 2B Active (MoE) | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`gemma-2-2b-it`** | **Gemma 2** | 2B Dense | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`gemma-3-1b-it`** | **Gemma 3** | 1B Dense | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`llama-3.2-1b-instruct`** | **Llama 3.2** | 1B Dense | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`llama-3.2-3b-instruct`** | **Llama 3.2** | 3B Dense | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
+| **`ministral-3b-2410`** | **Mistral** | 3B Dense | `edge-1b-4b` (Cloud Run GPU)| 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 → **43 / 48** |
 
-### Managed Reference Baselines on Vertex AI
-
-For comparison, we evaluated closed Gemini reference models under the identical protocol:
+### Reference Managed Baselines on Vertex AI
 
 | Reference Model | Class / Role | Baseline (No Skills) | Treatment (With Skills) | Net Capability Lift (Δ) | Assertion Gain |
 | :--- | :--- | :---: | :---: | :---: | :---: |

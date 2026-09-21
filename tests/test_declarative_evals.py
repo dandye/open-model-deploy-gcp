@@ -248,3 +248,16 @@ def test_run_gemma_sweep_generation(tmp_path):
     assert (tmp_path / "gemma_sweep_summary.json").exists()
     assert (tmp_path / "gemma-3-4b-it_report.md").exists()
     assert (tmp_path / "gemma-4-31b-it_report.md").exists()
+
+
+def test_run_open_weights_sweep_generation(tmp_path):
+    """Verifies that run_open_weights_sweep generates reports for all 27 open-weight models."""
+    from scripts.eval_declarative import run_open_weights_sweep
+
+    sweep_res = run_open_weights_sweep(EVALS_JSON_PATH, skills_dir=Path("skills"), output_dir=tmp_path)
+    assert len(sweep_res["sweep"]) == 27
+    assert (tmp_path / "open_weights_sweep_summary.md").exists()
+    assert (tmp_path / "open_weights_sweep_summary.json").exists()
+    assert (tmp_path / "llama-3.3-70b-instruct_report.md").exists()
+    assert (tmp_path / "qwen2.5-coder-32b-instruct_report.md").exists()
+    assert (tmp_path / "muse-spark-1.3_report.md").exists()
