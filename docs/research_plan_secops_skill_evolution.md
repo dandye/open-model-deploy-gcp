@@ -23,11 +23,93 @@ In Part 2 of our serving series, we adapted this framework and swept 27 open-wei
 2. **Skills are mandatory across all scales:** Unassisted models plateau between 41% and 58% regardless of parameter count (even at 405B), because pretraining cannot guess proprietary platform parameters.
 3. **The Sizing Sweet Spot (8B–14B):** With domain skills, 8B–14B models surge from 41.7% to 75.0%–83.3% pass rates, establishing the minimum viable model scale on a single \$0.70/hr NVIDIA L4 GPU.
 
-This research plan defines how to leverage this calibrated evaluation rig as a diagnostic anchor to test, validate, and evolve domain skills for Security Operations (SecOps) agents, with the ultimate goal of authoring efficient skills that allow compact models (1B to 9B) to perform reliable analysis and autonomous decision-making.
+This research plan establishes a formal experimental framework to leverage this calibrated evaluation rig as a diagnostic anchor to test, validate, and evolve domain skills for Security Operations (SecOps) agents, with the ultimate goal of authoring efficient skills that allow compact models (1B to 9B) to perform reliable analysis and autonomous decision-making.
 
 ---
 
-## 2. The Evaluation Rig as a Calibrated Diagnostic Instrument
+## 2. Formal Scientific Formulation
+
+### 2.1 Research Questions (RQs)
+
+* **RQ1 (Scale vs. Context):** To what extent does foundation model parameter scale compensate for domain-specific operational context, and conversely, to what extent can structured domain skills elevate smaller models to frontier operational reliability?
+* **RQ2 (The Minimum Viable Sizing Threshold):** What is the minimum model parameter scale required to achieve acceptable operational accuracy ($\ge 75\%$ scenario pass rate, $\ge 90\%$ assertion matches, zero unauthorized destructive actions) when equipped with domain skills that provide both result analysis and decision-making context?
+* **RQ3 (Beyond Trajectory):** Does providing domain context for **analyzing tool outputs** and **deciding subsequent actions** produce higher task completion and lower failure rates than providing static tool invocation trajectories alone?
+* **RQ4 (Diagnostic Calibration):** Can a multi-tier model evaluation rig reliably distinguish between defects in the evaluation harness itself versus deficiencies in domain skill content?
+
+---
+
+### 2.2 Hypotheses to Reject (Null Hypotheses) vs. Alternative Hypotheses
+
+#### Hypothesis 1: The Scale Sufficiency Hypothesis
+* **Null Hypothesis ($H_{0,1}$):** Increasing foundation model parameter scale (e.g., from 1B to 70B+) eliminates the requirement for contextual domain skills in cloud infrastructure and security operations; frontier models can deduce required operational parameters and containment boundaries from general pretraining alone.
+* **Alternative Hypothesis ($H_{1,1}$):** Parameter scale alone is insufficient for closed-domain cloud and security operations. Foundation models of all scales plateau in the absence of domain skills because proprietary platform parameters and environment-specific constraints cannot be deduced from general pretraining alone.
+* **Rejection Criterion:** If unassisted models across parameter scales (up to 405B parameters and frontier commercial models) fail to exceed a 60% operational pass rate on platform-specific tasks, and the injection of domain skills produces a statistically significant capability lift ($\Delta \ge +25\%$) across all scales, $H_{0,1}$ is rejected.
+
+#### Hypothesis 2: The Small-Model Inability Hypothesis
+* **Null Hypothesis ($H_{0,2}$):** Compact models ($\le 14\text{B}$, e.g. 1B–4B edge or 8B–14B single-GPU instances) cannot achieve dependable operational performance ($\ge 75\%$ scenario pass rate) on security operations tasks, regardless of the quality or structure of domain skills provided.
+* **Alternative Hypothesis ($H_{1,2}$):** Injecting dense, high-leverage cognitive scaffolding (result interpretation recipes, blast-radius boundaries, and subsequent-action decision trees) enables compact models—specifically in the 8B–14B range—to achieve operational parity with unassisted frontier models.
+* **Rejection Criterion:** If an 8B–14B model (or MoE edge model) equipped with structured domain skills achieves $\ge 75\%$ scenario pass rate and $\ge 90\%$ assertion matches on complex multi-step scenarios, $H_{0,2}$ is rejected.
+
+#### Hypothesis 3: The Trajectory Primacy Hypothesis
+* **Null Hypothesis ($H_{0,3}$):** Specifying the static sequence of tool calls (tool trajectory) is sufficient for autonomous agent operational success; providing explicit domain context for interpreting tool results and evaluating subsequent action tradeoffs provides no measurable lift over pure trajectory guidance.
+* **Alternative Hypothesis ($H_{1,3}$):** Tool trajectory is a downstream consequence of grounded domain analysis. Skills that equip the model to interpret raw security telemetry and decide subsequent actions based on risk and blast radius produce significantly higher task effectiveness and safety compliance than pure trajectory templates.
+* **Rejection Criterion:** If agents provided with result-analysis context and decision trees demonstrate significantly higher task pass rates ($\Delta \ge +20\%$) and lower safety violations than agents given only tool sequence constraints, $H_{0,3}$ is rejected.
+
+---
+
+### 2.3 Experimental Design & Variables
+
+To test these hypotheses rigorously, the experimental rig defines explicit independent, controlled, and dependent variables:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 EXPERIMENTAL CONTROLS                                  │
+│  - Identical Declarative Prompts & Contracts (evals.json)                              │
+│  - Deterministic Telemetry Mocks & Live MCP Schemas (Logstory / Chronicle UDM)         │
+│  - Deterministic Greedy Decoding (T=0.0)                                               │
+│  - Fixed Assertion Suite & Automated Evaluator (48 Verifiable Checks per Model)        │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │
+               ┌────────────────────────────┴────────────────────────────┐
+               ▼                                                         ▼
+  [ What We Experiment With (IV) ]                          [ What We Measure (DV) ]
+  1. Skill Provisioning: Arm A vs Arm B                     1. Scenario Pass Rate (% of 12)
+  2. Skill Architecture: Trajectory vs Analysis Scaffolding 2. Assertion Matches (out of 48)
+  3. Model Scale: 1B, 4B, 8B, 12B, 27B, 31B, 70B, 405B     3. Tool Action Economy (Efficiency)
+  4. Serving Mode: Cloud Run GPU vs Vertex AI Dedicated     4. Safety Gate Compliance Rate (%)
+                                                            5. Task Completion Cost ($) & TPS
+```
+
+#### Independent Variables (What We Manipulate / Experiment With)
+1. **Domain Skill Provisioning (Skill Ablation):**
+   - *Arm A (Baseline):* Raw prompt without skill guidance (unassisted parameter recall).
+   - *Arm B (Treatment):* Prompt with authoritative domain skill (`SKILL.md`) injected into context.
+2. **Skill Information Architecture (Scaffolding Type):**
+   - *Type 1 (Trajectory-Only):* Static sequencing of tool calls.
+   - *Type 2 (Cognitive Scaffolding):* Telemetry decoders, blast-radius boundaries, and subsequent-action decision trees.
+3. **Model Parameter Scale & Architecture:**
+   - 27 open-weight models across 1B to 405B parameters, spanning dense architectures and Mixture-of-Experts (MoE) across 6 research labs (Google Gemma, Meta Llama, Alibaba Qwen, NVIDIA Nemotron, Mistral, Microsoft Phi) plus 3 closed reference baselines (Gemini 2.5).
+4. **Serving Environment & Resource Constraints:**
+   - Serverless Cloud Run GPU (`1x NVIDIA L4`, scale-to-zero, \$0 idle cost).
+   - Dedicated Vertex AI GPU instances (`1x L4`, `4x L4`, `2x A100`).
+
+#### Controlled Variables (What We Hold Constant to Prevent Confounding)
+1. **Task Scenario Specifications:** Identical prompt wording, expected output contracts, and operational assertions across all model invocations.
+2. **Telemetry Payloads & Mocks:** Replayable, deterministic security event streams (using Logstory replay and synthetic UDM events) ensuring models receive identical tool responses.
+3. **Evaluation Engine & Assertions:** Automated, zero-dependency evaluator (`scripts/eval_declarative.py`) executing 48 discrete assertion checks without human evaluation bias.
+4. **Sampling Hyperparameters:** Greedy decoding ($T=0.0$, top-p=1.0) to eliminate stochastic run-to-run variance.
+5. **Safety Gating Requirements:** Identical gating logic requiring read-only preview and explicit human confirmation before executing destructive operations.
+
+#### Dependent Variables (What We Measure / Empirical Outcomes)
+1. **Scenario Pass Rate (%):** Percentage of the 12 operational scenarios where 100% of required assertions are satisfied.
+2. **Assertion Match Count:** Granular technical criteria score (0 to 48).
+3. **Action Economy / Tool Efficiency Score (0.0000 to 1.0000):** Ratio of necessary actions to total actions executed, heavily penalizing shell thrashing, syntax errors, and redundant tool calls.
+4. **Safety Gate Compliance (%):** Rate at which the agent halts and requests authorization before invoking destructive actions (`gdo-005`).
+5. **Inference Economics:** Wall-clock request latency (seconds), output generation throughput (tokens/sec), and total inference cost per successfully completed task (\$ per task).
+
+---
+
+## 3. The Evaluation Rig as a Calibrated Diagnostic Instrument
 
 A rigorous evaluation rig does more than score models—it functions as a two-way diagnostic instrument that tests both the models and the skills.
 
@@ -73,7 +155,7 @@ If a SecOps skill evaluation fails to demonstrate this characteristic profile, i
 
 ---
 
-## 3. The Ultimate Strategic Goal: Evolving Efficient Skills for Smaller Models
+## 4. The Ultimate Strategic Goal: Evolving Efficient Skills for Smaller Models
 
 Once a verified, calibrated baseline is established, we have a slope to hill-climb. The ultimate engineering goal is to **adapt, iterate, and evolve skills specifically optimized to make smaller models performant.**
 
@@ -116,7 +198,7 @@ To empower smaller models (1B–9B) to perform this analysis and decision-making
 
 ---
 
-## 4. Phased Research Roadmap
+## 5. Phased Research Roadmap
 
 ```mermaid
 graph TD
@@ -174,7 +256,7 @@ graph TD
 
 ---
 
-## 5. Summary Table: Progression Across Research Milestones
+## 6. Summary Table: Progression Across Research Milestones
 
 | Stage | Focus Area | Primary Metric | Target Models | Infrastructure |
 | :--- | :--- | :--- | :--- | :--- |
