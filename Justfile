@@ -249,6 +249,11 @@ eval-gen4-gemma-sweep DATASET="evals/gemma-deploy/evals.json" OUTPUT_DIR="docs/e
 eval-gen4-open-weights-sweep DATASET="evals/gemma-deploy/evals.json" OUTPUT_DIR="docs/eval_results/gen4/open_weights_sweep":
     @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --sweep-open-weights --open-weights-output-dir "{{OUTPUT_DIR}}"
 
+# Retest Karl's evaluation scenarios on the unassisted baseline ladder across parameter sizes and model editions
+eval-baseline-ladder DATASET="evals/gemma-deploy/evals.json":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --sweep-open-weights --open-weights-output-dir "docs/eval_results/gen4/baseline_ladder"
+
+
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":
     @USE_LIVE_MCP="{{LIVE_MCP}}" uv run python3 -m agent.deploy_soc_tier1
