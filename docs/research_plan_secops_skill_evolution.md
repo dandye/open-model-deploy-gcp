@@ -36,9 +36,33 @@ This research plan establishes a formal experimental framework to leverage this 
 * **RQ3 (Beyond Trajectory):** Does providing domain context for **analyzing tool outputs** and **deciding subsequent actions** produce higher task completion and lower failure rates than providing static tool invocation trajectories alone?
 * **RQ4 (Diagnostic Calibration):** Can a multi-tier model evaluation rig reliably distinguish between defects in the evaluation harness itself versus deficiencies in domain skill content?
 
+### 2.2 Extended Research Agenda: The 5 Strategic Inquiry Pillars
+
+Beyond the four primary RQs, our experimental rig and academic grounding motivate ten granular, high-leverage research questions structured across five strategic pillars:
+
+#### Pillar 1: Skill Information Architecture & Context Density
+* **RQ 1.1 (Syntax Representation & Token Efficiency):** Which information representation format produces the highest capability lift per context token in constrained context windows ($\le 8\text{k}$): **Structured Decision Tables (YAML/JSON)**, **Imperative Procedural Markdown**, or **Few-Shot Demonstration Pairs**?
+* **RQ 1.2 (The Context Pollution Tipping Point):** At what skill token length does additional documentation transition from **cognitive scaffolding** into **attention dilution and context pollution** for edge models ($\le 9\text{B}$)?
+
+#### Pillar 2: Dissecting Decision-Making vs. Evidence Comprehension
+* **RQ 2.1 (Comprehension Bottleneck vs. Policy Selection):** When a compact model fails an investigation despite receiving skills, is the failure driven by **inability to parse and interpret raw security telemetry** (UDM log semantics, status code anomalies), or by **faulty counterfactual risk evaluation** (balancing downtime cost against containment urgency)?
+* **RQ 2.2 (Asymmetric Blast-Radius Governance):** Can structured domain skills teach an 8B–14B model to consistently respect **negative operational constraints** (e.g., refraining from isolating a Tier-1 production database under ambiguous telemetry) as reliably as a 70B+ model?
+
+#### Pillar 3: Dynamic Skill Discovery & Catalog Scalability
+* **RQ 3.1 (Retrieval Noise Tolerance Across Scales):** When scaling the catalog to hundreds of specialized security skills, what is the minimum model parameter scale required to tolerate **retrieval noise** (distractor or partially matched skills) without experiencing prompt distraction or false-positive execution?
+* **RQ 3.2 (Hierarchical Graph Decomposition):** Does decomposing a complex investigation into **modular micro-skills dispatched across an ADK Graph Workflow** enable an 8B model to match or exceed the accuracy of a monolithic 27B+ agent?
+
+#### Pillar 4: Autonomous Skill Evolution & Co-Evolution
+* **RQ 4.1 (Guided Distillation from Frontier Traces):** Can a frontier reasoning model (e.g., Gemini 2.5 Pro or Gemma 4 31B) reliably distill and compress verbose enterprise security playbooks (CACAO, NIST 800-61) into dense, high-leverage cognitive scaffolding optimized for 4B/8B edge execution?
+* **RQ 4.2 (Closed-Loop Reflection & Skill Evolution):** Can failed evaluation traces automatically drive a reflection agent (WikiSkill loop) to diagnose missing parameters or thresholds and update the skill specification without introducing regressions across neighboring test cases?
+
+#### Pillar 5: Deployment Economics & The Pareto Frontier
+* **RQ 5.1 (Pareto Frontier of Cost per Verified Incident):** Across variable alert volumes (10 alerts/day vs. 10,000 alerts/day), what deployment tier delivers the lowest **Cost per Verified Resolved Incident (CPVI)** when factoring in cold starts, hourly GPU reservations, and failure remediation penalties?
+* **RQ 5.2 (Predictive Alert Complexity Routing):** Can early-turn features (alert type, entity count, initial UDM log entropy) reliably predict whether an incoming alert can be resolved by an 8B model with skills, or whether it requires immediate routing to a frontier reasoning endpoint?
+
 ---
 
-### 2.2 Hypotheses to Reject (Null Hypotheses) vs. Alternative Hypotheses
+### 2.3 Hypotheses to Reject (Null Hypotheses) vs. Alternative Hypotheses
 
 #### Hypothesis 1: The Scale Sufficiency Hypothesis
 * **Null Hypothesis ($H_{0,1}$):** Increasing foundation model parameter scale (e.g., from 1B to 70B+) eliminates the requirement for contextual domain skills in cloud infrastructure and security operations; frontier models can deduce required operational parameters and containment boundaries from general pretraining alone.

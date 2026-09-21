@@ -27,6 +27,7 @@ graph TD
     A --> D[Track 3: Active Inference POMDP Integration]
     A --> E[Track 4: Advanced Inference Optimizations]
     A --> F[Track 5: Automated CI/CD & Drift Benchmarking]
+    A --> G[Track 6: SecOps Domain Skill Evolution]
 
     B --> B1[Sub-Second Edge Tier: Cloud Run GPU]
     B --> B2[Deep Reasoning Tier: Vertex AI Dedicated]
@@ -150,3 +151,24 @@ Establish continuous verification and drift detection across model flavors, cont
 ### Planned Deliverables
 - `cloudbuild.yaml`: Multi-stage Cloud Build configuration for linting, test suites, and Docker image builds.
 - `docs/ci_cd_architecture.md`: Architecture guide and alert notification setup.
+
+---
+
+## Track 6: SecOps Domain Skill Evolution & Sizing Optimization
+
+### Objective
+Leverage the calibrated Gen 4 evaluation rig to empirically validate and evolve compact, high-efficiency domain skills (`SKILL.md`) for Security Operations (SecOps), answering the fundamental research questions regarding model scale, context density, evidence analysis vs. trajectory, and deployment economics.
+
+### Key Research Questions
+See the authoritative research plan at [`docs/research_plan_secops_skill_evolution.md`](research_plan_secops_skill_evolution.md) for the full scientific formulation, null hypotheses, and experimental variables across the 5 strategic inquiry pillars:
+1. **Skill Representation & Context Density:** Optimal syntax representation (YAML/JSON decision tables vs. Markdown) and the attention dilution tipping point for edge models.
+2. **Decision-Making vs. Evidence Comprehension:** Dissecting telemetry parsing bottlenecks from policy risk tradeoffs and asymmetric blast-radius governance.
+3. **Dynamic Skill Discovery & Catalog Scalability:** Retrieval noise tolerance across scales and hierarchical micro-skill graph decomposition.
+4. **Autonomous Skill Evolution & Co-Evolution:** Guided distillation from frontier model traces and closed-loop failure reflection (WikiSkill loop).
+5. **Deployment Economics & The Pareto Frontier:** Minimizing Cost per Verified Investigation (CPVI) across serverless Cloud Run GPUs vs. dedicated single L4 GPUs.
+
+### Planned Deliverables
+- `evals/secops/evals.json`: Declarative evaluation suite for SecOps triage, UDM timeline reconstruction, and blast-radius containment.
+- `skills/secops-*/`: Dense cognitive scaffolding skills featuring telemetry field lookup tables and explicit subsequent-action decision trees.
+- `docs/research_plan_secops_skill_evolution.md`: Authoritative research specification and experimental findings.
+
