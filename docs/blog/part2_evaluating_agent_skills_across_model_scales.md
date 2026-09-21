@@ -6,8 +6,8 @@
 | Requested Publication Date Range |  |
 | Confirmed Publication Date |  |
 | Tags (copy drop down or add tags manually) |  |
-| Teaser blurb (1 - 2 sentences, max 250 characters) | When agent skills are provided, what is the smallest model that actually performs well? Sourcing Karl Weinmeister's benchmark, we evaluate 27 open models across Gemma, Llama, and Qwen on Cloud Run GPU and Vertex AI to find the sizing sweet spot. |
-| LinkedIn post | We can't hill-climb without a slope. In my previous post on agent graphs, we evaluated tool trajectories and report quality, showing that AI runbooks pulled investigation quality from a C up to an A- average. But those evaluations were focused on trajectory—they did not isolate how much capability was specifically contributed by the skills themselves.<br><br>Karl Weinmeister's landmark 72-trial benchmark on Claude Code gave me the opportunity to test several core hypotheses: Does more parameter scale inherently yield better results? Are skills still required on large models? And most importantly: when skills are provided, what is the smallest model that can actually get the job done reliably?<br><br>We adapted Karl's declarative evals.json pattern and evaluated 27 open-weight models (from 1B edge checkpoints up to 405B frontier weights across Gemma, Llama, Qwen, and Nemotron) on Cloud Run GPU and Vertex AI.<br><br>What the empirical data verified:<br>1. Scale matters: Unassisted smaller models (1B–4B) struggle significantly, passing only 25% of cases. More parameters does yield better baseline performance.<br>2. The Foundation Plateau: Skills remain mandatory across all scales. Without skills, even 70B, 405B, and Gemini 2.5 Pro plateau between 41% and 58%. Pretraining alone cannot guess proprietary cloud parameters.<br>3. The Sizing Sweet Spot: When skills are injected, the 8B–14B mid-tier (Gemma 2 9B, Gemma 3 12B, Llama 3.1 8B) jumps from 41.7% to 75.0%–83.3% pass rates. Running on a single \$0.70/hr NVIDIA L4 GPU, this represents the minimum viable model scale for dependable production operations.<br>4. Frontier Parity: At 27B+ scale, open models armed with skills hit 91.7% operational accuracy (47/48 assertions matched), successfully resolving complex security containment blast-radius trade-offs.<br><br>Full evaluation breakdown, 27-model scorecard, and sizing analysis: [Insert Blog Link] |
+| Teaser blurb (1 - 2 sentences, max 250 characters) | When agent skills are provided, what is the smallest model that actually performs well? Evaluating 27 open models across Gemma, Llama, and Qwen, we show how calibrated evaluation rigs diagnose skill deficiency and unlock smaller models. |
+| LinkedIn post | We can't hill-climb without a slope. In my previous post on agent graphs, we evaluated tool trajectories and report quality, showing that AI runbooks pulled SecOps investigation quality from a C up to an A- average. But those evaluations were focused on trajectory—they did not isolate how much capability was specifically contributed by the skills themselves.<br><br>Karl Weinmeister's landmark 72-trial benchmark on Claude Code gave me the opportunity to test several core hypotheses: Does more parameter scale inherently yield better results? Are skills still required on large models? And most importantly: when skills are provided, what is the smallest model that can actually get the job done reliably?<br><br>We adapted Karl's declarative evals.json pattern and evaluated 27 open-weight models (from 1B edge checkpoints up to 405B frontier weights across Gemma, Llama, Qwen, and Nemotron) on Cloud Run GPU and Vertex AI.<br><br>What the empirical data verified:<br>1. Scale matters: Unassisted smaller models (1B–4B) struggle significantly, passing only 25% of cases. More parameters does yield better baseline performance.<br>2. The Foundation Plateau: Skills remain mandatory across all scales. Without skills, even 70B, 405B, and Gemini 2.5 Pro plateau between 41% and 58%. Pretraining alone cannot guess proprietary cloud parameters.<br>3. The Sizing Sweet Spot: When skills are injected, the 8B–14B mid-tier (Gemma 2 9B, Gemma 3 12B, Llama 3.1 8B) jumps from 41.7% to 75.0%–83.3% pass rates. Running on a single \$0.70/hr NVIDIA L4 GPU, this represents the minimum viable model scale for dependable production operations.<br>4. Frontier Parity: At 27B+ scale, open models armed with skills hit 91.7% operational accuracy (47/48 assertions matched), successfully resolving complex security containment blast-radius trade-offs.<br><br>Crucially, this evaluation rig acts as a diagnostic calibration tool. If a benchmark does not show that larger models perform better with skills still required, the eval itself is broken. And if even frontier models fail, the skills are deficient. Establishing this baseline unblocks our ultimate goal: adapting and evolving efficient skills that provide the missing context for smaller models to not just follow tool trajectories, but analyze results and decide subsequent actions.<br><br>Full evaluation breakdown, 27-model scorecard, and sizing analysis: [Insert Blog Link] |
 
 # **Tracking Table (To be filled out by Author)**
 
@@ -244,7 +244,88 @@ Armed with skills, these models successfully mastered high-stakes reasoning: bal
 
 ---
 
-## 5. Practical Lessons for Skill Authors
+## 5. The Evaluation Rig as a Diagnostic Instrument
+
+Having an evaluation test set and an automated evaluation runner across multiple model scales does more than benchmark static checkpoints. **It functions as a calibrated diagnostic instrument for validating and improving security operations skills.**
+
+When evaluating specialized SecOps skills (such as threat hunting, alert triage, malware containment, and IOC enrichment), the empirical results **must exhibit this exact same characteristic profile**:
+
+1. **Parameter Scale Gradient:** Larger, newer models equipped with advanced reasoning architectures must demonstrate higher baseline capability than smaller models.
+2. **Contextual Lift:** Subject-matter expertise provided through domain skills must remain a mandatory requirement across all model scales to achieve acceptable pass rates.
+
+### The Two Diagnostic Failure Modes
+
+If a security evaluation fails to demonstrate this characteristic profile, the rig immediately signals one of two distinct engineering problems:
+
+```
+                            ┌─────────────────────────────────────────┐
+                            │    SecOps Skill Evaluation Execution    │
+                            └────────────────────┬────────────────────┘
+                                                 │
+                                 Does the benchmark exhibit the
+                                 scaling curve & positive lift?
+                                                 │
+                                ┌────────────────┴────────────────┐
+                                ▼ YES                             ▼ NO
+                    ┌──────────────────────┐         ┌──────────────────────────┐
+                    │ Calibrated Baseline  │         │   Diagnostic Breakdown   │
+                    │   Ready to Iterate   │         └────────────┬─────────────┘
+                    └──────────────────────┘                      │
+                                       ┌──────────────────────────┴──────────────────────────┐
+                                       ▼                                                     ▼
+                         [ Flawed Evaluation Setup ]                             [ Deficient Skill Content ]
+                         - Inverted or noisy scaling curve                       - Frontier models fail assertions
+                         - Broken assertion criteria                             - Missing operational parameters
+                         - Ambiguous prompt rubrics                              - Ambiguous investigative recipes
+```
+
+1. **The Evaluation Is Flawed:** If the performance curve is erratic, inverted (e.g. 1B models outperforming 70B models), or shows zero discrimination across model tiers, the evaluation setup itself is defective. The prompt may be ambiguous, the assertions may be scoring superficial formatting rather than technical substance, or the scoring rubric may be ungrounded.
+2. **The Skill Is Deficient:** If the evaluation setup is verified and yet the most capable, performant models (such as Gemma 4 31B, Llama 3.3 70B, or Gemini 2.5 Pro) are still failing the scenario, **the skill itself is deficient**. The skill is either omitting critical platform context, providing ungrounded command recipes, or failing to supply the necessary operational guardrails.
+
+Establishing this diagnostic baseline is essential: it prevents engineers from spending weeks tuning models when the skill documentation itself is broken, and prevents authoring skills against broken benchmarks.
+
+---
+
+## 6. The Ultimate Goal: Evolving Efficient Skills for Smaller Models
+
+Once you have a calibrated baseline and a reliable diagnostic rig, you are finally in a position to hill-climb: **attempting to adapt and evolve skills specifically designed to make smaller models more performant.**
+
+That is our ultimate goal: to write compact, high-efficiency skills that supply the exact missing context from a model’s initial pretraining, allowing affordable, smaller models to operate with the reliability of frontier systems.
+
+### Beyond Tool Trajectory: Analyzing Results and Deciding Subsequent Action
+
+In my previous post, our graph workflows focused on keeping agents on the correct **tool trajectory**. But in security operations, tool trajectory cannot be treated as a rigid, hardcoded sequence.
+
+A security investigation is not a static script:
+1. An agent queries a SIEM for suspicious authentication events.
+2. It receives raw telemetry containing timestamps, IP addresses, user agents, and status codes.
+3. **The agent must analyze and understand those results.** Does a 401 followed by a 200 indicate credential stuffing, brute force, or an expired password? What does the associated WHOIS or VirusTotal reputation score imply?
+4. **Based on that analysis, the agent must decide on the subsequent action.** Should it isolate the host, query endpoint process trees, revoke session tokens, or dismiss the alert as an authorized vulnerability scan?
+
+The decision on subsequent action *is* what generates the tool trajectory. Trajectory is the natural downstream consequence of grounded analysis, not an end in itself.
+
+```
+  ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+  │   Tool Call:    │ ----> │ Raw Telemetry   │ ----> │ Domain Context  │ ----> │ Grounded Action │
+  │ UDM / SIEM Query│       │ & Log Response  │       │ (Skill Guidance)│       │ Decision        │
+  └─────────────────┘       └─────────────────┘       └────────┬────────┘       └────────┬────────┘
+                                                               │                         │
+                                                    Enables accurate analysis    Generates subsequent
+                                                    of security evidence         tool trajectory
+```
+
+This is where domain skills deliver their greatest value for open models. Smaller models (1B to 9B) have the raw reasoning capacity to make logical inferences, but they lack the domain-specific mental models to interpret complex cloud and security logs.
+
+By writing efficient skills that provide:
+- **Result Interpretation Recipes:** How to parse specific log payloads and what fields indicate true malicious intent.
+- **Blast-Radius Boundaries:** Explicit guidance on when containment actions risk enterprise downtime versus when immediate isolation is warranted.
+- **Decision Trees for Subsequent Actions:** Structured logic that guides the model from evidence analysis directly into the next logical investigative step.
+
+we give smaller models the missing domain context they need to perform end-to-end analysis and execute correct operational trajectories autonomously.
+
+---
+
+## 7. Practical Lessons for Skill Authors
 
 Karl Weinmeister’s original study outlined essential recommendations for authoring cloud agent skills. Our experiments across 27 open-weight models validate those rules and introduce four critical constraints for open deployments:
 
@@ -286,26 +367,26 @@ completely eliminated `ValueError: Too large swap space` crashes across all eval
 
 ---
 
-## 6. Connecting the Dots: Runbooks, Graphs, and Skills
+## 8. Connecting the Dots: Runbooks, Graphs, and Skills
 
 Looking at these results alongside my previous testing on [Agent Graphs](https://docs.google.com/document/d/1Na6BsFAEyUci6bELF4OgLBKBBw4Ey-FsIq9WYHgOUHA/edit), a unified architectural hierarchy emerges:
 
 | Mechanism | Where it Operates | What it Provides | Effect on Open Models |
 | :--- | :--- | :--- | :--- |
 | **Model Scale Alone** | Pre-training weights | General reasoning & fluent grammar | Plateaus at 25%–58% on cloud platforms |
-| **Domain Skills (`SKILL.md`)** | Prompt context / tooling | Parameter syntax & operational rules | **+33% to +42% Net Lift** (bypasses shell thrashing) |
+| **Domain Skills (`SKILL.md`)** | Prompt context / tooling | Context for analysis, rules & action choices | **+33% to +42% Net Lift** (bypasses shell thrashing) |
 | **ADK Graph Workflows** | Execution runtime | Deterministic state machine & gating | Eliminates trajectory drift & locks in A- quality |
 
 Our earlier post evaluated **execution trajectories**; Karl Weinmeister's work gave us the blueprint to evaluate **skill ablation**. Together, they establish that skills and graph workflows solve complementary challenges:
 
-* **Skills teach the model how and when to act** within a specific domain, providing the exact parameters that pretraining cannot supply.
-* **Graph workflows enforce the execution path**, ensuring the agent does not deviate from established operational runbooks.
+* **Skills teach the model how to analyze data and decide what to do**, providing the exact domain context that pretraining cannot supply.
+* **Graph workflows enforce the execution boundary**, ensuring the agent does not deviate from established operational runbooks.
 
 As open models continue to close the raw reasoning gap with proprietary frontier APIs, the differentiator in production is no longer just parameter count. It is the quality of the operational guardrails, skills, and execution graphs that guide them.
 
 ---
 
-## 7. Conclusion & What’s Next
+## 9. Conclusion & What’s Next
 
 Karl Weinmeister proved that agent skills transform coding assistants from exploratory trial-and-error guessing into first-try operational accuracy.
 
@@ -315,6 +396,7 @@ Our experiments extend that conclusion across 27 open-weight models:
 2. **The Foundation Plateau is universal:** Without domain skills, even 70B and 405B models plateau around 50% on cloud platforms because fluency cannot substitute for missing platform state.
 3. **The Sizing Sweet Spot is 8B–14B:** Injected with domain skills, mid-tier models (Gemma 2 9B, Gemma 3 12B, Llama 3.1 8B) reach **75.0% – 83.3% operational accuracy**, offering the most cost-effective production deployment on a single NVIDIA L4 GPU.
 4. **Frontier Parity at 27B+:** Open models at 27B–31B armed with skills achieve **91.7% accuracy**, matching closed commercial APIs while running entirely within self-hosted infrastructure.
+5. **The Diagnostic Blueprint:** This evaluation rig enables us to calibrate SecOps skills, diagnose benchmark and skill defects, and begin evolving compact skills that help smaller models analyze evidence and decide subsequent actions.
 
 In **Part 3** of this series, we will examine the economics of **Speculative Decoding on Dedicated vs. Serverless Infrastructure**, analyzing how N-gram prompt lookup and multi-model draft speculation reduce inference latency by 2.3x with zero extra VRAM.
 
