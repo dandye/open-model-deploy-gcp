@@ -43,17 +43,17 @@ This research plan establishes a formal experimental framework to leverage this 
 #### Hypothesis 1: The Scale Sufficiency Hypothesis
 * **Null Hypothesis ($H_{0,1}$):** Increasing foundation model parameter scale (e.g., from 1B to 70B+) eliminates the requirement for contextual domain skills in cloud infrastructure and security operations; frontier models can deduce required operational parameters and containment boundaries from general pretraining alone.
 * **Alternative Hypothesis ($H_{1,1}$):** Parameter scale alone is insufficient for closed-domain cloud and security operations. Foundation models of all scales plateau in the absence of domain skills because proprietary platform parameters and environment-specific constraints cannot be deduced from general pretraining alone.
-* **Rejection Criterion:** If unassisted models across parameter scales (up to 405B parameters and frontier commercial models) fail to exceed a 60% operational pass rate on platform-specific tasks, and the injection of domain skills produces a statistically significant capability lift ($\Delta \ge +25\%$) across all scales, $H_{0,1}$ is rejected.
+* **Rejection Criterion:** If unassisted models across parameter scales (up to 405B parameters and frontier commercial models) fail to exceed a 60% operational pass rate on platform-specific tasks, and the injection of domain skills produces a statistically significant capability lift ($\Delta \ge +25\%$) across all scales, **$H_{0,1}$ is rejected**.
 
 #### Hypothesis 2: The Small-Model Inability Hypothesis
 * **Null Hypothesis ($H_{0,2}$):** Compact models ($\le 14\text{B}$, e.g. 1B–4B edge or 8B–14B single-GPU instances) cannot achieve dependable operational performance ($\ge 75\%$ scenario pass rate) on security operations tasks, regardless of the quality or structure of domain skills provided.
 * **Alternative Hypothesis ($H_{1,2}$):** Injecting dense, high-leverage cognitive scaffolding (result interpretation recipes, blast-radius boundaries, and subsequent-action decision trees) enables compact models—specifically in the 8B–14B range—to achieve operational parity with unassisted frontier models.
-* **Rejection Criterion:** If an 8B–14B model (or MoE edge model) equipped with structured domain skills achieves $\ge 75\%$ scenario pass rate and $\ge 90\%$ assertion matches on complex multi-step scenarios, $H_{0,2}$ is rejected.
+* **Rejection Criterion:** If an 8B–14B model (or MoE edge model) equipped with structured domain skills achieves $\ge 75\%$ scenario pass rate and $\ge 90\%$ assertion matches on complex multi-step scenarios, **$H_{0,2}$ is rejected**.
 
 #### Hypothesis 3: The Trajectory Primacy Hypothesis
 * **Null Hypothesis ($H_{0,3}$):** Specifying the static sequence of tool calls (tool trajectory) is sufficient for autonomous agent operational success; providing explicit domain context for interpreting tool results and evaluating subsequent action tradeoffs provides no measurable lift over pure trajectory guidance.
 * **Alternative Hypothesis ($H_{1,3}$):** Tool trajectory is a downstream consequence of grounded domain analysis. Skills that equip the model to interpret raw security telemetry and decide subsequent actions based on risk and blast radius produce significantly higher task effectiveness and safety compliance than pure trajectory templates.
-* **Rejection Criterion:** If agents provided with result-analysis context and decision trees demonstrate significantly higher task pass rates ($\Delta \ge +20\%$) and lower safety violations than agents given only tool sequence constraints, $H_{0,3}$ is rejected.
+* **Rejection Criterion:** If agents provided with result-analysis context and decision trees demonstrate significantly higher task pass rates ($\Delta \ge +20\%$) and lower safety violations than agents given only tool sequence constraints, **$H_{0,3}$ is rejected**.
 
 ---
 
@@ -88,14 +88,14 @@ To test these hypotheses rigorously, the experimental rig defines explicit indep
    - *Type 1 (Trajectory-Only):* Static sequencing of tool calls.
    - *Type 2 (Cognitive Scaffolding):* Telemetry decoders, blast-radius boundaries, and subsequent-action decision trees.
 3. **Model Parameter Scale & Architecture:**
-   - 27 open-weight models across 1B to 405B parameters, spanning dense architectures and Mixture-of-Experts (MoE) across 6 research labs (Google Gemma, Meta Llama, Alibaba Qwen, NVIDIA Nemotron, Mistral, Microsoft Phi) plus 3 closed reference baselines (Gemini 2.5).
+   - 27 open-weight models across 1B to 405B parameters (dense vs. MoE) spanning 6 research labs (Google Gemma, Meta Llama, Alibaba Qwen, NVIDIA Nemotron, Mistral, Microsoft Phi) plus 3 closed reference baselines (Gemini 2.5).
 4. **Serving Environment & Resource Constraints:**
    - Serverless Cloud Run GPU (`1x NVIDIA L4`, scale-to-zero, \$0 idle cost).
    - Dedicated Vertex AI GPU instances (`1x L4`, `4x L4`, `2x A100`).
 
 #### Controlled Variables (What We Hold Constant to Prevent Confounding)
 1. **Task Scenario Specifications:** Identical prompt wording, expected output contracts, and operational assertions across all model invocations.
-2. **Telemetry Payloads & Mocks:** Replayable, deterministic security event streams (using Logstory replay and synthetic UDM events) ensuring models receive identical tool responses.
+2. **Telemetry Payloads & Mocks:** Replayable, deterministic security event streams (Logstory replay and synthetic UDM events) ensuring models receive identical tool responses.
 3. **Evaluation Engine & Assertions:** Automated, zero-dependency evaluator (`scripts/eval_declarative.py`) executing 48 discrete assertion checks without human evaluation bias.
 4. **Sampling Hyperparameters:** Greedy decoding ($T=0.0$, top-p=1.0) to eliminate stochastic run-to-run variance.
 5. **Safety Gating Requirements:** Identical gating logic requiring read-only preview and explicit human confirmation before executing destructive operations.
@@ -104,12 +104,90 @@ To test these hypotheses rigorously, the experimental rig defines explicit indep
 1. **Scenario Pass Rate (%):** Percentage of the 12 operational scenarios where 100% of required assertions are satisfied.
 2. **Assertion Match Count:** Granular technical criteria score (0 to 48).
 3. **Action Economy / Tool Efficiency Score (0.0000 to 1.0000):** Ratio of necessary actions to total actions executed, heavily penalizing shell thrashing, syntax errors, and redundant tool calls.
-4. **Safety Gate Compliance (%):** Rate at which the agent halts and requests authorization before invoking destructive actions (`gdo-005`).
-5. **Inference Economics:** Wall-clock request latency (seconds), output generation throughput (tokens/sec), and total inference cost per successfully completed task (\$ per task).
+4. **Safety Gate Compliance (%):** Rate at which the agent halts and requests authorization before invoking destructive actions.
+5. **Inference Economics:** Wall-clock request latency (seconds), generation throughput (tokens/sec), and total inference cost per successfully completed task (\$ per task).
 
 ---
 
-## 3. The Evaluation Rig as a Calibrated Diagnostic Instrument
+## 3. Academic Literature & Grounding
+
+Our research sits at the convergence of three major academic subfields: agent skill benchmarking, tool augmentation across model scales, and autonomous security operations.
+
+```
+┌───────────────────────────────────┐    ┌───────────────────────────────────┐
+│     Agent Skill Benchmarking      │    │  Tool Augmentation & Model Scale  │
+│  - SkillsBench (arXiv:2602.12670) │    │  - Gorilla (Patil et al., 2023)   │
+│  - NVIDIA SkillEvaluator (2025)   │    │  - ToolBench (Qin et al., 2024)   │
+│  - WikiSkill (arXiv:2608.27454)   │    │  - BFCL (Fanjani et al., 2024)    │
+└─────────────────┬─────────────────┘    └─────────────────┬─────────────────┘
+                  │                                        │
+                  └───────────────────┬────────────────────┘
+                                      │
+                                      ▼
+                  ┌────────────────────────────────────────┐
+                  │    Autonomous SecOps & IR Agents       │
+                  │  - SIABENCH (2025)                     │
+                  │  - SecRespond (arXiv:2607.26791, 2026) │
+                  │  - ReAct & Grounded Action Decision    │
+                  └────────────────────────────────────────┘
+```
+
+### 3.1 Agent Skills as First-Class Modular Artifacts & Skill Ablation
+
+* **SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks** (arXiv:2602.12670, 2026):
+  - *Contribution:* Formulates "Agent Skills" as first-class, procedural artifacts and introduces paired evaluation (`no-Skills` vs. `curated-Skills`) across 87 tasks and 18 model-harness configurations.
+  - *Empirical Findings:* Curated skills produce a statistically significant +16.6% average pass rate lift. Crucially, SkillsBench demonstrated that **smaller models equipped with domain skills can match or exceed the performance of unaugmented larger models**.
+  - *The "Less is More" Principle:* The authors found that compact, modular skills (2–3 modules) consistently outperform large, exhaustive documentation dumps, directly corroborating our context-window protection findings.
+  - *Failure of Self-Generation:* Models fail to reliably self-generate procedural knowledge without human curation, establishing the necessity of authoritative skill authoring.
+
+* **SkillEvaluator: A Multi-Tier Framework for Evaluating Agent Skills** (NVIDIA, 2025):
+  - *Contribution:* Establishes a 3-tier validation workflow for enterprise agent skills: Tier 1 (Static validation for syntax, schema, and security), Tier 2 (Embedding similarity deduplication), and Tier 3 (Live sandboxed A/B trials calculating net "Skill Lift").
+  - *Significance to our Work:* SkillEvaluator formalized the live trial paired-delta metric ($\Delta$) that Karl Weinmeister and our Gen 4 suite employ to quantify action economy and task completion.
+
+* **WikiSkill: Co-Evolving Agent Skills with Persistent Knowledge Wikis** (arXiv:2608.27454, August 2026):
+  - *Contribution:* Proposes a closed-loop architecture where procedural skills (`skills/`) co-evolve alongside a structured knowledge wiki (`wiki/`) through active inference rollouts and validation gating.
+  - *Empirical Findings:* Demonstrates that continuous skill evolution enables open models in the 9B parameter range to outperform unassisted 27B+ models on complex technical workflows.
+
+### 3.2 Tool Augmentation vs. Model Scale in Agentic Workflows
+
+* **Gorilla: Large Language Model Connected with Massive APIs** (Patil et al., UC Berkeley, arXiv:2305.15334):
+  - *Contribution:* Explores the "API Hallucination" boundary. Demonstrates that general pretraining fails to retain accurate API parameters, argument types, and authentication schemes as platforms evolve.
+  - *Significance:* Provides theoretical backing for our "Foundation Plateau": foundation models cannot guess proprietary flags like `NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion` because parameters are closed-world facts that must be supplied via retrieval or in-context skills.
+
+* **ToolBench & ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs** (Qin et al., ICLR 2024, arXiv:2307.16789):
+  - *Contribution:* Evaluated open models across thousands of real-world REST APIs. Demonstrated that smaller open models (7B/13B) fine-tuned or prompted with structured tool schemas bridge the execution gap with proprietary commercial models.
+
+* **AgentBench: Evaluating LLMs as Agents** (Liu et al., ICLR 2024, arXiv:2308.03688):
+  - *Contribution:* Systematic benchmark across 8 interactive environments (operating systems, databases, web search). Showed that while open models perform well on static question-answering, interactive multi-turn decision-making exhibits a severe performance cliff without external scaffolding.
+
+* **Berkeley Function Calling Leaderboard (BFCL)** (Fanjani et al., 2024/2025):
+  - *Contribution:* Comprehensive standardized benchmark for evaluating function calling, parameter type checking, and multi-turn tool calling across model scales (from 1B SLMs to 405B frontier models).
+
+### 3.3 Security Operations (SecOps) & Incident Response Benchmarks
+
+* **SIABENCH: An Agentic Evaluation Framework for Security Incident Analysis** (2025):
+  - *Contribution:* Introduces 25 deep incident analysis workflows and 135 alert-triage scenarios covering memory/network forensics, log analysis, and malware triage.
+  - *Findings:* Evaluated 11 open and closed LLMs, revealing that models without domain-specific forensic schemas struggle to separate attacker telemetry from operational noise.
+
+* **SecRespond: Evaluating LLM Agents on Post-Compromise Incident Response** (arXiv:2607.26791, July 2026):
+  - *Contribution:* Evaluates LLM agents inside 10 realistic post-compromise cyber ranges with full forensic disk snapshots and MITRE ATT&CK techniques.
+  - *Crucial Finding:* The authors found that while LLM agents could easily address alerts that had already been explicitly flagged, **they consistently failed at proactive investigation for silent intrusions and struggled to formulate verified, multi-step remediation plans**. This underscores why skills must teach evidence interpretation rather than static tool scripts.
+
+* **MESSALA: A Conceptual Framework for Evaluating Security Operation Center Analysis Reports** (2025):
+  - *Contribution:* Establishes multi-perspective rubric scoring guidelines for SOC incident dossiers, separating tool trajectory from evidence interpretation and containment justification.
+
+### 3.4 Evidence Analysis vs. Static Trajectory Execution
+
+* **ReAct: Synergizing Reasoning and Acting in Language Models** (Yao et al., ICLR 2023):
+  - *Theoretical Basis:* Interleaving reasoning traces (`Thought`), action execution (`Act`), and telemetry observation (`Observation`) allows models to dynamically correct their trajectory based on feedback from the environment.
+  - *Connection to our Work:* Validates our assertion that **deciding on subsequent action is what generates tool trajectory**. If the model lacks the domain context to interpret an observation, its reasoning trace collapses, leading to invalid action choices.
+
+* **FireAct: Toward Language Agent Fine-tuning** (Chen et al., 2023):
+  - *Contribution:* Examined the performance of agents across multi-turn tool trajectories, finding that grounding models on how to analyze intermediate observations produces significantly higher task completion than providing static execution paths.
+
+---
+
+## 4. The Evaluation Rig as a Calibrated Diagnostic Instrument
 
 A rigorous evaluation rig does more than score models—it functions as a two-way diagnostic instrument that tests both the models and the skills.
 
@@ -155,7 +233,7 @@ If a SecOps skill evaluation fails to demonstrate this characteristic profile, i
 
 ---
 
-## 4. The Ultimate Strategic Goal: Evolving Efficient Skills for Smaller Models
+## 5. The Ultimate Strategic Goal: Evolving Efficient Skills for Smaller Models
 
 Once a verified, calibrated baseline is established, we have a slope to hill-climb. The ultimate engineering goal is to **adapt, iterate, and evolve skills specifically optimized to make smaller models performant.**
 
@@ -198,7 +276,7 @@ To empower smaller models (1B–9B) to perform this analysis and decision-making
 
 ---
 
-## 5. Phased Research Roadmap
+## 6. Phased Research Roadmap
 
 ```mermaid
 graph TD
@@ -256,7 +334,7 @@ graph TD
 
 ---
 
-## 6. Summary Table: Progression Across Research Milestones
+## 7. Summary Table: Progression Across Research Milestones
 
 | Stage | Focus Area | Primary Metric | Target Models | Infrastructure |
 | :--- | :--- | :--- | :--- | :--- |
