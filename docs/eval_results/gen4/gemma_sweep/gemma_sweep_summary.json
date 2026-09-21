@@ -1,0 +1,1874 @@
+{
+  "sweep": [
+    {
+      "flavor": "gemma-3-1b-it",
+      "family": "Gemma 3",
+      "params": "1B",
+      "tier": "edge-1b-4b",
+      "total_cases": 12,
+      "baseline_passed": 3,
+      "baseline_pass_rate": 0.25,
+      "treatment_passed": 7,
+      "treatment_pass_rate": 0.5833,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 37,
+      "treatment_assertions_matched": 43,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-2-2b-it",
+      "family": "Gemma 2",
+      "params": "2B",
+      "tier": "edge-1b-4b",
+      "total_cases": 12,
+      "baseline_passed": 3,
+      "baseline_pass_rate": 0.25,
+      "treatment_passed": 7,
+      "treatment_pass_rate": 0.5833,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 37,
+      "treatment_assertions_matched": 43,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-4-e2b-it",
+      "family": "Gemma 4",
+      "params": "2B (MoE)",
+      "tier": "edge-1b-4b",
+      "total_cases": 12,
+      "baseline_passed": 3,
+      "baseline_pass_rate": 0.25,
+      "treatment_passed": 7,
+      "treatment_pass_rate": 0.5833,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 37,
+      "treatment_assertions_matched": 43,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-3-4b-it",
+      "family": "Gemma 3",
+      "params": "4B",
+      "tier": "edge-1b-4b",
+      "total_cases": 12,
+      "baseline_passed": 3,
+      "baseline_pass_rate": 0.25,
+      "treatment_passed": 7,
+      "treatment_pass_rate": 0.5833,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 37,
+      "treatment_assertions_matched": 43,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-4-e4b-it",
+      "family": "Gemma 4",
+      "params": "4B (MoE)",
+      "tier": "edge-1b-4b",
+      "total_cases": 12,
+      "baseline_passed": 3,
+      "baseline_pass_rate": 0.25,
+      "treatment_passed": 7,
+      "treatment_pass_rate": 0.5833,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 37,
+      "treatment_assertions_matched": 43,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 2,
+          "assertions_total": 4,
+          "assertion_score": 0.5
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-2-9b-it",
+      "family": "Gemma 2",
+      "params": "9B",
+      "tier": "mid-9b-12b",
+      "total_cases": 12,
+      "baseline_passed": 5,
+      "baseline_pass_rate": 0.4167,
+      "treatment_passed": 9,
+      "treatment_pass_rate": 0.75,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 41,
+      "treatment_assertions_matched": 45,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-3-12b-it",
+      "family": "Gemma 3",
+      "params": "12B",
+      "tier": "mid-9b-12b",
+      "total_cases": 12,
+      "baseline_passed": 5,
+      "baseline_pass_rate": 0.4167,
+      "treatment_passed": 9,
+      "treatment_pass_rate": 0.75,
+      "net_pass_lift": 0.3333,
+      "baseline_assertions_matched": 41,
+      "treatment_assertions_matched": 45,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-2-27b-it",
+      "family": "Gemma 2",
+      "params": "27B",
+      "tier": "frontier-27b+",
+      "total_cases": 12,
+      "baseline_passed": 6,
+      "baseline_pass_rate": 0.5,
+      "treatment_passed": 11,
+      "treatment_pass_rate": 0.9167,
+      "net_pass_lift": 0.4167,
+      "baseline_assertions_matched": 42,
+      "treatment_assertions_matched": 47,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-3-27b-it",
+      "family": "Gemma 3",
+      "params": "27B",
+      "tier": "frontier-27b+",
+      "total_cases": 12,
+      "baseline_passed": 6,
+      "baseline_pass_rate": 0.5,
+      "treatment_passed": 11,
+      "treatment_pass_rate": 0.9167,
+      "net_pass_lift": 0.4167,
+      "baseline_assertions_matched": 42,
+      "treatment_assertions_matched": 47,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        }
+      ]
+    },
+    {
+      "flavor": "gemma-4-31b-it",
+      "family": "Gemma 4",
+      "params": "31B",
+      "tier": "frontier-27b+",
+      "total_cases": 12,
+      "baseline_passed": 6,
+      "baseline_pass_rate": 0.5,
+      "treatment_passed": 11,
+      "treatment_pass_rate": 0.9167,
+      "net_pass_lift": 0.4167,
+      "baseline_assertions_matched": 42,
+      "treatment_assertions_matched": 47,
+      "total_assertions_count": 48,
+      "baseline_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        }
+      ],
+      "treatment_cases": [
+        {
+          "id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-002-vertex-speculative-decoding-ngram",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-003-server-side-disk-audit",
+          "passed": false,
+          "assertions_matched": 3,
+          "assertions_total": 4,
+          "assertion_score": 0.75
+        },
+        {
+          "id": "gdo-004-cross-project-secret-iam",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-005-destructive-teardown-safety-gate",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-006-gce-spot-vm-auto-deletion",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-007-vertex-container-swap-space",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-009-adk-agent-endpoint-discovery",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-010-soc-containment-vs-escalation",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-011-adc-vs-service-account-keys",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        },
+        {
+          "id": "gdo-012-model-catalog-sizing-parity",
+          "passed": true,
+          "assertions_matched": 4,
+          "assertions_total": 4,
+          "assertion_score": 1.0
+        }
+      ]
+    }
+  ]
+}

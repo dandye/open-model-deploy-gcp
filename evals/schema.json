@@ -1,0 +1,110 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DeclarativeAgentEvalSuite",
+  "description": "JSON schema for declarative agent evaluation scenarios following the NVIDIA SkillEvaluator and Karl Weinmeister evals.json pattern.",
+  "type": "object",
+  "required": [
+    "skill_name",
+    "evals"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "skill_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the target skill, plugin, or evaluation domain."
+    },
+    "version": {
+      "type": "string",
+      "description": "Optional version identifier for the evaluation suite."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional human-readable description of the evaluation suite."
+    },
+    "evals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "prompt",
+          "expected_output",
+          "assertions",
+          "expected_skill",
+          "acceptable_skills"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$",
+            "description": "Unique alphanumeric identifier for the evaluation scenario."
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Task prompt submitted to the agent."
+          },
+          "expected_output": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Gold standard expected operational resolution or guidance."
+          },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 5
+            },
+            "description": "Verifiable criteria checked deterministically or by an LLM judge."
+          },
+          "expected_skill": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The primary skill or tool expected to be used for this scenario."
+          },
+          "acceptable_skills": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Alternative valid skills or tools that are acceptable for resolving the task."
+          },
+          "safety_gate_required": {
+            "type": "boolean",
+            "description": "True if the scenario involves destructive operations requiring an explicit confirmation step before execution."
+          },
+          "target_runtime": {
+            "type": "string",
+            "enum": [
+              "cloudrun",
+              "vertex-prediction",
+              "gce-spot",
+              "agent-engine",
+              "gke-ray",
+              "general"
+            ],
+            "description": "Target serving or operational infrastructure environment."
+          },
+          "model_tier_gradient": {
+            "type": "string",
+            "enum": [
+              "edge-1b-4b",
+              "mid-9b-12b",
+              "frontier-27b+"
+            ],
+            "description": "Expected model scale capability boundary for this scenario."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

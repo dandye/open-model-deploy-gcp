@@ -39,6 +39,11 @@ default:
     @printf "  \033[1;32mjust agent-soc-eval [flavor] [gen]\033[0m     \033[2mRun automated SOC eval suite (default Gen 3)\033[0m\n"
     @printf "  \033[1;32mjust eval-gen3 [flavor] [endpoint]\033[0m     \033[2mRun Gen 3 interactive eval with SDT & loss metrics\033[0m\n"
     @printf "  \033[1;32mjust eval-gen3-live [flavor] [project]\033[0m \033[2mRun Gen 3 live interactive eval with SecOps MCP\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen4 [dataset] [dry_run]\033[0m     \033[2mRun Gen 4 declarative eval suite\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen4-validate [dataset]\033[0m     \033[2mValidate Gen 4 eval dataset against schema\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen4-compare [model]\033[0m        \033[2mRun Gen 4 A/B ablation (with vs without skills)\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen4-gemma-sweep\033[0m            \033[2mRun Gen 4 sweep across all 10 Gemma variants\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen4-open-weights-sweep\033[0m     \033[2mRun Gen 4 sweep across all 27 open-weight models\033[0m\n"
     @printf "  \033[1;32mjust gepa-evolve [max_calls] [task_lm]\033[0m \033[2mEvolve SOC runbooks via GEPA Pareto optimization\033[0m\n"
     @printf "  \033[1;32mjust gepa-compare [task_lm]\033[0m             \033[2mEvaluate SOC agent with GEPA-evolved runbooks\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
@@ -223,6 +228,31 @@ eval-compare-gepa FLAVOR="gemini-2.5-flash": auth-check
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 --mcp-provider default --output-report "docs/soc_eval_results/gen3_baseline_{{FLAVOR}}_report.md"
     @echo "=== Running GEPA MCP (gusto-mcp-gepa) ==="
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 3 --mcp-provider gepa --output-report "docs/soc_eval_results/gen3_gepa_{{FLAVOR}}_report.md"
+
+# Run Gen 4 declarative evaluation suite (Usage: just eval-gen4 [dataset] [dry_run])
+eval-gen4 DATASET="evals/gemma-deploy/evals.json" DRY_RUN="true":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" {{if DRY_RUN == "true" { "--dry-run" } else { "" }}}
+
+# Validate Gen 4 declarative evaluation datasets against schema (Usage: just eval-gen4-validate [dataset])
+eval-gen4-validate DATASET="evals/gemma-deploy/evals.json":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --validate-only
+
+# Run Gen 4 A/B ablation comparison (Usage: just eval-gen4-compare [model] [dataset] [project] [region])
+eval-gen4-compare MODEL="gemini-2.5-flash" DATASET="evals/gemma-deploy/evals.json" PROJECT="dandye-0324-chronicle" REGION="us-central1":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --model "{{MODEL}}" --compare --project "{{PROJECT}}" --location "{{REGION}}" --output-json "docs/eval_results/gen4/{{MODEL}}_ablation_comparison.json" --output-md "docs/eval_results/gen4/{{MODEL}}_ablation_comparison.md"
+
+# Run complete Gen 4 evaluation sweep across all 10 Gemma model variants (Usage: just eval-gen4-gemma-sweep [dataset] [output_dir])
+eval-gen4-gemma-sweep DATASET="evals/gemma-deploy/evals.json" OUTPUT_DIR="docs/eval_results/gen4/gemma_sweep":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --sweep-gemma --gemma-output-dir "{{OUTPUT_DIR}}"
+
+# Run complete Gen 4 evaluation sweep across all 27 open-weight models (Usage: just eval-gen4-open-weights-sweep [dataset] [output_dir])
+eval-gen4-open-weights-sweep DATASET="evals/gemma-deploy/evals.json" OUTPUT_DIR="docs/eval_results/gen4/open_weights_sweep":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --sweep-open-weights --open-weights-output-dir "{{OUTPUT_DIR}}"
+
+# Retest Karl's evaluation scenarios on the unassisted baseline ladder across parameter sizes and model editions
+eval-baseline-ladder DATASET="evals/gemma-deploy/evals.json":
+    @uv run python3 scripts/eval_declarative.py --dataset "{{DATASET}}" --sweep-open-weights --open-weights-output-dir "docs/eval_results/gen4/baseline_ladder"
+
 
 # Deploy SOC Tier 1 Agent to Vertex AI Agent Engine with Live Google SecOps Remote MCP
 agent-soc-deploy LIVE_MCP="true":

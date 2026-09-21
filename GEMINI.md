@@ -79,12 +79,15 @@ All bash scripts, Terraform modules, and CLI commands read dynamically from this
 | `just tf-destroy` | Destroy Terraform-managed infrastructure |
 | `just agent-test [prompt]` | Test Gemma ADK Agent locally (auto-discovers active endpoints) |
 | `just agent-deploy` | Deploy Gemma ADK Agent to Vertex AI Agent Engine |
+| `just eval-gen4 [dataset] [dry_run]` | Run Gen 4 declarative eval suite following SkillEvaluator pattern |
+| `just eval-gen4-validate [dataset]` | Validate Gen 4 declarative eval dataset against schema |
 
 ---
 
 ## 6. File Tree
 
 * [`configs/models.json`](configs/models.json): Central model specifications & compute catalog.
+* [`evals/`](evals/): Gen 4 Declarative Agent Evaluation Suite (SkillEvaluator / Harbor pattern).
 * [`Justfile`](Justfile): Command definitions.
 * [`.env.example`](.env.example): Environment variable template.
 * [`agent/`](agent/): ADK Agent for Vertex AI Agent Engine with dynamic Gemma backend resolution.
