@@ -37,30 +37,21 @@
 
 ---
 
-## 1. Picking Up Where Agent Graphs Left Off
+## 1. The Vibe Check vs. The Open Model Question
 
-In my previous post, [Evaluating Agent Graphs for SecOps AI Runbooks](https://docs.google.com/document/d/1Na6BsFAEyUci6bELF4OgLBKBBw4Ey-FsIq9WYHgOUHA/edit), I shared benchmark results comparing three ways to execute agent workflows in Google Security Operations (SecOps): prompt-only reasoning, in-context AI runbooks, and deterministic ADK graph workflows.
+When you load domain skills into an AI coding agent, are you making it smarter, or are you just burning tokens on prompt bloat?
 
-The core takeaway from that testing was clear:
+And if skills *do* help, what happens when you move beyond closed commercial APIs to self-hosted, open-weight models? Does scaling model size make skills redundant, or can a lightweight model armed with skills match or outperform an unassisted 405B behemoth?
 
-> *"While MCP servers provide the ability to act, the runbooks provide guidance on how and when to act."*
+Usually, we answer that with a vibe check: run a couple of prompts in a terminal, eyeball the output, and decide whether it feels improved. In my previous post, [Evaluating Agent Graphs for SecOps AI Runbooks](https://docs.google.com/document/d/1Na6BsFAEyUci6bELF4OgLBKBBw4Ey-FsIq9WYHgOUHA/edit), I showed that runbooks and graph workflows pulled investigation quality from a C average up to an A- average while cutting runtime and token burn. But those evaluations were measuring tool trajectory compliance—they did not isolate how much capability was specifically contributed by the skills themselves.
 
-Providing structured operational guidance pulled report quality from a C average (70–79) up to an A- average (90–93) while cutting runtime and token burn. Graph workflows locked in deterministic tool trajectories without sacrificing output quality. I ended that post with a promise: *"having an A/B evaluation system in place unblocks more experimenting, so stay tuned!"*
+My colleague Karl Weinmeister set out to replace the vibe check with controlled measurement. In his landmark study, [Do agent skills help? I ran 72 trials to find out](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/), Karl executed 72 clean-room sandbox trials on Claude Code across 12 cloud scenarios. Using [NVIDIA SkillEvaluator](https://github.com/NVIDIA/SkillEvaluator) and [Harbor](https://github.com/laude-institute/harbor), he proved that skills replaced guessing commands and shell thrashing with working cloud infrastructure on the first try, achieving an action economy score of 0.8616 versus 0.0000 for the baseline.
 
-### The Missing Variable: Isolating the Skill Contribution
+Karl evaluated a single closed frontier model. In our daily work with open models and self-hosted infrastructure, that prompted the ultimate engineering question: **when skills are provided, what is the smallest possible model that can actually get the job done reliably?**
 
-Reflecting on that earlier research, however, revealed an important methodological boundary: **those evaluations were primarily measuring tool trajectory and qualitative report scoring.**
+To test it properly, I adopted Karl's standardized 12-scenario declarative benchmark (`evals.json`) and swept it across **27 open-weight models**—from 1B edge checkpoints up to 405B frontier weights across Gemma, Llama, Qwen, and Nemotron—on Cloud Run GPU (\$0 idle compute cost) and Vertex AI.
 
-We verified that agents stayed on the expected multi-step investigative path and produced higher-scoring incident dossiers. But we were not specifically isolating or quantifying **how much capability was contributed by the skills themselves** versus the underlying foundation model. We knew runbooks helped, but we had not isolated the skill variable in a controlled ablation trial.
-
-Around the same time, my colleague Karl Weinmeister published a pivotal study that addressed that exact challenge: [Do agent skills help? I ran 72 trials to find out](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/).
-
-Karl set out to replace informal developer "vibe checks" with clean-room measurement. Using [NVIDIA SkillEvaluator](https://github.com/NVIDIA/SkillEvaluator) and the [Harbor sandbox runner](https://github.com/laude-institute/harbor), Karl executed 72 controlled trials on Claude Code (running on Google Cloud Vertex AI) across 12 real-world cloud scenarios defined in a declarative [evals.json specification](https://github.com/kweinmeister/scripts/blob/main/evals/google-cloud-developer/evals.json).
-
-Karl's work proved two essential findings:
-
-1. **The Efficiency Dimension (0.0000 vs. 0.8616):** Without domain skills, even frontier coding assistants fell into severe "shell thrashing"—repeatedly guessing CLI flags, encountering syntax errors, and piping raw JSON dumps through fragile local awk and grep chains. With skills, the agent executed focused leaf-level syntax checks (`gcloud help <command>`), achieving an action economy score of 0.8616 versus 0.0000 for the baseline.
-2. **First-Try Operational Reliability:** Armed with curated recipes for identity, storage volumes, and server-side filtering, the agent achieved 1.0000 goal effectiveness with a 100% Pass@3 reliability rate.
+Instead of outgrowing the need for skills, unassisted models of every size hit a hard wall around 50% pass rate. But with skills, the 8B–14B mid-tier surged to an 83% pass rate on a single \$0.70/hr NVIDIA L4 GPU—matching frontier reliability at a fraction of the operating cost.
 
 ### Formulating the Core Hypotheses for Open Models
 
