@@ -4,3 +4,9 @@
 [submodule "third_party/ai-runbooks"]
 	path = third_party/ai-runbooks
 	url = https://github.com/dandye/ai-runbooks.git
+[submodule "external/harbor"]
+	path = external/harbor
+	url = https://github.com/laude-institute/harbor.git
+[submodule "external/SkillEvaluator"]
+	path = external/SkillEvaluator
+	url = https://github.com/NVIDIA/SkillEvaluator.git
