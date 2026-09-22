@@ -1,6 +1,6 @@
 # Master Empirical Open-Weights Evaluation: Skill Discovery & Prior Correction
 
-**Total Models Evaluated:** 4  
+**Total Models Evaluated:** 5  
 **Benchmark Suite:** `evals/gemma-deploy/evals.json` (12 production scenarios)  
 **Judge Model:** `vertex_ai/gemini-2.5-flash`  
 
@@ -9,23 +9,24 @@
 | Model | Tool Trigger Rate | Exact Routing | Acceptable Routing | Baseline Pass | With-Skill Pass | Pass Lift (Δ) | Assertions Matched | Assertion Lift |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | `gemini-2.5-flash` | **91.7%** | **91.7%** | **91.7%** | 50.0% | **91.7%** | **+41.7%** | 25 -> **42**/48 | **+35.4%** |
+| `gemma-2-2b-it` | **100.0%** | **66.7%** | **75.0%** | 8.3% | **66.7%** | **+58.3%** | 13 -> **32**/48 | **+39.6%** |
 | `gemma-3-12b-it` | **100.0%** | **66.7%** | **75.0%** | 66.7% | **100.0%** | **+33.3%** | 33 -> **45**/48 | **+25.0%** |
 | `gemma-3-1b-it` | **100.0%** | **33.3%** | **66.7%** | 50.0% | **58.3%** | **+8.3%** | 28 -> **29**/48 | **+2.1%** |
 | `gemma-3-4b-it` | **75.0%** | **50.0%** | **50.0%** | 41.7% | **100.0%** | **+58.3%** | 26 -> **45**/48 | **+39.6%** |
 
 ## 2. Granular Scenario-by-Scenario Matrix
 
-| Scenario ID | Expected Skill | `gemini-2.5-flash` (Route / Lift) | `gemma-3-12b-it` (Route / Lift) | `gemma-3-1b-it` (Route / Lift) | `gemma-3-4b-it` (Route / Lift) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `gdo-001-cloudrun-gpu-l4-scale-to-zero` | `cloudrun-deploy` | cloudrun-deploy (EXACT) / 4/4 (+4) | cloudrun-deploy (EXACT) / 4/4 (+1) | cloudrun-quota (MISS) / 3/4 (-1) | NONE (MISS) / 4/4 (+2) |
-| `gdo-002-vertex-speculative-decoding-ngram` | `vertex-prediction` | vertex-prediction (EXACT) / 4/4 (+4) | vertex-prediction (EXACT) / 4/4 (+0) | model-catalog (MISS) / 3/4 (+3) | vertex-prediction (EXACT) / 4/4 (+0) |
-| `gdo-003-server-side-disk-audit` | `gcloud` | gcloud (EXACT) / 4/4 (+0) | gcloud (EXACT) / 3/4 (+0) | gcloud (EXACT) / 3/4 (+0) | NONE (MISS) / 3/4 (+0) |
-| `gdo-004-cross-project-secret-iam` | `gcp-auth` | NONE (MISS) / 4/4 (+0) | gcloud (ACC) / 3/4 (-1) | gcloud (ACC) / 4/4 (+0) | NONE (MISS) / 4/4 (+0) |
-| `gdo-005-destructive-teardown-safety-gate` | `cloud-safety` | cloud-safety (EXACT) / 4/4 (+4) | NONE (MISS) / 4/4 (+0) | gcloud (ACC) / 2/4 (+0) | cloud-safety (EXACT) / 4/4 (+3) |
-| `gdo-006-gce-spot-vm-auto-deletion` | `gce-spot` | gce-spot (EXACT) / 0/4 (-3) | gce-spot (EXACT) / 4/4 (+0) | gcloud (ACC) / 1/4 (+0) | gce-spot (EXACT) / 3/4 (+2) |
-| `gdo-007-vertex-container-swap-space` | `vertex-prediction` | vertex-prediction (EXACT) / 3/4 (+2) | vertex-prediction (EXACT) / 4/4 (+3) | gce-spot (MISS) / 2/4 (+1) | model-catalog (MISS) / 4/4 (+3) |
-| `gdo-008-cloudrun-gpu-quota-lifecycle` | `cloudrun-quota` | cloudrun-quota (EXACT) / 4/4 (+0) | cloudrun-quota (EXACT) / 4/4 (+3) | gcloud (ACC) / 0/4 (-4) | NONE (MISS) / 4/4 (+3) |
-| `gdo-009-adk-agent-endpoint-discovery` | `agent-engine` | agent-engine (EXACT) / 4/4 (+2) | NONE (MISS) / 4/4 (+2) | cloudrun-deploy (MISS) / 3/4 (-1) | NONE (MISS) / 3/4 (+1) |
-| `gdo-010-soc-containment-vs-escalation` | `secops-triage` | secops-triage (EXACT) / 4/4 (+1) | secops-triage (EXACT) / 4/4 (+0) | secops-triage (EXACT) / 4/4 (+0) | secops-triage (EXACT) / 4/4 (+0) |
-| `gdo-011-adc-vs-service-account-keys` | `gcp-auth` | gcp-auth (EXACT) / 4/4 (+0) | NONE (MISS) / 4/4 (+1) | gcp-auth (EXACT) / 3/4 (+2) | gcp-auth (EXACT) / 4/4 (+1) |
-| `gdo-012-model-catalog-sizing-parity` | `model-catalog` | model-catalog (EXACT) / 3/4 (+3) | model-catalog (EXACT) / 3/4 (+3) | model-catalog (EXACT) / 1/4 (+1) | model-catalog (EXACT) / 4/4 (+4) |
+| Scenario ID | Expected Skill | `gemini-2.5-flash` (Route / Lift) | `gemma-2-2b-it` (Route / Lift) | `gemma-3-12b-it` (Route / Lift) | `gemma-3-1b-it` (Route / Lift) | `gemma-3-4b-it` (Route / Lift) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `gdo-001-cloudrun-gpu-l4-scale-to-zero` | `cloudrun-deploy` | cloudrun-deploy (EXACT) / 4/4 (+4) | cloudrun-deploy (EXACT) / 4/4 (+3) | cloudrun-deploy (EXACT) / 4/4 (+1) | cloudrun-quota (MISS) / 3/4 (-1) | NONE (MISS) / 4/4 (+2) |
+| `gdo-002-vertex-speculative-decoding-ngram` | `vertex-prediction` | vertex-prediction (EXACT) / 4/4 (+4) | vertex-prediction (EXACT) / 3/4 (+3) | vertex-prediction (EXACT) / 4/4 (+0) | model-catalog (MISS) / 3/4 (+3) | vertex-prediction (EXACT) / 4/4 (+0) |
+| `gdo-003-server-side-disk-audit` | `gcloud` | gcloud (EXACT) / 4/4 (+0) | gcloud (EXACT) / 3/4 (+0) | gcloud (EXACT) / 3/4 (+0) | gcloud (EXACT) / 3/4 (+0) | NONE (MISS) / 3/4 (+0) |
+| `gdo-004-cross-project-secret-iam` | `gcp-auth` | NONE (MISS) / 4/4 (+0) | gcloud (ACC) / 1/4 (+0) | gcloud (ACC) / 3/4 (-1) | gcloud (ACC) / 4/4 (+0) | NONE (MISS) / 4/4 (+0) |
+| `gdo-005-destructive-teardown-safety-gate` | `cloud-safety` | cloud-safety (EXACT) / 4/4 (+4) | NONE (MISS) / 3/4 (+1) | NONE (MISS) / 4/4 (+0) | gcloud (ACC) / 2/4 (+0) | cloud-safety (EXACT) / 4/4 (+3) |
+| `gdo-006-gce-spot-vm-auto-deletion` | `gce-spot` | gce-spot (EXACT) / 0/4 (-3) | gce-spot (EXACT) / 2/4 (+0) | gce-spot (EXACT) / 4/4 (+0) | gcloud (ACC) / 1/4 (+0) | gce-spot (EXACT) / 3/4 (+2) |
+| `gdo-007-vertex-container-swap-space` | `vertex-prediction` | vertex-prediction (EXACT) / 3/4 (+2) | model-catalog (MISS) / 0/4 (-1) | vertex-prediction (EXACT) / 4/4 (+3) | gce-spot (MISS) / 2/4 (+1) | model-catalog (MISS) / 4/4 (+3) |
+| `gdo-008-cloudrun-gpu-quota-lifecycle` | `cloudrun-quota` | cloudrun-quota (EXACT) / 4/4 (+0) | cloudrun-quota (EXACT) / 4/4 (+4) | cloudrun-quota (EXACT) / 4/4 (+3) | gcloud (ACC) / 0/4 (-4) | NONE (MISS) / 4/4 (+3) |
+| `gdo-009-adk-agent-endpoint-discovery` | `agent-engine` | agent-engine (EXACT) / 4/4 (+2) | NONE (MISS) / 1/4 (-1) | NONE (MISS) / 4/4 (+2) | cloudrun-deploy (MISS) / 3/4 (-1) | NONE (MISS) / 3/4 (+1) |
+| `gdo-010-soc-containment-vs-escalation` | `secops-triage` | secops-triage (EXACT) / 4/4 (+1) | secops-triage (EXACT) / 4/4 (+4) | secops-triage (EXACT) / 4/4 (+0) | secops-triage (EXACT) / 4/4 (+0) | secops-triage (EXACT) / 4/4 (+0) |
+| `gdo-011-adc-vs-service-account-keys` | `gcp-auth` | gcp-auth (EXACT) / 4/4 (+0) | gcp-auth (EXACT) / 4/4 (+3) | NONE (MISS) / 4/4 (+1) | gcp-auth (EXACT) / 3/4 (+2) | gcp-auth (EXACT) / 4/4 (+1) |
+| `gdo-012-model-catalog-sizing-parity` | `model-catalog` | model-catalog (EXACT) / 3/4 (+3) | model-catalog (EXACT) / 3/4 (+3) | model-catalog (EXACT) / 3/4 (+3) | model-catalog (EXACT) / 1/4 (+1) | model-catalog (EXACT) / 4/4 (+4) |
