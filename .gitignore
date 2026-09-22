@@ -31,3 +31,7 @@ logs/
 *.log
 .venv
 .venv/
+
+# Evaluation results and container assets
+**/evals/results/
+**/evals/environment/assets/
