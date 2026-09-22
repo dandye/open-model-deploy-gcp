@@ -107,7 +107,39 @@ def call_llm(
     project_id: str = "secops-demo-env",
     location: str = "us-central1",
 ) -> str:
-    """Calls Gemini or Vertex AI model via google-genai or LiteLLM."""
+    """Calls Gemini, dedicated Vertex AI Gemma endpoint, or LiteLLM."""
+    if model.startswith("vertex_endpoint/"):
+        endpoint_id = model.split("/", 1)[1]
+        token = get_gcp_access_token()
+        url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:rawPredict"
+        
+        full_user = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt
+        formatted_prompt = f"<start_of_turn>user\n{full_user}<end_of_turn>\n<start_of_turn>model\n"
+        
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps({
+                "prompt": formatted_prompt,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            }).encode("utf-8"),
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            predictions = data.get("predictions", [])
+            output_text = predictions[0] if predictions else ""
+            if "Output:\n" in output_text:
+                output_text = output_text.split("Output:\n", 1)[1].strip()
+            return output_text
+        except Exception as e:
+            print(f"[ERROR] Vertex endpoint call failed: {e}", file=sys.stderr)
+            return ""
+
     if "gemini" in model:
         try:
             from google import genai
@@ -130,7 +162,6 @@ def call_llm(
             )
             return resp.text or ""
         except Exception as e:
-            # Fallback to REST
             pass
 
     # Generic litellm fallback
@@ -147,6 +178,7 @@ def call_llm(
         max_tokens=max_tokens,
     )
     return resp.choices[0].message.content or ""
+
 
 
 def evaluate_assertions_with_judge(

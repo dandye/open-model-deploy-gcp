@@ -3,33 +3,33 @@
 - **Model Under Test:** `vertex_ai/gemini-2.5-flash`
 - **Benchmark Suite:** `evals.json` (12 scenarios)
 - **Judge Model:** `vertex_ai/gemini-2.5-flash`
-- **Date:** 2026-09-22 17:31:42 UTC
+- **Date:** 2026-09-22 18:41:43 UTC
 
 ## 1. Executive Summary Scorecard
 
 | Evaluation Stage | Metric | Score | Finding |
 | :--- | :--- | :---: | :--- |
 | **Stage 1: Autonomous Discovery** | Tool Trigger Rate | **91.7%** | Recognized need to query catalog |
-| | Exact Skill Routing | **25.0%** | Identified canonical target skill |
-| | Acceptable Skill Routing | **41.7%** | Loaded valid/acceptable domain skill |
-| **Stage 2: Cognitive Prior Correction** | Baseline Pass Rate | **33.3%** | Without skills |
-| | With-Skill Pass Rate | **66.7%** | Conditioned on retrieved skill |
-| | **Net Pass Rate Lift (Δ)** | **+33.3%** | Measurable capability improvement |
-| | Assertion Match Lift | **24 -> 28** (+11.1%) | Specific syntax & rule adherence |
+| | Exact Skill Routing | **91.7%** | Identified canonical target skill |
+| | Acceptable Skill Routing | **91.7%** | Loaded valid/acceptable domain skill |
+| **Stage 2: Cognitive Prior Correction** | Baseline Pass Rate | **50.0%** | Without skills |
+| | With-Skill Pass Rate | **91.7%** | Conditioned on retrieved skill |
+| | **Net Pass Rate Lift (Δ)** | **+41.7%** | Measurable capability improvement |
+| | Assertion Match Lift | **25 -> 42** (+35.4%) | Specific syntax & rule adherence |
 
 ## 2. Scenario-by-Scenario Discovery & Execution Breakdown
 
 | ID | Expected Skill | Agent Selected Skill | Discovery Status | Baseline Match | With-Skill Match | Net Lift (Δ) |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| `gcd-001-explicit-auth` | `google-cloud-recipe-auth` | `gcloud` | `ACCEPTABLE` | 2/4 | **1/4** | **-1** |
-| `gcd-002-cloudrun-storage` | `gcloud` | `cloudrun-deploy` | `MISSED` | 1/3 | **2/3** | **+1** |
-| `gcd-003-gcloud-noninteractive` | `gcloud` | `gcloud` | `EXACT` | 1/3 | **3/3** | **+2** |
-| `gcd-004-batch-timeout-limits` | `retrieving-developer-knowledge` | `google-cloud-developer` | `MISSED` | 2/3 | **3/3** | **+1** |
-| `gcd-005-catalog-skill-discovery` | `finding-google-skills` | `NONE` | `MISSED` | 1/2 | **1/2** | **+0** |
-| `gcd-006-storage-unattached-disks` | `gcloud` | `gcloud` | `EXACT` | 3/3 | **3/3** | **+0** |
-| `gcd-007-run-service-level-iam` | `google-cloud-recipe-auth` | `gcloud` | `ACCEPTABLE` | 3/3 | **3/3** | **+0** |
-| `gcd-008-worker-pools-architecture` | `retrieving-developer-knowledge` | `cloudrun-deploy` | `MISSED` | 1/3 | **3/3** | **+2** |
-| `gcd-009-cross-project-secret-iam` | `google-cloud-recipe-auth` | `gcp-auth` | `MISSED` | 3/3 | **3/3** | **+0** |
-| `gcd-010-destructive-batch-safety` | `gcloud` | `gcloud` | `EXACT` | 2/3 | **3/3** | **+1** |
-| `gcd-011-adc-troubleshooting` | `google-cloud-recipe-auth` | `gcp-auth` | `MISSED` | 2/3 | **3/3** | **+1** |
-| `gcd-012-onboarding-safety-gate` | `google-cloud-recipe-onboarding` | `google-cloud-developer` | `MISSED` | 3/3 | **0/3** | **-3** |
+| `gdo-001-cloudrun-gpu-l4-scale-to-zero` | `cloudrun-deploy` | `cloudrun-deploy` | `EXACT` | 0/4 | **4/4** | **+4** |
+| `gdo-002-vertex-speculative-decoding-ngram` | `vertex-prediction` | `vertex-prediction` | `EXACT` | 0/4 | **4/4** | **+4** |
+| `gdo-003-server-side-disk-audit` | `gcloud` | `gcloud` | `EXACT` | 4/4 | **4/4** | **+0** |
+| `gdo-004-cross-project-secret-iam` | `gcp-auth` | `NONE` | `MISSED` | 4/4 | **4/4** | **+0** |
+| `gdo-005-destructive-teardown-safety-gate` | `cloud-safety` | `cloud-safety` | `EXACT` | 0/4 | **4/4** | **+4** |
+| `gdo-006-gce-spot-vm-auto-deletion` | `gce-spot` | `gce-spot` | `EXACT` | 3/4 | **0/4** | **-3** |
+| `gdo-007-vertex-container-swap-space` | `vertex-prediction` | `vertex-prediction` | `EXACT` | 1/4 | **3/4** | **+2** |
+| `gdo-008-cloudrun-gpu-quota-lifecycle` | `cloudrun-quota` | `cloudrun-quota` | `EXACT` | 4/4 | **4/4** | **+0** |
+| `gdo-009-adk-agent-endpoint-discovery` | `agent-engine` | `agent-engine` | `EXACT` | 2/4 | **4/4** | **+2** |
+| `gdo-010-soc-containment-vs-escalation` | `secops-triage` | `secops-triage` | `EXACT` | 3/4 | **4/4** | **+1** |
+| `gdo-011-adc-vs-service-account-keys` | `gcp-auth` | `gcp-auth` | `EXACT` | 4/4 | **4/4** | **+0** |
+| `gdo-012-model-catalog-sizing-parity` | `model-catalog` | `model-catalog` | `EXACT` | 0/4 | **3/4** | **+3** |
