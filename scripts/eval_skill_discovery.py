@@ -365,9 +365,11 @@ def run_discovery_benchmark(
     judge_model: str = "vertex_ai/gemini-2.5-flash",
     project_id: str = "secops-demo-env",
     output_dir: Path = Path("docs/eval_results/discovery"),
+    model_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Runs the full discovery and cognitive execution benchmark."""
     output_dir.mkdir(parents=True, exist_ok=True)
+    display_model_name = model_name or model
     
     skill_catalog = load_skill_catalog(skills_dir)
     print(f"Loaded {len(skill_catalog)} skills into catalog.")
@@ -433,7 +435,7 @@ def run_discovery_benchmark(
     md_lines = [
         f"# Empirical Evaluation: Two-Stage Skill Discovery & Prior Correction",
         "",
-        f"- **Model Under Test:** `{model}`",
+        f"- **Model Under Test:** `{display_model_name}`",
         f"- **Benchmark Suite:** `{evalset_path.name}` ({total_scenarios} scenarios)",
         f"- **Judge Model:** `{judge_model}`",
         f"- **Date:** {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}",
@@ -467,7 +469,7 @@ def run_discovery_benchmark(
     md_lines.append("")
     report_text = "\n".join(md_lines)
     
-    safe_name = model.replace("/", "_").replace(".", "_")
+    safe_name = display_model_name.replace("/", "_").replace(".", "_")
     (output_dir / f"{safe_name}_discovery_report.md").write_text(report_text, encoding="utf-8")
     (output_dir / f"{safe_name}_discovery_results.json").write_text(
         json.dumps({"summary": summary, "trials": [asdict(r) for r in results]}, indent=2),
@@ -483,6 +485,7 @@ def main():
     parser.add_argument("--evalset", default="evals/kweinmeister/evals.json", help="Path to evals.json")
     parser.add_argument("--skills-dir", default="skills", help="Path to skills directory")
     parser.add_argument("--model", default="vertex_ai/gemini-2.5-flash", help="Model under test")
+    parser.add_argument("--model-name", default=None, help="Display/file name override for model under test")
     parser.add_argument("--judge-model", default="vertex_ai/gemini-2.5-flash", help="Judge model")
     parser.add_argument("--project-id", default="secops-demo-env", help="GCP Project ID")
     parser.add_argument("--output-dir", default="docs/eval_results/discovery", help="Output directory")
@@ -495,6 +498,7 @@ def main():
         judge_model=args.judge_model,
         project_id=args.project_id,
         output_dir=Path(args.output_dir),
+        model_name=args.model_name,
     )
 
 
