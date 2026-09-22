@@ -102,6 +102,7 @@ def call_llm(
     prompt: str,
     system_instruction: Optional[str] = None,
     model: str = "vertex_ai/gemini-2.5-flash",
+    model_name: Optional[str] = None,
     temperature: float = 0.0,
     max_tokens: int = 2048,
     project_id: str = "secops-demo-env",
@@ -114,7 +115,14 @@ def call_llm(
         url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:rawPredict"
         
         full_user = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt
-        formatted_prompt = f"<start_of_turn>user\n{full_user}<end_of_turn>\n<start_of_turn>model\n"
+        check_name = (model_name or model).lower()
+        if "llama" in check_name:
+            if system_instruction:
+                formatted_prompt = f"<|start_header_id|>system<|end_header_id|>\n\n{system_instruction}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+            else:
+                formatted_prompt = f"<|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        else:
+            formatted_prompt = f"<start_of_turn>user\n{full_user}<end_of_turn>\n<start_of_turn>model\n"
         
         req = urllib.request.Request(
             url,
@@ -246,6 +254,7 @@ def evaluate_scenario_discovery_and_execution(
     scenario: Dict[str, Any],
     skill_catalog: Dict[str, SkillMeta],
     model: str = "vertex_ai/gemini-2.5-flash",
+    model_name: Optional[str] = None,
     judge_model: str = "vertex_ai/gemini-2.5-flash",
     project_id: str = "secops-demo-env",
 ) -> DiscoveryTrialResult:
@@ -279,6 +288,7 @@ followed by your answer."""
         prompt,
         system_instruction=discovery_system,
         model=model,
+        model_name=model_name,
         temperature=0.0,
         project_id=project_id,
     )
@@ -298,6 +308,7 @@ followed by your answer."""
     baseline_output = call_llm(
         prompt,
         model=model,
+        model_name=model_name,
         temperature=0.0,
         project_id=project_id,
     )
@@ -328,6 +339,7 @@ Apply all guidelines, least-privilege standards, and safety precautions from the
         prompt,
         system_instruction=execution_system,
         model=model,
+        model_name=model_name,
         temperature=0.0,
         project_id=project_id,
     )
@@ -386,6 +398,7 @@ def run_discovery_benchmark(
             sc,
             skill_catalog,
             model=model,
+            model_name=model_name,
             judge_model=judge_model,
             project_id=project_id,
         )
