@@ -1,9 +1,14 @@
 model_list:
+  - model_name: "claude-sonnet-4-5"
+    litellm_params:
+      model: "vertex_ai/claude-sonnet-4-5"
+      vertex_project: "secops-demo-env"
+      vertex_location: "us-east5"
   - model_name: "claude-3-5-sonnet-20241022"
     litellm_params:
-      model: "vertex_ai/gemini-2.5-flash"
+      model: "vertex_ai/claude-sonnet-4-5"
       vertex_project: "secops-demo-env"
-      vertex_location: "us-central1"
+      vertex_location: "us-east5"
   - model_name: "vertex_ai/gemini-2.5-flash"
     litellm_params:
       model: "vertex_ai/gemini-2.5-flash"
