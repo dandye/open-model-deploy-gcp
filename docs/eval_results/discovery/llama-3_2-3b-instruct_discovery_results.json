@@ -1,0 +1,302 @@
+{
+  "summary": {
+    "model": "vertex_endpoint/4628772978878840832",
+    "evalset": "evals.json",
+    "total_scenarios": 12,
+    "stage1_discovery": {
+      "tool_call_rate": 0.0,
+      "exact_routing_rate": 0.0,
+      "acceptable_routing_rate": 0.0,
+      "exact_matches": 0,
+      "acceptable_matches": 0
+    },
+    "stage2_execution": {
+      "baseline_pass_rate": 0.0833,
+      "with_skill_pass_rate": 0.0833,
+      "pass_rate_lift": 0.0,
+      "baseline_assertion_rate": 0.125,
+      "with_skill_assertion_rate": 0.125,
+      "assertion_lift": 0.0,
+      "baseline_assertions_matched": 6,
+      "with_skill_assertions_matched": 6,
+      "total_assertions": 48
+    }
+  },
+  "trials": [
+    {
+      "scenario_id": "gdo-001-cloudrun-gpu-l4-scale-to-zero",
+      "prompt": "We need to deploy gemma-3-4b-it to Cloud Run in us-central1 with 1x NVIDIA L4 GPU, 16Gi RAM, and full scale-to-zero when idle. Provide the exact gcloud run deploy command, specify the required execution environment and GPU flags, and explain the quota and billing implications.",
+      "expected_skill": "cloudrun-deploy",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-002-vertex-speculative-decoding-ngram",
+      "prompt": "How do we configure N-gram prompt lookup speculative decoding for gemma-3-27b-it serving on Vertex AI prediction endpoints with vLLM? Specify the exact vLLM container arguments, explain the VRAM overhead, and describe the expected generation throughput speedup.",
+      "expected_skill": "vertex-prediction",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 2,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 2,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-003-server-side-disk-audit",
+      "prompt": "Write a gcloud command to list all unattached persistent disks in project sample-project-12345 across all zones, displaying only the disk name, zone, and size in GB. The command must filter server-side to avoid context window pollution and output cleanly without formatting bloat.",
+      "expected_skill": "gcloud",
+      "acceptable_skills": [
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 4,
+      "stage2_passed": true,
+      "baseline_output": "",
+      "baseline_assertions_matched": 4,
+      "baseline_passed": true,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-004-cross-project-secret-iam",
+      "prompt": "A Cloud Run service running with runtime service account app-worker@app-prod.iam.gserviceaccount.com in project 'app-prod' needs access to a Secret Manager secret named 'db-api-key' residing in project 'sec-vault-prod'. Provide the exact gcloud IAM command to grant least-privilege access to this specific secret resource.",
+      "expected_skill": "gcp-auth",
+      "acceptable_skills": [
+        "gcloud",
+        "google-cloud-recipe-auth",
+        "retrieving-developer-knowledge"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-005-destructive-teardown-safety-gate",
+      "prompt": "A script needs to batch delete 20 decommissioned test VM instances matching 'test-worker-*' in zone us-central1-a immediately. How should this destructive operation be handled safely, what argument syntax does gcloud compute instances delete accept, and what verification steps must precede execution?",
+      "expected_skill": "cloud-safety",
+      "acceptable_skills": [
+        "gcloud",
+        "google-cloud-recipe-onboarding",
+        "retrieving-developer-knowledge"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-006-gce-spot-vm-auto-deletion",
+      "prompt": "Design an ephemeral Compute Engine Spot VM deployment for overnight GPU batch benchmarking. How should the startup script be structured to mount local NVMe SSD storage, execute the workload, upload results to GCS, and guarantee zero idle compute billing upon job completion even if errors occur?",
+      "expected_skill": "gce-spot",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-007-vertex-container-swap-space",
+      "prompt": "When deploying large language models with custom Model Garden vLLM containers to Vertex AI prediction endpoints, how should host RAM, GPU accelerator counts, and container swap space be configured for g2-standard-8 vs g2-standard-48 machine types to avoid 'ValueError: Too large swap space' crashes?",
+      "expected_skill": "vertex-prediction",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-008-cloudrun-gpu-quota-lifecycle",
+      "prompt": "How do you check current Cloud Run NVIDIA L4 GPU quota in europe-west4, request a quota preference increase from 0 to 1, and reset the preference back to 0 when testing finishes to maintain clean project hygiene?",
+      "expected_skill": "cloudrun-quota",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-009-adk-agent-endpoint-discovery",
+      "prompt": "An ADK agent deployed on Vertex AI Agent Engine needs to dynamically query deployed Gemma models across Cloud Run and Vertex AI endpoints without hardcoded URLs or model names. How should the agent resolve active endpoints and retrieve the served model name to prevent 404 mismatch errors?",
+      "expected_skill": "agent-engine",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-010-soc-containment-vs-escalation",
+      "prompt": "A Tier 1 SOC agent detects an alert involving an internal host (10.0.5.20) contacting an external domain with borderline DNS tunneling characteristics. CMDB lists the host as the primary ERP database server. How should the agent balance containment vs escalation to avoid catastrophic operational disruption?",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-investigate",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-011-adc-vs-service-account-keys",
+      "prompt": "A developer encountering DefaultCredentialsError when testing a local Python script proposes creating and downloading a service account JSON key file. What security risks does this approach pose, and what modern Application Default Credentials (ADC) and impersonation mechanisms should be used instead?",
+      "expected_skill": "gcp-auth",
+      "acceptable_skills": [
+        "gcloud",
+        "google-cloud-recipe-auth",
+        "retrieving-developer-knowledge"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    },
+    {
+      "scenario_id": "gdo-012-model-catalog-sizing-parity",
+      "prompt": "According to the repository's centralized model catalog, what are the VRAM and compute requirements for gemma-3-27b-it vs gemma-4-31b-it, which quantization methods enable single-node deployment, and how many NVIDIA L4 GPUs are required for each?",
+      "expected_skill": "model-catalog",
+      "acceptable_skills": [
+        "gcloud",
+        "retrieving-developer-knowledge",
+        "finding-google-skills"
+      ],
+      "stage1_called_tool": false,
+      "stage1_selected_skill": null,
+      "stage1_is_exact_match": false,
+      "stage1_is_acceptable": false,
+      "stage1_raw_response": "",
+      "stage2_output": "",
+      "stage2_assertions_total": 4,
+      "stage2_assertions_matched": 0,
+      "stage2_passed": false,
+      "baseline_output": "",
+      "baseline_assertions_matched": 0,
+      "baseline_passed": false,
+      "net_assertion_lift": 0
+    }
+  ]
+}
