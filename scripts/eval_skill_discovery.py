@@ -112,7 +112,6 @@ def call_llm(
     if model.startswith("vertex_endpoint/"):
         endpoint_id = model.split("/", 1)[1]
         token = get_gcp_access_token()
-        url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:rawPredict"
         
         full_user = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt
         check_name = (model_name or model).lower()
@@ -121,11 +120,18 @@ def call_llm(
                 formatted_prompt = f"<|start_header_id|>system<|end_header_id|>\n\n{system_instruction}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
             else:
                 formatted_prompt = f"<|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        elif "qwen" in check_name:
+            if system_instruction:
+                formatted_prompt = f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
+            else:
+                formatted_prompt = f"<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
         else:
             formatted_prompt = f"<start_of_turn>user\n{full_user}<end_of_turn>\n<start_of_turn>model\n"
         
-        req = urllib.request.Request(
-            url,
+        # 1. Try vLLM :rawPredict route
+        url_raw = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:rawPredict"
+        req_raw = urllib.request.Request(
+            url_raw,
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
@@ -137,13 +143,54 @@ def call_llm(
             }).encode("utf-8"),
         )
         try:
-            with urllib.request.urlopen(req, timeout=180) as resp:
+            with urllib.request.urlopen(req_raw, timeout=180) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             predictions = data.get("predictions", [])
             output_text = predictions[0] if predictions else ""
             if "Output:\n" in output_text:
                 output_text = output_text.split("Output:\n", 1)[1].strip()
             return output_text
+        except urllib.error.HTTPError as he:
+            # 2. Fallback to standard Vertex AI :predict route for Model Garden containers
+            url_std = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:predict"
+            payload_std = {
+                "instances": [
+                    {"prompt": formatted_prompt, "max_tokens": max_tokens, "temperature": temperature}
+                ],
+                "parameters": {
+                    "maxOutputTokens": max_tokens,
+                    "temperature": temperature,
+                }
+            }
+            req_std = urllib.request.Request(
+                url_std,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                data=json.dumps(payload_std).encode("utf-8"),
+            )
+            try:
+                with urllib.request.urlopen(req_std, timeout=180) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                predictions = data.get("predictions", [])
+                if predictions:
+                    p = predictions[0]
+                    if isinstance(p, dict):
+                        output_text = (
+                            p.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                            or p.get("text", "")
+                            or p.get("content", "")
+                        )
+                    else:
+                        output_text = str(p)
+                    if "Output:\n" in output_text:
+                        output_text = output_text.split("Output:\n", 1)[1].strip()
+                    return output_text
+                return ""
+            except Exception as e_std:
+                print(f"[ERROR] Vertex standard predict failed: {e_std}", file=sys.stderr)
+                return ""
         except Exception as e:
             print(f"[ERROR] Vertex endpoint call failed: {e}", file=sys.stderr)
             return ""
