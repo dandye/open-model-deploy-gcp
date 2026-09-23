@@ -149,28 +149,35 @@ def call_llm(
             return ""
 
     if "gemini" in model:
-        try:
-            from google import genai
-            from google.genai import types
+        import time as _time
+        from google import genai
+        from google.genai import types
+        
+        clean_model = model.replace("vertex_ai/", "")
+        target_location = "global" if ("3.7" in clean_model or "3.8" in clean_model or "global" in location) else location
+        client = genai.Client(vertexai=True, project=project_id, location=target_location)
+        
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+        )
+        if system_instruction:
+            config.system_instruction = system_instruction
             
-            clean_model = model.replace("vertex_ai/", "")
-            client = genai.Client(vertexai=True, project=project_id, location=location)
-            
-            config = types.GenerateContentConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-            )
-            if system_instruction:
-                config.system_instruction = system_instruction
-                
-            resp = client.models.generate_content(
-                model=clean_model,
-                contents=prompt,
-                config=config,
-            )
-            return resp.text or ""
-        except Exception as e:
-            pass
+        for attempt in range(4):
+            try:
+                resp = client.models.generate_content(
+                    model=clean_model,
+                    contents=prompt,
+                    config=config,
+                )
+                return resp.text or ""
+            except Exception as e:
+                if attempt == 3:
+                    print(f"[ERROR] Gemini call failed after 4 attempts: {e}", file=sys.stderr)
+                    return ""
+                _time.sleep(3 * (2 ** attempt))
+        return ""
 
     # Generic litellm fallback
     import litellm

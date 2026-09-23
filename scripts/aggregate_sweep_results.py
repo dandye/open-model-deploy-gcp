@@ -28,7 +28,9 @@ def main():
 
             # If model name has endpoint, try to clean it
             display_name = model_name
-            if "vertex_ai_gemini-2_5-flash" in model_name:
+            if "vertex_ai_gemini-" in model_name:
+                display_name = model_name.replace("vertex_ai_", "").replace("_", ".")
+            elif "vertex_ai_gemini-2_5-flash" in model_name:
                 display_name = "gemini-2.5-flash"
 
             s1 = summary.get("stage1_discovery", {})
