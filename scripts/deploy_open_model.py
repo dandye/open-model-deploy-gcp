@@ -85,20 +85,58 @@ def deploy_open_model(
         max_model_len = catalog[flavor].get("runtime", {}).get("maxModelLen", 8192)
 
     serving_container_args = None
+    predict_route = "/generate"
+    health_route = "/ping"
+    ports = [8080]
+
     try:
         deploy_options = model.list_deploy_options()
-        for opt in deploy_options:
-            spec = opt.dedicated_resources.machine_spec
-            if spec.machine_type == machine_type and spec.accelerator_count == accelerator_count:
-                base_args = list(opt.container_spec.args)
-                serving_container_args = [
-                    f"--max-model-len={max_model_len}" if a.startswith("--max-model-len=") else a
-                    for a in base_args
-                ]
-                if not any(a.startswith("--max-model-len=") for a in serving_container_args):
-                    serving_container_args.append(f"--max-model-len={max_model_len}")
-                print(f">>> Overrode container args with --max-model-len={max_model_len}", flush=True)
+        matching_opts = [
+            opt for opt in deploy_options
+            if opt.dedicated_resources.machine_spec.machine_type == machine_type
+            and opt.dedicated_resources.machine_spec.accelerator_count == accelerator_count
+        ]
+        # Prefer vllm/pytorch-vllm-serve or matching container_image if multiple
+        chosen_opt = None
+        for opt in matching_opts:
+            opt_img = opt.container_spec.image_uri if opt.container_spec else ""
+            if container_image and opt_img == container_image:
+                chosen_opt = opt
                 break
+            if "vllm" in opt_img:
+                chosen_opt = opt
+                break
+        if not chosen_opt and matching_opts:
+            chosen_opt = matching_opts[0]
+
+        if chosen_opt and chosen_opt.container_spec:
+            cs = chosen_opt.container_spec
+            if cs.predict_route:
+                predict_route = cs.predict_route
+            if cs.health_route:
+                health_route = cs.health_route
+            if cs.ports:
+                ports = [p.container_port for p in cs.ports]
+            if cs.image_uri and not container_image:
+                container_image = cs.image_uri
+
+            base_args = list(cs.args) if cs.args else []
+            serving_container_args = []
+            len_found = False
+            for a in base_args:
+                if a.startswith("--max-model-len="):
+                    len_found = True
+                    cur_val = int(a.split("=", 1)[1])
+                    if cur_val < max_model_len:
+                        serving_container_args.append(f"--max-model-len={max_model_len}")
+                    else:
+                        serving_container_args.append(a)
+                else:
+                    serving_container_args.append(a)
+            if not len_found:
+                serving_container_args.append(f"--max-model-len={max_model_len}")
+            print(f">>> Resolved container args (len >= {max_model_len}): {serving_container_args}", flush=True)
+            print(f">>> Routes: predict={predict_route}, health={health_route}, ports={ports}", flush=True)
     except Exception as e_opt:
         print(f"[WARNING] Could not resolve deploy option container args: {e_opt}", flush=True)
 
@@ -110,9 +148,9 @@ def deploy_open_model(
         accelerator_count=accelerator_count,
         serving_container_image_uri=container_image,
         serving_container_args=serving_container_args,
-        serving_container_predict_route="/generate",
-        serving_container_health_route="/ping",
-        serving_container_ports=[8080],
+        serving_container_predict_route=predict_route,
+        serving_container_health_route=health_route,
+        serving_container_ports=ports,
         endpoint_display_name=endpoint_display_name,
         model_display_name=model_display_name,
         use_dedicated_endpoint=True,

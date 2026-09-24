@@ -119,7 +119,12 @@ def call_llm(
                 formatted_prompt = f"<|start_header_id|>system<|end_header_id|>\n\n{system_instruction}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
             else:
                 formatted_prompt = f"<|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
-        elif "qwen" in check_name or "deepseek" in check_name:
+        elif "mistral" in check_name:
+            if system_instruction:
+                formatted_prompt = f"<s>[INST] {system_instruction}\n\n{prompt} [/INST]\n"
+            else:
+                formatted_prompt = f"<s>[INST] {prompt} [/INST]\n"
+        elif "qwen" in check_name or "deepseek" in check_name or "phi" in check_name:
             if system_instruction:
                 formatted_prompt = f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
             else:

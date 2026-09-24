@@ -700,6 +700,174 @@
       "extraArgs": []
     },
     "supportedTargets": ["vertex_model_garden"]
+  },
+  "phi-4": {
+    "displayName": "Microsoft Phi-4 (OpenModel)",
+    "family": "phi",
+    "provider": "microsoft",
+    "type": "open_model",
+    "openModelId": "microsoft/phi4@phi-4",
+    "hfRepo": "microsoft/phi-4",
+    "compute": {
+      "machineType": "g2-standard-24",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 2,
+      "hostRamGb": 96,
+      "hourlyCostUsd": 1.66
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250506_0916_RC01",
+      "tensorParallelSize": 2,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.85,
+      "maxModelLen": 16384,
+      "extraArgs": []
+    },
+    "supportedTargets": ["vertex_open_model"]
+  },
+  "mistral-nemo-instruct-2407": {
+    "displayName": "Mistral NeMo 12B Instruct (OpenModel)",
+    "family": "mistral",
+    "provider": "mistral-ai",
+    "type": "open_model",
+    "openModelId": "mistral-ai/mistral@mistral-nemo-instruct-2407",
+    "hfRepo": "mistralai/Mistral-Nemo-Instruct-2407",
+    "compute": {
+      "machineType": "g2-standard-48",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 4,
+      "hostRamGb": 192,
+      "hourlyCostUsd": 3.32
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20240726_1329_RC00",
+      "tensorParallelSize": 4,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 16384,
+      "extraArgs": ["--trust-remote-code"]
+    },
+    "supportedTargets": ["vertex_open_model"]
+  },
+  "deepseek-r1-distill-qwen-14b": {
+    "displayName": "DeepSeek R1 Distill Qwen 14B (OpenModel)",
+    "family": "deepseek-r1",
+    "provider": "deepseek-ai",
+    "type": "open_model",
+    "openModelId": "deepseek-ai/deepseek-r1@deepseek-r1-distill-qwen-14b",
+    "hfRepo": "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B",
+    "compute": {
+      "machineType": "g2-standard-24",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 2,
+      "hostRamGb": 96,
+      "hourlyCostUsd": 1.66
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250506_0916_RC01",
+      "tensorParallelSize": 2,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.95,
+      "maxModelLen": 16384,
+      "extraArgs": ["--enforce-eager"]
+    },
+    "supportedTargets": ["vertex_open_model"]
+  },
+  "deepseek-r1-distill-llama-8b": {
+    "displayName": "DeepSeek R1 Distill Llama 8B (OpenModel)",
+    "family": "deepseek-r1",
+    "provider": "deepseek-ai",
+    "type": "open_model",
+    "openModelId": "deepseek-ai/deepseek-r1@deepseek-r1-distill-llama-8b",
+    "hfRepo": "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+    "compute": {
+      "machineType": "g2-standard-24",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 2,
+      "hostRamGb": 96,
+      "hourlyCostUsd": 1.66
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250506_0916_RC01",
+      "tensorParallelSize": 2,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.95,
+      "maxModelLen": 16384,
+      "extraArgs": ["--enforce-eager"]
+    },
+    "supportedTargets": ["vertex_open_model"]
+  },
+  "qwen2.5-14b-instruct": {
+    "displayName": "Qwen 2.5 14B Instruct (OpenModel)",
+    "family": "qwen2.5",
+    "provider": "qwen",
+    "type": "open_model",
+    "openModelId": "qwen/qwen2.5-14b-instruct",
+    "hfRepo": "Qwen/Qwen2.5-14B-Instruct",
+    "compute": {
+      "machineType": "g2-standard-24",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 2,
+      "hostRamGb": 96,
+      "hourlyCostUsd": 1.66
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20251205_0916_RC01",
+      "tensorParallelSize": 2,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": ["--enforce-eager"]
+    },
+    "supportedTargets": ["vertex_open_model"]
+  },
+  "qwen2.5-7b-instruct": {
+    "displayName": "Qwen 2.5 7B Instruct (OpenModel)",
+    "family": "qwen2.5",
+    "provider": "qwen",
+    "type": "open_model",
+    "openModelId": "qwen/qwen2.5-7b-instruct",
+    "hfRepo": "Qwen/Qwen2.5-7B-Instruct",
+    "compute": {
+      "machineType": "g2-standard-12",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 48,
+      "hourlyCostUsd": 0.83
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20260713_0916_RC01",
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 8192,
+      "extraArgs": ["--enforce-eager"]
+    },
+    "supportedTargets": ["vertex_open_model"]
+  },
+  "llama-3.1-8b-instruct": {
+    "displayName": "Meta Llama 3.1 8B Instruct (OpenModel)",
+    "family": "llama3.1",
+    "provider": "meta",
+    "type": "open_model",
+    "openModelId": "meta/llama3_1@llama-3.1-8b-instruct",
+    "hfRepo": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+    "compute": {
+      "machineType": "g2-standard-12",
+      "acceleratorType": "nvidia-l4",
+      "acceleratorCount": 1,
+      "hostRamGb": 48,
+      "hourlyCostUsd": 0.83
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20241016_0916_RC00_maas",
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 16,
+      "gpuMemoryUtilization": 0.95,
+      "maxModelLen": 32768,
+      "extraArgs": []
+    },
+    "supportedTargets": ["vertex_open_model"]
   }
 }
 
