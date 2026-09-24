@@ -80,6 +80,28 @@ def deploy_open_model(
     print(">>> Initializing model_garden.OpenModel...", flush=True)
     model = model_garden.OpenModel(open_model_id)
 
+    max_model_len = 8192
+    if flavor in catalog:
+        max_model_len = catalog[flavor].get("runtime", {}).get("maxModelLen", 8192)
+
+    serving_container_args = None
+    try:
+        deploy_options = model.list_deploy_options()
+        for opt in deploy_options:
+            spec = opt.dedicated_resources.machine_spec
+            if spec.machine_type == machine_type and spec.accelerator_count == accelerator_count:
+                base_args = list(opt.container_spec.args)
+                serving_container_args = [
+                    f"--max-model-len={max_model_len}" if a.startswith("--max-model-len=") else a
+                    for a in base_args
+                ]
+                if not any(a.startswith("--max-model-len=") for a in serving_container_args):
+                    serving_container_args.append(f"--max-model-len={max_model_len}")
+                print(f">>> Overrode container args with --max-model-len={max_model_len}", flush=True)
+                break
+    except Exception as e_opt:
+        print(f"[WARNING] Could not resolve deploy option container args: {e_opt}", flush=True)
+
     print(">>> Deploying model to dedicated endpoint (this may take 10-15 minutes)...", flush=True)
     endpoint = model.deploy(
         accept_eula=True,
@@ -87,6 +109,7 @@ def deploy_open_model(
         accelerator_type=accelerator_type,
         accelerator_count=accelerator_count,
         serving_container_image_uri=container_image,
+        serving_container_args=serving_container_args,
         endpoint_display_name=endpoint_display_name,
         model_display_name=model_display_name,
         use_dedicated_endpoint=True,

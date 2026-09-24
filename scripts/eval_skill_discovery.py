@@ -131,18 +131,11 @@ def call_llm(
         aiplatform.init(project=project_id, location=location)
         ep = aiplatform.Endpoint(endpoint_id)
 
-        # Estimate prompt tokens (~3 chars/token) and cap max_tokens to stay strictly within 2048 limit
-        est_prompt_tokens = len(formatted_prompt) // 3
-        if est_prompt_tokens > 1700:
-            formatted_prompt = formatted_prompt[: 1700 * 3]
-            est_prompt_tokens = len(formatted_prompt) // 3
-        capped_max_tokens = min(max_tokens, max(64, 2000 - est_prompt_tokens))
-
         # 1. Try raw_predict (vLLM / SGLang)
         try:
             raw_body = json.dumps({
                 "prompt": formatted_prompt,
-                "max_tokens": capped_max_tokens,
+                "max_tokens": max_tokens,
                 "temperature": temperature,
             }).encode("utf-8")
             resp = ep.raw_predict(body=raw_body, headers={"Content-Type": "application/json"})
@@ -158,7 +151,7 @@ def call_llm(
 
         # 2. Fallback to standard predict
         try:
-            pred_resp = ep.predict(instances=[{"prompt": formatted_prompt, "max_tokens": capped_max_tokens, "temperature": temperature}])
+            pred_resp = ep.predict(instances=[{"prompt": formatted_prompt, "max_tokens": max_tokens, "temperature": temperature}])
             predictions = pred_resp.predictions
             if predictions:
                 p = predictions[0]
