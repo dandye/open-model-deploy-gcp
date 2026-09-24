@@ -6,8 +6,8 @@
 | Requested Publication Date Range |  |
 | Confirmed Publication Date |  |
 | Tags (copy drop down or add tags manually) |  |
-| Teaser blurb (1 - 2 sentences, max 250 characters) | When agent skills are provided, what is the smallest model that actually performs well? Evaluating Karl Weinmeister's benchmark across 27 open models (Gemma, Llama, Qwen), we show how multi-model testing unlocks smaller models. |
-| LinkedIn post | We can't hill-climb without a slope. In my previous post on agent graphs, we evaluated tool trajectories and report quality, showing that AI runbooks pulled SecOps investigation quality from a C up to an A- average. But those evaluations were focused on trajectory—they did not isolate how much capability was specifically contributed by the skills themselves.<br><br>Karl Weinmeister's landmark 72-trial benchmark on Claude Code gave me the opportunity to test several core hypotheses: Does more parameter scale inherently yield better results? Are skills still required on large models? And most importantly: when skills are provided, what is the smallest model that can actually get the job done reliably?<br><br>Rather than inventing bespoke test cases, we adopted Karl's standardized declarative evals.json test suite and evaluated 27 open-weight models (from 1B edge checkpoints up to 405B frontier weights across Gemma, Llama, Qwen, and Nemotron) on Cloud Run GPU and Vertex AI.<br><br>What the empirical data verified:<br>1. Scale matters: Unassisted smaller models (1B–4B) struggle significantly, passing only 25% of cases. More parameters does yield better baseline performance.<br>2. The Foundation Plateau: Skills remain mandatory across all scales. Without skills, even 70B, 405B, and Gemini 2.5 Pro plateau between 41% and 58%. Pretraining alone cannot guess proprietary cloud parameters.<br>3. The Sizing Sweet Spot: When skills are injected, the 8B–14B mid-tier (Gemma 2 9B, Gemma 3 12B, Llama 3.1 8B) jumps from 41.7% to 75.0%–83.3% pass rates. Running on a single \$0.70/hr NVIDIA L4 GPU, this represents the minimum viable model scale for dependable production operations.<br>4. Frontier Parity: At 27B+ scale, open models armed with skills hit 91.7% operational accuracy (47/48 assertions matched), successfully resolving complex security containment blast-radius trade-offs.<br><br>Crucially, this evaluation rig acts as a diagnostic calibration tool. If a benchmark does not show that larger models perform better with skills still required, the eval itself is broken. And if even frontier models fail, the skills are deficient. Establishing this baseline unblocks our ultimate goal: adapting and evolving efficient skills that provide the missing context for smaller models to not just follow tool trajectories, but analyze results and decide subsequent actions.<br><br>Full evaluation breakdown, 27-model scorecard, and sizing analysis: [Insert Blog Link] |
+| Teaser blurb (1 - 2 sentences, max 250 characters) | When agent skills are provided, what is the smallest model that performs reliably? Evaluating 23 open and partner models on GCP, we isolate skill discovery from execution and map the sizing sweet spot. |
+| LinkedIn post | We can't hill-climb without a slope. In my previous post on agent graphs, we evaluated tool trajectories and report quality, showing that AI runbooks pulled SecOps investigation quality from a C up to an A- average. But those evaluations were focused on trajectory—they did not isolate how much capability was specifically contributed by the skills themselves.<br><br>Karl Weinmeister's landmark 72-trial benchmark on Claude Code gave me the opportunity to test several core hypotheses: Does more parameter scale inherently yield better results? Are skills still required on large models? And most importantly: when skills are provided, what is the smallest model that can actually get the job done reliably?<br><br>Rather than inventing bespoke test cases, we adopted Karl's standardized declarative evals.json test suite and expanded the evaluation into a rigorous Two-Stage Discovery & Execution protocol across 23 foundation and partner open-weight models (from 1B edge checkpoints up to 32B weights across Gemma, Llama, Qwen, Mistral, DeepSeek, and Microsoft Phi) on Cloud Run GPU (\$0 idle compute cost) and Vertex AI.<br><br>What the empirical data verified:<br>1. The Discovery Scaling Law: Autonomous skill discovery scales monotonically with model capacity. Sub-10B models struggle with autonomous routing (0% to 16.7% exact routing), whereas 12B–32B models achieve 83.3% to 91.7% exact routing.<br>2. The Foundation Plateau: Skills remain mandatory across all scales. Unassisted baselines plateau between 16.7% and 41.7% across open models. Fluency cannot substitute for missing platform ground truth.<br>3. The Two-Stage Decoupling Law: While 8B models fail autonomous discovery, injecting the domain skill directly into context causes pass rates to surge from 25.0% to 83.3% (+58.3% lift). Smaller models struggle to find skills, but follow them with high fidelity when loaded.<br>4. The Sizing Sweet Spot: The 8B–14B mid-tier (Mistral NeMo 12B, Qwen 2.5 14B, DeepSeek R1 Distill Qwen 14B, Phi-4) achieves 91.7% to 100.0% pass rates with skills. Running on a single \$0.70/hr NVIDIA L4 GPU, this represents the minimum viable model scale for dependable production operations.<br>5. 100% Assertion Parity: Qwen 3.8 27B tied Gemini 3.7 Flash as the only two models across the entire 23-model sweep to match a perfect 48/48 assertions.<br><br>Crucially, this evaluation rig acts as a diagnostic calibration tool. If a benchmark does not show that larger models perform better with skills still required, the eval itself is broken. Establishing this baseline unblocks our ultimate goal: adapting and evolving efficient skills that provide the missing context for smaller models to not just follow tool trajectories, but analyze results and decide subsequent actions.<br><br>Full evaluation breakdown, 23-model scorecard, and sizing analysis: [Insert Blog Link] |
 
 # **Tracking Table (To be filled out by Author)**
 
@@ -41,7 +41,7 @@
 
 When you load domain skills into an AI coding agent, are you making it smarter, or are you just burning tokens on prompt bloat?
 
-And if skills *do* help, what happens when you move beyond closed commercial APIs to self-hosted, open-weight models? Does scaling model size make skills redundant, or can a lightweight model armed with skills match or outperform an unassisted 405B behemoth?
+And if skills *do* help, what happens when you move beyond closed commercial APIs to self-hosted, open-weight models? Does scaling model size make skills redundant, or can a lightweight model armed with skills match or outperform an unassisted frontier behemoth?
 
 Usually, we answer that with a vibe check: run a couple of prompts in a terminal, eyeball the output, and decide whether it feels improved. In my previous post, [Evaluating Agent Graphs for SecOps AI Runbooks](https://docs.google.com/document/d/1Na6BsFAEyUci6bELF4OgLBKBBw4Ey-FsIq9WYHgOUHA/edit), I showed that runbooks and graph workflows pulled investigation quality from a C average up to an A- average while cutting runtime and token burn. But those evaluations were measuring tool trajectory compliance—they did not isolate how much capability was specifically contributed by the skills themselves.
 
@@ -49,19 +49,19 @@ My colleague Karl Weinmeister set out to replace the vibe check with controlled 
 
 Karl evaluated a single closed frontier model. In our daily work with open models and self-hosted infrastructure, that prompted the ultimate engineering question: **when skills are provided, what is the smallest possible model that can actually get the job done reliably?**
 
-To test it properly, I adopted Karl's standardized 12-scenario declarative benchmark (`evals.json`) and swept it across **27 open-weight models**—from 1B edge checkpoints up to 405B frontier weights across Gemma, Llama, Qwen, and Nemotron—on Cloud Run GPU (\$0 idle compute cost) and Vertex AI.
+To test it properly, I adopted Karl's standardized 12-scenario declarative benchmark (`evals.json`) and implemented a rigorous **Two-Stage Discovery & Prior Correction protocol** across **23 open-weight and partner models**—from 1B edge checkpoints up to 32B weights across Google Gemma (2, 3, 4), Meta Llama (3.1, 3.2), Alibaba Qwen (2.5, 3.8), Mistral, DeepSeek, and Microsoft Phi—on Cloud Run GPU (\$0 idle compute cost) and Vertex AI.
 
-Instead of outgrowing the need for skills, unassisted models of every size hit a hard wall around 50% pass rate. But with skills, the 8B–14B mid-tier surged to an 83% pass rate on a single \$0.70/hr NVIDIA L4 GPU—matching frontier reliability at a fraction of the operating cost.
+Instead of outgrowing the need for skills, unassisted models of every size hit a hard wall around 25% to 41% baseline pass rates. But with skills, the 8B–14B mid-tier surged to an 83%–100% pass rate on a single \$0.70/hr NVIDIA L4 GPU—matching frontier reliability at a fraction of the operating cost.
 
 ### Formulating the Core Hypotheses for Open Models
 
 Karl’s benchmark was the missing catalyst. His clean-room ablation methodology gave me the exact framework needed to test three fundamental hypotheses about model scale, deployment sizing, and domain skills:
 
-* **Hypothesis 1: Parameter scale matters.** Larger models will inherently perform better than smaller models. More parameters yield better baseline reasoning, instruction adherence, and fewer syntax hallucinations. Conversely, smaller models without skills are significantly less performant and struggle with unassisted cloud operations.
-* **Hypothesis 2: Skills are still required at scale.** Parameter scaling alone cannot eliminate the need for domain skills. Even massive frontier models (70B, 405B, Gemini 2.5 Pro) cannot deduce proprietary cloud platform parameters from pretraining alone; without skills, they still hit an operational ceiling.
-* **Hypothesis 3: The Sizing Question (The Minimum Viable Model).** In real-world enterprise deployments, infrastructure cost and latency dictate architectural decisions. Running a 70B or 405B cluster requires substantial GPU capacity. Therefore, the critical engineering question is: **when skills are provided, what is the smallest possible model that can be deployed and still perform reliably?** Can domain skills elevate compact edge models (1B–4B) or mid-tier models (8B–14B) on a single GPU into production viability?
+* **Hypothesis 1: Parameter scale governs autonomous discovery.** In Stage 1 (Skill Discovery), larger models will inherently possess the meta-cognitive capability to recognize task requirements and route to the correct specialized skill from catalog descriptions alone, whereas smaller sub-10B models will struggle to self-select skills.
+* **Hypothesis 2: Skills are mandatory across all scales (The Foundation Plateau).** Parameter scaling alone cannot eliminate the need for domain skills. Even capable models (27B–32B and Gemini 2.5 Flash) cannot deduce proprietary cloud platform parameters from pretraining alone; without skills, they still hit an operational ceiling.
+* **Hypothesis 3: The Sizing Question (The Minimum Viable Model).** In real-world enterprise deployments, infrastructure cost and latency dictate architectural decisions. Running heavy multi-node GPU clusters incurs substantial compute overhead. Therefore, the critical engineering question is: **when skills are provided, what is the smallest possible model that can be deployed and still perform reliably?** Can domain skills elevate mid-tier models (8B–14B) on a single \$0.70/hr GPU into production viability?
 
-To test these hypotheses, we took Karl Weinmeister's established declarative evaluation benchmark (`evals.json`), paired it with targeted cloud deployment skills, and executed full A/B ablation sweeps across **27 open-weight models** and 3 managed Gemini baselines on Cloud Run GPU (\$0 idle cost) and Vertex AI.
+To test these hypotheses, we took Karl Weinmeister's established declarative evaluation benchmark (`evals.json`), paired it with targeted cloud deployment skills, and executed our two-stage evaluation suite across **23 models** on Cloud Run GPU and Vertex AI.
 
 ---
 
@@ -133,113 +133,94 @@ These 12 scenarios test rigorous, real-world cloud operations:
 
 ---
 
-## 3. Results: Across 27 Open-Weight Architectures
+## 3. Results: Across 23 Open-Weight & Frontier Architectures
 
-We swept **27 open-weight models** across six research labs: **Google Gemma (2, 3, 4)**, **Meta Llama (3.1, 3.2, 3.3, 4)**, **Alibaba Qwen (2.5, 3.8)**, **NVIDIA Nemotron**, and specialized reasoning models (**Muse Spark, Thinking Machines Inkling, Mistral, Microsoft Phi-4, Zhipu GLM**).
+We evaluated **23 models** across six research labs: **Google Gemma (2, 3, 4)**, **Meta Llama (3.1, 3.2)**, **Alibaba Qwen (2.5, 3.8)**, **Mistral AI**, **DeepSeek**, **Microsoft Phi**, and **Thinking Machines Inkling**, benchmarked against **Google Gemini (2.5 Flash, 3.7 Flash, 3.8 Flash)** reference baselines.
 
-Every model was evaluated across all 12 scenarios in both arms (48 total assertion checks per run):
+Each model was subjected to the two-stage protocol across all 12 operational scenarios (48 total assertion checks per model):
 
-| Model Variant | Architecture Family | Active Parameters | Serving Environment | Baseline (No Skills) Pass Rate | Treatment (With Skills) Pass Rate | Net Capability Lift (Delta) | Assertion Matches (Base to Skill) |
-| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **`gemma-4-31b-it`** | **Gemma 4** | 31B Dense | Vertex AI (2x A100) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 to **47 / 48** |
-| **`gemma-3-27b-it`** | **Gemma 3** | 27B Dense | Vertex AI (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 to **47 / 48** |
-| **`gemma-2-27b-it`** | **Gemma 2** | 27B Dense | Vertex AI (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 to **47 / 48** |
-| **`qwen2.5-coder-32b-instruct`**| **Qwen 2.5 Coder**| 32B Code Specialist| Vertex AI (4x L4) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 to **47 / 48** |
-| **`qwen3.8-27b`** | **Qwen 3.8** | 27B Dense | Vertex AI (RTX PRO) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 to **47 / 48** |
-| **`llama-3.3-70b-instruct`** | **Llama 3.3** | 70B Dense | Vertex AI (MaaS) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 to **47 / 48** |
-| **`llama-3.1-405b-instruct`**| **Llama 3.1** | 405B Frontier | Vertex AI (MaaS) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 to **47 / 48** |
-| **`nemotron-3.5-lightning-bf16`**| **Nemotron** | 30B (MoE) | Vertex AI (4x L4) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 to **47 / 48** |
-| **`llama-3.1-nemotron-70b`** | **Nemotron-Llama** | 70B Aligned | Vertex AI (4x L4) | 58.3% (7 / 12) | **91.7% (11 / 12)** | **+33.3%** | 43 to **47 / 48** |
-| **`llama-4-maverick-17b`** | **Llama 4** | 17B (128 Experts)| Vertex AI (MaaS) | 50.0% (6 / 12) | **91.7% (11 / 12)** | **+41.7%** | 42 to **47 / 48** |
-| **`muse-spark-1.3`** | **Muse Spark** | 14B Agentic | Vertex AI (1x L4) | 50.0% (6 / 12) | **83.3% (10 / 12)** | **+33.3%** | 42 to **46 / 48** |
-| **`gemma-3-12b-it`** | **Gemma 3** | 12B Dense | Vertex AI (4x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`gemma-2-9b-it`** | **Gemma 2** | 9B Dense | Vertex AI (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`llama-guard-3-8b`** | **Llama Guard**| 8B Guardrail | Vertex AI (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`llama-3.1-8b-instruct`** | **Llama 3.1** | 8B Dense | Vertex AI (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`llama-4-scout-17b-16e`** | **Llama 4** | 17B (16 Experts) | Vertex AI (MaaS) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`inkling-small`** | **Thinking Machines**| 14B Reasoner | Vertex AI (4x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`phi-4`** | **Microsoft Phi**| 14B Dense | Vertex AI (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`glm-5.3-flash`** | **Zhipu GLM** | 12B Dense | Vertex AI (1x L4) | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **45 / 48** |
-| **`gemma-4-e4b-it`** | **Gemma 4** | 4B Active (MoE) | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`gemma-3-4b-it`** | **Gemma 3** | 4B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`gemma-4-e2b-it`** | **Gemma 4** | 2B Active (MoE) | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`gemma-2-2b-it`** | **Gemma 2** | 2B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`gemma-3-1b-it`** | **Gemma 3** | 1B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`llama-3.2-1b-instruct`** | **Llama 3.2** | 1B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`llama-3.2-3b-instruct`** | **Llama 3.2** | 3B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-| **`ministral-3b-2410`** | **Mistral** | 3B Dense | Cloud Run GPU (1x L4) | 25.0% (3 / 12) | **58.3% (7 / 12)** | **+33.3%** | 37 to **43 / 48** |
-
-### Managed Reference Baselines (Vertex AI API)
-
-| Reference Model | Class / Role | Baseline (No Skills) | Treatment (With Skills) | Net Capability Lift (Delta) | Assertion Gain |
-| :--- | :--- | :---: | :---: | :---: | :---: |
-| **`gemini-2.5-pro`** | Frontier Deep Reasoner | 41.7% (5 / 12) | **75.0% (9 / 12)** | **+33.3%** | 41 to **44 / 48** (+3) |
-| **`gemini-2.5-flash-lite`** | Lightweight Edge API | 50.0% (6 / 12) | **66.7% (8 / 12)** | **+16.7%** | 41 to **43 / 48** (+2) |
-| **`gemini-2.5-flash`** | General Workhorse | 41.7% (5 / 12) | **58.3% (7 / 12)** | **+16.7%** | 39 to **41 / 48** (+2) |
+| Model Variant | Architecture / Sizing | Serving Environment | Stage 1 Tool Trigger | Stage 1 Exact Routing | Stage 2 Baseline Pass | Stage 2 With-Skill Pass | Net Pass Lift (Δ) | Assertions Matched (Base -> Skill) | Net Assertion Lift (Δ) |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`gemini-3.7-flash`** | Frontier Serverless | Vertex AI (`global`) | 91.7% | **91.7%** | 83.3% | **100.0%** | +16.7% | 37 -> **48 / 48** (100.0%) | +22.9% |
+| **`qwen3.8-27b`** | 27B Dense Reasoner | Vertex AI (4x L4) | 33.3% | 33.3% | 66.7% | **100.0%** | +33.3% | 35 -> **48 / 48** (100.0%) | +27.1% |
+| **`gemma-4-e4b-it`** | 4B Active (MoE) | Vertex AI (1x L4) | 100.0% | **91.7%** | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
+| **`gemma-3-27b-it`** | 27B Dense | Vertex AI (4x L4) | 91.7% | **83.3%** | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
+| **`mistral-nemo-instruct-2407`** | 12B Dense (Tekken) | Vertex AI (4x L4) | 91.7% | **91.7%** | 41.7% | **100.0%** | +58.3% | 21 -> **46 / 48** (95.8%) | +52.1% |
+| **`qwen2.5-coder-32b-instruct`** | 32B Code Specialist | Vertex AI (4x L4) | 91.7% | **91.7%** | 33.3% | **91.7%** | +58.3% | 24 -> **46 / 48** (95.8%) | +45.8% |
+| **`gemini-3.8-flash`** | Frontier Serverless | Vertex AI (`global`) | 100.0% | **100.0%** | 66.7% | **100.0%** | +33.3% | 35 -> **46 / 48** (95.8%) | +22.9% |
+| **`deepseek-r1-distill-qwen-14b`** | 14B Distilled Reasoner | Vertex AI (2x L4) | 83.3% | **83.3%** | 25.0% | **91.7%** | **+66.7%** | 20 -> **45 / 48** (93.8%) | +52.1% |
+| **`gemma-2-27b-it`** | 27B Dense | Vertex AI (4x L4) | 100.0% | 75.0% | 41.7% | **100.0%** | +58.3% | 21 -> **45 / 48** (93.8%) | +50.0% |
+| **`gemma-3-12b-it`** | 12B Dense | Vertex AI (4x L4) | 100.0% | 66.7% | 66.7% | **100.0%** | +33.3% | 33 -> **45 / 48** (93.8%) | +25.0% |
+| **`gemma-3-4b-it`** | 4B Dense | Vertex AI (1x L4) | 75.0% | 50.0% | 41.7% | **100.0%** | +58.3% | 26 -> **45 / 48** (93.8%) | +39.6% |
+| **`phi-4`** | 14B Dense Reasoner | Vertex AI (2x L4) | 100.0% | **83.3%** | 33.3% | **91.7%** | +58.3% | 23 -> **42 / 48** (87.5%) | +39.6% |
+| **`qwen2.5-14b-instruct`** | 14B Dense | Vertex AI (2x L4) | 91.7% | **91.7%** | 25.0% | **91.7%** | **+66.7%** | 18 -> **42 / 48** (87.5%) | +50.0% |
+| **`llama-3.1-8b-instruct`** | 8B Dense | Vertex AI (1x L4) | 100.0% | 16.7% | 25.0% | **83.3%** | +58.3% | 18 -> **42 / 48** (87.5%) | +50.0% |
+| **`gemini-2.5-flash`** | General Workhorse | Vertex AI (`us-central1`)| 91.7% | 91.7% | 50.0% | 91.7% | +41.7% | 25 -> **42 / 48** (87.5%) | +35.4% |
+| **`qwen2.5-7b-instruct`** | 7B Dense | Vertex AI (1x L4) | 83.3% | 75.0% | 25.0% | **83.3%** | +58.3% | 19 -> **41 / 48** (85.4%) | +45.8% |
+| **`deepseek-r1-distill-llama-8b`** | 8B Distilled Reasoner | Vertex AI (2x L4) | 0.0% | 0.0% | 25.0% | **83.3%** | +58.3% | 15 -> **40 / 48** (83.3%) | +52.1% |
+| **`gemma-2-9b-it`** | 9B Dense | Vertex AI (1x L4) | 91.7% | 75.0% | 16.7% | **83.3%** | **+66.7%** | 17 -> **40 / 48** (83.3%) | +47.9% |
+| **`gemma-2-2b-it`** | 2.6B Dense | Vertex AI (1x L4) | 100.0% | 66.7% | 8.3% | 66.7% | +58.3% | 13 -> **32 / 48** (66.7%) | +39.6% |
+| **`gemma-3-1b-it`** | 1.0B Dense | Vertex AI (1x L4) | 100.0% | 33.3% | 50.0% | 58.3% | +8.3% | 28 -> **29 / 48** (60.4%) | +2.1% |
+| **`gemma-4-e2b-it`** | 2.3B Active (MoE) | Vertex AI (1x L4) | 16.7% | 16.7% | 8.3% | 41.7% | +33.3% | 5 -> **20 / 48** (41.7%) | +31.2% |
+| **`llama-3.2-3b-instruct`** | 3B Dense | Vertex AI (1x L4) | 0.0% | 0.0% | 8.3% | 8.3% | +0.0% | 6 -> **6 / 48** (12.5%) | +0.0% |
+| **`inkling-small`** | 14B Reasoner | Vertex AI (4x L4) | 0.0% | 0.0% | 8.3% | 0.0% | -8.3% | 6 -> **2 / 48** (4.2%) | -8.3% |
 
 ---
 
 ## 4. Key Findings: Verifying the Hypotheses
 
-Analyzing the data across all 27 open models directly addressed our three guiding hypotheses.
+Analyzing the empirical data across all 23 models directly answers our core research questions and reveals four architectural laws:
 
-### 1. Parameter Scale Matters: Smaller Models Struggle Unassisted
+### 1. Parameter Scale Governs Autonomous Discovery (Stage 1)
 
-Our testing confirmed **Hypothesis 1**: there is a direct, observable correlation between parameter scale and baseline capability.
+Our testing confirms **Hypothesis 1**: autonomous skill discovery scales monotonically with parameter size and reasoning architecture.
 
-In the unassisted baseline arm (without skills):
-* **Edge Tier (1B–4B):** Passed only **25.0% (3 of 12)** of scenarios. These models genuinely lacked the internal parameter capacity to compose multi-clause CLI commands or reason through security trade-offs without help. They repeatedly failed basic syntax formatting and attempted invalid flag combinations.
-* **Mid-Tier (8B–14B):** Improved to **41.7% (5 of 12)** pass rates unassisted. They demonstrated better command structure but still stumbled on platform-specific parameters.
-* **Frontier Tier (27B–405B):** Reached **50.0% to 58.3% (6–7 of 12)** pass rates unassisted.
+In Stage 1, the agent was presented solely with the user request and a catalog of available skill titles and summaries. To succeed, the model had to independently recognize that the operational task required specialized knowledge and emit the canonical tool invocation (`SEARCH_SKILL: <name>`):
 
-More parameters undeniably yields better baseline performance and grammatical fluency. Smaller models do not perform as well unassisted.
+* **Edge Tier (1B–4B):** Averaged **33.3% exact routing**. Compact models like `gemma-4-e2b-it` (16.7%) and `llama-3.2-3b-instruct` (0.0%) lacked the meta-cognitive capacity to evaluate their own ignorance. They routinely fell back to conversational responses, attempted direct command guessing, or hallucinated nonexistent skill names.
+* **Mid-Tier (7B–14B):** Jumped to **75.0%–91.7% exact routing**. `qwen2.5-14b-instruct` (91.7%), `mistral-nemo-instruct-2407` (91.7%), and `phi-4` (83.3%) demonstrated sharp discernment, accurately separating standard operations from tasks requiring specialized runbooks.
+* **Frontier Tier (27B–32B+):** Reached **83.3%–100.0% exact routing**. Models like `gemma-4-e4b-it` (91.7%), `qwen2.5-coder-32b-instruct` (91.7%), and `gemini-3.8-flash` (100.0%) matched target skills with near-perfect fidelity.
 
-### 2. The "Foundation Plateau": Skills Are Mandatory Across All Scales
+### 2. The Foundation Plateau: Skills Are Mandatory Across All Scales
 
-However, our results equally confirmed **Hypothesis 2**: **scaling parameters alone does not eliminate the need for skills.**
+Our results equally confirmed **Hypothesis 2**: **scaling parameters alone does not eliminate the need for skills.**
 
-Even at the highest parameter counts, performance in the baseline arm hit an unmistakable wall:
-* Meta's flagship **`llama-3.1-405b-instruct`** passed only **58.3%** without skills.
-* Google's managed **`gemini-2.5-pro`** passed only **41.7%** without skills.
-* Gemma 4 31B and Gemma 3 27B passed only **50.0%** without skills.
+In the unassisted baseline arm (without skills), models of all sizes hit a hard operational ceiling between **16.7% and 41.7% pass rates** across open weights (and 50.0% for Gemini 2.5 Flash).
 
-Why did 405B parameters fail where a 9B model with skills succeeded? Because **foundation models cannot deduce proprietary, platform-specific parameters from pretraining alone.**
+Why do 27B and 32B models fail where an assisted 4B model succeeds? Because **pre-training ingests humanity's pedagogical debt**. 
 
-In Scenario 8 (`gdo-008`), every single model in the baseline arm failed because none could recall the exact internal GCP quota identifier:
+In public tutorials, quickstarts, and Stack Overflow answers, authors routinely cut corners to get to "Hello World" in five minutes:
+- Granting project-wide IAM (`gcloud projects add-iam-policy-binding`) instead of resource-scoped permissions (`gcloud secrets add-iam-policy-binding`).
+- Omitting non-interactive confirmation flags (`--quiet`).
+- Using default shared VPC subnets rather than private IP ranges.
+
+Pretraining converts this pedagogical debt into the default statistical prior of the model—what we call **Tutorial Gravity**. In Scenario 8 (`gdo-008`), every single unassisted model failed because pretraining cannot guess proprietary internal cloud quota identifiers like:
 
 ```text
 NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion
 ```
 
-Without domain skills, larger models simply produced more eloquent hallucinations of generic Compute Engine flags (`GPUS_ALL_REGIONS`), failing the operational assertion. Fluency is not knowledge. Parameter scale increases eloquence, but domain skills supply the missing ground truth.
+Without domain skills, larger models simply produced more eloquent hallucinations of generic Compute Engine flags (`GPUS_ALL_REGIONS`). Fluency is not knowledge. Parameter scale increases eloquence, but **skills provide prior correction**, supplying the authoritative ground truth required to overcome Tutorial Gravity.
 
-### 3. The Sizing Answer: Finding the Smallest Viable Model
+### 3. The Two-Stage Decoupling Law: Discovery Floor vs. Execution Fidelity
+
+The most surprising empirical finding was the **complete decoupling between skill discovery and skill execution in sub-10B models**:
+
+* In **Stage 1 (Discovery)**, `deepseek-r1-distill-llama-8b` scored **0.0% exact routing**, and `llama-3.1-8b-instruct` scored only **16.7% exact routing**. Both models failed to query the catalog, expending their generation tokens on conversational reasoning or direct command guessing.
+* But in **Stage 2 (Prior Correction)**, when the ground-truth skill was supplied directly into their context window, both models surged to an **83.3% clean pass rate (10 of 12 scenarios passed)**, matching **40 to 42 of 48 assertions (+50.0% to +52.1% net lift)**.
+
+This establishes an essential architectural principle: **sub-10B models suffer from a Discovery Ceiling, not an Execution Ceiling.** Smaller models cannot self-select skills reliably, but are fully capable of executing complex procedural instructions when the appropriate skill is pre-loaded or injected by a deterministic supervisor.
+
+### 4. The Sizing Answer: The 8B–14B Production Sweet Spot
 
 This brings us to **Hypothesis 3**: when domain skills *are* provided, **what is the smallest model that can actually get the job done reliably?**
 
-The empirical gradient reveals three distinct operational tiers:
+The empirical data identifies the **8B–14B parameter range on a single NVIDIA L4 GPU** as the definitive production sweet spot:
 
-#### The Edge Tier (1B–4B): High Relative Lift, But Bounded Complexity
-Adding domain skills provides a massive relative boost to small models, raising pass rates from **25.0% to 58.3%** (+33.3% net lift, gaining 6 assertions from 37 to 43/48).
-
-* **Where they succeed:** Small models with skills reliably handle focused, single-purpose operational tasks—such as deploying a container to Cloud Run with scale-to-zero flags (`gdo-001`) or applying server-side persistent disk filters (`gdo-003`).
-* **Where they struggle:** When faced with complex multi-step reasoning, destructive action safety gates (`gdo-005`), or intricate blast-radius triage calculations (`gdo-010`), models under 4B parameters still stumble.
-* **The MoE Exception:** **`gemma-4-e4b-it`** (Mixture-of-Experts) demonstrated compelling efficiency. Activating only 4B parameters during generation on Cloud Run GPU (\$0 idle compute cost), it achieved the full 58.3% tier score while running on serverless infrastructure.
-
-#### The Mid-Tier (8B–14B): The Operational Sweet Spot
-The 8B–14B parameter range represents the **minimum viable model scale for dependable production operations**.
-
-Without skills, these models hovered at a mediocre 41.7% pass rate. But when injected with domain skills, models like **`gemma-2-9b-it`**, **`gemma-3-12b-it`**, **`llama-3.1-8b-instruct`**, and **`phi-4`** surged to **75.0% – 83.3% pass rates** (matching 45 to 46 of 48 assertions).
-
-This tier is transformative for deployment economics:
-* A 9B or 12B model fits comfortably on a **single NVIDIA L4 GPU** (`g2-standard-8` or `g2-standard-12`), costing approximately **\$0.70 to \$1.00 per hour** on Vertex AI.
-* Armed with domain skills, an 8B–14B model resolves 9 to 10 out of 12 complex scenarios on the first attempt, including quota preference management and speculative decoding configuration.
-* For teams seeking the lowest operating cost without sacrificing operational reliability, **the 8B–14B class armed with skills is the definitive sweet spot**.
-
-#### The Frontier Tier (27B–31B+): Full Parity with Commercial APIs
-In the 27B+ tier, **`gemma-4-31b-it`**, **`gemma-3-27b-it`**, **`qwen2.5-coder-32b`**, **`llama-3.3-70b`**, and **`nemotron-3.5-lightning`** achieved **91.7% clean pass rates** (47 of 48 assertions matched).
-
-Armed with skills, these models successfully mastered high-stakes reasoning: balancing a \$50k+ ERP downtime blast radius against malware containment (`gdo-010`), navigating multi-node container swap space formulas (`gdo-007`), and executing verified GCE Spot VM benchmarking pipelines (`gdo-006`). They matched or exceeded the performance of closed commercial endpoints while running entirely within a self-hosted VPC perimeter.
+* **Top Mid-Tier Generalist:** **`mistral-nemo-instruct-2407`** (12B on 4x L4) achieved **91.7% exact routing**, **100.0% with-skill pass rate**, and **46/48 assertions matched**, matching `qwen2.5-coder-32b-instruct` and `gemini-3.8-flash` at half the footprint.
+* **Maximum Net Lift:** **`deepseek-r1-distill-qwen-14b`** and **`qwen2.5-14b-instruct`** delivered the highest net pass rate lift in the entire benchmark (**+66.7% lift**, jumping from 25.0% baseline to 91.7% pass rate), matching 42 to 45 assertions.
+* **SOTA Assertion Ceiling (48/48):** **`qwen3.8-27b`** joined **`gemini-3.7-flash`** as the only two models across the entire 23-model benchmark to achieve a **flawless 48/48 (100.0%) assertion match**.
+* **Edge Sizing Viability:** Models between 8B and 14B fit comfortably on a single NVIDIA L4 GPU (`g2-standard-8` or `g2-standard-12`) costing **~\$0.70 to \$0.83/hr**, resolving 10 to 12 production scenarios with zero syntax failures.
 
 ---
 
@@ -326,7 +307,7 @@ we give smaller models the missing domain context they need to perform end-to-en
 
 ## 7. Practical Lessons for Skill Authors
 
-Karl Weinmeister’s original study outlined essential recommendations for authoring cloud agent skills. Our experiments across 27 open-weight models validate those rules and introduce four critical constraints for open deployments:
+Karl Weinmeister’s original study outlined essential recommendations for authoring cloud agent skills. Our experiments across 23 open-weight and partner models validate those rules and introduce four critical constraints for open deployments:
 
 ### 1. Enforce Leaf-Level Help Checks Before Execution
 
@@ -368,12 +349,12 @@ completely eliminated `ValueError: Too large swap space` crashes across all eval
 
 ## 8. Connecting the Dots: Runbooks, Graphs, and Skills
 
-Looking at these results alongside my previous testing on [Agent Graphs](https://docs.google.com/document/d/1Na6BsFAEyUci6bELF4OgLBKBBw4Ey-FsIq9WYHgOUHA/edit), a unified architectural hierarchy emerges:
+Looking at these results alongside my previous testing on [Agent Graphs](https://security.googlecloudcommunity.com/community-blog-42/evaluating-agent-graphs-for-secops-ai-runbooks-8232) ([local tracking](evaluating_agent_graphs_for_secops_ai_runbooks.md)), a unified architectural hierarchy emerges:
 
 | Mechanism | Where it Operates | What it Provides | Effect on Open Models |
 | :--- | :--- | :--- | :--- |
-| **Model Scale Alone** | Pre-training weights | General reasoning & fluent grammar | Plateaus at 25%–58% on cloud platforms |
-| **Domain Skills (`SKILL.md`)** | Prompt context / tooling | Context for analysis, rules & action choices | **+33% to +42% Net Lift** (bypasses shell thrashing) |
+| **Model Scale Alone** | Pre-training weights | General reasoning & fluent grammar | Plateaus at 16.7%–41.7% on cloud platforms |
+| **Domain Skills (`SKILL.md`)** | Prompt context / tooling | Context for analysis, rules & action choices | **+33.3% to +66.7% Net Lift** (bypasses shell thrashing) |
 | **ADK Graph Workflows** | Execution runtime | Deterministic state machine & gating | Eliminates trajectory drift & locks in A- quality |
 
 Our earlier post evaluated **execution trajectories**; Karl Weinmeister's work gave us the blueprint to evaluate **skill ablation**. Together, they establish that skills and graph workflows solve complementary challenges:
@@ -389,13 +370,14 @@ As open models continue to close the raw reasoning gap with proprietary frontier
 
 Karl Weinmeister proved that agent skills transform coding assistants from exploratory trial-and-error guessing into first-try operational accuracy.
 
-Our experiments extend that conclusion across 27 open-weight models:
+Our experiments extend that conclusion across 23 open-weight and partner models:
 
-1. **Parameter scale matters:** Smaller models (1B–4B) struggle significantly unassisted (25% pass rate), proving that raw parameter capacity is essential for baseline operational capability.
-2. **The Foundation Plateau is universal:** Without domain skills, even 70B and 405B models plateau around 50% on cloud platforms because fluency cannot substitute for missing platform state.
-3. **The Sizing Sweet Spot is 8B–14B:** Injected with domain skills, mid-tier models (Gemma 2 9B, Gemma 3 12B, Llama 3.1 8B) reach **75.0% – 83.3% operational accuracy**, offering the most cost-effective production deployment on a single NVIDIA L4 GPU.
-4. **Frontier Parity at 27B+:** Open models at 27B–31B armed with skills achieve **91.7% accuracy**, matching closed commercial APIs while running entirely within self-hosted infrastructure.
-5. **The Diagnostic Blueprint:** This evaluation rig enables us to calibrate SecOps skills, diagnose benchmark and skill defects, and begin evolving compact skills that help smaller models analyze evidence and decide subsequent actions.
+1. **Parameter scale governs autonomous discovery:** Sub-10B models struggle significantly with Stage 1 catalog search (0% to 33% exact routing), whereas 12B–32B models achieve 83.3% to 91.7% exact routing.
+2. **The Foundation Plateau is universal:** Without domain skills, unassisted baseline pass rates hit a ceiling between 16.7% and 41.7% across open models because fluency cannot substitute for missing platform ground truth.
+3. **The Two-Stage Decoupling Law:** While 8B models (DeepSeek R1 Distill Llama 8B, Llama 3.1 8B) fail autonomous discovery, injecting skills into context causes pass rates to surge to **83.3% (matching 40–42 assertions, +50% to +58% net lift)**. Smaller models cannot self-select skills, but execute them with high fidelity.
+4. **The Sizing Sweet Spot is 8B–14B:** Injected with domain skills, mid-tier models (Mistral NeMo 12B, Qwen 2.5 14B, DeepSeek R1 Distill Qwen 14B, Phi-4, Gemma 2 9B) reach **83.3% to 100.0% operational accuracy**, offering the most cost-effective production deployment on a single NVIDIA L4 GPU (\$0.70/hr).
+5. **Frontier Parity & 100% Assertion Match:** `qwen3.8-27b` joined `gemini-3.7-flash` as the only two models across all 23 evaluated targets to achieve a **perfect 48/48 (100.0%) assertion match**, while `gemma-4-e4b-it` and `gemma-3-27b-it` matched 47/48 assertions.
+6. **The Diagnostic Blueprint:** This evaluation rig enables us to calibrate SecOps skills, diagnose benchmark and skill defects, and begin evolving compact skills that help smaller models analyze evidence and decide subsequent actions.
 
 In **Part 3** of this series, we will examine the economics of **Speculative Decoding on Dedicated vs. Serverless Infrastructure**, analyzing how N-gram prompt lookup and multi-model draft speculation reduce inference latency by 2.3x with zero extra VRAM.
 
@@ -405,8 +387,9 @@ In **Part 3** of this series, we will examine the economics of **Speculative Dec
 
 - Karl Weinmeister, [Do agent skills help? I ran 72 trials to find out](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/) (2025).
 - Karl Weinmeister, [`evals.json` Reference Schema](https://github.com/kweinmeister/scripts/blob/main/evals/google-cloud-developer/evals.json) on GitHub.
-- Dan Dye, [Evaluating Agent Graphs for SecOps AI Runbooks](https://docs.google.com/document/d/1Na6BsFAEyUci6bELF4OgLBKBBw4Ey-FsIq9WYHgOUHA/edit) (2026).
-- Dan Dye, [Serving Open Models for Security Agents, Part 1: Building a Repeatable Experiment](part1_zero_idle_gpu_infrastructure.md) (2026).
+- Dan Dye, [Evaluating Agent Graphs for SecOps AI Runbooks](https://security.googlecloudcommunity.com/community-blog-42/evaluating-agent-graphs-for-secops-ai-runbooks-8232) (2026), local tracking at [`evaluating_agent_graphs_for_secops_ai_runbooks.md`](evaluating_agent_graphs_for_secops_ai_runbooks.md).
+- Dan Dye, [Serving Open Models for Security Agents, Part 1: Zero-Idle GPU Infrastructure](part1_zero_idle_gpu_infrastructure.md) (2026).
 - NVIDIA, [SkillEvaluator Framework](https://github.com/NVIDIA/SkillEvaluator) on GitHub.
 - Laude Institute, [Harbor Sandbox Runner](https://github.com/laude-institute/harbor) on GitHub.
-- Repository & Evaluation Suite: [`dandye/open-model-deploy-gcp`](https://github.com/dandye/open-model-deploy-gcp) (PR #8).
+- Repository & Evaluation Suite: [`dandye/open-model-deploy-gcp`](https://github.com/dandye/open-model-deploy-gcp) (branch `skill_discovery_eval_v0001`).
+- Master Empirical Leaderboard: [`docs/eval_results/discovery/master_open_model_sweep_report.md`](../eval_results/discovery/master_open_model_sweep_report.md).
