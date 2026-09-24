@@ -55,7 +55,7 @@ def deploy_open_model(
 
     timestamp = int(time.time() * 1000)
     safe_flavor = flavor.replace("-", "_").replace(".", "_")
-    endpoint_display_name = endpoint_name or f"{safe_flavor}-mg-one-click-deploy"
+    endpoint_display_name = endpoint_name or f"{safe_flavor}-endpoint-{timestamp}"
     model_display_name = f"{safe_flavor}-{timestamp}"
 
     print("==================================================================", flush=True)
