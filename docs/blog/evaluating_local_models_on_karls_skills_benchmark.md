@@ -51,12 +51,14 @@ Each scenario tests a concrete, non-trivial operational cloud task with 4 object
 | `gdo-011` | ADC vs Service Account Keys | `gcp-auth` | User ADC and impersonation vs downloadable JSON key antipatterns |
 | `gdo-012` | Model Catalog Sizing Parity | `model-catalog` | Compute shapes, tensor parallelism, and VRAM boundaries |
 
-### The Two-Stage Test Protocol
+### The Evaluation Protocol: Prior Correction & Execution
 
-To measure both *discovery* and *execution*, each scenario is tested in two distinct stages:
+To measure whether domain skills actually improve open models, each scenario is evaluated across two paired conditions:
 
-1. **Stage 1 (Autonomous Skill Discovery & Routing):** The model is given only the user request and a catalog of available skill titles and descriptions. It must independently determine whether a domain skill is required and emit `SEARCH_SKILL: <skill-name>` or `NO_SKILL_NEEDED`.  
-2. **Stage 2 (Prior Correction & Execution):** The model is evaluated in an unassisted baseline arm (raw prompt) and a treatment arm (target domain skill injected into context). The outputs are graded against the 4 discrete technical assertions to measure net capability lift.
+1. **Baseline Arm (Unassisted Prompt):** The model receives the raw task prompt with zero domain context, testing its baseline pretraining priors and zero-shot command generation.
+2. **Treatment Arm (With Domain Skill):** The authoritative domain skill (`SKILL.md`) is injected directly into the context window, supplying exact flags, resource-scoped IAM conventions, and hardware boundary rules.
+
+The outputs from both arms are graded against the 4 discrete technical assertions by a blinded LLM judge (`vertex_ai/gemini-2.5-flash`), isolating the exact capability lift and prior correction contributed by the skill.
 
 ---
 
@@ -75,31 +77,31 @@ I evaluated 23 models across different scales (1B to 32B), generations, and mode
 
 Here is the empirical scorecard ordered by With-Skill assertion performance:
 
-| Model Variant | Size / Architecture | GPU Serving Target | Stage 1 Routing | Baseline Pass | With-Skill Pass | Net Pass Lift (Δ) | Assertions Matched (Base -> Skill) | Net Assertion Lift (Δ) |
-| :---- | :---- | :---- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **`gemini-3.7-flash`** | Frontier Serverless | Managed API | 91.7% | 83.3% | **100.0%** | +16.7% | 37 -> **48 / 48** (100.0%) | +22.9% |
-| **`qwen3.8-27b`** | 27B Dense Reasoner | 4x L4 (`g2-standard-48`) | 33.3% | 66.7% | **100.0%** | +33.3% | 35 -> **48 / 48** (100.0%) | +27.1% |
-| **`gemma-4-e4b-it`** | 4B Active (MoE) | 1x L4 (`g2-standard-4`) | 91.7% | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
-| **`gemma-3-27b-it`** | 27B Dense | 4x L4 (`g2-standard-48`) | 83.3% | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
-| **`mistral-nemo-instruct-2407`** | 12B Dense (Tekken) | 4x L4 (`g2-standard-48`) | 91.7% | 41.7% | **100.0%** | +58.3% | 21 -> **46 / 48** (95.8%) | +52.1% |
-| **`qwen2.5-coder-32b-instruct`** | 32B Code Specialist | 4x L4 (`g2-standard-48`) | 91.7% | 33.3% | **91.7%** | +58.3% | 24 -> **46 / 48** (95.8%) | +45.8% |
-| **`gemini-3.8-flash`** | Frontier Serverless | Managed API | 100.0% | 66.7% | **100.0%** | +33.3% | 35 -> **46 / 48** (95.8%) | +22.9% |
-| **`deepseek-r1-distill-qwen-14b`** | 14B Distilled Reasoner | 2x L4 (`g2-standard-24`) | 83.3% | 25.0% | **91.7%** | **+66.7%** | 20 -> **45 / 48** (93.8%) | +52.1% |
-| **`gemma-2-27b-it`** | 27B Dense | 4x L4 (`g2-standard-48`) | 75.0% | 41.7% | **100.0%** | +58.3% | 21 -> **45 / 48** (93.8%) | +50.0% |
-| **`gemma-3-12b-it`** | 12B Dense | 4x L4 (`g2-standard-48`) | 66.7% | 66.7% | **100.0%** | +33.3% | 33 -> **45 / 48** (93.8%) | +25.0% |
-| **`gemma-3-4b-it`** | 4B Dense | 1x L4 (`g2-standard-8`) | 50.0% | 41.7% | **100.0%** | +58.3% | 26 -> **45 / 48** (93.8%) | +39.6% |
-| **`phi-4`** | 14B Dense Reasoner | 2x L4 (`g2-standard-24`) | 83.3% | 33.3% | **91.7%** | +58.3% | 23 -> **42 / 48** (87.5%) | +39.6% |
-| **`qwen2.5-14b-instruct`** | 14B Dense | 2x L4 (`g2-standard-24`) | 91.7% | 25.0% | **91.7%** | **+66.7%** | 18 -> **42 / 48** (87.5%) | +50.0% |
-| **`llama-3.1-8b-instruct`** | 8B Dense | 1x L4 (`g2-standard-12`) | 16.7% | 25.0% | **83.3%** | +58.3% | 18 -> **42 / 48** (87.5%) | +50.0% |
-| **`gemini-2.5-flash`** | General Workhorse | Managed API | 91.7% | 50.0% | **91.7%** | +41.7% | 25 -> **42 / 48** (87.5%) | +35.4% |
-| **`qwen2.5-7b-instruct`** | 7B Dense | 1x L4 (`g2-standard-12`) | 75.0% | 25.0% | **83.3%** | +58.3% | 19 -> **41 / 48** (85.4%) | +45.8% |
-| **`deepseek-r1-distill-llama-8b`** | 8B Distilled Reasoner | 2x L4 (`g2-standard-24`) | 0.0% | 25.0% | **83.3%** | +58.3% | 15 -> **40 / 48** (83.3%) | +52.1% |
-| **`gemma-2-9b-it`** | 9B Dense | 1x L4 (`g2-standard-12`) | 75.0% | 16.7% | **83.3%** | **+66.7%** | 17 -> **40 / 48** (83.3%) | +47.9% |
-| **`gemma-2-2b-it`** | 2.6B Dense | 1x L4 (`g2-standard-4`) | 66.7% | 8.3% | 66.7% | +58.3% | 13 -> **32 / 48** (66.7%) | +39.6% |
-| **`gemma-3-1b-it`** | 1.0B Dense | 1x L4 (`g2-standard-4`) | 33.3% | 50.0% | 58.3% | +8.3% | 28 -> **29 / 48** (60.4%) | +2.1% |
-| **`gemma-4-e2b-it`** | 2.3B Active (MoE) | 1x L4 (`g2-standard-4`) | 16.7% | 8.3% | 41.7% | +33.3% | 5 -> **20 / 48** (41.7%) | +31.2% |
-| **`llama-3.2-3b-instruct`** | 3B Dense | 1x L4 (`g2-standard-8`) | 0.0% | 8.3% | 8.3% | +0.0% | 6 -> **6 / 48** (12.5%) | +0.0% |
-| **`inkling-small`** | 14B Reasoner | 4x L4 (`g2-standard-48`) | 0.0% | 8.3% | 0.0% | -8.3% | 6 -> **2 / 48** (4.2%) | -8.3% |
+| Model Variant | Size / Architecture | GPU Serving Target | Baseline Pass | With-Skill Pass | Net Pass Lift (Δ) | Assertions Matched (Base -> Skill) | Net Assertion Lift (Δ) |
+| :---- | :---- | :---- | :---: | :---: | :---: | :---: | :---: |
+| **`gemini-3.7-flash`** | Frontier Serverless | Managed API | 83.3% | **100.0%** | +16.7% | 37 -> **48 / 48** (100.0%) | +22.9% |
+| **`qwen3.8-27b`** | 27B Dense Reasoner | 4x L4 (`g2-standard-48`) | 66.7% | **100.0%** | +33.3% | 35 -> **48 / 48** (100.0%) | +27.1% |
+| **`gemma-4-e4b-it`** | 4B Active (MoE) | 1x L4 (`g2-standard-4`) | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
+| **`gemma-3-27b-it`** | 27B Dense | 4x L4 (`g2-standard-48`) | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
+| **`mistral-nemo-instruct-2407`** | 12B Dense (Tekken) | 4x L4 (`g2-standard-48`) | 41.7% | **100.0%** | +58.3% | 21 -> **46 / 48** (95.8%) | +52.1% |
+| **`qwen2.5-coder-32b-instruct`** | 32B Code Specialist | 4x L4 (`g2-standard-48`) | 33.3% | **91.7%** | +58.3% | 24 -> **46 / 48** (95.8%) | +45.8% |
+| **`gemini-3.8-flash`** | Frontier Serverless | Managed API | 66.7% | **100.0%** | +33.3% | 35 -> **46 / 48** (95.8%) | +22.9% |
+| **`deepseek-r1-distill-qwen-14b`** | 14B Distilled Reasoner | 2x L4 (`g2-standard-24`) | 25.0% | **91.7%** | **+66.7%** | 20 -> **45 / 48** (93.8%) | +52.1% |
+| **`gemma-2-27b-it`** | 27B Dense | 4x L4 (`g2-standard-48`) | 41.7% | **100.0%** | +58.3% | 21 -> **45 / 48** (93.8%) | +50.0% |
+| **`gemma-3-12b-it`** | 12B Dense | 4x L4 (`g2-standard-48`) | 66.7% | **100.0%** | +33.3% | 33 -> **45 / 48** (93.8%) | +25.0% |
+| **`gemma-3-4b-it`** | 4B Dense | 1x L4 (`g2-standard-8`) | 41.7% | **100.0%** | +58.3% | 26 -> **45 / 48** (93.8%) | +39.6% |
+| **`phi-4`** | 14B Dense Reasoner | 2x L4 (`g2-standard-24`) | 33.3% | **91.7%** | +58.3% | 23 -> **42 / 48** (87.5%) | +39.6% |
+| **`qwen2.5-14b-instruct`** | 14B Dense | 2x L4 (`g2-standard-24`) | 25.0% | **91.7%** | **+66.7%** | 18 -> **42 / 48** (87.5%) | +50.0% |
+| **`llama-3.1-8b-instruct`** | 8B Dense | 1x L4 (`g2-standard-12`) | 25.0% | **83.3%** | +58.3% | 18 -> **42 / 48** (87.5%) | +50.0% |
+| **`gemini-2.5-flash`** | General Workhorse | Managed API | 50.0% | **91.7%** | +41.7% | 25 -> **42 / 48** (87.5%) | +35.4% |
+| **`qwen2.5-7b-instruct`** | 7B Dense | 1x L4 (`g2-standard-12`) | 25.0% | **83.3%** | +58.3% | 19 -> **41 / 48** (85.4%) | +45.8% |
+| **`deepseek-r1-distill-llama-8b`** | 8B Distilled Reasoner | 2x L4 (`g2-standard-24`) | 25.0% | **83.3%** | +58.3% | 15 -> **40 / 48** (83.3%) | +52.1% |
+| **`gemma-2-9b-it`** | 9B Dense | 1x L4 (`g2-standard-12`) | 16.7% | **83.3%** | **+66.7%** | 17 -> **40 / 48** (83.3%) | +47.9% |
+| **`gemma-2-2b-it`** | 2.6B Dense | 1x L4 (`g2-standard-4`) | 8.3% | 66.7% | +58.3% | 13 -> **32 / 48** (66.7%) | +39.6% |
+| **`gemma-3-1b-it`** | 1.0B Dense | 1x L4 (`g2-standard-4`) | 50.0% | 58.3% | +8.3% | 28 -> **29 / 48** (60.4%) | +2.1% |
+| **`gemma-4-e2b-it`** | 2.3B Active (MoE) | 1x L4 (`g2-standard-4`) | 8.3% | 41.7% | +33.3% | 5 -> **20 / 48** (41.7%) | +31.2% |
+| **`llama-3.2-3b-instruct`** | 3B Dense | 1x L4 (`g2-standard-8`) | 8.3% | 8.3% | +0.0% | 6 -> **6 / 48** (12.5%) | +0.0% |
+| **`inkling-small`** | 14B Reasoner | 4x L4 (`g2-standard-48`) | 8.3% | 0.0% | -8.3% | 6 -> **2 / 48** (4.2%) | -8.3% |
 
 ---
 
@@ -111,7 +113,7 @@ The empirical sweep reveals clear inflection points that answer what model size 
 
 The most important operational finding is that **you do not need a 70B+ cluster to achieve reliable skill-driven execution**:
 
-* Without skills, mid-tier models (8B–14B) hover between a 16.7% and 41.7% pass rate.  
+* Without skills, mid-tier models (8B–14B) hover between a 16.7% and 41.7% baseline pass rate.  
 * With domain skills injected, every major mid-tier model surges to **83.3% to 100.0% pass rates**, matching 40 to 46 of the 48 assertions.  
 * **Top 12B Performer:** `mistral-nemo-instruct-2407` matched **46/48 assertions (95.8%)** with a **100.0% pass rate**, equaling the performance of 32B models and frontier commercial APIs.  
 * **Maximum Net Pass Lift:** Both `deepseek-r1-distill-qwen-14b` and `qwen2.5-14b-instruct` delivered **+66.7% net pass rate lift** (jumping from 25.0% baseline to 91.7%), matching 42 to 45 assertions.  
@@ -137,21 +139,19 @@ Comparing model generations within the same model family demonstrates how archit
 
 Newer model generations possess better instruction compliance, which allows them to translate skill instructions into exact syntax without hallucinating near-miss flags.
 
-### Finding 3: The Two-Stage Decoupling Law (The Discovery Ceiling)
+### Finding 3: Skills Provide Prior Correction Across All Sizes
 
-One of the most consequential discoveries from testing smaller models is the **decoupling between skill discovery and skill execution**:
+Without skills, baseline performance plateaus early:
+- Unassisted 8B–14B models pass only 16.7% to 41.7% of scenarios.
+- Even 27B models pass only 41.7% to 66.7% without skills.
+- Models fail not because they lack general programming knowledge, but because pretraining defaults to generic web quickstart patterns (like project-level IAM bindings instead of resource-scoped permissions).
 
-* In **Stage 1 (Discovery Routing)**, sub-10B models struggle significantly to self-select skills from catalog descriptions:  
-  - `deepseek-r1-distill-llama-8b`: **0.0% exact routing**  
-  - `llama-3.1-8b-instruct`: **16.7% exact routing**  
-  - `gemma-3-1b-it`: **33.3% exact routing**  
-  - Smaller models fail to recognize when they need help, expending their generation tokens on conversational reasoning or direct command guessing.  
-* In **Stage 2 (Execution with Skills)**, when the target skill is injected directly into their context window, these same models surge:  
-  - `deepseek-r1-distill-llama-8b`: jumps from 15/48 to **40/48 assertions (83.3% pass rate, +58.3% lift)**  
-  - `llama-3.1-8b-instruct`: jumps from 18/48 to **42/48 assertions (83.3% pass rate, +58.3% lift)**  
-  - `qwen2.5-7b-instruct`: jumps from 19/48 to **41/48 assertions (83.3% pass rate, +58.3% lift)**
+When domain skills are injected directly into context, they act as **prior correction**, supplying the exact parameters, hardware boundaries, and security rules needed:
+- `deepseek-r1-distill-llama-8b`: jumps from 15/48 to **40/48 assertions (83.3% pass rate, +58.3% lift)**
+- `llama-3.1-8b-instruct`: jumps from 18/48 to **42/48 assertions (83.3% pass rate, +58.3% lift)**
+- `qwen2.5-7b-instruct`: jumps from 19/48 to **41/48 assertions (83.3% pass rate, +58.3% lift)**
 
-This proves that **smaller models suffer from a Discovery Ceiling, not an Execution Ceiling.** An 8B model cannot be relied upon to navigate an open catalog of 50 skills autonomously. However, if your orchestrator pre-loads or injects the appropriate domain skill based on the task type, an 8B model will execute the instructions with near-frontier reliability.
+This confirms that with the right context pre-loaded, open-weight models as small as 7B–8B execute complex operational instructions with near-frontier reliability.
 
 ### Finding 4: The 1B–4B Edge Tier (High Relative Lift, Bounded Complexity)
 
@@ -188,7 +188,7 @@ Based on these empirical results, here is the decision matrix for deploying skil
 
 1. **For Production Enterprise Workloads:** Deploy **`mistral-nemo-instruct-2407` (12B)** or **`qwen2.5-14b-instruct`** on a single NVIDIA L4 GPU. They deliver 91.7%–100.0% pass rates with domain skills at minimal compute cost ($0.70/hr).  
 2. **For Edge or Scale-to-Zero Deployment:** Deploy **`gemma-4-e4b-it`** on Cloud Run with GPU. It achieves 97.9% assertion accuracy with $0 idle compute cost when traffic scales to zero.  
-3. **For Autonomous Skill Catalogs:** If your agent must independently search a large catalog of skills without human routing, use at least **14B parameters** (`qwen2.5-14b`, `phi-4`) or an orchestrator pattern. Do not expect sub-10B models to self-select skills reliably.
+3. **For High-Stakes Multi-Constraint Tasks:** Deploy **`gemma-3-27b-it`** or **`qwen3.8-27b`** where complex trade-offs (containment vs business disruption) demand maximal reasoning depth.
 
 ---
 
