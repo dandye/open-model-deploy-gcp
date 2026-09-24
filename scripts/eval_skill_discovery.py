@@ -320,7 +320,7 @@ followed by your answer."""
         model=model,
         model_name=model_name,
         temperature=0.0,
-        max_tokens=128,
+        max_tokens=1024,
         project_id=project_id,
     )
     
