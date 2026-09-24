@@ -317,7 +317,7 @@
       "swapSpaceGb": 16,
       "gpuMemoryUtilization": 0.90,
       "maxModelLen": 8192,
-      "extraArgs": []
+      "extraArgs": ["--trust-remote-code"]
     },
     "supportedTargets": ["vertex"]
   },

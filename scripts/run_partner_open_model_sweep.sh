@@ -83,9 +83,9 @@ run_partner_model() {
   local flavor="$1"
   local deploy_method="$2" # "sdk" or "shell"
 
-  local report_file="${OUTPUT_DIR}/${flavor}_discovery_report.md"
-  if [[ -f "${report_file}" ]]; then
-    echo "[$(date +'%T')] Report already exists for ${flavor} at ${report_file}. Skipping."
+  local safe_dot="${flavor//./_}"
+  if [[ -f "${OUTPUT_DIR}/${flavor}_discovery_report.md" ]] || [[ -f "${OUTPUT_DIR}/${safe_dot}_discovery_report.md" ]]; then
+    echo "[$(date +'%T')] Report already exists for ${flavor}. Skipping."
     return 0
   fi
 
@@ -180,7 +180,7 @@ run_partner_model() {
   "${PYTHON_BIN}" "${SCRIPT_DIR}/aggregate_sweep_results.py"
 
   # Commit progress
-  git add "${OUTPUT_DIR}/${flavor}_discovery_report.md" "${OUTPUT_DIR}/${flavor}_discovery_results.json" "${OUTPUT_DIR}/master_open_model_sweep_report.md" 2>/dev/null || true
+  git add "${OUTPUT_DIR}/${flavor}_discovery_report.md" "${OUTPUT_DIR}/${flavor}_discovery_results.json" "${OUTPUT_DIR}/${safe_dot}_discovery_report.md" "${OUTPUT_DIR}/${safe_dot}_discovery_results.json" "${OUTPUT_DIR}/master_open_model_sweep_report.md" 2>/dev/null || true
   git commit -m "feat(eval): record ${flavor} two-stage skill discovery results" 2>/dev/null || true
   git push gh skill_discovery_eval_v0001 2>/dev/null || true
 }
@@ -191,19 +191,13 @@ echo " Suite: evals/gemma-deploy/evals.json (12 scenarios)"
 echo " Project: ${PROJECT_ID}"
 echo "================================================================================"
 
-# 1. Qwen 3.8 27B via OpenModel SDK (4x L4 on g2-standard-48)
-run_partner_model "qwen3.8-27b" "sdk" || echo "[WARNING] qwen3.8-27b failed, continuing."
-
-# 2. Qwen 2.5 Coder 32B via OpenModel SDK (4x L4 on g2-standard-48)
+# 1. Qwen 2.5 Coder 32B via OpenModel SDK (already completed, will skip cleanly)
 run_partner_model "qwen2.5-coder-32b-instruct" "sdk" || echo "[WARNING] qwen2.5-coder-32b-instruct failed, continuing."
 
-# 3. DeepSeek R1 Distill Qwen 32B via OpenModel SDK (4x L4 on g2-standard-48)
-run_partner_model "deepseek-r1-distill-qwen-32b" "sdk" || echo "[WARNING] deepseek-r1-distill-qwen-32b failed, continuing."
+# 2. Qwen 3.8 27B via OpenModel SDK with --max-model-len=8192 container override
+run_partner_model "qwen3.8-27b" "sdk" || echo "[WARNING] qwen3.8-27b failed, continuing."
 
-# 4. Thinking Machines Inkling Small via verified GCS Model Garden weights (4x L4 on g2-standard-48)
-run_partner_model "inkling-small" "shell" || echo "[WARNING] inkling-small failed, continuing."
-
-# 5. NVIDIA Nemotron 3.5 Lightning 30B MoE via verified GCS Model Garden weights (4x L4 on g2-standard-48)
+# 3. NVIDIA Nemotron 3.5 Lightning 30B MoE via verified GCS Model Garden weights (with --trust-remote-code)
 run_partner_model "nemotron-3.5-lightning-bf16" "shell" || echo "[WARNING] nemotron-3.5-lightning-bf16 failed, continuing."
 
 echo ""
