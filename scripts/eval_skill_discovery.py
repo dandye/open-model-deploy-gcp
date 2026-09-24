@@ -111,7 +111,6 @@ def call_llm(
     """Calls Gemini, dedicated Vertex AI Gemma endpoint, or LiteLLM."""
     if model.startswith("vertex_endpoint/"):
         endpoint_id = model.split("/", 1)[1]
-        token = get_gcp_access_token()
         
         full_user = f"{system_instruction}\n\n{prompt}" if system_instruction else prompt
         check_name = (model_name or model).lower()
@@ -128,72 +127,49 @@ def call_llm(
         else:
             formatted_prompt = f"<start_of_turn>user\n{full_user}<end_of_turn>\n<start_of_turn>model\n"
         
-        # 1. Try vLLM :rawPredict route
-        url_raw = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:rawPredict"
-        req_raw = urllib.request.Request(
-            url_raw,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            },
-            data=json.dumps({
+        from google.cloud import aiplatform
+        aiplatform.init(project=project_id, location=location)
+        ep = aiplatform.Endpoint(endpoint_id)
+
+        # 1. Try raw_predict (vLLM / SGLang)
+        try:
+            raw_body = json.dumps({
                 "prompt": formatted_prompt,
                 "max_tokens": max_tokens,
                 "temperature": temperature,
-            }).encode("utf-8"),
-        )
-        try:
-            with urllib.request.urlopen(req_raw, timeout=180) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
+            }).encode("utf-8")
+            resp = ep.raw_predict(body=raw_body, headers={"Content-Type": "application/json"})
+            data = json.loads(resp.text)
             predictions = data.get("predictions", [])
             output_text = predictions[0] if predictions else ""
             if "Output:\n" in output_text:
                 output_text = output_text.split("Output:\n", 1)[1].strip()
-            return output_text
-        except urllib.error.HTTPError as he:
-            # 2. Fallback to standard Vertex AI :predict route for Model Garden containers
-            url_std = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/endpoints/{endpoint_id}:predict"
-            payload_std = {
-                "instances": [
-                    {"prompt": formatted_prompt, "max_tokens": max_tokens, "temperature": temperature}
-                ],
-                "parameters": {
-                    "maxOutputTokens": max_tokens,
-                    "temperature": temperature,
-                }
-            }
-            req_std = urllib.request.Request(
-                url_std,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-                data=json.dumps(payload_std).encode("utf-8"),
-            )
-            try:
-                with urllib.request.urlopen(req_std, timeout=180) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                predictions = data.get("predictions", [])
-                if predictions:
-                    p = predictions[0]
-                    if isinstance(p, dict):
-                        output_text = (
-                            p.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                            or p.get("text", "")
-                            or p.get("content", "")
-                        )
-                    else:
-                        output_text = str(p)
-                    if "Output:\n" in output_text:
-                        output_text = output_text.split("Output:\n", 1)[1].strip()
-                    return output_text
-                return ""
-            except Exception as e_std:
-                print(f"[ERROR] Vertex standard predict failed: {e_std}", file=sys.stderr)
-                return ""
-        except Exception as e:
-            print(f"[ERROR] Vertex endpoint call failed: {e}", file=sys.stderr)
+            if output_text:
+                return output_text
+        except Exception:
+            pass
+
+        # 2. Fallback to standard predict
+        try:
+            pred_resp = ep.predict(instances=[{"prompt": formatted_prompt, "max_tokens": max_tokens, "temperature": temperature}])
+            predictions = pred_resp.predictions
+            if predictions:
+                p = predictions[0]
+                if isinstance(p, dict):
+                    output_text = (
+                        p.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                        or p.get("text", "")
+                        or p.get("content", "")
+                    )
+                else:
+                    output_text = str(p)
+                if "Output:\n" in output_text:
+                    output_text = output_text.split("Output:\n", 1)[1].strip()
+                return output_text
+        except Exception as e_std:
+            print(f"[ERROR] Vertex endpoint call failed: {e_std}", file=sys.stderr)
             return ""
+        return ""
 
     if "gemini" in model:
         import time as _time

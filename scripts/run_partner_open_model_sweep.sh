@@ -56,40 +56,23 @@ wait_for_endpoint() {
     sleep 20
   done
 
-  # Test probe with rawPredict or standard predict
-  local token
-  token=$(gcloud auth print-access-token)
-  for attempt in {1..15}; do
-    # Try rawPredict first
-    local resp
-    resp=$(curl -s -X POST \
-      "https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/endpoints/${endpoint_id}:rawPredict" \
-      -H "Authorization: Bearer ${token}" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "prompt": "Respond with HELLO",
-        "max_tokens": 10,
-        "temperature": 0.0
-      }' 2>/dev/null || true)
-    if [[ "$resp" == *"Output:"* ]] || [[ "$resp" == *"predictions"* ]] || [[ "$resp" == *"HELLO"* ]]; then
-      echo "[$(date +'%T')] Inference health check passed on endpoint ${endpoint_id} via rawPredict!"
+  # Test probe with Python SDK (handles both shared endpoints and dedicated DNS)
+  for attempt in {1..20}; do
+    if "${PYTHON_BIN}" -c "
+import json
+from google.cloud import aiplatform
+aiplatform.init(project='${PROJECT_ID}', location='${REGION}')
+ep = aiplatform.Endpoint('${endpoint_id}')
+try:
+    resp = ep.raw_predict(body=json.dumps({'prompt': 'test', 'max_tokens': 5}).encode('utf-8'), headers={'Content-Type': 'application/json'})
+    print('HEALTH_OK')
+except Exception:
+    resp = ep.predict(instances=[{'prompt': 'test'}])
+    print('HEALTH_OK')
+" 2>/dev/null | grep -q "HEALTH_OK"; then
+      echo "[$(date +'%T')] Inference health check passed on endpoint ${endpoint_id} via aiplatform.Endpoint!"
       return 0
     fi
-
-    # Try standard predict fallback
-    resp=$(curl -s -X POST \
-      "https://${REGION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${REGION}/endpoints/${endpoint_id}:predict" \
-      -H "Authorization: Bearer ${token}" \
-      -H "Content-Type: application/json" \
-      -d '{
-        "instances": [{"prompt": "Respond with HELLO"}],
-        "parameters": {"maxOutputTokens": 10}
-      }' 2>/dev/null || true)
-    if [[ "$resp" == *"predictions"* ]]; then
-      echo "[$(date +'%T')] Inference health check passed on endpoint ${endpoint_id} via standard predict!"
-      return 0
-    fi
-
     echo "[$(date +'%T')] Inference probe attempt $attempt failed, retrying in 15s..."
     sleep 15
   done
@@ -114,35 +97,55 @@ run_partner_model() {
 
   local endpoint_name=""
 
-  if [[ "${deploy_method}" == "sdk" ]]; then
-    echo "[$(date +'%T')] Deploying via vertexai.model_garden.OpenModel SDK..."
-    local ep_file="/tmp/deployed_endpoint_${flavor}.txt"
-    rm -f "${ep_file}"
-    "${PYTHON_BIN}" "${SCRIPT_DIR}/deploy_open_model.py" \
-      --flavor "${flavor}" \
-      --project-id "${PROJECT_ID}" \
-      --region "${REGION}" \
-      --output-file "${ep_file}"
-    if [[ -f "${ep_file}" ]]; then
-      endpoint_name=$(cat "${ep_file}" | tr -d '[:space:]')
+  # Check if endpoint already exists and has deployed models
+  local safe_fl="${flavor//-/_}"
+  local existing_ep
+  existing_ep=$(gcloud ai endpoints list \
+    --project="${PROJECT_ID}" \
+    --region="${REGION}" \
+    --filter="displayName:${flavor} OR displayName:${safe_fl}" \
+    --format="value(name.basename())" \
+    --limit=1 2>/dev/null || true)
+  if [[ -n "${existing_ep}" ]]; then
+    local has_model
+    has_model=$(gcloud ai endpoints describe "${existing_ep}" --region="${REGION}" --project="${PROJECT_ID}" --format="value(deployedModels[0].id)" 2>/dev/null || true)
+    if [[ -n "${has_model}" ]]; then
+      echo "[$(date +'%T')] Reusing existing active endpoint: ${existing_ep} (Model ID: ${has_model})"
+      endpoint_name="${existing_ep}"
     fi
-  else
-    echo "[$(date +'%T')] Deploying via vertex_deploy.sh..."
-    "${SCRIPT_DIR}/vertex_deploy.sh" "${flavor}" "${REGION}"
-    endpoint_name=$(gcloud ai endpoints list \
-      --project="${PROJECT_ID}" \
-      --region="${REGION}" \
-      --filter="displayName:${flavor}-endpoint" \
-      --sort-by="~createTime" \
-      --format="value(name.basename())" \
-      --limit=1 2>/dev/null || true)
-    if [[ -z "${endpoint_name}" ]]; then
+  fi
+
+  if [[ -z "${endpoint_name}" ]]; then
+    if [[ "${deploy_method}" == "sdk" ]]; then
+      echo "[$(date +'%T')] Deploying via vertexai.model_garden.OpenModel SDK..."
+      local ep_file="/tmp/deployed_endpoint_${flavor}.txt"
+      rm -f "${ep_file}"
+      "${PYTHON_BIN}" "${SCRIPT_DIR}/deploy_open_model.py" \
+        --flavor "${flavor}" \
+        --project-id "${PROJECT_ID}" \
+        --region "${REGION}" \
+        --output-file "${ep_file}"
+      if [[ -f "${ep_file}" ]]; then
+        endpoint_name=$(cat "${ep_file}" | tr -d '[:space:]')
+      fi
+    else
+      echo "[$(date +'%T')] Deploying via vertex_deploy.sh..."
+      "${SCRIPT_DIR}/vertex_deploy.sh" "${flavor}" "${REGION}"
       endpoint_name=$(gcloud ai endpoints list \
         --project="${PROJECT_ID}" \
         --region="${REGION}" \
+        --filter="displayName:${flavor}-endpoint" \
         --sort-by="~createTime" \
         --format="value(name.basename())" \
         --limit=1 2>/dev/null || true)
+      if [[ -z "${endpoint_name}" ]]; then
+        endpoint_name=$(gcloud ai endpoints list \
+          --project="${PROJECT_ID}" \
+          --region="${REGION}" \
+          --sort-by="~createTime" \
+          --format="value(name.basename())" \
+          --limit=1 2>/dev/null || true)
+      fi
     fi
   fi
 
