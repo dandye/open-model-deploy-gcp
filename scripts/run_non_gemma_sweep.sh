@@ -166,10 +166,10 @@ run_model_suite() {
 
 MODELS=(
   "llama-3.2-3b-instruct"
-  "inkling-small"
   "llama-guard-3-8b"
+  "inkling-small"
   "nemotron-3.5-lightning-bf16"
-  "qwen3.8-27b"
+  "llama-3.1-nemotron-70b-instruct"
 )
 
 echo "================================================================================"
