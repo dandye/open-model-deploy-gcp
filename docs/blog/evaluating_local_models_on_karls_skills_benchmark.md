@@ -1,6 +1,6 @@
 | Author | Dan Dye |
-| --- | --- |
-| Peer Reviewer | [@jstoner](http://who/jstoner) |
+| :---- | :---- |
+| Peer Reviewer |  |
 | Topics | Agent Skills, Local Models, Model Sizing, Model Evaluation, Gemma, Llama, Qwen, Mistral, Vertex AI, Cloud Run GPU |
 
 ---
@@ -14,32 +14,30 @@
 
 ---
 
-## 1. The Question Karl Left Us With
+&nbsp;
 
-In September 2026, my colleague Karl Weinmeister published a study that changed how we think about agent context engineering: [*Do agent skills help? I ran 72 trials to find out*](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/).
+My colleague Karl Weinmeister published a study that changed how we think about agent context engineering: [*Do agent skills help? I ran 72 trials to find out*](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/).
 
 Running 72 clean-room sandbox trials across 12 standardized cloud scenarios with Claude Code, Karl showed that loading domain skills (`SKILL.md` files) replaced command guessing and shell thrashing with working infrastructure on the first attempt, achieving an action economy score of 0.8616 compared to 0.0000 for the unassisted baseline.
 
-Karl gave the community a clean, reproducible evaluation framework. But he evaluated a single closed frontier model behind an API.
+Karl gave the community a clean, reproducible evaluation framework, which was exactly what I needed to work on this question:
 
-In real-world enterprise engineering, deploying frontier models for every automated agent interaction is expensive and introduces external data boundary dependencies. What engineering teams actually need to know is:
+> **What is the smallest size and earliest generation of model, which still gets that lift from skills?**
 
-> **When domain skills are provided, what is the smallest size and earliest generation of model needed to capture that capability lift reliably?**
+Can a lightweight 1B or 4B edge model running serverless on Cloud Run GPU get the job done? Or do you need an 8B–14B mid-weight model on a single $0.70/hr GPU?
 
-Can a lightweight 1B or 4B edge model running serverless on Cloud Run GPU get the job done? Or do you need an 8B–14B mid-weight model on a single $0.70/hr GPU? At what parameter scale does adding skills stop being an interesting experiment and start delivering dependable production results?
-
-To answer this, we took Karl's standardized 12-scenario declarative benchmark (`evals.json`) and ran it systematically across **23 open-weight and partner models** spanning multiple architectures, sizes, and model generations on Google Cloud.
+To answer this, I used Karl's standardized 12-scenario declarative benchmark (`evals.json`) and ran them systematically across **23 open-weight and partner models** spanning multiple architectures, sizes, and model generations on Google Cloud.
 
 ---
 
-## 2. The Benchmark Suite: Karl's 12 Cloud Scenarios
+## The Benchmark Suite: Karl's 12 Cloud Scenarios
 
-Rather than inventing bespoke prompts—which risks overfitting—we adopted Karl Weinmeister's exact 12-scenario evaluation suite from [`evals/gemma-deploy/evals.json`](../../evals/gemma-deploy/evals.json).
+I reused Karl Weinmeister's exact 12-scenario evaluation suite from [`evals/gemma-deploy/evals.json`](../../evals/gemma-deploy/evals.json).
 
 Each scenario tests a concrete, non-trivial operational cloud task with 4 objective boolean assertions scored by a blinded LLM judge (`vertex_ai/gemini-2.5-flash`), yielding 48 assertion checks per model run:
 
 | Scenario ID | Task Name | Domain Skill | Technical Challenge Tested |
-| :--- | :--- | :--- | :--- |
+| :---- | :---- | :---- | :---- |
 | `gdo-001` | Cloud Run GPU L4 Scale-to-Zero | `cloudrun-deploy` | NVIDIA L4 accelerator flags, `--min-instances=0`, CPU-to-RAM ratios |
 | `gdo-002` | Vertex Speculative Decoding N-Gram | `vertex-prediction` | vLLM `--speculative-model=[ngram]`, prompt lookup flags, zero VRAM |
 | `gdo-003` | Server-Side Disk Audit | `gcloud` | Server-side `--filter="-users:*"` preventing context window floods |
@@ -57,27 +55,28 @@ Each scenario tests a concrete, non-trivial operational cloud task with 4 object
 
 To measure both *discovery* and *execution*, each scenario is tested in two distinct stages:
 
-1. **Stage 1 (Autonomous Skill Discovery & Routing):** The model is given only the user request and a catalog of available skill titles and descriptions. It must independently determine whether a domain skill is required and emit `SEARCH_SKILL: <skill-name>` or `NO_SKILL_NEEDED`.
+1. **Stage 1 (Autonomous Skill Discovery & Routing):** The model is given only the user request and a catalog of available skill titles and descriptions. It must independently determine whether a domain skill is required and emit `SEARCH_SKILL: <skill-name>` or `NO_SKILL_NEEDED`.  
 2. **Stage 2 (Prior Correction & Execution):** The model is evaluated in an unassisted baseline arm (raw prompt) and a treatment arm (target domain skill injected into context). The outputs are graded against the 4 discrete technical assertions to measure net capability lift.
 
 ---
 
-## 3. The Multi-Model Sweep: Empirical Results Across 23 Models
+## The Multi-Model Sweep: Empirical Results Across 23 Models
 
-We evaluated 23 models across different scales (1B to 32B), generations, and model families:
-- **Google Gemma:** Gemma 2 (2B, 9B, 27B), Gemma 3 (1B, 4B, 12B, 27B), and Gemma 4 (E2B, E4B)
-- **Meta Llama:** Llama 3.2 (3B), Llama 3.1 (8B)
-- **Alibaba Qwen:** Qwen 2.5 (7B, 14B, 32B Coder), Qwen 3.8 (27B)
-- **Mistral AI:** Mistral NeMo 12B Instruct
-- **DeepSeek:** DeepSeek R1 Distill Llama 8B, DeepSeek R1 Distill Qwen 14B
-- **Microsoft:** Phi-4 (14B)
-- **Thinking Machines:** Inkling Small (14B)
+I evaluated 23 models across different scales (1B to 32B), generations, and model families:
+
+- **Google Gemma:** Gemma 2 (2B, 9B, 27B), Gemma 3 (1B, 4B, 12B, 27B), and Gemma 4 (E2B, E4B)  
+- **Meta Llama:** Llama 3.2 (3B), Llama 3.1 (8B)  
+- **Alibaba Qwen:** Qwen 2.5 (7B, 14B, 32B Coder), Qwen 3.8 (27B)  
+- **Mistral AI:** Mistral NeMo 12B Instruct  
+- **DeepSeek:** DeepSeek R1 Distill Llama 8B, DeepSeek R1 Distill Qwen 14B  
+- **Microsoft:** Phi-4 (14B)  
+- **Thinking Machines:** Inkling Small (14B)  
 - **Frontier Reference Baselines:** Gemini 2.5 Flash, Gemini 3.7 Flash, Gemini 3.8 Flash
 
-Here is the master empirical scorecard ordered by With-Skill assertion performance:
+Here is the empirical scorecard ordered by With-Skill assertion performance:
 
 | Model Variant | Size / Architecture | GPU Serving Target | Stage 1 Routing | Baseline Pass | With-Skill Pass | Net Pass Lift (Δ) | Assertions Matched (Base -> Skill) | Net Assertion Lift (Δ) |
-| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| :---- | :---- | :---- | :---: | :---: | :---: | :---: | :---: | :---: |
 | **`gemini-3.7-flash`** | Frontier Serverless | Managed API | 91.7% | 83.3% | **100.0%** | +16.7% | 37 -> **48 / 48** (100.0%) | +22.9% |
 | **`qwen3.8-27b`** | 27B Dense Reasoner | 4x L4 (`g2-standard-48`) | 33.3% | 66.7% | **100.0%** | +33.3% | 35 -> **48 / 48** (100.0%) | +27.1% |
 | **`gemma-4-e4b-it`** | 4B Active (MoE) | 1x L4 (`g2-standard-4`) | 91.7% | 41.7% | **100.0%** | +58.3% | 23 -> **47 / 48** (97.9%) | +50.0% |
@@ -112,10 +111,10 @@ The empirical sweep reveals clear inflection points that answer what model size 
 
 The most important operational finding is that **you do not need a 70B+ cluster to achieve reliable skill-driven execution**:
 
-* Without skills, mid-tier models (8B–14B) hover between a 16.7% and 41.7% pass rate.
-* With domain skills injected, every major mid-tier model surges to **83.3% to 100.0% pass rates**, matching 40 to 46 of the 48 assertions.
-* **Top 12B Performer:** `mistral-nemo-instruct-2407` matched **46/48 assertions (95.8%)** with a **100.0% pass rate**, equaling the performance of 32B models and frontier commercial APIs.
-* **Maximum Net Pass Lift:** Both `deepseek-r1-distill-qwen-14b` and `qwen2.5-14b-instruct` delivered **+66.7% net pass rate lift** (jumping from 25.0% baseline to 91.7%), matching 42 to 45 assertions.
+* Without skills, mid-tier models (8B–14B) hover between a 16.7% and 41.7% pass rate.  
+* With domain skills injected, every major mid-tier model surges to **83.3% to 100.0% pass rates**, matching 40 to 46 of the 48 assertions.  
+* **Top 12B Performer:** `mistral-nemo-instruct-2407` matched **46/48 assertions (95.8%)** with a **100.0% pass rate**, equaling the performance of 32B models and frontier commercial APIs.  
+* **Maximum Net Pass Lift:** Both `deepseek-r1-distill-qwen-14b` and `qwen2.5-14b-instruct` delivered **+66.7% net pass rate lift** (jumping from 25.0% baseline to 91.7%), matching 42 to 45 assertions.  
 * **The 8B Baseline:** Both `llama-3.1-8b-instruct` and `qwen2.5-7b-instruct` reached **83.3% pass rates (41–42/48 assertions)** with skills on a single $0.70/hr GPU.
 
 For teams deploying self-hosted agent infrastructure on Google Cloud, the **8B–14B class on a single NVIDIA L4 GPU (`g2-standard-12`) is the definitive minimum viable model scale**.
@@ -125,13 +124,15 @@ For teams deploying self-hosted agent infrastructure on Google Cloud, the **8B�
 Comparing model generations within the same model family demonstrates how architectural progress interacts with domain skills:
 
 #### The Gemma Generational Progression: 2 -> 3 -> 4
-- **2B Class:** Gemma 2 2B scored 8.3% baseline -> 66.7% with skills (32/48 assertions). Gemma 4 E2B (MoE) scored 8.3% -> 41.7% (20 assertions).
-- **4B Class:** Gemma 3 4B achieved a breakthrough: 41.7% baseline -> **100.0% with-skill pass rate (45/48 assertions)**. Gemma 4 E4B (MoE) advanced this further, scoring 41.7% baseline -> **100.0% with-skill pass rate and 47/48 assertions (97.9%)**, while activating only 4B parameters during generation.
+
+- **2B Class:** Gemma 2 2B scored 8.3% baseline -> 66.7% with skills (32/48 assertions). Gemma 4 E2B (MoE) scored 8.3% -> 41.7% (20 assertions).  
+- **4B Class:** Gemma 3 4B achieved a breakthrough: 41.7% baseline -> **100.0% with-skill pass rate (45/48 assertions)**. Gemma 4 E4B (MoE) advanced this further, scoring 41.7% baseline -> **100.0% with-skill pass rate and 47/48 assertions (97.9%)**, while activating only 4B parameters during generation.  
 - **27B Class:** Gemma 2 27B scored 41.7% -> 100.0% (45/48 assertions). Gemma 3 27B improved to 41.7% -> **100.0% (47/48 assertions)**, demonstrating increased precision on complex multi-card swap-space formulas.
 
 #### The Qwen Generational Progression: 2.5 -> 3.8
-- `qwen2.5-14b-instruct` matched 42/48 assertions (91.7% pass rate).
-- `qwen2.5-coder-32b-instruct` reached 46/48 assertions (91.7% pass rate).
+
+- `qwen2.5-14b-instruct` matched 42/48 assertions (91.7% pass rate).  
+- `qwen2.5-coder-32b-instruct` reached 46/48 assertions (91.7% pass rate).  
 - `qwen3.8-27b` crossed the frontier threshold, matching a **perfect 48/48 (100.0%) assertions** and tying `gemini-3.7-flash` at the top of the leaderboard.
 
 Newer model generations possess better instruction compliance, which allows them to translate skill instructions into exact syntax without hallucinating near-miss flags.
@@ -140,14 +141,14 @@ Newer model generations possess better instruction compliance, which allows them
 
 One of the most consequential discoveries from testing smaller models is the **decoupling between skill discovery and skill execution**:
 
-* In **Stage 1 (Discovery Routing)**, sub-10B models struggle significantly to self-select skills from catalog descriptions:
-  - `deepseek-r1-distill-llama-8b`: **0.0% exact routing**
-  - `llama-3.1-8b-instruct`: **16.7% exact routing**
-  - `gemma-3-1b-it`: **33.3% exact routing**
-  - Smaller models fail to recognize when they need help, expending their generation tokens on conversational reasoning or direct command guessing.
-* In **Stage 2 (Execution with Skills)**, when the target skill is injected directly into their context window, these same models surge:
-  - `deepseek-r1-distill-llama-8b`: jumps from 15/48 to **40/48 assertions (83.3% pass rate, +58.3% lift)**
-  - `llama-3.1-8b-instruct`: jumps from 18/48 to **42/48 assertions (83.3% pass rate, +58.3% lift)**
+* In **Stage 1 (Discovery Routing)**, sub-10B models struggle significantly to self-select skills from catalog descriptions:  
+  - `deepseek-r1-distill-llama-8b`: **0.0% exact routing**  
+  - `llama-3.1-8b-instruct`: **16.7% exact routing**  
+  - `gemma-3-1b-it`: **33.3% exact routing**  
+  - Smaller models fail to recognize when they need help, expending their generation tokens on conversational reasoning or direct command guessing.  
+* In **Stage 2 (Execution with Skills)**, when the target skill is injected directly into their context window, these same models surge:  
+  - `deepseek-r1-distill-llama-8b`: jumps from 15/48 to **40/48 assertions (83.3% pass rate, +58.3% lift)**  
+  - `llama-3.1-8b-instruct`: jumps from 18/48 to **42/48 assertions (83.3% pass rate, +58.3% lift)**  
   - `qwen2.5-7b-instruct`: jumps from 19/48 to **41/48 assertions (83.3% pass rate, +58.3% lift)**
 
 This proves that **smaller models suffer from a Discovery Ceiling, not an Execution Ceiling.** An 8B model cannot be relied upon to navigate an open catalog of 50 skills autonomously. However, if your orchestrator pre-loads or injects the appropriate domain skill based on the task type, an 8B model will execute the instructions with near-frontier reliability.
@@ -155,9 +156,10 @@ This proves that **smaller models suffer from a Discovery Ceiling, not an Execut
 ### Finding 4: The 1B–4B Edge Tier (High Relative Lift, Bounded Complexity)
 
 Can you deploy a sub-4B model with skills?
-* **Relative lift is high:** Gemma 2 2B jumped +58.3% in pass rate, and Gemma 3 4B reached a 100.0% pass rate (45/48 assertions).
-* **Where they succeed:** Small models with skills reliably execute single-command recipes with clear flags (Cloud Run deployment flags, server-side disk filtering).
-* **Where they fail:** Models under 4B parameters struggle when multiple constraints collide—such as balancing a \$50k ERP downtime blast radius against containment (`gdo-010`) or managing multi-step destructive confirmation loops (`gdo-005`).
+
+* **Relative lift is high:** Gemma 2 2B jumped +58.3% in pass rate, and Gemma 3 4B reached a 100.0% pass rate (45/48 assertions).  
+* **Where they succeed:** Small models with skills reliably execute single-command recipes with clear flags (Cloud Run deployment flags, server-side disk filtering).  
+* **Where they fail:** Models under 4B parameters struggle when multiple constraints collide—such as balancing a $50k ERP downtime blast radius against containment (`gdo-010`) or managing multi-step destructive confirmation loops (`gdo-005`).  
 * **The MoE Sweet Spot:** **`gemma-4-e4b-it`** is the exception. By activating only 4B parameters from an MoE architecture on a single L4 GPU, it matched 47/48 assertions, proving that modern MoE architectures punch far above their active parameter count.
 
 ---
@@ -184,8 +186,8 @@ Based on these empirical results, here is the decision matrix for deploying skil
            Pass: 100.0%                   Score: 42-46 / 48 (95%+)          Pass: 100.0%
 ```
 
-1. **For Production Enterprise Workloads:** Deploy **`mistral-nemo-instruct-2407` (12B)** or **`qwen2.5-14b-instruct`** on a single NVIDIA L4 GPU. They deliver 91.7%–100.0% pass rates with domain skills at minimal compute cost ($0.70/hr).
-2. **For Edge or Scale-to-Zero Deployment:** Deploy **`gemma-4-e4b-it`** on Cloud Run with GPU. It achieves 97.9% assertion accuracy with $0 idle compute cost when traffic scales to zero.
+1. **For Production Enterprise Workloads:** Deploy **`mistral-nemo-instruct-2407` (12B)** or **`qwen2.5-14b-instruct`** on a single NVIDIA L4 GPU. They deliver 91.7%–100.0% pass rates with domain skills at minimal compute cost ($0.70/hr).  
+2. **For Edge or Scale-to-Zero Deployment:** Deploy **`gemma-4-e4b-it`** on Cloud Run with GPU. It achieves 97.9% assertion accuracy with $0 idle compute cost when traffic scales to zero.  
 3. **For Autonomous Skill Catalogs:** If your agent must independently search a large catalog of skills without human routing, use at least **14B parameters** (`qwen2.5-14b`, `phi-4`) or an orchestrator pattern. Do not expect sub-10B models to self-select skills reliably.
 
 ---
@@ -195,8 +197,9 @@ Based on these empirical results, here is the decision matrix for deploying skil
 Karl Weinmeister proved that skills transform Claude Code from trial-and-error guessing into first-try accuracy.
 
 Our multi-model sweep confirms that this effect is not confined to proprietary frontier systems:
-- Skills provide an even **larger relative capability jump (+50% to +67% net lift) on open-weight models** than on commercial APIs.
-- The minimum viable model scale for dependable production operations is **8B to 14B on a single NVIDIA L4 GPU**.
+
+- Skills provide an even **larger relative capability jump (+50% to +67% net lift) on open-weight models** than on commercial APIs.  
+- The minimum viable model scale for dependable production operations is **8B to 14B on a single NVIDIA L4 GPU**.  
 - You do not need to wait for massive, multi-node clusters to build autonomous cloud and security agents. With well-crafted domain skills, compact models can run reliably inside your own VPC today.
 
 In our next post, we will explore the inference serving economics of these models, analyzing how **N-gram prompt lookup and speculative decoding** accelerate open-model token generation by 2.3x with zero extra VRAM.
@@ -205,10 +208,10 @@ In our next post, we will explore the inference serving economics of these model
 
 ### Resources & Citations
 
-- Karl Weinmeister, [Do agent skills help? I ran 72 trials to find out](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/) (2025).
-- Karl Weinmeister, [`evals.json` Reference Benchmark](https://github.com/kweinmeister/scripts/blob/main/evals/google-cloud-developer/evals.json) on GitHub.
-- Dan Dye, [Evaluating Agent Graphs for SecOps AI Runbooks](https://security.googlecloudcommunity.com/community-blog-42/evaluating-agent-graphs-for-secops-ai-runbooks-8232) (2026), local tracking at [`evaluating_agent_graphs_for_secops_ai_runbooks.md`](evaluating_agent_graphs_for_secops_ai_runbooks.md).
-- Dan Dye, [Exploring Agent Graphs for SecOps AI Runbooks](https://security.googlecloudcommunity.com/community-blog-42/exploring-agent-graphs-for-secops-ai-runbooks-8113) (2026), local tracking at [`exploring_agent_graphs_for_secops_ai_runbooks.md`](exploring_agent_graphs_for_secops_ai_runbooks.md).
-- Dan Dye, [Serving Open Models for Security Agents, Part 1: Zero-Idle GPU Infrastructure](part1_zero_idle_gpu_infrastructure.md) (2026).
-- Master Empirical Leaderboard: [`docs/eval_results/discovery/master_open_model_sweep_report.md`](../eval_results/discovery/master_open_model_sweep_report.md).
+- Karl Weinmeister, [Do agent skills help? I ran 72 trials to find out](https://www.linkedin.com/pulse/do-agent-skills-help-i-ran-72-trials-find-out-karl-weinmeister-nnqec/) (2025).  
+- Karl Weinmeister, [`evals.json` Reference Benchmark](https://github.com/kweinmeister/scripts/blob/main/evals/google-cloud-developer/evals.json) on GitHub.  
+- Dan Dye, [Evaluating Agent Graphs for SecOps AI Runbooks](https://security.googlecloudcommunity.com/community-blog-42/evaluating-agent-graphs-for-secops-ai-runbooks-8232) (2026), local tracking at [`evaluating_agent_graphs_for_secops_ai_runbooks.md`](evaluating_agent_graphs_for_secops_ai_runbooks.md).  
+- Dan Dye, [Exploring Agent Graphs for SecOps AI Runbooks](https://security.googlecloudcommunity.com/community-blog-42/exploring-agent-graphs-for-secops-ai-runbooks-8113) (2026), local tracking at [`exploring_agent_graphs_for_secops_ai_runbooks.md`](exploring_agent_graphs_for_secops_ai_runbooks.md).  
+- Dan Dye, [Serving Open Models for Security Agents, Part 1: Zero-Idle GPU Infrastructure](part1_zero_idle_gpu_infrastructure.md) (2026).  
+- Master Empirical Leaderboard: [`docs/eval_results/discovery/master_open_model_sweep_report.md`](../eval_results/discovery/master_open_model_sweep_report.md).  
 - Evaluation Framework & Code: [`dandye/open-model-deploy-gcp`](https://github.com/dandye/open-model-deploy-gcp) (branch `skill_discovery_eval_v0001`).
