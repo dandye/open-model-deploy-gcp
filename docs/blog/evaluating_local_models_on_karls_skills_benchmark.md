@@ -103,7 +103,7 @@ The most striking finding is how compact a model can be while achieving full ope
 * **Surpassing Gemini 2.5 Flash:** Both 4B models scored higher with skills (45 and 47 assertions) than managed `gemini-2.5-flash` (42 assertions).
 * **Single-GPU Economics:** A 4B model runs comfortably on a single NVIDIA L4 GPU (`g2-standard-4` or `g2-standard-8`) at **~$0.70/hr**, or serverless on Cloud Run GPU with `--min-instances=0` scale-to-zero ($0 idle cost).
 
-You do not need a multi-GPU 27B cluster to achieve reliable execution. **At 4B parameters, modern Gemma models equipped with skills achieve near-frontier operational reliability.**
+You do not need a multi-GPU 27B cluster to achieve reliable execution for these particular tasks. **At 4B parameters, modern Gemma models equipped with skills achieve near-frontier operational reliability on these benchmarks—though your mileage may vary as tasks grow in complexity.**
 
 ### Finding 2: Generational Progression Shifts the Baseline and the Ceiling
 
@@ -119,6 +119,8 @@ Comparing the three generations of Gemma reveals how architectural evolution rai
 * `gemma-3-12b-it` reached **100.0% pass rate (45/48 assertions)**, handling complex multi-card swap-space formulas with high reliability.
 * `gemma-3-27b-it` reached **47/48 assertions (97.9%)**, demonstrating precision on fine-grained IAM resource scoping and non-interactive quota management.
 
+At this upper tier (45 to 47 of 48 assertions, or 93.8% to 97.9%), small variations between models are likely just measurement noise. Grouping these models into letter-grade tiers (Grade A: 90%+) prevents getting distracted by single-assertion fluctuations: `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3-27b-it`, and `gemma-4-e4b-it` all deliver Grade A execution when armed with skills.
+
 #### Gemma 4 (MoE): Extreme Edge Efficiency
 * **`gemma-4-e4b-it`** represents a structural milestone: by utilizing a Mixture-of-Experts architecture that activates only 4B parameters during token generation, it achieved **100.0% pass rate and 47/48 assertions (97.9%)**. It matches the accuracy of a 27B dense model while running on the compute footprint of a lightweight edge model.
 
@@ -126,7 +128,7 @@ Comparing the three generations of Gemma reveals how architectural evolution rai
 
 Without skills, baseline Gemma models plateau early:
 * Unassisted pass rates range from **8.3% to 41.7%** across open models.
-* The failure mode is not a lack of general coding intelligence, but pretraining defaults: unassisted models default to high-frequency tutorial shortcuts (such as project-wide IAM bindings or missing non-interactive `--quiet` flags) rather than production-hardened syntax.
+* The failure mode is not a lack of general coding intelligence, but pretraining defaults. As Karl noted in his study, unassisted models default to high-frequency tutorial shortcuts (such as project-wide IAM bindings or missing non-interactive `--quiet` flags) rather than production-hardened syntax.
 * In Scenario 8 (`gdo-008`), every single unassisted model failed because pretraining cannot guess proprietary internal cloud quota identifiers like `NvidiaL4GpuAllocNoZonalRedundancyPerProjectRegion`.
 
 When domain skills are injected directly into context, they act as **prior correction**, supplying the exact parameters, hardware boundaries, and security rules needed:
@@ -145,11 +147,17 @@ What happens below 4B parameters?
 * **Where Sub-4B Models Struggle:** When multiple constraints collide—such as balancing a $50k ERP downtime blast radius against containment (`gdo-010`) or managing multi-step destructive confirmation loops (`gdo-005`), models under 4B parameters still stumble.
 * **The 4B Inflection Point:** 4B parameters is the empirical threshold where Gemma models acquire the reasoning depth to handle multi-constraint trade-offs without dropping procedural compliance.
 
+This raises two follow-on research questions:
+1. **Can we improve the skills to make the smaller models work better?** For instance, structuring skills with tighter step-by-step enforcement or explicit validation checklists might enable a 2B or even 1B model to navigate multi-constraint tasks without getting derailed.
+2. **Can we degrade the skills so that the larger models struggle to use them?** To test where model robustness breaks down, I am experimenting with intentionally adversarial or degraded skills—such as writing skills that intentionally `/meander` and `/digress`—to see at what point instruction bloat and wandering narrative overcome a larger model's attentional capacity.
+
 ---
 
-## 5. Architectural Recommendations: Sizing Your Gemma Stack
+## 5. Architectural Takeaways: Sizing for This Workload
 
-Based on these empirical results, here is the decision matrix for deploying skill-assisted Gemma models on Google Cloud:
+It is important to emphasize: these recommendations are specific to my particular skills and evaluation tasks. This work is about demonstrating a repeatable workflow to discover model sizing requirements rather than establishing universal guidance for all agent workflows. Your mileage may vary depending on task complexity and domain constraints.
+
+With that caveat, here is the sizing matrix that emerged from this workflow on Google Cloud:
 
 ```
                               ┌─────────────────────────────────────────┐
@@ -179,12 +187,12 @@ Based on these empirical results, here is the decision matrix for deploying skil
 
 Karl Weinmeister proved that skills transform Claude Code from trial-and-error guessing into first-try accuracy.
 
-Our empirical sweep across Gemma generations confirms that:
-- Skills provide an even **larger capability jump (+33% to +67% net lift) on open Gemma models** than on commercial frontier APIs.
-- The minimum viable model scale for dependable production operations is **4B parameters** (`gemma-3-4b-it` and `gemma-4-e4b-it`), both achieving a **100.0% pass rate** on a single L4 GPU.
-- You do not need massive, multi-node clusters to build autonomous cloud agents. With well-crafted domain skills, compact Gemma models running inside your own VPC or on Cloud Run GPU deliver production reliability today.
+Our empirical sweep across Gemma generations demonstrates that:
+- Skills provide an even larger capability jump (+33% to +67% net lift) on open Gemma models than on commercial frontier APIs, showing how targeted context can compensate for raw parameter count.
+- For my workload, the minimum viable model scale was **4B parameters** (`gemma-3-4b-it` and `gemma-4-e4b-it`), both achieving a **100.0% pass rate** on a single L4 GPU.
+- There is a common sentiment in the agent community that the harness—the skills, system prompts, tool schemas, and error recovery scaffolding—matters more than the model itself. I am actively configuring experiments to measure and quantify this effect empirically. While claiming that smaller models can universally replace large clusters would be an overly broad assertion, our data offers concrete evidence that a well-crafted domain harness can elevate compact, cost-effective models to reliable execution on well-defined operational tasks.
 
-In our next post, we will explore the inference serving economics of these models, analyzing how **N-gram prompt lookup and speculative decoding** accelerate token generation by 2.3x with zero extra VRAM.
+In my next post, I will turn back to evaluations for the Agentic SOC. My goal is to establish skills and evaluations that demonstrate this same effect in security operations, and then focus on evolving the skills so that they work effectively with smaller and earlier-generation models. We have to be wary of overtraining skills against a single model; varying the model size and generation provides multiple independent data points for evaluating a skill's true quality and discovering what instruction patterns hold up. Intentionally degraded skills will help test those boundaries further.
 
 ---
 
