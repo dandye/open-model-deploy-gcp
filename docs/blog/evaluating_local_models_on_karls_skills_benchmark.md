@@ -24,7 +24,7 @@ Karl gave the community a clean, reproducible evaluation framework, which was ex
 
 > **What is the smallest size and earliest generation of model, which still gets that lift from skills?**
 
-Can a lightweight 1B or 4B edge model running serverless on Cloud Run GPU get the job done? Or do you need an 8B–12B mid-weight model on a single $0.70/hr GPU?
+Can a lightweight 1B or 4B model running on a single entry-level GPU (or in a serverless container on Cloud Run GPU with scale-to-zero) capture this operational lift? Or do you need a much larger 12B to 27B model spanning multi-GPU nodes (such as 4x L4 at ~$3.36/hr) to reliably execute cloud runbook instructions?
 
 To answer this, I used Karl's standardized 12-scenario declarative benchmark (`evals.json`) and ran them systematically across **Gemma open models and Gemini reference baselines**—spanning 9 open checkpoints across Gemma 2, Gemma 3, and Gemma 4 (from 1B up to 27B) alongside Gemini 2.5 Flash, 3.7 Flash, and 3.8 Flash on Google Cloud.
 
@@ -58,6 +58,8 @@ To measure whether domain skills actually improve open models, each scenario is 
 1. **Baseline Arm (Unassisted Prompt):** The model receives the raw task prompt with zero domain context, testing its baseline pretraining priors and zero-shot command generation.
 2. **Treatment Arm (With Domain Skill):** The authoritative domain skill (`SKILL.md`) is injected directly into the context window, supplying exact flags, resource-scoped IAM conventions, and hardware boundary rules.
 
+*(Note: In my broader research, I also experimented with autonomous skill discovery—testing which models could inspect a skill catalog and select the right domain skill unassisted. However, that test matrix introduces separate variables around intent classification and tool routing that can quickly become overwhelming, so I am saving those autonomous discovery results for a later post. Here, we focus purely on prior correction and execution.)*
+
 The outputs from both arms are graded against the 4 discrete technical assertions by a blinded LLM judge (`vertex_ai/gemini-2.5-flash`), isolating the exact capability lift and prior correction contributed by the skill.
 
 ---
@@ -70,6 +72,11 @@ I evaluated 9 open Gemma checkpoints across three generations alongside 3 manage
 - **Gemma 3:** `gemma-3-1b-it`, `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3-27b-it`  
 - **Gemma 4:** `gemma-4-e2b-it`, `gemma-4-e4b-it` (Mixture-of-Experts)  
 - **Gemini Reference Baselines:** `gemini-2.5-flash`, `gemini-3.7-flash`, `gemini-3.8-flash`
+
+#### Decoding the Model Nomenclature
+To make sense of the model tags:
+- **Parameter Sizing ("Nb"):** The number before "b" denotes total parameter count in billions (e.g., `4b` represents ~4 billion parameters). For Gemma 4, "e2b" and "e4b" denote "effective/active" parameters in a Mixture-of-Experts (MoE) architecture—meaning `gemma-4-e4b-it` activates only ~4.5 billion parameters per token generation while retaining the broader capacity of its sparse expert network.
+- **Instruction-Tuned ("-it"):** Models suffixed with `-it` have undergone supervised fine-tuning and reinforcement learning to act as interactive chat and agent assistants capable of multi-step instruction following, rather than unaligned base text completion.
 
 Here is the empirical scorecard ordered by With-Skill assertion performance:
 
@@ -88,11 +95,19 @@ Here is the empirical scorecard ordered by With-Skill assertion performance:
 | **`gemma-3-1b-it`** | Gemma 3 (1.0B Dense) | 1x L4 (`g2-standard-4`) | 50.0% | 58.3% | +8.3% | 28 -> **29 / 48** (60.4%) | +2.1% |
 | **`gemma-4-e2b-it`** | Gemma 4 (2.3B Active MoE)| 1x L4 (`g2-standard-4`) | 8.3% | 41.7% | +33.3% | 5 -> **20 / 48** (41.7%) | +31.2% |
 
+![Operational Assertion Performance by Model Generation](images/gemma_skills_performance_by_generation.png)
+
+*(The horizontal bar chart compares baseline priors in gray against with-skill performance color-coded by model generation: Blue for Gemma 2, Green for Gemma 3, Gold for Gemma 4 MoE, and Coral for Gemini reference models.)*
+
+#### A Note on Variance: Gemini 3.8 Flash vs. 3.7 Flash
+Readers may notice that `gemini-3.8-flash` scored 46/48 assertions (95.8%) while `gemini-3.7-flash` scored 48/48 (100.0%). Why did 3.8 drop two checks? 
+The two discrepancies occurred on subtle formatting choices in `gdo-007` (container swap space calculation) and `gdo-012` (model catalog sizing boundaries). Because these evaluations were run as single-pass deterministic trials rather than multi-run averages (e.g. 3x bootstrap trials), a delta of just two assertions is well within expected prompt sampling variance and judge evaluation noise. Both models solidly inhabit the top-tier Grade A bracket, and these minor fluctuations illustrate why letter grades or tiers (Grade A: 90%+) are often more informative than splitting hairs over isolated assertions.
+
 ---
 
 ## 4. Answering the Core Questions: Size, Generation, and Viability
 
-The empirical results across Gemma generations and Gemini baselines answer what model size and generation you need to capture Karl's observed skill lift.
+The empirical results across Gemma generations and Gemini baselines answer what model size and generation were needed to capture Karl's observed skill lift.
 
 ### Finding 1: The Sizing Sweet Spot is 4B Parameters (Gemma 3 4B & Gemma 4 E4B)
 
@@ -101,7 +116,7 @@ The most striking finding is how compact a model can be while achieving full ope
 * **The 4B Breakthrough:** Both **`gemma-3-4b-it`** and **`gemma-4-e4b-it`** achieved a **100.0% pass rate (12 of 12 scenarios passed)** when provided with domain skills.
 * **Matching and Exceeding 27B Models:** With skills loaded, `gemma-3-4b-it` matched 45/48 assertions (93.8%), equaling the much larger `gemma-2-27b-it` (45/48). `gemma-4-e4b-it` reached **47/48 assertions (97.9%)**, tying `gemma-3-27b-it` and trailing `gemini-3.7-flash` by only a single assertion check.
 * **Surpassing Gemini 2.5 Flash:** Both 4B models scored higher with skills (45 and 47 assertions) than managed `gemini-2.5-flash` (42 assertions).
-* **Single-GPU Economics:** A 4B model runs comfortably on a single NVIDIA L4 GPU (`g2-standard-4` or `g2-standard-8`) at **~$0.70/hr**, or serverless on Cloud Run GPU with `--min-instances=0` scale-to-zero ($0 idle cost).
+* **Clear Infrastructure Cost Tiers:** In Google Cloud, a single NVIDIA L4 GPU instance (`g2-standard-4` or `g2-standard-8` with 24GB VRAM) costs **$0.70 to $0.76/hr**, representing the lowest-cost dedicated GPU tier available. This single-GPU envelope comfortably hosts 1B, 2B, and 4B models (and can scale to $0.00 idle on Cloud Run GPU). In stark contrast, running 12B or 27B models requires a `g2-standard-48` instance equipped with **4x NVIDIA L4 GPUs (96GB VRAM)** costing **$3.36/hr**—nearly 5x the cost. Finding that a 4B model achieves 94%–98% accuracy means teams can capture production-grade reliability on entry-level GPU hardware without paying for a 4-GPU cluster.
 
 You do not need a multi-GPU 27B cluster to achieve reliable execution for these particular tasks. **At 4B parameters, modern Gemma models equipped with skills achieve near-frontier operational reliability on these benchmarks—though your mileage may vary as tasks grow in complexity.**
 
@@ -117,7 +132,7 @@ Comparing the three generations of Gemma reveals how architectural evolution rai
 #### Gemma 3: The Mid-Scale Leap
 * `gemma-3-4b-it` jumped to **100.0% pass rate and 45/48 assertions**, proving that generation-over-generation pretraining improvements allow 4B models to match previous-generation 27B models.
 * `gemma-3-12b-it` reached **100.0% pass rate (45/48 assertions)**, handling complex multi-card swap-space formulas with high reliability.
-* `gemma-3-27b-it` reached **47/48 assertions (97.9%)**, demonstrating precision on fine-grained IAM resource scoping and non-interactive quota management.
+* `gemma-3-27b-it` reached **47/48 assertions (97.9%)**. The single missed check occurred in Scenario 3 (`gdo-003`, Server-Side Disk Audit): while the model correctly recognized the need for server-side filtering to prevent context floods, it generated `--filter="status:NOT_USED"` instead of checking the `users` array with `--filter="-users:*"`. In Google Compute Engine, unattached disks do not carry an explicit status field of `NOT_USED`; attachment is determined by whether the `users[]` list is empty.
 
 At this upper tier (45 to 47 of 48 assertions, or 93.8% to 97.9%), small variations between models are likely just measurement noise. Grouping these models into letter-grade tiers (Grade A: 90%+) prevents getting distracted by single-assertion fluctuations: `gemma-3-4b-it`, `gemma-3-12b-it`, `gemma-3-27b-it`, and `gemma-4-e4b-it` all deliver Grade A execution when armed with skills.
 
@@ -183,7 +198,32 @@ With that caveat, here is the sizing matrix that emerged from this workflow on G
 
 ---
 
-## 6. Conclusion: Skills Unlock Affordable Gemma Models
+## 6. Generation Speed & Serving Throughput (Tokens Per Second)
+
+Task accuracy and assertion compliance are only half the deployment equation; operational agents also depend on interactive token generation latency and serving economics.
+
+Below are the empirical generation throughput metrics measured directly across live Vertex AI endpoints running on NVIDIA L4 GPUs:
+
+| Model Variant | Generation & Architecture | Machine Type | GPU Hardware | Generation Speed (Single-Stream TPS) | Batched Throughput (Multi-Stream TPM) | Hourly Cost | Dedicated Cost / 1M Output Tokens |
+| :--- | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| **`gemma-3-1b-it`** | Gemma 3 (1.0B Dense) | `g2-standard-4` | 1x NVIDIA L4 (24 GB) | **107.9 tok/s** | 6,471 tok/min | $0.70 / hr | **$1.80** |
+| **`gemma-2-2b-it`** | Gemma 2 (2.6B Dense) | `g2-standard-4` | 1x NVIDIA L4 (24 GB) | **59.3 tok/s** | 3,556 tok/min | $0.70 / hr | **$3.28** |
+| **`gemma-3-4b-it`** | Gemma 3 (4.0B Dense) | `g2-standard-8` | 1x NVIDIA L4 (24 GB) | **45.2 tok/s** | 2,710 tok/min | $0.76 / hr | **$4.67** |
+| **`gemma-4-e4b-it`** | Gemma 4 (4.5B Active MoE)| `g2-standard-8` | 1x NVIDIA L4 (24 GB) | **~38.5 tok/s** | 2,310 tok/min | $0.76 / hr | **$5.48** |
+| **`gemma-3-12b-it`**| Gemma 3 (12.0B Multimodal)| `g2-standard-48` | 4x NVIDIA L4 (96 GB) | **46.2 tok/s** | 2,769 tok/min | $3.36 / hr | **$20.22** |
+| **`gemma-2-9b-it`** | Gemma 2 (9.2B Dense) | `g2-standard-12` | 1x NVIDIA L4 (24 GB) | **19.5 tok/s** | 1,170 tok/min | $0.83 / hr | **$11.82** |
+| **`gemma-2-27b-it`**| Gemma 2 (27.2B Dense) | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | **26.3 tok/s** | 1,576 tok/min | $3.36 / hr | **$35.59** |
+| **`gemma-3-27b-it`**| Gemma 3 (27.0B Multimodal)| `g2-standard-48` | 4x NVIDIA L4 (96 GB) | **25.6 – 26.8 tok/s**| **5,647 – 5,773 tok/min** (4–8 streams) | $3.36 / hr | **$9.92 – $36.41** |
+| **`gemini-3.7-flash`**| Frontier Reference | Managed API | Serverless Pool | **100+ tok/s** | Dynamic Auto-scaling | Pay-per-token | Managed Pricing |
+
+### Serving Throughput Takeaways
+1. **The 4B Latency Sweet Spot:** At **45.2 tokens/second** on a single L4 GPU, `gemma-3-4b-it` generates operational runbooks and command invocations in 1 to 2 seconds flat, combining near-frontier accuracy (93.8%) with responsive human-in-the-loop interaction.
+2. **MoE Efficiency in Gemma 4:** `gemma-4-e4b-it` activates approximately 4.5B parameters out of its broader expert network during generation. This allows it to sustain **~38 tok/s** on an entry-level $0.76/hr GPU while matching the 97.9% assertion accuracy of dense 27B models.
+3. **The Multi-GPU Bottleneck on 27B:** Dense 27B models on 4x L4 GPUs generate at ~26 tok/s for a single stream due to PCIe Gen4 tensor parallelism synchronization barriers across four cards. While batching 4 to 8 concurrent client streams drives aggregate throughput up to **96.2 tok/s**, single-stream interactive agent turns remain slower and significantly more expensive ($3.36/hr) than a nimble 4B instance.
+
+---
+
+## 7. Conclusion: Skills Unlock Affordable Gemma Models
 
 Karl Weinmeister proved that skills transform Claude Code from trial-and-error guessing into first-try accuracy.
 
