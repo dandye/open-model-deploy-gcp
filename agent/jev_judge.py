@@ -102,11 +102,11 @@ class MockJevBackend(BaseJevBackend):
         )
 
     def evaluate_noul(self, state: str, question: str) -> JevNoulResult:
-        prob = (
-            self.noul_grounding_prob
-            if "ground" in question.lower()
-            else self.noul_pass_prob
+        q_lower = question.lower()
+        is_grounding = any(
+            kw in q_lower for kw in ("ground", "corroborat", "hallucinat")
         )
+        prob = self.noul_grounding_prob if is_grounding else self.noul_pass_prob
         return JevNoulResult(probability=prob, verdict=prob >= 0.70)
 
     def evaluate_choice(
