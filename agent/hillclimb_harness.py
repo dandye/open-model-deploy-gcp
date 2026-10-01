@@ -294,3 +294,92 @@ class HillclimbLedger:
       return []
     lines = self.ledger_path.read_text(encoding="utf-8").splitlines()
     return [json.loads(line) for line in lines if line.strip()]
+
+
+DEFAULT_COST_STAIRCASE_TIERS: Tuple[str, ...] = (
+    "gemini-2.5-flash",
+    "gemma-4-31b-it",
+    "gemma-4-e4b-it",
+    "gemma-3-4b-it",
+    "gemma-3-1b-it",
+)
+
+
+@dataclass(frozen=True)
+class CostRungResult:
+  """Evaluation summary for a single model rung in the cost staircase."""
+
+  model_tier: str
+  mean_score: float
+  min_loss_penalty: float
+  passed_safety: bool
+  within_tolerance: bool
+
+
+@dataclass(frozen=True)
+class CostStaircaseReport:
+  """Report produced by walking evolved runbooks down the model cost staircase."""
+
+  ceiling_model: str
+  ceiling_score: float
+  selected_model: str
+  selected_score: float
+  tolerance: float
+  rungs: List[CostRungResult]
+
+  def to_dict(self) -> Dict[str, Any]:
+    return asdict(self)
+
+
+def run_cost_staircase_walk(
+    candidate: Dict[str, str],
+    eval_cases: List[Dict[str, Any]],
+    evaluator_fn: Callable[
+        [str, Dict[str, str], List[Dict[str, Any]]],
+        Tuple[List[float], List[float]],
+    ],
+    model_tiers: Sequence[str] = DEFAULT_COST_STAIRCASE_TIERS,
+    tolerance: float = 0.05,
+) -> CostStaircaseReport:
+  """Walk down ordered model tiers (expensive -> cheap) and select the lowest-cost safe tier."""
+  if not model_tiers:
+    raise ValueError("model_tiers must contain at least one model tier.")
+
+  rungs: List[CostRungResult] = []
+  ceiling_model = model_tiers[0]
+  ceiling_score = 0.0
+  selected_model = ceiling_model
+  selected_score = 0.0
+
+  for idx, tier in enumerate(model_tiers):
+    scores, loss_penalties = evaluator_fn(tier, candidate, eval_cases)
+    mean_score = sum(scores) / len(scores) if scores else 0.0
+    min_loss_pen = min(loss_penalties) if loss_penalties else 0.0
+    passed_safety = min_loss_pen >= 0.999
+
+    if idx == 0:
+      ceiling_score = mean_score
+      selected_score = mean_score
+
+    within_tol = mean_score >= (ceiling_score - tolerance - 1e-9)
+    rung = CostRungResult(
+        model_tier=tier,
+        mean_score=mean_score,
+        min_loss_penalty=min_loss_pen,
+        passed_safety=passed_safety,
+        within_tolerance=within_tol,
+    )
+    rungs.append(rung)
+
+    if passed_safety and within_tol:
+      selected_model = tier
+      selected_score = mean_score
+
+  return CostStaircaseReport(
+      ceiling_model=ceiling_model,
+      ceiling_score=ceiling_score,
+      selected_model=selected_model,
+      selected_score=selected_score,
+      tolerance=tolerance,
+      rungs=rungs,
+  )

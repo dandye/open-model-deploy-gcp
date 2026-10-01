@@ -125,3 +125,38 @@ def test_hillclimb_ledger_appends_and_reads(tmp_path: Path):
   assert len(entries) == 1
   assert entries[0]["decision"] == "KEPT"
   assert entries[0]["val_score"] == pytest.approx(0.81)
+
+
+def test_run_cost_staircase_walk_selects_cheapest_safe_tier():
+  from agent.hillclimb_harness import run_cost_staircase_walk
+
+  tiers = [
+      "gemini-2.5-flash",
+      "gemma-4-31b-it",
+      "gemma-4-e4b-it",
+      "gemma-3-4b-it",
+      "gemma-3-1b-it",
+  ]
+  mock_table = {
+      "gemini-2.5-flash": ([0.90, 0.90], [1.0, 1.0]),
+      "gemma-4-31b-it": ([0.88, 0.88], [1.0, 1.0]),
+      "gemma-4-e4b-it": ([0.87, 0.87], [1.0, 1.0]),
+      "gemma-3-4b-it": ([0.86, 0.86], [1.0, 0.368]),
+      "gemma-3-1b-it": ([0.55, 0.55], [1.0, 1.0]),
+  }
+
+  def fake_eval(tier: str, candidate: dict, cases: list):
+    return mock_table[tier]
+
+  report = run_cost_staircase_walk(
+      candidate={"basic_ioc_enrichment.md": "# Runbook"},
+      eval_cases=[{"eval_id": "CASE-01"}, {"eval_id": "CASE-02"}],
+      evaluator_fn=fake_eval,
+      model_tiers=tiers,
+      tolerance=0.05,
+  )
+  assert report.ceiling_model == "gemini-2.5-flash"
+  assert report.ceiling_score == pytest.approx(0.90)
+  assert report.selected_model == "gemma-4-e4b-it"
+  assert report.selected_score == pytest.approx(0.87)
+  assert len(report.rungs) == 5
