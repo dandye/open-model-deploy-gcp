@@ -118,3 +118,179 @@ class HarnessIntegrityGuard:
           " --approve-harness if intentional."
       )
     return current_files
+
+
+@dataclass(frozen=True)
+class NoiseFloorMetrics:
+  """Step 0 baseline noise floor calibration metrics."""
+
+  run1_mean: float
+  run2_mean: float
+  aggregate_noise: float
+  mean_case_noise: float
+  tau_accept: float
+
+
+@dataclass(frozen=True)
+class AcceptanceDecision:
+  """Result of gating a candidate against baseline scores and noise floor."""
+
+  accepted: bool
+  status: str
+  reason: str
+  mean_delta: float
+  tau_accept: float
+  regressed_cases: List[str] = field(default_factory=list)
+
+
+def estimate_noise_floor(
+    scores_run1: Sequence[float],
+    scores_run2: Sequence[float],
+    min_delta: float = 0.015,
+    multiplier: float = 1.5,
+) -> NoiseFloorMetrics:
+  """Compute aggregate and per-case noise floor from two baseline passes on identical code."""
+  if (
+      not scores_run1
+      or not scores_run2
+      or len(scores_run1) != len(scores_run2)
+  ):
+    raise ValueError(
+        "scores_run1 and scores_run2 must be non-empty sequences of equal"
+        " length."
+    )
+
+  n = len(scores_run1)
+  mean1 = sum(float(x) for x in scores_run1) / n
+  mean2 = sum(float(x) for x in scores_run2) / n
+  agg_noise = abs(mean1 - mean2)
+  case_noise = (
+      sum(abs(float(a) - float(b)) for a, b in zip(scores_run1, scores_run2))
+      / n
+  )
+  tau_accept = max(float(min_delta), float(multiplier) * agg_noise)
+  return NoiseFloorMetrics(
+      run1_mean=mean1,
+      run2_mean=mean2,
+      aggregate_noise=agg_noise,
+      mean_case_noise=case_noise,
+      tau_accept=tau_accept,
+  )
+
+
+def evaluate_candidate_acceptance(
+    baseline_scores: Dict[str, float],
+    candidate_scores: Dict[str, float],
+    tau_accept: float,
+    pass_threshold: float = 0.80,
+) -> AcceptanceDecision:
+  """Gate a candidate on zero case regressions and improvement above tau_accept."""
+  if not baseline_scores or not candidate_scores:
+    return AcceptanceDecision(
+        accepted=False,
+        status="REVERTED_EMPTY",
+        reason="Empty baseline or candidate score dictionary.",
+        mean_delta=0.0,
+        tau_accept=tau_accept,
+    )
+
+  common_keys = sorted(set(baseline_scores.keys()) & set(candidate_scores.keys()))
+  if not common_keys:
+    return AcceptanceDecision(
+        accepted=False,
+        status="REVERTED_MISMATCH",
+        reason="No overlapping case IDs between baseline and candidate.",
+        mean_delta=0.0,
+        tau_accept=tau_accept,
+    )
+
+  regressed: List[str] = []
+  for k in common_keys:
+    b_val = float(baseline_scores[k])
+    c_val = float(candidate_scores[k])
+    if b_val >= pass_threshold and c_val < pass_threshold:
+      regressed.append(k)
+
+  base_mean = sum(float(baseline_scores[k]) for k in common_keys) / len(
+      common_keys
+  )
+  cand_mean = sum(float(candidate_scores[k]) for k in common_keys) / len(
+      common_keys
+  )
+  mean_delta = cand_mean - base_mean
+
+  if regressed:
+    return AcceptanceDecision(
+        accepted=False,
+        status="REVERTED_REGRESSION",
+        reason=(
+            "Candidate regressed previously passing cases:"
+            f" {', '.join(regressed)}"
+        ),
+        mean_delta=mean_delta,
+        tau_accept=tau_accept,
+        regressed_cases=regressed,
+    )
+
+  if mean_delta < tau_accept - 1e-9:
+    return AcceptanceDecision(
+        accepted=False,
+        status="REVERTED_NOISE",
+        reason=(
+            f"Mean delta ({mean_delta:+.4f}) did not clear acceptance threshold"
+            f" tau_accept ({tau_accept:.4f})."
+        ),
+        mean_delta=mean_delta,
+        tau_accept=tau_accept,
+    )
+
+  return AcceptanceDecision(
+      accepted=True,
+      status="KEPT",
+      reason=(
+          f"Candidate cleared tau_accept ({mean_delta:+.4f} >="
+          f" {tau_accept:.4f}) with zero regressions."
+      ),
+      mean_delta=mean_delta,
+      tau_accept=tau_accept,
+  )
+
+
+class HillclimbLedger:
+  """Append-only JSONL ledger recording every hillclimbing iteration and decision."""
+
+  def __init__(self, ledger_path: Path) -> None:
+    self.ledger_path = Path(ledger_path)
+
+  def append_entry(
+      self,
+      iteration: int,
+      harness_sha256: str,
+      train_score: Optional[float],
+      val_score: Optional[float],
+      tau_accept: float,
+      decision: str,
+      rationale: str,
+      metadata: Optional[Dict[str, Any]] = None,
+  ) -> Dict[str, Any]:
+    self.ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "iteration": iteration,
+        "harness_sha256": harness_sha256,
+        "train_score": train_score,
+        "val_score": val_score,
+        "tau_accept": tau_accept,
+        "decision": decision,
+        "rationale": rationale,
+        "metadata": metadata or {},
+    }
+    with open(self.ledger_path, "a", encoding="utf-8") as f:
+      f.write(json.dumps(record) + "\n")
+    return record
+
+  def read_entries(self) -> List[Dict[str, Any]]:
+    if not self.ledger_path.exists():
+      return []
+    lines = self.ledger_path.read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines if line.strip()]
