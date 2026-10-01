@@ -151,6 +151,7 @@ class SweepOrchestrator:
         timeout_seconds: int = 1500,
         stream_benchmark: bool = True,
         repetitions: int = 3,
+        judge_backend: str = "jev",
     ) -> None:
         self.project_id = project_id
         self.evalset_path = evalset_path or (ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json")
@@ -160,6 +161,7 @@ class SweepOrchestrator:
         self.timeout_seconds = timeout_seconds
         self.stream_benchmark = stream_benchmark
         self.repetitions = repetitions
+        self.judge_backend = judge_backend
 
     def build_queue(self) -> List[ModelTarget]:
         """
@@ -745,6 +747,7 @@ class SweepOrchestrator:
             region=target.region,
             use_live_mcp=False,
             gen=3,
+            judge_backend=self.judge_backend,
         )
 
         # Save JSON output
@@ -1255,6 +1258,12 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=1500, help="Per-model deployment timeout in seconds")
     parser.add_argument("--repetitions", type=int, default=3, help="Benchmark repetition count per model")
     parser.add_argument("--no-stream", action="store_true", default=False, help="Disable streaming TTFT measurement")
+    parser.add_argument(
+        "--judge-backend",
+        choices=["jev", "gemini-2.5-pro", "mock"],
+        default="jev",
+        help="Judge backend for SOC evaluation ('jev', 'gemini-2.5-pro', or 'mock')",
+    )
     args = parser.parse_args()
 
     orchestrator = SweepOrchestrator(
@@ -1264,6 +1273,7 @@ def main() -> None:
         timeout_seconds=args.timeout,
         stream_benchmark=not args.no_stream,
         repetitions=args.repetitions,
+        judge_backend=args.judge_backend,
     )
 
     if args.rebuild_scorecard:

@@ -236,6 +236,14 @@ gepa-evolve MAX_CALLS="15" TASK_LM="gemini-2.5-flash-lite" REFLECTION_LM="gemini
 gepa-compare TASK_LM="gemini-2.5-flash-lite":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{TASK_LM}}" --managed-model "{{TASK_LM}}" --gen 3 --agent-mode hierarchical --use-runbooks --runbooks-dir configs/runbooks/gepa_evolved --evalset configs/evals/gen3/soc_tier1_interactive.json --output-report "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.md" --output-json "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.json"
 
+# Run SOC Agent evaluation with Jev System-One judge
+eval-soc-jev flavor="gemini-2.5-flash-lite" gen="3":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{flavor}}" --gen {{gen}} --judge-backend jev --output-report "docs/soc_eval_results/gen{{gen}}_jev_{{flavor}}_report.md"
+
+# Run SOC Agent evaluation with Side-by-Side (SxS) Jev vs Gemini 2.5 Pro judges
+eval-soc-sxs-judge flavor="gemini-2.5-flash-lite" gen="3":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{flavor}}" --gen {{gen}} --judge-backend jev --sxs-judge --output-report "docs/soc_eval_results/gen{{gen}}_sxs_{{flavor}}_report.md"
+
 # ------------------------------------------------------------------------------
 # Master Overnight Evaluation & Benchmark Sweep
 # ------------------------------------------------------------------------------
