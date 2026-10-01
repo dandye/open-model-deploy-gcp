@@ -22,10 +22,36 @@ import gepa
 
 try:
     from agent.hierarchical_soc_agent import HierarchicalSOCTier1Agent
+    from agent.hillclimb_harness import (
+        DEFAULT_COST_STAIRCASE_TIERS,
+        DEFAULT_PROTECTED_HARNESS_PATHS,
+        HarnessIntegrityGuard,
+        HarnessTamperError,
+        HillclimbLedger,
+        estimate_noise_floor,
+        evaluate_candidate_acceptance,
+        run_cost_staircase_walk,
+    )
+    from agent.jev_backend_gemini import GeminiSystem1Backend
+    from agent.jev_evaluator import JevSocJudgeEvaluator
+    from agent.jev_judge import MockJevBackend
     from agent.soc_environment import SocEnvironment
     from agent.soc_tier1_agent import extract_soc_decision
 except ModuleNotFoundError:
     from hierarchical_soc_agent import HierarchicalSOCTier1Agent
+    from hillclimb_harness import (
+        DEFAULT_COST_STAIRCASE_TIERS,
+        DEFAULT_PROTECTED_HARNESS_PATHS,
+        HarnessIntegrityGuard,
+        HarnessTamperError,
+        HillclimbLedger,
+        estimate_noise_floor,
+        evaluate_candidate_acceptance,
+        run_cost_staircase_walk,
+    )
+    from jev_backend_gemini import GeminiSystem1Backend
+    from jev_evaluator import JevSocJudgeEvaluator
+    from jev_judge import MockJevBackend
     from soc_environment import SocEnvironment
     from soc_tier1_agent import extract_soc_decision
 
@@ -241,21 +267,31 @@ IPV4_LITERAL_REGEX: re.Pattern = re.compile(
     r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:/(?:[1-2]?\d|3[0-2]))?\b"
 )
 
+CASE_ID_REGEX: re.Pattern = re.compile(
+    r"\bCASE-(?:GEN\d+-)?\d+\b", re.IGNORECASE
+)
+
 
 def validate_runbook_candidate(
     candidate: Dict[str, str],
     forbidden_hostnames: Optional[List[str]] = None,
+    seed_candidate: Optional[Dict[str, str]] = None,
+    max_growth_ratio: float = 1.35,
 ) -> Tuple[bool, List[str]]:
-    """Validates a candidate runbook set against anti-memorization guardrails.
+    """Validates a candidate runbook set against anti-memorization and anti-bloat guardrails.
 
     Rejects candidate runbooks containing:
     1. Literal IPv4 addresses or CIDR blocks (except 127.0.0.1/0.0.0.0).
     2. Hardcoded evaluation benchmark hostnames.
     3. Short-circuit / bypass directives (e.g. 'skip all enrichment').
+    4. Hardcoded evaluation case identifiers (e.g. 'CASE-02', 'CASE-GEN3-01').
+    5. Runbook length bloat exceeding max_growth_ratio relative to seed_candidate.
 
     Args:
         candidate: Mapping of runbook filenames to markdown content.
         forbidden_hostnames: Optional list of static hostnames to prohibit.
+        seed_candidate: Optional seed runbooks dictionary for bloat ratio checks.
+        max_growth_ratio: Maximum allowed character growth ratio vs seed (default: 1.35).
 
     Returns:
         Tuple of (is_valid: bool, violations: List[str]).
@@ -285,6 +321,19 @@ def validate_runbook_candidate(
                     f"{filename}: Contains short-circuit investigation directive '{match.group(0)}'. Epistemic enrichment tools must never be bypassed."
                 )
 
+        for case_match in CASE_ID_REGEX.findall(cleaned_content):
+            violations.append(
+                f"{filename}: Contains hardcoded evaluation case identifier '{case_match}'."
+            )
+
+        if seed_candidate and filename in seed_candidate:
+            seed_len = max(1, len(seed_candidate[filename]))
+            ratio = len(content) / seed_len
+            if ratio > max_growth_ratio:
+                violations.append(
+                    f"{filename}: Candidate growth ratio ({ratio:.2f}x) exceeds max_growth_ratio ({max_growth_ratio:.2f}x)."
+                )
+
     return (len(violations) == 0, violations)
 
 
@@ -299,6 +348,10 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         use_live_mcp: bool = False,
         max_iterations: int = 5,
         agent_factory: Optional[Callable[..., Any]] = None,
+        harness_guard: Optional[HarnessIntegrityGuard] = None,
+        jev_evaluator: Optional[Any] = None,
+        seed_candidate: Optional[Dict[str, str]] = None,
+        max_growth_ratio: float = 1.35,
     ):
         self.task_lm = task_lm
         resolved_project_id = (
@@ -319,6 +372,10 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         self.use_live_mcp = use_live_mcp
         self.max_iterations = max_iterations
         self.agent_factory = agent_factory or HierarchicalSOCTier1Agent
+        self.harness_guard = harness_guard
+        self.jev_evaluator = jev_evaluator
+        self.seed_candidate = seed_candidate
+        self.max_growth_ratio = max_growth_ratio
 
     def evaluate(
         self,
@@ -327,11 +384,18 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         capture_traces: bool = False,
     ) -> gepa.EvaluationBatch:
         """Evaluates runbook candidate against a batch of evaluation cases."""
+        if self.harness_guard is not None:
+            self.harness_guard.verify(auto_initialize=False)
+
         outputs: List[str] = []
         scores: List[float] = []
         trajectories: List[Dict[str, Any]] = []
 
-        is_valid, violations = validate_runbook_candidate(candidate)
+        is_valid, violations = validate_runbook_candidate(
+            candidate,
+            seed_candidate=self.seed_candidate,
+            max_growth_ratio=self.max_growth_ratio,
+        )
         if not is_valid:
             rejection_msg = (
                 "Candidate rejected by anti-memorization validator. Violations:\n"
@@ -356,6 +420,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     "assert_passed": False,
                     "component_name": "",
                     "trajectory": [],
+                    "jev_choice": None,
                 })
             return gepa.EvaluationBatch(
                 outputs=outputs,
@@ -412,6 +477,25 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 assertion_pts = 25.0 * (1.0 if assert_passed else 0.0)
                 rubric_normalized = (epistemic_pts + action_pts + assertion_pts + 25.0) / 100.0
 
+                jev_choice: Optional[str] = None
+                if self.jev_evaluator is not None:
+                    rubric_text = case.get("reference", {}).get(
+                        "grading_rubric", "Standard SOC Triage Rubric."
+                    )
+                    jev_out = self.jev_evaluator.evaluate_case(
+                        prompt=prompt,
+                        response=resp_text,
+                        reference=case.get("reference", {}),
+                        rubric=rubric_text,
+                        trajectory=agent_traj,
+                    )
+                    rubric_normalized = (
+                        0.50 * rubric_normalized
+                        + 0.30 * (float(jev_out.rubric_score) / 100.0)
+                        + 0.20 * float(jev_out.grounding_score)
+                    )
+                    jev_choice = jev_out.primary_choice
+
                 actual_verdict = ""
                 if hasattr(response, "get"):
                     actual_verdict = response.get("verdict", "")
@@ -455,6 +539,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                         "assert_passed": assert_passed,
                         "component_name": getattr(response, "runbook", ""),
                         "trajectory": agent_traj,
+                        "jev_choice": jev_choice,
                     })
 
             except Exception as e:
@@ -479,6 +564,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                         "assert_passed": False,
                         "component_name": "",
                         "trajectory": [],
+                        "jev_choice": None,
                     })
 
         return gepa.EvaluationBatch(
@@ -535,6 +621,12 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                         f"Triage operational failure: score={score:.2f}, loss_penalty={loss_pen:.2f}. "
                         f"Prohibited actions executed: {[a for a in executed_actions if a in prohibited_actions]}. "
                         "The runbook instructions should be clarified to avoid prohibited actions, gather verified telemetry, and adhere to operational guardrails."
+                    )
+
+                jev_choice = trace.get("jev_choice")
+                if jev_choice:
+                    feedback_items.append(
+                        f"Jev System-One Diagnostic Taxonomy: {jev_choice}."
                     )
 
                 record = {
@@ -680,6 +772,54 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=False,
         help="Execute single evaluation batch on sample cases without mutation.",
     )
+    parser.add_argument(
+        "--lock-file",
+        type=str,
+        default=None,
+        help="Path to SHA-256 evaluation harness lockfile (default: .eval_harness_lock.json).",
+    )
+    parser.add_argument(
+        "--approve-harness",
+        action="store_true",
+        default=False,
+        help="Approve current evaluation harness state and update lockfile.",
+    )
+    parser.add_argument(
+        "--noise-runs",
+        type=int,
+        default=2,
+        help="Number of baseline validation passes for Step 0 noise floor estimation (default: 2).",
+    )
+    parser.add_argument(
+        "--min-delta",
+        type=float,
+        default=0.015,
+        help="Minimum required validation score improvement over baseline (default: 0.015).",
+    )
+    parser.add_argument(
+        "--max-growth-ratio",
+        type=float,
+        default=1.35,
+        help="Maximum allowed runbook length growth ratio relative to seed (default: 1.35).",
+    )
+    parser.add_argument(
+        "--judge-backend",
+        choices=["jev", "deterministic", "mock"],
+        default="deterministic",
+        help="Inner-loop judge backend: 'jev', 'deterministic', or 'mock' (default: deterministic).",
+    )
+    parser.add_argument(
+        "--cost-staircase",
+        action="store_true",
+        default=False,
+        help="Run post-convergence model cost staircase walk to identify cheapest safe model tier.",
+    )
+    parser.add_argument(
+        "--cost-tolerance",
+        type=float,
+        default=0.05,
+        help="Maximum acceptable fitness drop from ceiling model during cost staircase walk (default: 0.05).",
+    )
     return parser
 
 
@@ -726,11 +866,57 @@ def main(args: Optional[List[str]] = None) -> int:
 
     output_dir = ROOT_DIR / parsed_args.output_dir if not Path(parsed_args.output_dir).is_absolute() else Path(parsed_args.output_dir)
 
+    if parsed_args.lock_file:
+        lock_file_path = (
+            Path(parsed_args.lock_file)
+            if Path(parsed_args.lock_file).is_absolute()
+            else (ROOT_DIR / parsed_args.lock_file)
+        )
+        protected_paths: Sequence[Path | str] = (
+            DEFAULT_PROTECTED_HARNESS_PATHS
+            if evalset_path.resolve().is_relative_to(ROOT_DIR.resolve())
+            else [evalset_path]
+        )
+        guard_root = ROOT_DIR if evalset_path.resolve().is_relative_to(ROOT_DIR.resolve()) else evalset_path.parent
+    elif evalset_path.resolve().is_relative_to(ROOT_DIR.resolve()):
+        lock_file_path = ROOT_DIR / ".eval_harness_lock.json"
+        protected_paths = DEFAULT_PROTECTED_HARNESS_PATHS
+        guard_root = ROOT_DIR
+    else:
+        lock_file_path = evalset_path.parent / ".eval_harness_lock.json"
+        protected_paths = [evalset_path]
+        guard_root = evalset_path.parent
+
+    harness_guard = HarnessIntegrityGuard(
+        root_dir=guard_root,
+        lock_file=lock_file_path,
+        protected_paths=protected_paths,
+    )
+    if parsed_args.approve_harness or not evalset_path.resolve().is_relative_to(ROOT_DIR.resolve()):
+        harness_guard.approve_and_save()
+    else:
+        harness_guard.verify(auto_initialize=True)
+
+    jev_evaluator: Optional[JevSocJudgeEvaluator] = None
+    if parsed_args.judge_backend == "jev":
+        jev_evaluator = JevSocJudgeEvaluator(
+            backend=GeminiSystem1Backend(
+                project_id=parsed_args.project_id,
+                location=parsed_args.region,
+            )
+        )
+    elif parsed_args.judge_backend == "mock":
+        jev_evaluator = JevSocJudgeEvaluator(backend=MockJevBackend())
+
     adapter = RunbookGEPAAdapter(
         task_lm=parsed_args.task_lm,
         project_id=parsed_args.project_id,
         region=parsed_args.region,
         agent_factory=HierarchicalSOCTier1Agent,
+        harness_guard=harness_guard,
+        jev_evaluator=jev_evaluator,
+        seed_candidate=seed_candidate,
+        max_growth_ratio=parsed_args.max_growth_ratio,
     )
 
     if parsed_args.dry_run:
@@ -741,6 +927,34 @@ def main(args: Optional[List[str]] = None) -> int:
         for i, score in enumerate(eval_batch.scores):
             print(f"  Case {i + 1} score: {score:.3f}")
         return 0
+
+    tau_accept = float(parsed_args.min_delta)
+    noise_metrics_dict: Optional[Dict[str, Any]] = None
+    if parsed_args.noise_runs >= 2:
+        try:
+            b1 = adapter.evaluate(valset, seed_candidate, capture_traces=False)
+            b2 = adapter.evaluate(valset, seed_candidate, capture_traces=False)
+            s1 = getattr(b1, "scores", None)
+            s2 = getattr(b2, "scores", None)
+            if (
+                isinstance(s1, list)
+                and isinstance(s2, list)
+                and len(s1) == len(s2)
+                and len(s1) > 0
+                and all(isinstance(x, (int, float)) for x in s1)
+                and all(isinstance(x, (int, float)) for x in s2)
+            ):
+                nf = estimate_noise_floor(s1, s2, min_delta=parsed_args.min_delta)
+                tau_accept = nf.tau_accept
+                noise_metrics_dict = {
+                    "run1_mean": nf.run1_mean,
+                    "run2_mean": nf.run2_mean,
+                    "aggregate_noise": nf.aggregate_noise,
+                    "mean_case_noise": nf.mean_case_noise,
+                    "tau_accept": nf.tau_accept,
+                }
+        except Exception:
+            pass
 
     reflection_lm = GoogleGenAILM(
         model=parsed_args.reflection_lm,
@@ -771,22 +985,86 @@ def main(args: Optional[List[str]] = None) -> int:
         print("GEPA returned mismatched candidate and validation score counts.", file=sys.stderr)
         return 1
 
-    selected_index: Optional[int] = None
-    selected_score: Optional[float] = None
-    for index, (candidate, score) in enumerate(zip(candidates, scores)):
+    for index, score in enumerate(scores):
         if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
             print(f"GEPA returned an invalid validation score for candidate {index}.", file=sys.stderr)
             return 1
+
+    ledger = HillclimbLedger(output_dir / "hillclimb_ledger.jsonl")
+    composite_sha = harness_guard.compute_composite_sha256()
+    val_subscores = getattr(result, "val_subscores", None) or []
+    baseline_subscores = (
+        val_subscores[0]
+        if (len(val_subscores) > 0 and isinstance(val_subscores[0], dict) and val_subscores[0])
+        else None
+    )
+
+    selected_index: Optional[int] = None
+    selected_score: Optional[float] = None
+    for index, (candidate, score) in enumerate(zip(candidates, scores)):
         if not isinstance(candidate, dict) or not candidate or not all(
             isinstance(name, str) and isinstance(text, str)
             for name, text in candidate.items()
         ):
             continue
-        is_valid, _ = validate_runbook_candidate(candidate)
-        # Strict comparison preserves the earliest candidate when scores tie.
-        if is_valid and (selected_score is None or score > selected_score):
-            selected_index = index
-            selected_score = float(score)
+        is_valid, violations = validate_runbook_candidate(
+            candidate,
+            seed_candidate=seed_candidate,
+            max_growth_ratio=parsed_args.max_growth_ratio,
+        )
+        if not is_valid:
+            ledger.append_entry(
+                iteration=index,
+                harness_sha256=composite_sha,
+                train_score=None,
+                val_score=float(score),
+                tau_accept=tau_accept,
+                decision="REJECTED_INVALID",
+                rationale="; ".join(violations),
+                metadata={"task_lm": parsed_args.task_lm},
+            )
+            continue
+
+        cand_subscores = (
+            val_subscores[index]
+            if (index < len(val_subscores) and isinstance(val_subscores[index], dict) and val_subscores[index])
+            else None
+        )
+        if index > 0 and baseline_subscores is not None and cand_subscores is not None:
+            acc = evaluate_candidate_acceptance(
+                baseline_scores=baseline_subscores,
+                candidate_scores=cand_subscores,
+                tau_accept=tau_accept,
+            )
+            ledger.append_entry(
+                iteration=index,
+                harness_sha256=composite_sha,
+                train_score=None,
+                val_score=float(score),
+                tau_accept=tau_accept,
+                decision=acc.status,
+                rationale=acc.reason,
+                metadata={"task_lm": parsed_args.task_lm, "regressed_cases": acc.regressed_cases},
+            )
+            if acc.accepted and (selected_score is None or score > selected_score):
+                selected_index = index
+                selected_score = float(score)
+        else:
+            # Strict comparison preserves the earliest candidate when scores tie.
+            is_better = selected_score is None or score > selected_score
+            ledger.append_entry(
+                iteration=index,
+                harness_sha256=composite_sha,
+                train_score=None,
+                val_score=float(score),
+                tau_accept=tau_accept,
+                decision="KEPT" if is_better else "SKIPPED_LOWER_SCORE",
+                rationale="Baseline or aggregate validation score comparison",
+                metadata={"task_lm": parsed_args.task_lm},
+            )
+            if is_better:
+                selected_index = index
+                selected_score = float(score)
 
     best_candidate = seed_candidate if selected_index is None else candidates[selected_index]
     metadata: Dict[str, Any] = {
@@ -802,7 +1080,51 @@ def main(args: Optional[List[str]] = None) -> int:
             if selected_index is None
             else "highest_valid_validation_score"
         ),
+        "harness_composite_sha256": composite_sha,
+        "tau_accept": tau_accept,
     }
+    if noise_metrics_dict is not None:
+        metadata["noise_floor"] = noise_metrics_dict
+
+    if parsed_args.cost_staircase:
+        def _staircase_eval(
+            tier: str, cand: Dict[str, str], cases: List[Dict[str, Any]]
+        ) -> Tuple[List[float], List[float]]:
+            tier_adapter = RunbookGEPAAdapter(
+                task_lm=tier,
+                project_id=parsed_args.project_id,
+                region=parsed_args.region,
+                agent_factory=HierarchicalSOCTier1Agent,
+                harness_guard=harness_guard,
+                jev_evaluator=jev_evaluator,
+                seed_candidate=seed_candidate,
+                max_growth_ratio=parsed_args.max_growth_ratio,
+            )
+            batch_res = tier_adapter.evaluate(cases, cand, capture_traces=True)
+            sc_list = [float(x) for x in (batch_res.scores or [])]
+            lp_list = [
+                float(t.get("loss_penalty", 1.0))
+                for t in (batch_res.trajectories or [])
+            ]
+            if not lp_list and sc_list:
+                lp_list = [1.0 for _ in sc_list]
+            return sc_list, lp_list
+
+        staircase_report = run_cost_staircase_walk(
+            candidate=best_candidate,
+            eval_cases=valset,
+            evaluator_fn=_staircase_eval,
+            model_tiers=DEFAULT_COST_STAIRCASE_TIERS,
+            tolerance=parsed_args.cost_tolerance,
+        )
+        staircase_path = output_dir / "cost_staircase_report.json"
+        staircase_path.parent.mkdir(parents=True, exist_ok=True)
+        staircase_path.write_text(
+            json.dumps(staircase_report.to_dict(), indent=2),
+            encoding="utf-8",
+        )
+        metadata["cost_staircase"] = staircase_report.to_dict()
+
     if selected_index is None:
         print("No valid GEPA candidate remained; saving the seed without a validation score.")
 

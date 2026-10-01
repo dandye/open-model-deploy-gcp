@@ -715,3 +715,214 @@ def test_cli_skips_malformed_candidates(optimizer_cli, invalid_candidate):
     metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
     assert metadata["selected_candidate_index"] == 0
     assert metadata["selected_validation_score"] == 0.5
+
+
+def test_validate_runbook_candidate_rejects_case_id_and_bloat():
+    from agent.gepa_runbook_optimizer import validate_runbook_candidate
+
+    seed = {"basic_ioc_enrichment.md": "# Title\n" + ("Standard instruction line.\n" * 10)}
+
+    # 1. Case-ID literal leakage
+    cand_case_id = {
+        "basic_ioc_enrichment.md": "# Title\nIn CASE-02 and CASE-10, do not isolate the host.\n"
+    }
+    ok_id, violations_id = validate_runbook_candidate(cand_case_id, seed_candidate=seed)
+    assert ok_id is False
+    assert any("CASE-02" in v for v in violations_id)
+
+    # 2. Bloat exceeding 1.35x seed length
+    cand_bloated = {
+        "basic_ioc_enrichment.md": seed["basic_ioc_enrichment.md"] * 2
+    }
+    ok_bloat, violations_bloat = validate_runbook_candidate(
+        cand_bloated, seed_candidate=seed, max_growth_ratio=1.35
+    )
+    assert ok_bloat is False
+    assert any("growth ratio" in v.lower() for v in violations_bloat)
+
+
+def test_adapter_evaluate_verifies_harness_guard(tmp_path: Path):
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    from agent.hillclimb_harness import HarnessIntegrityGuard, HarnessTamperError
+
+    eval_file = tmp_path / "evalset.json"
+    eval_file.write_text('{"eval_cases": []}', encoding="utf-8")
+    lock_file = tmp_path / ".eval_harness_lock.json"
+
+    guard = HarnessIntegrityGuard(
+        root_dir=tmp_path,
+        lock_file=lock_file,
+        protected_paths=[Path("evalset.json")],
+    )
+    guard.approve_and_save()
+
+    # Tamper with evalset
+    eval_file.write_text('{"eval_cases": [{"eval_id": "TAMPERED"}]}', encoding="utf-8")
+
+    adapter = RunbookGEPAAdapter(harness_guard=guard)
+    with pytest.raises(HarnessTamperError, match="evalset.json"):
+        adapter.evaluate(
+            batch=[{"eval_id": "CASE-01", "prompt": "test"}],
+            candidate={"basic_ioc_enrichment.md": "# Clean runbook"},
+        )
+
+
+def test_adapter_evaluate_blends_jev_evaluator_and_reflective_feedback():
+    from unittest.mock import MagicMock
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    from agent.jev_evaluator import JevSocJudgeEvaluator
+    from agent.jev_judge import MockJevBackend
+
+    candidate = {
+        "basic_ioc_enrichment.md": "# Basic IOC Enrichment\nRules",
+    }
+    batch = [
+        {
+            "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+            "prompt": "Triage alert for host DESKTOP-FIN-08 connecting to update-service-win32.com.",
+            "ground_truth_label": "MALICIOUS",
+            "expected_actions": ["isolate_host"],
+            "prohibited_actions": ["close_case"],
+            "assertions": {
+                "must_contain": ["update-service-win32.com"],
+                "must_not_contain": [],
+            },
+        }
+    ]
+
+    mock_agent = MagicMock()
+    mock_response = MagicMock()
+    mock_response.response = "Host DESKTOP-FIN-08 connected to update-service-win32.com."
+    mock_response.trajectory = []
+    mock_response.runbook = "basic_ioc_enrichment.md"
+    mock_response.get = MagicMock(return_value="MALICIOUS")
+    mock_agent.query.return_value = mock_response
+    mock_factory = MagicMock(return_value=mock_agent)
+
+    jev_backend = MockJevBackend(
+        score_level=5,
+        noul_pass_prob=0.60,
+        noul_grounding_prob=0.60,
+        choice_label="PREMATURE_TERMINATION_ZERO_TOOLS",
+    )
+    jev_eval = JevSocJudgeEvaluator(backend=jev_backend)
+
+    adapter = RunbookGEPAAdapter(
+        agent_factory=mock_factory,
+        jev_evaluator=jev_eval,
+        seed_candidate=candidate,
+        max_growth_ratio=1.35,
+    )
+    eval_batch = adapter.evaluate(batch, candidate, capture_traces=True)
+    assert eval_batch.trajectories is not None
+    trace = eval_batch.trajectories[0]
+    assert trace["jev_choice"] == "PREMATURE_TERMINATION_ZERO_TOOLS"
+
+    reflective = adapter.make_reflective_dataset(
+        candidate=candidate,
+        eval_batch=eval_batch,
+        components_to_update=["basic_ioc_enrichment.md"],
+    )
+    records = reflective["basic_ioc_enrichment.md"]
+    assert len(records) == 1
+    assert "PREMATURE_TERMINATION_ZERO_TOOLS" in records[0]["Feedback"]
+
+
+def test_cli_disciplined_hillclimber_flags_and_ledger(tmp_path: Path, monkeypatch):
+    from unittest.mock import MagicMock
+    import gepa
+    from gepa.core.result import GEPAResult
+    import agent.gepa_runbook_optimizer as optimizer
+
+    seed = {name: "# Seed\nInvestigate available evidence." for name in CORE_RUNBOOKS}
+    monkeypatch.setattr(optimizer, "load_seed_runbooks", lambda: seed)
+
+    evalset = tmp_path / "evalset.json"
+    evalset.write_text(
+        json.dumps(
+            {
+                "eval_cases": [
+                    {"eval_id": "case-0", "prompt": "Investigate case 0"},
+                    {"eval_id": "case-1", "prompt": "Investigate case 1"},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    mock_adapter_instance = MagicMock()
+    mock_adapter_instance.evaluate.side_effect = [
+        gepa.EvaluationBatch(outputs=["o1", "o2"], scores=[0.70, 0.70], trajectories=None),
+        gepa.EvaluationBatch(outputs=["o1", "o2"], scores=[0.71, 0.71], trajectories=None),
+        gepa.EvaluationBatch(
+            outputs=["o1", "o2"],
+            scores=[0.90, 0.90],
+            trajectories=[{"loss_penalty": 1.0}, {"loss_penalty": 1.0}],
+        ),
+        gepa.EvaluationBatch(
+            outputs=["o1", "o2"],
+            scores=[0.88, 0.88],
+            trajectories=[{"loss_penalty": 1.0}, {"loss_penalty": 1.0}],
+        ),
+        gepa.EvaluationBatch(
+            outputs=["o1", "o2"],
+            scores=[0.87, 0.87],
+            trajectories=[{"loss_penalty": 1.0}, {"loss_penalty": 1.0}],
+        ),
+        gepa.EvaluationBatch(
+            outputs=["o1", "o2"],
+            scores=[0.86, 0.86],
+            trajectories=[{"loss_penalty": 0.368}, {"loss_penalty": 1.0}],
+        ),
+        gepa.EvaluationBatch(
+            outputs=["o1", "o2"],
+            scores=[0.50, 0.50],
+            trajectories=[{"loss_penalty": 1.0}, {"loss_penalty": 1.0}],
+        ),
+    ]
+    mock_adapter_cls = MagicMock(return_value=mock_adapter_instance)
+    monkeypatch.setattr(optimizer, "RunbookGEPAAdapter", mock_adapter_cls)
+    monkeypatch.setattr(optimizer, "GoogleGenAILM", MagicMock())
+
+    improved = {name: "# Improved\nInvestigate available evidence." for name in CORE_RUNBOOKS}
+    mock_optimize = MagicMock(
+        return_value=GEPAResult(
+            candidates=[seed, improved],
+            parents=[[], [0]],
+            val_aggregate_scores=[0.70, 0.88],
+            val_subscores=[
+                {"case-0": 0.70, "case-1": 0.70},
+                {"case-0": 0.88, "case-1": 0.88},
+            ],
+            per_val_instance_best_candidates={},
+            discovery_eval_counts=[0, 1],
+        )
+    )
+    monkeypatch.setattr(optimizer.gepa, "optimize", mock_optimize)
+
+    output_dir = tmp_path / "evolved_out"
+    lock_file = tmp_path / ".eval_harness_lock.json"
+
+    rc = optimizer.main([
+        "--evalset", str(evalset),
+        "--output-dir", str(output_dir),
+        "--lock-file", str(lock_file),
+        "--approve-harness",
+        "--noise-runs", "2",
+        "--min-delta", "0.015",
+        "--max-growth-ratio", "1.35",
+        "--judge-backend", "mock",
+        "--cost-staircase",
+        "--cost-tolerance", "0.05",
+    ])
+    assert rc == 0
+    assert lock_file.exists()
+    ledger_path = output_dir / "hillclimb_ledger.jsonl"
+    assert ledger_path.exists()
+    entries = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert len(entries) >= 2
+    assert any(e["decision"] == "KEPT" for e in entries)
+    staircase_path = output_dir / "cost_staircase_report.json"
+    assert staircase_path.exists()
+    staircase_data = json.loads(staircase_path.read_text(encoding="utf-8"))
+    assert staircase_data["selected_model"] == "gemma-4-e4b-it"
