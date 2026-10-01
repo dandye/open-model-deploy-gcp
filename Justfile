@@ -351,6 +351,19 @@ gke-ray-cleanup NAMESPACE="gemma-benchmarks":
     @echo "Cleaning up GKE Ray workloads in namespace '{{NAMESPACE}}'..."
     @kubectl delete rayclusters,jobs --all -n "{{NAMESPACE}}" --ignore-not-found=true
 
+# ------------------------------------------------------------------------------
+# Harbor Framework SOC Tier 1 Skills Evaluation Suite (harbor-gke-ext v1.3)
+# ------------------------------------------------------------------------------
+
+# Generate all 30 Harbor SOC task directories (no_skills, clean_skills, noisy_skills) and evals.json
+harbor-soc-generate:
+    @.venv/bin/python3 scripts/generate_harbor_soc_tasks.py
+
+# Verify all 30 Harbor SOC tasks, SHA-256 environment deduplication, and 100% oracle calibration
+harbor-soc-test:
+    @.venv/bin/pytest tests/test_harbor_soc_skills.py tests/test_soc_sandbox_cli.py tests/test_verify_harbor_soc.py tests/test_harbor_soc_tasks.py -v
+
+
 
 
 
