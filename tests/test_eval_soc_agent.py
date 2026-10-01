@@ -1429,6 +1429,91 @@ def test_calibrated_pass_logic_zero_tool_investigation_gating(tmp_path: Path):
         assert res_with_tools["summary"]["passed_cases"] == 1
 
 
+def test_eval_soc_agent_parser_supports_judge_backend_flags():
+    from scripts.eval_soc_agent import parse_args
+
+    args = parse_args(
+        ["--flavor", "gemini-2.5-flash-lite", "--judge-backend", "jev", "--jev-backend", "mock"]
+    )
+    assert args.judge_backend == "jev"
+    assert args.jev_backend == "mock"
+    assert args.sxs_judge is False
+
+
+def test_run_evaluation_with_jev_mock_backend(tmp_path: Path):
+    """Verify run_evaluation uses JevSocJudgeEvaluator when judge_backend='jev' and jev_backend='mock'."""
+    evalset_file = tmp_path / "eval_jev.json"
+    case_config = {
+        "evalset_id": "test_jev_eval",
+        "generation": 3,
+        "eval_cases": [
+            {
+                "eval_id": "CASE-JEV-01",
+                "name": "Jev Mock Evaluation Case",
+                "prompt": "Enrich indicator 192.0.2.100 and conclude investigation.",
+                "asset_criticality": "LOW",
+                "ground_truth_label": "BENIGN",
+                "expected_actions": ["close_case"],
+                "prohibited_actions": ["isolate_host"],
+                "reference": {
+                    "grading_rubric": "Verify benign RFC-5737 handling. Passing >= 70 pts."
+                },
+                "assertions": {
+                    "must_contain": ["192.0.2.100"],
+                    "must_not_contain": ["CRITICAL MALWARE"],
+                },
+            }
+        ],
+    }
+    evalset_file.write_text(json.dumps(case_config), encoding="utf-8")
+
+    response_text = (
+        "The IP 192.0.2.100 is reserved under RFC-5737 for documentation. Non-routable and benign.\n"
+        "```soc_decision\n"
+        "{\n"
+        '  "verdict": "BENIGN",\n'
+        '  "recommended_actions": ["close_case"],\n'
+        '  "target_entity": "192.0.2.100",\n'
+        '  "rationale": "Documentation IP is non-routable"\n'
+        "}\n"
+        "```"
+    )
+
+    with patch("scripts.eval_soc_agent.SocTier1Agent") as mock_agent_cls, \
+         patch("scripts.eval_soc_agent.genai.Client"):
+        mock_agent = MagicMock()
+        mock_agent.query.return_value = {
+            "response": response_text,
+            "usage": {"prompt_tokens": 80, "completion_tokens": 40, "total_tokens": 120},
+            "trajectory": [
+                {
+                    "iteration": 1,
+                    "tool": "get_ip_address_report",
+                    "args": {"ip": "192.0.2.100"},
+                    "observation": "RFC 5737 test network",
+                }
+            ],
+        }
+        mock_agent_cls.return_value = mock_agent
+
+        res = run_evaluation(
+            evalset_path=evalset_file,
+            flavor="test-model",
+            gen=3,
+            judge_backend="jev",
+            jev_backend="mock",
+        )
+
+        assert res["summary"]["total_cases"] == 1
+        assert res["summary"]["passed_cases"] == 1
+        case_res = res["case_results"][0]
+        assert case_res["passed"] is True
+        assert case_res["rubric_score"] == 80.0
+        assert case_res["grounding_score"] == 0.9
+        assert case_res["jev_choice"] == "FLAWLESS_CONTAINMENT"
+        assert "Jev System-One" in case_res["critique"]
+
+
 def test_no_emojis_in_eval_soc_agent_and_test():
     """Verify zero unicode emojis exist in scripts/eval_soc_agent.py and tests/test_eval_soc_agent.py."""
     files_to_check = [
@@ -1454,3 +1539,4 @@ def test_no_emojis_in_eval_soc_agent_and_test():
                 or (0x2700 <= cp <= 0x27BF)
             )
             assert not is_emoji, f"Emoji '{char}' (U+{cp:04X}) found in {file_path.name}"
+

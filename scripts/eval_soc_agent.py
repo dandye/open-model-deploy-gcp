@@ -55,6 +55,11 @@ from scripts.eval_trajectory_verifier import (
     verify_agent_trajectory,
 )
 from scripts.evaluation_provenance import capture_provenance, utc_now
+from agent.jev_backend_gemini import GeminiSystem1Backend
+from agent.jev_backend_typesafe import TypeSafeJevBackend
+from agent.jev_evaluator import JevSocJudgeEvaluator
+from agent.jev_judge import MockJevBackend
+
 
 
 class SemanticJudgeResult(BaseModel):
@@ -214,6 +219,23 @@ def calculate_aggregate_score(results: List[Dict[str, Any]], gen: int = 3) -> Di
         summary["advisor_actions_matched_rate"] = round((matched_advisor / total) * 100.0, 1)
         summary["prohibited_avoided_rate"] = round((avoided_prohibited / total) * 100.0, 1)
 
+    jev_choices = [r.get("jev_choice") for r in results if r.get("jev_choice")]
+    if jev_choices:
+        choice_dist: Dict[str, int] = {}
+        for ch in jev_choices:
+            choice_dist[str(ch)] = choice_dist.get(str(ch), 0) + 1
+        summary["jev_choice_distribution"] = choice_dist
+
+    sxs_items = [r.get("sxs_comparison") for r in results if r.get("sxs_comparison")]
+    if sxs_items:
+        n_sxs = len(sxs_items)
+        summary["sxs_summary"] = {
+            "compared_cases": n_sxs,
+            "avg_score_delta": round(sum(s.get("score_delta", 0.0) for s in sxs_items) / n_sxs, 2),
+            "avg_jev_latency_s": round(sum(s.get("jev_latency_s", 0.0) for s in sxs_items) / n_sxs, 4),
+            "avg_gemini_pro_latency_s": round(sum(s.get("gemini_pro_latency_s", 0.0) for s in sxs_items) / n_sxs, 4),
+        }
+
     return summary
 
 
@@ -293,6 +315,9 @@ def run_evaluation(
     runbooks_dir: Optional[str] = None,
     mcp_provider: str = "default",
     provenance_run_id: Optional[str] = None,
+    judge_backend: str = "gemini-2.5-pro",
+    jev_backend: str = "gemini_system1",
+    sxs_judge: bool = False,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     if agent_mode == "hierarchical" and mcp_provider != "default":
@@ -316,6 +341,7 @@ def run_evaluation(
     print(f" Agent Mode: {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})")
     if agent_mode == "hierarchical":
         print(f" Procedural Runbooks: {'Enabled' if use_runbooks else 'Disabled (Generic Control)'}")
+    print(f" Judge Backend: {judge_backend} ({jev_backend if judge_backend == 'jev' else 'direct'})")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
     print(f" MCP Tool Provider: {mcp_provider.upper()}")
     if use_live_mcp:
@@ -345,7 +371,8 @@ def run_evaluation(
         {"flavor": flavor, "managed_model": managed_model, "endpoint_id": endpoint_id,
          "cloudrun_url": cloudrun_url, "project_id": project_id, "region": region,
          "generation": eval_gen, "agent_mode": agent_mode, "use_runbooks": use_runbooks,
-         "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider},
+         "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider,
+         "judge_backend": judge_backend, "jev_backend": jev_backend},
         (Path(runbooks_dir) if runbooks_dir else ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books")
         if agent_mode == "hierarchical" and use_runbooks else None,
         run_id=provenance_run_id,
@@ -384,6 +411,18 @@ def run_evaluation(
     judge_region = "us-central1"
     judge_client = genai.Client(vertexai=True, project=project_id, location=judge_region)
 
+    jev_evaluator: Optional[JevSocJudgeEvaluator] = None
+    if judge_backend in ("jev", "mock"):
+        if judge_backend == "mock" or jev_backend == "mock":
+            backend = MockJevBackend()
+        elif jev_backend == "typesafe":
+            backend = TypeSafeJevBackend()
+        else:
+            backend = GeminiSystem1Backend(
+                project_id=project_id, location=judge_region, client=judge_client
+            )
+        jev_evaluator = JevSocJudgeEvaluator(backend=backend)
+
     results: List[Dict[str, Any]] = []
     for case in evalset.get("eval_cases", []):
         print(f"\n[Case: {case['eval_id']}] {case['name']}...")
@@ -393,7 +432,34 @@ def run_evaluation(
             agent.environment = SocEnvironment.from_eval_case(case)
 
         start_time = time.time()
-        res = agent.query(prompt=case["prompt"])
+        if judge_backend == "mock" and type(agent).__name__ in ("SocTier1Agent", "HierarchicalSOCTier1Agent"):
+            # Hermetic dry-run synthetic execution when --judge-backend mock is used directly on CLI
+            exp_acts = case.get("expected_actions", ["close_case"])
+            gt_v = case.get("ground_truth_label", "BENIGN")
+            must_c = " ".join(case.get("assertions", {}).get("must_contain", []))
+            synth_resp = (
+                f"Completed investigation for {case['eval_id']}. Verified indicators: {must_c}.\n"
+                "```soc_decision\n"
+                + json.dumps({
+                    "verdict": gt_v if gt_v else "BENIGN",
+                    "recommended_actions": exp_acts,
+                    "target_entity": (case.get("expected_entities") or ["entity"])[0],
+                    "rationale": "Deterministic dry-run evaluation",
+                })
+                + "\n```"
+            )
+            res = {
+                "response": synth_resp,
+                "trajectory": [
+                    {"iteration": 1, "tool": "lookup_entity", "args": {"entity_id": "dryrun"}, "observation": "{}"}
+                ] + [
+                    {"iteration": idx + 2, "tool": act, "args": {}, "observation": "Executed"}
+                    for idx, act in enumerate(exp_acts)
+                ],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+            }
+        else:
+            res = agent.query(prompt=case["prompt"])
         latency = time.time() - start_time
         response_text = res.get("response", "")
         trajectory = res.get("trajectory", [])
@@ -448,15 +514,57 @@ def run_evaluation(
             criticality=asset_crit,
         )
 
-        # Semantic Judge
-        judge_res = judge_response_with_llm(
-            judge_client=judge_client,
-            prompt=case["prompt"],
-            response=response_text,
-            rubric=case["reference"]["grading_rubric"],
-            reference=case["reference"],
-            trajectory=trajectory,
-        )
+        # Semantic Judge (Jev System-One or Gemini 2.5 Pro)
+        jev_choice: Optional[str] = None
+        jev_metadata: Optional[Dict[str, Any]] = None
+        sxs_comparison: Optional[Dict[str, Any]] = None
+        if jev_evaluator is not None:
+            t_jev = time.time()
+            jev_out = jev_evaluator.evaluate_case(
+                prompt=case["prompt"],
+                response=response_text,
+                reference=case["reference"],
+                rubric=case["reference"]["grading_rubric"],
+                trajectory=trajectory,
+            )
+            jev_latency_s = round(time.time() - t_jev, 4)
+            judge_res = SemanticJudgeResult(
+                rubric_score=jev_out.rubric_score,
+                passed=jev_out.passed,
+                grounding_score=jev_out.grounding_score,
+                critique=jev_out.critique,
+            )
+            jev_choice = jev_out.primary_choice
+            jev_metadata = jev_out.raw_metadata
+
+            if sxs_judge:
+                t_llm = time.time()
+                llm_res = judge_response_with_llm(
+                    judge_client=judge_client,
+                    prompt=case["prompt"],
+                    response=response_text,
+                    rubric=case["reference"]["grading_rubric"],
+                    reference=case["reference"],
+                    trajectory=trajectory,
+                )
+                llm_latency_s = round(time.time() - t_llm, 4)
+                sxs_comparison = {
+                    "jev_rubric_score": jev_out.rubric_score,
+                    "gemini_pro_rubric_score": llm_res.rubric_score,
+                    "score_delta": round(jev_out.rubric_score - llm_res.rubric_score, 2),
+                    "jev_latency_s": jev_latency_s,
+                    "gemini_pro_latency_s": llm_latency_s,
+                    "jev_choice": jev_out.primary_choice,
+                }
+        else:
+            judge_res = judge_response_with_llm(
+                judge_client=judge_client,
+                prompt=case["prompt"],
+                response=response_text,
+                rubric=case["reference"]["grading_rubric"],
+                reference=case["reference"],
+                trajectory=trajectory,
+            )
 
         # Case pass evaluation
         if eval_gen == 3:
@@ -531,6 +639,11 @@ def run_evaluation(
             "counterfactual_pair_id": case.get("counterfactual_pair_id"),
             "case_loss_usd": case_loss,
         }
+        if jev_choice is not None:
+            case_data["jev_choice"] = jev_choice
+            case_data["jev_metadata"] = jev_metadata
+        if sxs_comparison is not None:
+            case_data["sxs_comparison"] = sxs_comparison
         results.append(case_data)
 
     summary = calculate_aggregate_score(results, gen=eval_gen)
@@ -586,6 +699,8 @@ def run_evaluation(
         "agent_mode": agent_mode,
         "use_runbooks": use_runbooks,
         "mcp_provider": mcp_provider,
+        "judge_backend": judge_backend,
+        "jev_backend": jev_backend,
         "summary": summary,
         "case_results": results,
     }
@@ -711,6 +826,14 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
 
         if c.get("assertion_failures"):
             lines.append(f"- **Assertion Failures:** `{c['assertion_failures']}`")
+        if c.get("jev_choice"):
+            lines.append(f"- **Jev Diagnostic Choice:** `{c['jev_choice']}`")
+        if c.get("sxs_comparison"):
+            sxs = c["sxs_comparison"]
+            lines.append(
+                f"- **SxS Judge Comparison:** Jev={sxs.get('jev_score')}/100 "
+                f"(Choice: `{sxs.get('jev_choice')}`) vs Legacy={sxs.get('legacy_score')}/100"
+            )
         lines.append(f"- **Judge Critique:** {c['critique']}\n")
 
         # Trajectory
@@ -807,6 +930,9 @@ def _initial_cli_provenance(
             "use_runbooks": args.use_runbooks,
             "use_live_mcp": args.live_mcp,
             "mcp_provider": args.mcp_provider,
+            "judge_backend": getattr(args, "judge_backend", "jev"),
+            "jev_backend": getattr(args, "jev_backend", "gemini_system1"),
+            "sxs_judge": getattr(args, "sxs_judge", False),
         },
         runbooks_path,
         run_id=None,
@@ -831,8 +957,8 @@ def _write_cli_failure_artifacts(
         print(f"Failure report saved to: {report_path}")
 
 
-def main() -> None:
-    """CLI entrypoint for running the SOC evaluation runner."""
+def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+    """Parse CLI arguments for the SOC evaluation runner."""
     parser = argparse.ArgumentParser(description="Evaluate Gemma SOC Agent against Rubrics, SDT, and Loss Matrix.")
     parser.add_argument("--flavor", default="local-gemma", help="Model flavor name")
     parser.add_argument(
@@ -879,9 +1005,32 @@ def main() -> None:
         default="default",
         help="MCP tool description source: 'default' (baseline docstrings) or 'gepa' (gusto-mcp-gepa Pareto-optimized descriptions)",
     )
+    parser.add_argument(
+        "--judge-backend",
+        choices=["jev", "gemini-2.5-pro", "mock"],
+        default="jev",
+        help="Evaluation judge backend: 'jev' (System-1 logit scoring), 'gemini-2.5-pro' (legacy CoT), or 'mock'",
+    )
+    parser.add_argument(
+        "--jev-backend",
+        choices=["gemini_system1", "typesafe", "mock"],
+        default="gemini_system1",
+        help="Underlying Jev execution backend: 'gemini_system1', 'typesafe', or 'mock'",
+    )
+    parser.add_argument(
+        "--sxs-judge",
+        action="store_true",
+        default=False,
+        help="Run both Jev System-1 and legacy Gemini 2.5 Pro judges side-by-side for comparison",
+    )
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
-    args = parser.parse_args()
+    return parser.parse_args(argv)
+
+
+def main(argv: Optional[List[str]] = None) -> None:
+    """CLI entrypoint for running the SOC evaluation runner."""
+    args = parse_args(argv)
 
     # Determine default evalset based on generation and live MCP mode
     if args.evalset:
@@ -949,6 +1098,9 @@ def main() -> None:
             runbooks_dir=args.runbooks_dir,
             mcp_provider=args.mcp_provider,
             provenance_run_id=initial_provenance["run_id"],
+            judge_backend=args.judge_backend,
+            jev_backend=args.jev_backend,
+            sxs_judge=args.sxs_judge,
         )
     except Exception as error:
         initial_provenance["completed_at"] = utc_now()
