@@ -57,7 +57,12 @@ DEFAULT_CLUSTER_NAME = "harbor-eval-cluster"
 DEFAULT_KUBECONFIG = "/usr/local/google/home/dandye/Projects/vladkol__harbor-gke-ext__worktrees/main/.kube/config"
 DEFAULT_CLOUDSDK_CONFIG = "/usr/local/google/home/dandye/Projects/vladkol__harbor-gke-ext__worktrees/main/.gcloud"
 
-DEFAULT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash"]
+DEFAULT_MODELS = [
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-3.7-flash",
+    "gemini-3.5-flash-lite",
+]
 DEFAULT_ARMS = ["no_skills", "clean_skills", "noisy_skills"]
 
 
@@ -356,20 +361,22 @@ def main():
     os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = GOOGLE_API_USE_CLIENT_CERTIFICATE
     os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = GOOGLE_API_USE_MTLS_ENDPOINT
 
+    adc_path = Path(DEFAULT_CLOUDSDK_CONFIG) / "application_default_credentials.json"
+    if "GOOGLE_APPLICATION_CREDENTIALS" not in os.environ and adc_path.exists():
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(adc_path)
+
     tasks_root = Path(args.tasks_dir)
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     trials_dir = out_dir / "trials"
     trials_dir.mkdir(parents=True, exist_ok=True)
 
-    client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-
     print("================================================================================")
     print(" Harbor SOC Tier 1 Interactive Skills Evaluation Sweep")
     print(f" Models: {args.models}")
     print(f" Arms: {args.arms}")
     print(f" Concurrency: {args.concurrency}")
-    print(f" Project: {PROJECT_ID} (Location: {LOCATION})")
+    print(f" Project: {PROJECT_ID} (Default Location: {LOCATION})")
     print("================================================================================")
 
     all_trials: List[Dict[str, Any]] = []
@@ -377,7 +384,9 @@ def main():
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     for model in args.models:
-        print(f"\n>>> Starting Model: {model} <<<")
+        model_location = "global" if ("3.7" in model or "3.5" in model or "global" in model) else LOCATION
+        print(f"\n>>> Starting Model: {model} (Endpoint Location: {model_location}) <<<")
+        model_client = genai.Client(vertexai=True, project=PROJECT_ID, location=model_location)
         for arm in args.arms:
             arm_dir = tasks_root / arm
             if not arm_dir.exists():
@@ -394,7 +403,7 @@ def main():
                 futures = {
                     executor.submit(
                         run_single_trial,
-                        client=client,
+                        client=model_client,
                         model_name=model,
                         arm=arm,
                         case_dir=c_dir,

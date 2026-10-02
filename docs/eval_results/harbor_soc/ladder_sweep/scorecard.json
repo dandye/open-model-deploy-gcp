@@ -1,0 +1,193 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-02T02:18:58.416373+00:00",
+    "models": [
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.5-flash-lite"
+    ],
+    "arms": [
+      "no_skills",
+      "clean_skills",
+      "noisy_skills"
+    ],
+    "project_id": "dandye-0324-chronicle",
+    "location": "us-central1",
+    "total_trials": 120
+  },
+  "models": {
+    "gemini-2.5-flash-lite": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 70.0,
+          "mean_reward": 0.7701,
+          "state_and_safety_compliance_60pct": 0.5123,
+          "action_economy_20pct": 0.1088,
+          "assertions_and_jev_20pct": 0.149,
+          "mean_operational_loss_usd": 5500.0,
+          "mean_latency_s": 14.57,
+          "total_tools_called": 50
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 30.0,
+          "mean_reward": 0.6126,
+          "state_and_safety_compliance_60pct": 0.4124,
+          "action_economy_20pct": 0.0432,
+          "assertions_and_jev_20pct": 0.157,
+          "mean_operational_loss_usd": 35500.0,
+          "mean_latency_s": 12.46,
+          "total_tools_called": 48
+        },
+        "noisy_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 80.0,
+          "mean_reward": 0.7974,
+          "state_and_safety_compliance_60pct": 0.532,
+          "action_economy_20pct": 0.1024,
+          "assertions_and_jev_20pct": 0.163,
+          "mean_operational_loss_usd": 505.0,
+          "mean_latency_s": 15.19,
+          "total_tools_called": 42
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": -0.1575,
+        "noisy_vs_clean_delta": 0.1848,
+        "noisy_vs_clean_pct": 30.17,
+        "noisy_performs_worse": false
+      }
+    },
+    "gemini-2.5-flash": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 90.0,
+          "mean_reward": 0.8726,
+          "state_and_safety_compliance_60pct": 0.5521,
+          "action_economy_20pct": 0.148,
+          "assertions_and_jev_20pct": 0.1725,
+          "mean_operational_loss_usd": 5500.0,
+          "mean_latency_s": 33.51,
+          "total_tools_called": 47
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 100.0,
+          "mean_reward": 0.8353,
+          "state_and_safety_compliance_60pct": 0.5523,
+          "action_economy_20pct": 0.11,
+          "assertions_and_jev_20pct": 0.173,
+          "mean_operational_loss_usd": 5500.0,
+          "mean_latency_s": 27.39,
+          "total_tools_called": 48
+        },
+        "noisy_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 90.0,
+          "mean_reward": 0.8558,
+          "state_and_safety_compliance_60pct": 0.5323,
+          "action_economy_20pct": 0.16,
+          "assertions_and_jev_20pct": 0.1635,
+          "mean_operational_loss_usd": 5500.0,
+          "mean_latency_s": 25.02,
+          "total_tools_called": 44
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": -0.0373,
+        "noisy_vs_clean_delta": 0.0205,
+        "noisy_vs_clean_pct": 2.45,
+        "noisy_performs_worse": false
+      }
+    },
+    "gemini-3.7-flash": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 20.0,
+          "mean_reward": 0.5004,
+          "state_and_safety_compliance_60pct": 0.3322,
+          "action_economy_20pct": 0.0692,
+          "assertions_and_jev_20pct": 0.099,
+          "mean_operational_loss_usd": 30505.0,
+          "mean_latency_s": 43.16,
+          "total_tools_called": 31
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 50.0,
+          "mean_reward": 0.5414,
+          "state_and_safety_compliance_60pct": 0.3524,
+          "action_economy_20pct": 0.088,
+          "assertions_and_jev_20pct": 0.101,
+          "mean_operational_loss_usd": 10500.0,
+          "mean_latency_s": 25.41,
+          "total_tools_called": 21
+        },
+        "noisy_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 40.0,
+          "mean_reward": 0.6727,
+          "state_and_safety_compliance_60pct": 0.3844,
+          "action_economy_20pct": 0.1448,
+          "assertions_and_jev_20pct": 0.1435,
+          "mean_operational_loss_usd": 6000.0,
+          "mean_latency_s": 44.24,
+          "total_tools_called": 30
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": 0.041,
+        "noisy_vs_clean_delta": 0.1313,
+        "noisy_vs_clean_pct": 24.25,
+        "noisy_performs_worse": false
+      }
+    },
+    "gemini-3.5-flash-lite": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 80.0,
+          "mean_reward": 0.7908,
+          "state_and_safety_compliance_60pct": 0.5043,
+          "action_economy_20pct": 0.132,
+          "assertions_and_jev_20pct": 0.1545,
+          "mean_operational_loss_usd": 1000.0,
+          "mean_latency_s": 8.22,
+          "total_tools_called": 36
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 90.0,
+          "mean_reward": 0.8382,
+          "state_and_safety_compliance_60pct": 0.4922,
+          "action_economy_20pct": 0.186,
+          "assertions_and_jev_20pct": 0.16,
+          "mean_operational_loss_usd": 5505.0,
+          "mean_latency_s": 8.09,
+          "total_tools_called": 37
+        },
+        "noisy_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 100.0,
+          "mean_reward": 0.8618,
+          "state_and_safety_compliance_60pct": 0.5243,
+          "action_economy_20pct": 0.182,
+          "assertions_and_jev_20pct": 0.1555,
+          "mean_operational_loss_usd": 1000.0,
+          "mean_latency_s": 10.74,
+          "total_tools_called": 31
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": 0.0474,
+        "noisy_vs_clean_delta": 0.0236,
+        "noisy_vs_clean_pct": 2.82,
+        "noisy_performs_worse": false
+      }
+    }
+  }
+}
