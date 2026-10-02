@@ -22,7 +22,7 @@ def test_generate_harbor_soc_suite_and_verify_30_tasks_and_oracles(tmp_path: Pat
     evals_json_out = tmp_path / "evals.json"
 
     summary = generate_harbor_soc_suite(output_root=harbor_out, evals_json_out=evals_json_out)
-    assert summary["total_tasks"] == 30
+    assert summary["total_tasks"] == len(SKILL_ARMS) * 10
     assert len(summary["unique_environment_hashes"]) == 1
     assert evals_json_out.exists()
 

@@ -141,7 +141,10 @@ def _append_trajectory_step(
 
 def _parse_tool_args(command: str, raw_args: List[str]) -> Dict[str, Any]:
     """Parses flexible CLI flags, positional arguments, or --json payloads."""
-    parser = argparse.ArgumentParser(prog=f"soc-cli {command}", add_help=False)
+    try:
+        parser = argparse.ArgumentParser(prog=f"soc-cli {command}", add_help=False, exit_on_error=False)
+    except TypeError:
+        parser = argparse.ArgumentParser(prog=f"soc-cli {command}", add_help=False)
     parser.add_argument("positional", nargs="*")
     parser.add_argument("--json", dest="json_payload", default=None)
     for flag in (
@@ -171,7 +174,10 @@ def _parse_tool_args(command: str, raw_args: List[str]) -> Dict[str, Any]:
     ):
         parser.add_argument(f"--{flag}", default=None)
 
-    ns, unknown = parser.parse_known_args(raw_args)
+    try:
+        ns, unknown = parser.parse_known_args(raw_args)
+    except (argparse.ArgumentError, SystemExit, Exception) as parse_err:
+        return {"error": f"Invalid arguments for {command}: {parse_err}"}
     parsed: Dict[str, Any] = {}
 
     if ns.json_payload:

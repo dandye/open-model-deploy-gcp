@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 import stat
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -17,10 +17,24 @@ if str(ROOT_DIR) not in sys.path:
 EVALSET_PATH = ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"
 CLEAN_SKILL_PATH = ROOT_DIR / "skills" / "secops-triage" / "SKILL.md"
 NOISY_SKILL_PATH = ROOT_DIR / "skills" / "secops-triage" / "noisy" / "verbose_lore.md"
+DEFAULT_GEPA_RUNBOOKS_DIR = Path("/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/configs/runbooks/gepa_evolved")
 DEFAULT_HARBOR_OUT = ROOT_DIR / "evals" / "harbor_soc"
 DEFAULT_EVALS_JSON_OUT = ROOT_DIR / "skills" / "secops-triage" / "evals" / "evals.json"
 
-SKILL_ARMS = ("no_skills", "clean_skills", "noisy_skills")
+SKILL_ARMS = ("no_skills", "clean_skills", "noisy_skills", "gepa_evolved_skills")
+
+GEPA_CASE_RUNBOOK_MAP: Dict[str, str] = {
+    "CASE-GEN3-01-LOKIBOT-C2": "basic_ioc_enrichment.md",
+    "CASE-GEN3-02-RFC5737-BENIGN-IP": "suspicious_login_triage.md",
+    "CASE-GEN3-03-PHISHING-CRED-HARVEST": "basic_ioc_enrichment.md",
+    "CASE-GEN3-04-DUPLICATE-SOAR-CASE": "basic_ioc_enrichment.md",
+    "CASE-GEN3-05-RANSOMWARE-ESCALATION": "malware_triage.md",
+    "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL": "basic_ioc_enrichment.md",
+    "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC": "lateral_movement_hunt_psexec_wmi.md",
+    "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT": "malware_triage.md",
+    "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE": "basic_ioc_enrichment.md",
+    "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE": "basic_ioc_enrichment.md",
+}
 
 # Canonical oracle recipes for each of the 10 Gen 3 cases
 ORACLE_RECIPES: Dict[str, Dict[str, Any]] = {
@@ -313,7 +327,13 @@ SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
 """
 
 
-def _build_instruction_md(case: Dict[str, Any], arm: str, clean_skill: str, noisy_skill: str) -> str:
+def _build_instruction_md(
+    case: Dict[str, Any],
+    arm: str,
+    clean_skill: str,
+    noisy_skill: str,
+    evolved_runbook: Optional[str] = None,
+) -> str:
     """Renders instruction.md with embedded skill arm and soc-cli usage instructions."""
     skill_block = ""
     if arm == "clean_skills":
@@ -325,6 +345,11 @@ def _build_instruction_md(case: Dict[str, Any], arm: str, clean_skill: str, nois
         skill_block = (
             "## Active Operational Skill (`secops-triage`)\n\n"
             f"{noisy_skill.strip()}\n\n---\n\n"
+        )
+    elif arm == "gepa_evolved_skills":
+        skill_block = (
+            "# Security Operations GEPA Evolved Runbook\n\n"
+            f"{(evolved_runbook or '').strip()}\n\n---\n\n"
         )
 
     return f"""# Security Operations Center (SOC) Tier 1 Interactive Triage Task
@@ -465,12 +490,20 @@ def _export_skill_evaluator_json(cases: List[Dict[str, Any]], evals_json_out: Pa
 def generate_harbor_soc_suite(
     output_root: Path = DEFAULT_HARBOR_OUT,
     evals_json_out: Path = DEFAULT_EVALS_JSON_OUT,
+    gepa_runbooks_dir: Optional[Path] = None,
+    arms: Tuple[str, ...] = SKILL_ARMS,
 ) -> Dict[str, Any]:
-    """Generates all 30 Harbor task directories and the SkillEvaluator evals.json manifest."""
+    """Generates Harbor task directories and the SkillEvaluator evals.json manifest."""
     evalset_data = json.loads(EVALSET_PATH.read_text(encoding="utf-8"))
     cases = evalset_data.get("eval_cases", [])
     clean_skill = CLEAN_SKILL_PATH.read_text(encoding="utf-8")
     noisy_skill = NOISY_SKILL_PATH.read_text(encoding="utf-8")
+
+    rb_dir = gepa_runbooks_dir or DEFAULT_GEPA_RUNBOOKS_DIR
+    if not rb_dir.exists():
+        fallback_rb = ROOT_DIR / "configs" / "runbooks" / "gepa_evolved"
+        if fallback_rb.exists():
+            rb_dir = fallback_rb
 
     if output_root.exists():
         shutil.rmtree(output_root)
@@ -479,19 +512,34 @@ def generate_harbor_soc_suite(
     env_hashes = set()
     created_tasks: List[str] = []
 
-    for arm in SKILL_ARMS:
+    for arm in arms:
         for case in cases:
             eval_id = case["eval_id"]
             slug = _case_slug(eval_id)
             task_dir = output_root / arm / slug
             task_dir.mkdir(parents=True, exist_ok=True)
 
+            evolved_rb_content = None
+            if arm == "gepa_evolved_skills":
+                rb_file = GEPA_CASE_RUNBOOK_MAP.get(eval_id, "basic_ioc_enrichment.md")
+                rb_path = rb_dir / rb_file
+                if rb_path.exists():
+                    evolved_rb_content = rb_path.read_text(encoding="utf-8")
+                else:
+                    evolved_rb_content = f"# Security Operations GEPA Evolved Runbook: {rb_file}\n"
+
             (task_dir / "task.toml").write_text(
                 _build_task_toml(case, arm, slug),
                 encoding="utf-8",
             )
             (task_dir / "instruction.md").write_text(
-                _build_instruction_md(case, arm, clean_skill, noisy_skill),
+                _build_instruction_md(
+                    case=case,
+                    arm=arm,
+                    clean_skill=clean_skill,
+                    noisy_skill=noisy_skill,
+                    evolved_runbook=evolved_rb_content,
+                ),
                 encoding="utf-8",
             )
 
@@ -517,7 +565,7 @@ def generate_harbor_soc_suite(
 
     return {
         "total_tasks": len(created_tasks),
-        "arms": list(SKILL_ARMS),
+        "arms": list(arms),
         "cases_per_arm": len(cases),
         "unique_environment_hashes": sorted(env_hashes),
         "output_root": str(output_root),
@@ -526,15 +574,19 @@ def generate_harbor_soc_suite(
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """CLI entry point to generate the 30 Harbor SOC tasks."""
+    """CLI entry point to generate the Harbor SOC tasks."""
     parser = argparse.ArgumentParser(description="Generate Harbor v1.3 SOC Tier 1 evaluation tasks")
     parser.add_argument("--output-root", default=str(DEFAULT_HARBOR_OUT))
     parser.add_argument("--evals-json-out", default=str(DEFAULT_EVALS_JSON_OUT))
+    parser.add_argument("--gepa-runbooks-dir", default=str(DEFAULT_GEPA_RUNBOOKS_DIR))
+    parser.add_argument("--arms", nargs="+", default=list(SKILL_ARMS))
     args = parser.parse_args(argv)
 
     summary = generate_harbor_soc_suite(
         output_root=Path(args.output_root),
         evals_json_out=Path(args.evals_json_out),
+        gepa_runbooks_dir=Path(args.gepa_runbooks_dir),
+        arms=tuple(args.arms),
     )
     print(json.dumps(summary, indent=2))
     return 0

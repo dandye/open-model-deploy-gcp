@@ -479,7 +479,7 @@ def main():
                 "total_tools_called": total_tools,
             }
 
-        # Calculate degradation deltas
+        # Calculate degradation and evolution deltas
         arms_data = scorecard["models"][model]["arms"]
         if "clean_skills" in arms_data and "no_skills" in arms_data:
             clean_r = arms_data["clean_skills"]["mean_reward"]
@@ -495,6 +495,20 @@ def main():
             scorecard["models"][model]["degradation_delta"]["noisy_vs_clean_delta"] = degrad_delta
             scorecard["models"][model]["degradation_delta"]["noisy_vs_clean_pct"] = degrad_pct
             scorecard["models"][model]["degradation_delta"]["noisy_performs_worse"] = bool(noisy_r < clean_r)
+
+        if "gepa_evolved_skills" in arms_data and "clean_skills" in arms_data:
+            clean_r = arms_data["clean_skills"]["mean_reward"]
+            gepa_r = arms_data["gepa_evolved_skills"]["mean_reward"]
+            gepa_vs_clean_delta = round(gepa_r - clean_r, 4)
+            gepa_vs_clean_pct = round((gepa_vs_clean_delta / clean_r) * 100.0, 2) if clean_r > 0 else 0.0
+            scorecard["models"][model]["degradation_delta"]["gepa_vs_clean_delta"] = gepa_vs_clean_delta
+            scorecard["models"][model]["degradation_delta"]["gepa_vs_clean_pct"] = gepa_vs_clean_pct
+            scorecard["models"][model]["degradation_delta"]["gepa_outperforms_clean"] = bool(gepa_r > clean_r)
+
+        if "gepa_evolved_skills" in arms_data and "no_skills" in arms_data:
+            base_r = arms_data["no_skills"]["mean_reward"]
+            gepa_r = arms_data["gepa_evolved_skills"]["mean_reward"]
+            scorecard["models"][model]["degradation_delta"]["gepa_vs_no_skills_lift"] = round(gepa_r - base_r, 4)
 
     # Save JSON scorecard
     scorecard_json_path = out_dir / "scorecard.json"
@@ -527,26 +541,47 @@ def main():
 
     md_lines.extend([
         "",
-        "## Procedural Lift & Degradation Deltas",
+        "## Procedural Lift & Evolution Deltas",
         "",
-        "| Model | Baseline Reward (`no_skills`) | Clean Skill Reward (`clean_skills`) | Noisy Skill Reward (`noisy_skills`) | Clean Skill Lift | Noisy Degradation Delta | Noisy Performs Worse in Container? |",
-        "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
     ])
 
-    for model, m_data in scorecard["models"].items():
-        arms = m_data["arms"]
-        deltas = m_data.get("degradation_delta", {})
-        base_r = arms.get("no_skills", {}).get("mean_reward", 0.0)
-        clean_r = arms.get("clean_skills", {}).get("mean_reward", 0.0)
-        noisy_r = arms.get("noisy_skills", {}).get("mean_reward", 0.0)
-        lift = deltas.get("clean_vs_no_skills_lift", 0.0)
-        deg_delta = deltas.get("noisy_vs_clean_delta", 0.0)
-        worse_str = "YES (Confirmed)" if deltas.get("noisy_performs_worse") else "NO (Degradation failed)"
-
-        md_lines.append(
-            f"| `{model}` | {base_r:.4f} | {clean_r:.4f} | {noisy_r:.4f} | "
-            f"+{lift:.4f} | {deg_delta:+.4f} | **{worse_str}** |"
-        )
+    has_gepa = any("gepa_evolved_skills" in m_data["arms"] for m_data in scorecard["models"].values())
+    if has_gepa:
+        md_lines.extend([
+            "| Model | Baseline (`no_skills`) | Clean Skill (`clean_skills`) | GEPA Evolved (`gepa_evolved_skills`) | Clean Skill Lift | GEPA vs Clean Delta | GEPA Outperforms Clean? |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+        ])
+        for model, m_data in scorecard["models"].items():
+            arms = m_data["arms"]
+            deltas = m_data.get("degradation_delta", {})
+            base_r = arms.get("no_skills", {}).get("mean_reward", 0.0)
+            clean_r = arms.get("clean_skills", {}).get("mean_reward", 0.0)
+            gepa_r = arms.get("gepa_evolved_skills", {}).get("mean_reward", 0.0)
+            clean_lift = deltas.get("clean_vs_no_skills_lift", 0.0)
+            gepa_delta = deltas.get("gepa_vs_clean_delta", 0.0)
+            outperformed = "YES (Confirmed)" if deltas.get("gepa_outperforms_clean") else "NO (Human-authored superior)"
+            md_lines.append(
+                f"| `{model}` | {base_r:.4f} | {clean_r:.4f} | {gepa_r:.4f} | "
+                f"+{clean_lift:.4f} | {gepa_delta:+.4f} | **{outperformed}** |"
+            )
+    else:
+        md_lines.extend([
+            "| Model | Baseline Reward (`no_skills`) | Clean Skill Reward (`clean_skills`) | Noisy Skill Reward (`noisy_skills`) | Clean Skill Lift | Noisy Degradation Delta | Noisy Performs Worse in Container? |",
+            "| :--- | :---: | :---: | :---: | :---: | :---: | :---: |",
+        ])
+        for model, m_data in scorecard["models"].items():
+            arms = m_data["arms"]
+            deltas = m_data.get("degradation_delta", {})
+            base_r = arms.get("no_skills", {}).get("mean_reward", 0.0)
+            clean_r = arms.get("clean_skills", {}).get("mean_reward", 0.0)
+            noisy_r = arms.get("noisy_skills", {}).get("mean_reward", 0.0)
+            lift = deltas.get("clean_vs_no_skills_lift", 0.0)
+            deg_delta = deltas.get("noisy_vs_clean_delta", 0.0)
+            worse_str = "YES (Confirmed)" if deltas.get("noisy_performs_worse") else "NO (Degradation failed)"
+            md_lines.append(
+                f"| `{model}` | {base_r:.4f} | {clean_r:.4f} | {noisy_r:.4f} | "
+                f"+{lift:.4f} | {deg_delta:+.4f} | **{worse_str}** |"
+            )
 
     md_lines.extend([
         "",

@@ -31,3 +31,5 @@ logs/
 *.log
 .venv
 .venv/
+trials/
+**/trials/
