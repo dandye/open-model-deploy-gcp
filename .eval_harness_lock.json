@@ -1,0 +1,11 @@
+{
+  "approved_at_utc": "2026-10-02T02:43:51.182028+00:00",
+  "composite_sha256": "af9f67a5093896be976797e180eca73c97fd8e1434832521daeaf58801c4e015",
+  "files": {
+    "configs/evals/gen3/soc_tier1_interactive.json": "ee815b6f3952e64e7f462360c23c8b37184a5f2af11991b2f40e621279b7836c",
+    "agent/soc_environment.py": "ccdce9786681ca323220b0d8b82c73a2b32ddbf12edda70b12ab4d344c9550fa",
+    "scripts/eval_trajectory_verifier.py": "da96537710f98ccfed439a107f04e6cba35f0cfb1993906e15b9e428fc8353a2",
+    "scripts/eval_cost_engine.py": "226218bdc3ed2f563aa0064ee09152730c43d048521a1a59add87de9703fd281",
+    "scripts/eval_soc_agent.py": "43acf4ae81f7e2ff2cb5468b4f36ea76e3c7b050032fede37ac551b9a30d7a3e"
+  }
+}

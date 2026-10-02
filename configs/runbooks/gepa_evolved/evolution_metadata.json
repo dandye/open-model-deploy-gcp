@@ -1,6 +1,63 @@
 {
   "task_lm": "gemini-2.5-flash-lite",
   "reflection_lm": "gemini-2.5-pro",
-  "max_metric_calls": 15,
-  "seed": 42
+  "max_metric_calls": 20,
+  "seed": 42,
+  "selected_candidate_index": 0,
+  "selected_validation_score": 0.6194065080074215,
+  "best_score": 0.6194065080074215,
+  "selection_reason": "highest_valid_validation_score",
+  "harness_composite_sha256": "af9f67a5093896be976797e180eca73c97fd8e1434832521daeaf58801c4e015",
+  "tau_accept": 0.015,
+  "noise_floor": {
+    "run1_mean": 0.65025,
+    "run2_mean": 0.6505,
+    "aggregate_noise": 0.00024999999999997247,
+    "mean_case_noise": 0.14225,
+    "tau_accept": 0.015
+  },
+  "cost_staircase": {
+    "ceiling_model": "gemini-2.5-flash",
+    "ceiling_score": 0.7302500000000001,
+    "selected_model": "gemini-2.5-flash",
+    "selected_score": 0.7302500000000001,
+    "tolerance": 0.05,
+    "rungs": [
+      {
+        "model_tier": "gemini-2.5-flash",
+        "mean_score": 0.7302500000000001,
+        "min_loss_penalty": 1.0,
+        "passed_safety": true,
+        "within_tolerance": true
+      },
+      {
+        "model_tier": "gemma-4-31b-it",
+        "mean_score": 0.325,
+        "min_loss_penalty": 1.0,
+        "passed_safety": true,
+        "within_tolerance": false
+      },
+      {
+        "model_tier": "gemma-4-e4b-it",
+        "mean_score": 0.336,
+        "min_loss_penalty": 1.0,
+        "passed_safety": true,
+        "within_tolerance": false
+      },
+      {
+        "model_tier": "gemma-3-4b-it",
+        "mean_score": 0.336,
+        "min_loss_penalty": 1.0,
+        "passed_safety": true,
+        "within_tolerance": false
+      },
+      {
+        "model_tier": "gemma-3-1b-it",
+        "mean_score": 0.311,
+        "min_loss_penalty": 1.0,
+        "passed_safety": true,
+        "within_tolerance": false
+      }
+    ]
+  }
 }

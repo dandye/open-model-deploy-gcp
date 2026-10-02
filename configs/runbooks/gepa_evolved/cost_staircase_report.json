@@ -1,0 +1,44 @@
+{
+  "ceiling_model": "gemini-2.5-flash",
+  "ceiling_score": 0.7302500000000001,
+  "selected_model": "gemini-2.5-flash",
+  "selected_score": 0.7302500000000001,
+  "tolerance": 0.05,
+  "rungs": [
+    {
+      "model_tier": "gemini-2.5-flash",
+      "mean_score": 0.7302500000000001,
+      "min_loss_penalty": 1.0,
+      "passed_safety": true,
+      "within_tolerance": true
+    },
+    {
+      "model_tier": "gemma-4-31b-it",
+      "mean_score": 0.325,
+      "min_loss_penalty": 1.0,
+      "passed_safety": true,
+      "within_tolerance": false
+    },
+    {
+      "model_tier": "gemma-4-e4b-it",
+      "mean_score": 0.336,
+      "min_loss_penalty": 1.0,
+      "passed_safety": true,
+      "within_tolerance": false
+    },
+    {
+      "model_tier": "gemma-3-4b-it",
+      "mean_score": 0.336,
+      "min_loss_penalty": 1.0,
+      "passed_safety": true,
+      "within_tolerance": false
+    },
+    {
+      "model_tier": "gemma-3-1b-it",
+      "mean_score": 0.311,
+      "min_loss_penalty": 1.0,
+      "passed_safety": true,
+      "within_tolerance": false
+    }
+  ]
+}

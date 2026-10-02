@@ -53,13 +53,24 @@ class GeminiSystem1Backend(BaseJevBackend):
                 enum=enum_values,
             ),
             response_logprobs=True,
-            thinking_config=types.ThinkingConfig(thinking_level="MINIMAL"),
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
-        res = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config=config,
-        )
+        try:
+            res = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config=config,
+            )
+        except Exception as e:
+            if "thinking" in str(e).lower():
+                config.thinking_config = None
+                res = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config=config,
+                )
+            else:
+                raise
 
         probs: Dict[str, float] = {}
         candidate = res.candidates[0] if res.candidates else None
