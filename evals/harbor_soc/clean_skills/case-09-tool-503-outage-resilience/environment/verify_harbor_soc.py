@@ -291,7 +291,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     reward_dir = Path(args.reward_dir)
     reward_dir.mkdir(parents=True, exist_ok=True)
     (reward_dir / "reward.txt").write_text(f"{scorecard['reward']:.4f}\n", encoding="utf-8")
-    (reward_dir / "reward.json").write_text(json.dumps(scorecard, indent=2), encoding="utf-8")
+    harbor_rewards = {
+        "reward": round(scorecard["reward"], 4),
+        "epistemic_gate": round(scorecard["components"]["epistemic_gate_score"], 4),
+        "operator_action": round(scorecard["components"]["operator_action_score"], 4),
+        "safety_and_loss": round(scorecard["components"]["safety_and_loss_score"], 4),
+        "action_economy": round(scorecard["components"]["action_economy_score"], 4),
+        "assertions": round(scorecard["components"]["assertion_score"], 4),
+        "jev": round(scorecard["components"]["jev_score"], 4),
+    }
+    (reward_dir / "reward.json").write_text(json.dumps(harbor_rewards, indent=2), encoding="utf-8")
+    (reward_dir / "scorecard.json").write_text(json.dumps(scorecard, indent=2), encoding="utf-8")
     print(json.dumps(scorecard, indent=2))
     return 0
 

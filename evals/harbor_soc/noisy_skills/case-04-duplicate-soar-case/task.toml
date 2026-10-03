@@ -2,7 +2,7 @@ version = "1.0"
 schema_version = "1.3"
 
 [task]
-name = "soc-noisy_skills-case-04-duplicate-soar-case"
+name = "secops/soc-noisy_skills-case-04-duplicate-soar-case"
 description = "Duplicate SOAR Case Detection & Merged Appending (noisy_skills arm)"
 categories = ["security", "soc-tier1", "gen3-interactive", "noisy_skills"]
 
@@ -24,6 +24,7 @@ timeout_sec = 120.0
 timeout_sec = 300.0
 
 [environment]
+network_mode = "public"
 build_timeout_sec = 300.0
 cpus = 2
 memory_mb = 2048
