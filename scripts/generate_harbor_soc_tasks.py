@@ -263,7 +263,7 @@ def _populate_identical_environment(env_dir: Path) -> None:
 def _build_task_toml(case: Dict[str, Any], arm: str, slug: str) -> str:
     """Renders Harbor schema_version = 1.3 task.toml."""
     eval_id = case["eval_id"]
-    name = f"soc-{arm}-{slug}"
+    name = f"secops/soc-{arm}-{slug}"
     desc = f"{case['name']} ({arm} arm)"
     crit = case.get("asset_criticality", "STANDARD")
     label = case.get("ground_truth_label", "UNKNOWN")
@@ -294,6 +294,7 @@ timeout_sec = 120.0
 timeout_sec = 300.0
 
 [environment]
+network_mode = "public"
 build_timeout_sec = 300.0
 cpus = 2
 memory_mb = 2048
