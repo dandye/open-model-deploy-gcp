@@ -324,4 +324,79 @@ def test_overlay_file_report_keeps_lokibot_default():
     assert env.query_tool("get_file_report", {"file_hash": "c" * 64})["threat_name"] == "Trojan.Lokibot.Generic"
 
 
+def test_strict_entity_lookup_merges_host_telemetry():
+    env = SocEnvironment(initial_state=replace_state())
+    record = env.query_tool("lookup_entity", {"entity_id": "WKS-AUS-17"})
+    assert record["entity"] == "WKS-AUS-17"
+    assert record["ip"] == "10.7.0.17"
+    assert record["active_user"] == "mara.okafor"
+    assert record["suspicious_indicators"] is True
+    assert record["siem_events_found"] == 3
+    assert record["recent_event_types"] == ["NETWORK_CONNECTION", "PROCESS_LAUNCH"]
+    assert record["events"] == [{"event_type": "NETWORK_CONNECTION", "destination_ip": "198.18.4.20"}]
+    assert record["process_tree"] == []
+
+
+def test_strict_entity_lookup_without_telemetry_is_quiet():
+    env = SocEnvironment(initial_state=replace_state())
+    record = env.query_tool("summarize_entity", {"entity": "10.7.0.22", "entity_type": "host"})
+    assert record["entity"] == "WKS-AUS-22"
+    assert record["suspicious_indicators"] is False
+    assert record["siem_events_found"] == 0
+    assert record["events"] == []
+    assert "psexec" not in str(record).lower()
+
+
+def test_strict_entity_lookup_routes_domains_hashes_ips_and_cases():
+    env = SocEnvironment(initial_state=replace_state())
+    assert env.query_tool("lookup_entity", {"entity_id": "cdn-sync-metrics41.com"})["verdict"] == "MALICIOUS"
+    assert env.query_tool("lookup_entity", {"entity_id": "198.18.4.20"})["threat_family"] == "Vidar / InfoStealer C2"
+    assert env.query_tool("lookup_entity", {"entity_id": "cases/CASE-40417"})["title"].startswith("Beacon from")
+
+
+def test_strict_entity_lookup_unknown_is_not_found_and_not_suspicious():
+    env = SocEnvironment(initial_state=replace_state())
+    for entity in ("DESKTOP-FIN-08", "evil-host", "WKS-FIN-99", ""):
+        record = env.query_tool("lookup_entity", {"entity_id": entity})
+        assert record["status"] == "NOT_FOUND", entity
+        assert record["suspicious_indicators"] is False, entity
+        assert record["siem_events_found"] == 0, entity
+        assert record["events"] == [], entity
+
+
+def test_overlay_entity_lookup_keeps_pattern_synthesis():
+    env = SocEnvironment()
+    assert env.query_tool("lookup_entity", {"entity_id": "evil-host"})["suspicious_indicators"] is True
+    assert "psexec" in str(env.query_tool("lookup_entity", {"entity_id": "DESKTOP-HR-04"})).lower()
+
+
+def test_strict_udm_search_filters_declared_events():
+    env = SocEnvironment(initial_state=replace_state())
+    hit = env.query_tool("udm_search", {"query": 'principal.hostname = "WKS-AUS-17"'})
+    assert hit["total_events"] == 1
+    assert hit["events"][0]["target"]["ip"] == "198.18.4.20"
+    everything = env.query_tool("udm_search", {"query": ""})
+    assert everything["total_events"] == 1
+    miss = env.query_tool("udm_search", {"query": 'principal.hostname = "DESKTOP-FIN-08"'})
+    assert miss["total_events"] == 0
+    assert miss["events"] == []
+
+
+def test_strict_udm_search_caps_at_fifty():
+    state = replace_state()
+    state["events"] = [{"n": i, "metadata": {"event_type": "USER_LOGIN"}} for i in range(80)]
+    env = SocEnvironment(initial_state=state)
+    result = env.query_tool("udm_search", {"query": "USER_LOGIN"})
+    assert result["total_events"] == 50
+    assert len(result["events"]) == 50
+
+
+def test_overlay_udm_search_keeps_fixed_events():
+    env = SocEnvironment()
+    result = env.query_tool("udm_search", {"query": "anything"})
+    assert result["total_events"] == 5
+    assert result["events"][0]["principal"]["hostname"] == "DESKTOP-FIN-08"
+
+
+
 

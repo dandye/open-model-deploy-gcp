@@ -9,6 +9,7 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 import datetime
 import ipaddress
+import re
 import json
 from typing import Any, Dict, List, Optional, Set
 
@@ -841,6 +842,251 @@ class SocEnvironment:
             "detections": "54/72 engines",
         }
 
+    def _case_record(self, case_id: str) -> Optional[Dict[str, Any]]:
+        clean_id = case_id.split("/")[-1]
+        if clean_id not in self.cases:
+            return None
+        c = self.cases[clean_id]
+        return {
+            "case_id": c.case_id,
+            "title": c.title,
+            "priority": c.priority,
+            "stage": c.stage,
+            "status": c.status,
+            "assignee": c.assignee,
+            "comments": c.comments,
+        }
+
+    def _entity_lookup(self, entity_id: str, entity_type: str) -> Dict[str, Any]:
+        if self.strict:
+            return self._strict_entity_lookup(entity_id, entity_type)
+        return self._legacy_entity_lookup(entity_id, entity_type)
+
+    def _strict_entity_lookup(self, entity_id: str, entity_type: str) -> Dict[str, Any]:
+        """Replace mode: hosts render their declared telemetry; other ids route to their report."""
+        host = self._find_host(entity_id)
+        if host is not None:
+            record: Dict[str, Any] = {
+                "entity": host.hostname,
+                "entity_type": entity_type,
+                "ip": host.ip,
+                "criticality_tier": host.criticality_tier,
+                "isolated": host.isolated,
+                "active_user": host.active_user,
+                "os": host.os,
+                "installed_services": list(host.installed_services),
+                "siem_events_found": 0,
+                "recent_event_types": [],
+                "suspicious_indicators": False,
+                "process_tree": [],
+                "events": [],
+            }
+            record.update(deepcopy(host.telemetry))
+            return record
+        lowered = entity_id.lower()
+        if lowered in self.domains:
+            return self._domain_report(lowered)
+        if entity_id in self.hashes:
+            return self._file_report(entity_id)
+        if entity_id in self.ips:
+            return self._ip_report(entity_id)
+        case = self._case_record(entity_id)
+        if case is not None:
+            return case
+        return {
+            "entity": entity_id,
+            "entity_type": entity_type,
+            "status": "NOT_FOUND",
+            "siem_events_found": 0,
+            "recent_event_types": [],
+            "suspicious_indicators": False,
+            "process_tree": [],
+            "events": [],
+        }
+
+    def _legacy_entity_lookup(self, entity_id: str, entity_type: str) -> Dict[str, Any]:
+        """Overlay mode: the Gen 3 pattern-synthesized telemetry, moved verbatim."""
+        host = self._find_host(entity_id)
+        if host:
+            is_hr = host.hostname == "DESKTOP-HR-04" or host.ip == "10.0.8.99"
+            if is_hr:
+                return {
+                    "entity": host.hostname,
+                    "entity_type": entity_type,
+                    "ip": host.ip,
+                    "criticality_tier": host.criticality_tier,
+                    "isolated": host.isolated,
+                    "active_user": host.active_user,
+                    "os": host.os,
+                    "installed_services": host.installed_services,
+                    "siem_events_found": 28,
+                    "recent_event_types": ["VPN_AUTHENTICATION", "PROCESS_LAUNCH", "SMB_SESSION"],
+                    "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+                    "target_host": "10.0.8.99",
+                    "suspicious_indicators": True,
+                    "last_active": "2026-08-31T18:00:00Z",
+                    "source_ip": "10.0.8.99",
+                    "logon_type": "Type 3 Network Logon",
+                    "process_tree": [
+                        {
+                            "pid": 1044,
+                            "ppid": 420,
+                            "process_name": "explorer.exe",
+                            "command_line": "C:\\Windows\\explorer.exe",
+                            "user": host.active_user,
+                        },
+                        {
+                            "pid": 4820,
+                            "ppid": 1044,
+                            "process_name": "cmd.exe",
+                            "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+                            "user": host.active_user,
+                        },
+                        {
+                            "pid": 5124,
+                            "ppid": 4820,
+                            "process_name": "PsExec.exe",
+                            "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+                            "user": "SYSTEM",
+                        },
+                    ],
+                    "events": [
+                        {
+                            "timestamp": "2026-08-31T17:55:12Z",
+                            "event_type": "VPN_AUTHENTICATION",
+                            "user": host.active_user,
+                            "source_ip": "198.51.100.42",
+                            "status": "SUCCESS",
+                        },
+                        {
+                            "timestamp": "2026-08-31T17:58:04Z",
+                            "event_type": "SMB_SESSION",
+                            "source_ip": "10.0.8.99",
+                            "target_host": "10.0.8.99",
+                            "share": "\\\\10.0.8.99\\ADMIN$",
+                            "logon_type": "Type 3 Network Logon",
+                        },
+                        {
+                            "timestamp": "2026-08-31T17:59:22Z",
+                            "event_type": "PROCESS_LAUNCH",
+                            "pid": 5124,
+                            "process_name": "PsExec.exe",
+                            "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+                        },
+                    ],
+                }
+            else:
+                return {
+                    "entity": host.hostname,
+                    "entity_type": entity_type,
+                    "ip": host.ip,
+                    "criticality_tier": host.criticality_tier,
+                    "isolated": host.isolated,
+                    "active_user": host.active_user,
+                    "os": host.os,
+                    "installed_services": host.installed_services,
+                    "siem_events_found": 14,
+                    "recent_event_types": ["USER_LOGIN", "NETWORK_CONNECTION", "PROCESS_LAUNCH"],
+                    "suspicious_indicators": True if "FIN" in host.hostname else False,
+                    "last_active": "2026-08-31T18:00:00Z",
+                    "source_ip": host.ip,
+                    "logon_type": "Type 2 Interactive Logon",
+                    "process_tree": [
+                        {
+                            "pid": 1100,
+                            "ppid": 450,
+                            "process_name": "explorer.exe",
+                            "command_line": "C:\\Windows\\explorer.exe",
+                            "user": host.active_user,
+                        },
+                        {
+                            "pid": 2480,
+                            "ppid": 1100,
+                            "process_name": "powershell.exe" if "FIN" in host.hostname else "app.exe",
+                            "command_line": "powershell.exe -enc ..." if "FIN" in host.hostname else "app.exe",
+                            "user": host.active_user,
+                        },
+                    ],
+                    "events": [
+                        {
+                            "timestamp": "2026-08-31T17:40:00Z",
+                            "event_type": "USER_LOGIN",
+                            "user": host.active_user,
+                            "logon_type": "Type 2 Interactive Logon",
+                            "source_ip": host.ip,
+                        },
+                        {
+                            "timestamp": "2026-08-31T17:45:00Z",
+                            "event_type": "NETWORK_CONNECTION",
+                            "source_ip": host.ip,
+                            "destination_ip": "198.51.100.42",
+                            "destination_port": 443,
+                        },
+                    ],
+                }
+        return {
+            "entity": entity_id,
+            "entity_type": entity_type,
+            "siem_events_found": 14,
+            "recent_event_types": ["USER_LOGIN", "NETWORK_CONNECTION", "PROCESS_LAUNCH"],
+            "suspicious_indicators": True if ("evil" in entity_id or "FIN" in entity_id) else False,
+            "last_active": "2026-08-25T14:30:00Z",
+            "source_ip": "10.0.5.23" if "FIN" in entity_id else "192.0.2.10",
+            "logon_type": "Type 3 Network Logon" if ("HR" in entity_id or "admin" in entity_id) else "Type 2 Interactive Logon",
+            "process_tree": [
+                {
+                    "pid": 1000,
+                    "ppid": 400,
+                    "process_name": "explorer.exe",
+                    "command_line": "C:\\Windows\\explorer.exe",
+                    "user": "system",
+                }
+            ],
+            "events": [
+                {
+                    "timestamp": "2026-08-25T14:25:00Z",
+                    "event_type": "NETWORK_CONNECTION",
+                    "source_ip": "10.0.5.23" if "FIN" in entity_id else "192.0.2.10",
+                }
+            ],
+        }
+
+    def _udm_search(self, query: str) -> Dict[str, Any]:
+        if self.strict:
+            return self._strict_udm_search(query)
+        return self._legacy_udm_search(query)
+
+    def _strict_udm_search(self, query: str) -> Dict[str, Any]:
+        tokens = [t for t in re.split(r"[^A-Za-z0-9_.:-]+", query.lower()) if len(t) >= 3]
+        matched: List[Dict[str, Any]] = []
+        for event in self.events:
+            blob = json.dumps(event, sort_keys=True, default=str).lower()
+            if not tokens or any(token in blob for token in tokens):
+                matched.append(deepcopy(event))
+            if len(matched) == 50:
+                break
+        return {"query": query, "total_events": len(matched), "events": matched}
+
+    def _legacy_udm_search(self, query: str) -> Dict[str, Any]:
+        return {
+            "query": query,
+            "total_events": 5,
+            "events": [
+                {
+                    "event_timestamp": "2026-08-31T17:45:00Z",
+                    "metadata": {"event_type": "NETWORK_CONNECTION"},
+                    "principal": {"hostname": "DESKTOP-FIN-08", "ip": "10.0.5.23"},
+                    "target": {"hostname": "update-service-win32.com", "ip": "198.51.100.42"},
+                },
+                {
+                    "event_timestamp": "2026-08-31T17:46:12Z",
+                    "metadata": {"event_type": "PROCESS_LAUNCH"},
+                    "principal": {"hostname": "DESKTOP-FIN-08", "user": {"userid": "jdoe"}},
+                    "target": {"process": {"command_line": "powershell.exe -enc ..."}},
+                },
+            ],
+        }
+
     def query_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Executes epistemic information-gathering tool queries against the sandbox state."""
         # 1. Check for active fault injection on this tool
@@ -873,150 +1119,7 @@ class SocEnvironment:
         if tool_name in ["lookup_entity", "summarize_entity"]:
             entity_id = str(args.get("entity_id") or args.get("query") or args.get("entity") or "").strip()
             entity_type = str(args.get("entity_type") or args.get("type") or "host").strip()
-            host = self._find_host(entity_id)
-            if host:
-                is_hr = host.hostname == "DESKTOP-HR-04" or host.ip == "10.0.8.99"
-                if is_hr:
-                    return {
-                        "entity": host.hostname,
-                        "entity_type": entity_type,
-                        "ip": host.ip,
-                        "criticality_tier": host.criticality_tier,
-                        "isolated": host.isolated,
-                        "active_user": host.active_user,
-                        "os": host.os,
-                        "installed_services": host.installed_services,
-                        "siem_events_found": 28,
-                        "recent_event_types": ["VPN_AUTHENTICATION", "PROCESS_LAUNCH", "SMB_SESSION"],
-                        "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
-                        "target_host": "10.0.8.99",
-                        "suspicious_indicators": True,
-                        "last_active": "2026-08-31T18:00:00Z",
-                        "source_ip": "10.0.8.99",
-                        "logon_type": "Type 3 Network Logon",
-                        "process_tree": [
-                            {
-                                "pid": 1044,
-                                "ppid": 420,
-                                "process_name": "explorer.exe",
-                                "command_line": "C:\\Windows\\explorer.exe",
-                                "user": host.active_user,
-                            },
-                            {
-                                "pid": 4820,
-                                "ppid": 1044,
-                                "process_name": "cmd.exe",
-                                "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
-                                "user": host.active_user,
-                            },
-                            {
-                                "pid": 5124,
-                                "ppid": 4820,
-                                "process_name": "PsExec.exe",
-                                "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
-                                "user": "SYSTEM",
-                            },
-                        ],
-                        "events": [
-                            {
-                                "timestamp": "2026-08-31T17:55:12Z",
-                                "event_type": "VPN_AUTHENTICATION",
-                                "user": host.active_user,
-                                "source_ip": "198.51.100.42",
-                                "status": "SUCCESS",
-                            },
-                            {
-                                "timestamp": "2026-08-31T17:58:04Z",
-                                "event_type": "SMB_SESSION",
-                                "source_ip": "10.0.8.99",
-                                "target_host": "10.0.8.99",
-                                "share": "\\\\10.0.8.99\\ADMIN$",
-                                "logon_type": "Type 3 Network Logon",
-                            },
-                            {
-                                "timestamp": "2026-08-31T17:59:22Z",
-                                "event_type": "PROCESS_LAUNCH",
-                                "pid": 5124,
-                                "process_name": "PsExec.exe",
-                                "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
-                            },
-                        ],
-                    }
-                else:
-                    return {
-                        "entity": host.hostname,
-                        "entity_type": entity_type,
-                        "ip": host.ip,
-                        "criticality_tier": host.criticality_tier,
-                        "isolated": host.isolated,
-                        "active_user": host.active_user,
-                        "os": host.os,
-                        "installed_services": host.installed_services,
-                        "siem_events_found": 14,
-                        "recent_event_types": ["USER_LOGIN", "NETWORK_CONNECTION", "PROCESS_LAUNCH"],
-                        "suspicious_indicators": True if "FIN" in host.hostname else False,
-                        "last_active": "2026-08-31T18:00:00Z",
-                        "source_ip": host.ip,
-                        "logon_type": "Type 2 Interactive Logon",
-                        "process_tree": [
-                            {
-                                "pid": 1100,
-                                "ppid": 450,
-                                "process_name": "explorer.exe",
-                                "command_line": "C:\\Windows\\explorer.exe",
-                                "user": host.active_user,
-                            },
-                            {
-                                "pid": 2480,
-                                "ppid": 1100,
-                                "process_name": "powershell.exe" if "FIN" in host.hostname else "app.exe",
-                                "command_line": "powershell.exe -enc ..." if "FIN" in host.hostname else "app.exe",
-                                "user": host.active_user,
-                            },
-                        ],
-                        "events": [
-                            {
-                                "timestamp": "2026-08-31T17:40:00Z",
-                                "event_type": "USER_LOGIN",
-                                "user": host.active_user,
-                                "logon_type": "Type 2 Interactive Logon",
-                                "source_ip": host.ip,
-                            },
-                            {
-                                "timestamp": "2026-08-31T17:45:00Z",
-                                "event_type": "NETWORK_CONNECTION",
-                                "source_ip": host.ip,
-                                "destination_ip": "198.51.100.42",
-                                "destination_port": 443,
-                            },
-                        ],
-                    }
-            return {
-                "entity": entity_id,
-                "entity_type": entity_type,
-                "siem_events_found": 14,
-                "recent_event_types": ["USER_LOGIN", "NETWORK_CONNECTION", "PROCESS_LAUNCH"],
-                "suspicious_indicators": True if ("evil" in entity_id or "FIN" in entity_id) else False,
-                "last_active": "2026-08-25T14:30:00Z",
-                "source_ip": "10.0.5.23" if "FIN" in entity_id else "192.0.2.10",
-                "logon_type": "Type 3 Network Logon" if ("HR" in entity_id or "admin" in entity_id) else "Type 2 Interactive Logon",
-                "process_tree": [
-                    {
-                        "pid": 1000,
-                        "ppid": 400,
-                        "process_name": "explorer.exe",
-                        "command_line": "C:\\Windows\\explorer.exe",
-                        "user": "system",
-                    }
-                ],
-                "events": [
-                    {
-                        "timestamp": "2026-08-25T14:25:00Z",
-                        "event_type": "NETWORK_CONNECTION",
-                        "source_ip": "10.0.5.23" if "FIN" in entity_id else "192.0.2.10",
-                    }
-                ],
-            }
+            return self._entity_lookup(entity_id, entity_type)
 
         # 6. List SOAR cases
         if tool_name == "list_cases":
@@ -1063,24 +1166,7 @@ class SocEnvironment:
         # 8. UDM search
         if tool_name == "udm_search":
             query = str(args.get("query") or "")
-            return {
-                "query": query,
-                "total_events": 5,
-                "events": [
-                    {
-                        "event_timestamp": "2026-08-31T17:45:00Z",
-                        "metadata": {"event_type": "NETWORK_CONNECTION"},
-                        "principal": {"hostname": "DESKTOP-FIN-08", "ip": "10.0.5.23"},
-                        "target": {"hostname": "update-service-win32.com", "ip": "198.51.100.42"},
-                    },
-                    {
-                        "event_timestamp": "2026-08-31T17:46:12Z",
-                        "metadata": {"event_type": "PROCESS_LAUNCH"},
-                        "principal": {"hostname": "DESKTOP-FIN-08", "user": {"userid": "jdoe"}},
-                        "target": {"process": {"command_line": "powershell.exe -enc ..."}},
-                    },
-                ],
-            }
+            return self._udm_search(query)
 
         return {
             "error": f"Tool '{tool_name}' not supported by SocEnvironment",
