@@ -8,6 +8,7 @@ and full state snapshotting/restoration.
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 import datetime
+import ipaddress
 import json
 from typing import Any, Dict, List, Optional, Set
 
@@ -23,6 +24,7 @@ class HostEntity:
     os: str = "Windows 10"
     active_user: str = "jdoe"
     installed_services: List[str] = field(default_factory=list)
+    telemetry: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -75,6 +77,62 @@ class CaseEntity:
     status: str  # 'OPEN', 'IN_PROGRESS', 'CLOSED'
     assignee: str
     comments: List[str] = field(default_factory=list)
+
+
+@dataclass
+class IpIndicatorEntity:
+    """Represents an IP address indicator and its threat intelligence profile.
+
+    Unknown IPs are never fabricated: an entity exists only when a world
+    declares it. Optional descriptive fields are omitted from reports when
+    empty so that overlay-mode reports keep their historical key sets.
+    """
+
+    ip: str
+    reputation: str = "NO_DATA"
+    verdict: str = "UNKNOWN"
+    category: str = "Public IP"
+    asn: str = "Unknown"
+    cidr: str = ""
+    routing_status: str = "Public Routable IP"
+    threat_family: str = "None"
+    malicious_votes: int = 0
+    harmless_votes: int = 0
+    vt_positives: int = 0
+    vt_total: int = 72
+    reverse_dns: str = ""
+    service: str = ""
+    host_association: str = ""
+    country: str = ""
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    def to_report(self) -> Dict[str, Any]:
+        """Renders the report dictionary returned by get_ip_address_report."""
+        cidr = self.cidr or (f"{self.ip.rsplit('.', 1)[0]}.0/24" if self.ip.count(".") == 3 else "")
+        report: Dict[str, Any] = {
+            "ip": self.ip,
+            "category": self.category,
+            "reputation": self.reputation,
+            "verdict": self.verdict,
+            "malicious_votes": self.malicious_votes,
+            "harmless_votes": self.harmless_votes,
+            "asn": self.asn,
+            "cidr": cidr,
+            "routing_status": self.routing_status,
+            "vt_positives": self.vt_positives,
+            "vt_total": self.vt_total,
+            "reverse_dns": self.reverse_dns,
+        }
+        if self.threat_family and self.threat_family != "None":
+            report["threat_family"] = self.threat_family
+        if self.service:
+            report["service"] = self.service
+        if self.host_association:
+            report["host_association"] = self.host_association
+        if self.country:
+            report["country"] = self.country
+        report.update(deepcopy(self.extra))
+        return report
 
 
 @dataclass
@@ -302,6 +360,43 @@ def _get_default_cases() -> Dict[str, CaseEntity]:
     }
 
 
+def _get_default_ips() -> Dict[str, IpIndicatorEntity]:
+    """The two IP indicators Gen 3 special-cased in code, now carried as data."""
+    return {
+        "10.0.99.50": IpIndicatorEntity(
+            ip="10.0.99.50",
+            reputation="BENIGN_AUTHORIZED",
+            verdict="SAFE",
+            category="Internal Authorized Scanner",
+            asn="RFC-1918 Private Subnet",
+            cidr="10.0.99.0/24",
+            routing_status="RFC-1918 (Non-Routable Private Subnet)",
+            malicious_votes=0,
+            harmless_votes=100,
+            vt_positives=0,
+            vt_total=72,
+            reverse_dns="srv-prod-payment-01.corp.internal",
+            service="Qualys Vulnerability Scanner",
+            host_association="SRV-PROD-PAYMENT-01",
+        ),
+        "198.51.100.42": IpIndicatorEntity(
+            ip="198.51.100.42",
+            reputation="MALICIOUS",
+            verdict="MALICIOUS",
+            category="Known C2 Endpoint",
+            asn="AS13335 (Malicious Hosting)",
+            cidr="198.51.100.0/24",
+            routing_status="Public Routable IP",
+            threat_family="Lokibot / InfoStealer C2",
+            malicious_votes=68,
+            harmless_votes=0,
+            vt_positives=68,
+            vt_total=72,
+            reverse_dns="update-service-win32.com",
+        ),
+    }
+
+
 class SocEnvironment:
     """Interactive SOC Sandbox and Dynamic State Machine for Agentic Evaluations."""
 
@@ -312,11 +407,19 @@ class SocEnvironment:
         self.domains: Dict[str, DomainEntity] = {}
         self.hashes: Dict[str, HashEntity] = {}
         self.cases: Dict[str, CaseEntity] = {}
+        self.ips: Dict[str, IpIndicatorEntity] = {}
+        self.events: List[Dict[str, Any]] = []
+        self.mode: str = "overlay"
         self.blocked_indicators: Set[str] = set()
         self.action_history: List[EnvironmentAction] = []
         self.faults: Dict[str, Dict[str, Any]] = {}
 
         self._load_state(self._initial_state_config)
+
+    @property
+    def strict(self) -> bool:
+        """True in replace mode: respond only from data, never synthesize."""
+        return self.mode == "replace"
 
     @classmethod
     def from_eval_case(cls, case: Dict[str, Any]) -> "SocEnvironment":
@@ -335,10 +438,23 @@ class SocEnvironment:
 
     def _load_state(self, state_config: Optional[Dict[str, Any]] = None) -> None:
         """Populates internal dataclasses from default state or provided config."""
-        self.hosts = _get_default_hosts()
-        self.domains = _get_default_domains()
-        self.hashes = _get_default_hashes()
-        self.cases = _get_default_cases()
+        mode = str((state_config or {}).get("mode", "overlay"))
+        if mode not in ("overlay", "replace"):
+            raise ValueError(f"environment_state mode must be 'overlay' or 'replace', got {mode!r}")
+        self.mode = mode
+        if mode == "overlay":
+            self.hosts = _get_default_hosts()
+            self.domains = _get_default_domains()
+            self.hashes = _get_default_hashes()
+            self.cases = _get_default_cases()
+            self.ips = _get_default_ips()
+        else:
+            self.hosts = {}
+            self.domains = {}
+            self.hashes = {}
+            self.cases = {}
+            self.ips = {}
+        self.events = []
         self.blocked_indicators = set()
         self.action_history = []
         self.faults = {}
@@ -374,6 +490,16 @@ class SocEnvironment:
                 elif isinstance(v, dict):
                     self.cases[k] = CaseEntity(**v)
 
+        if "ips" in state_config:
+            for k, v in state_config["ips"].items():
+                if isinstance(v, IpIndicatorEntity):
+                    self.ips[k] = deepcopy(v)
+                elif isinstance(v, dict):
+                    self.ips[k] = IpIndicatorEntity(**v)
+
+        if "events" in state_config:
+            self.events = [deepcopy(e) for e in state_config["events"] if isinstance(e, dict)]
+
         if "blocked_indicators" in state_config:
             self.blocked_indicators = set(state_config["blocked_indicators"])
 
@@ -403,10 +529,13 @@ class SocEnvironment:
     def get_state_snapshot(self) -> Dict[str, Any]:
         """Returns a serialized snapshot of the active environment state."""
         return {
+            "mode": self.mode,
             "hosts": {k: asdict(v) for k, v in self.hosts.items()},
             "domains": {k: asdict(v) for k, v in self.domains.items()},
             "hashes": {k: asdict(v) for k, v in self.hashes.items()},
             "cases": {k: asdict(v) for k, v in self.cases.items()},
+            "ips": {k: asdict(v) for k, v in self.ips.items()},
+            "events": deepcopy(self.events),
             "blocked_indicators": sorted(list(self.blocked_indicators)),
             "action_history": [asdict(a) for a in self.action_history],
             "faults": deepcopy(self.faults),
