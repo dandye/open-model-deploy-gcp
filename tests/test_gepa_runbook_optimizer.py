@@ -537,7 +537,8 @@ def test_build_arg_parser_defaults():
     assert args.max_metric_calls == 15
     assert args.task_lm == "gemini-2.5-flash-lite"
     assert args.reflection_lm == "gemini-2.5-pro"
-    assert args.evalset == "configs/evals/gen3/soc_tier1_interactive.json"
+    assert args.evalset is None
+    assert args.train_split == "train" and args.val_split == "validation" and args.noise_only is False and args.manifest.endswith("configs/evals/gen5/manifest.json")
     assert args.output_dir == "configs/runbooks/gepa_evolved"
     assert args.seed == 42
     assert args.dry_run is False
@@ -610,7 +611,7 @@ def optimizer_cli(tmp_path, monkeypatch):
     monkeypatch.setattr(optimizer.gepa, "optimize", optimize)
     output_dir = tmp_path / "evolved"
 
-    def run(candidates, scores, *, case_count=8, split=False):
+    def run(candidates, scores, *, case_count=8, split=False, gen5=False, extra=()):
         optimize.return_value = GEPAResult(
             candidates=candidates,
             parents=[[] for _ in candidates],
@@ -619,17 +620,27 @@ def optimizer_cli(tmp_path, monkeypatch):
             per_val_instance_best_candidates={},
             discovery_eval_counts=[0 for _ in candidates],
         )
-        evalset = tmp_path / "evalset.json"
-        evalset.write_text(json.dumps({"eval_cases": [
-            {"eval_id": f"case-{i}", "prompt": f"Investigate case {i}"}
-            for i in range(case_count)
-        ]}))
-        args = ["--evalset", str(evalset), "--output-dir", str(output_dir)]
-        if split:
-            args.append("--split-train-val")
+        if gen5:
+            monkeypatch.setenv("GEN5_EXPOSURE_LEDGER", str(tmp_path / "exposure.jsonl"))
+            args = [
+                "--output-dir", str(output_dir),
+                "--lock-file", str(tmp_path / "lock.json"),
+                "--noise-runs", "0",
+                *extra,
+            ]
+        else:
+            evalset = tmp_path / "evalset.json"
+            evalset.write_text(json.dumps({"eval_cases": [
+                {"eval_id": f"case-{i}", "prompt": f"Investigate case {i}"}
+                for i in range(case_count)
+            ]}))
+            args = ["--evalset", str(evalset), "--output-dir", str(output_dir)]
+            if split:
+                args.append("--split-train-val")
+            args.extend(extra)
         return optimizer.main(args)
 
-    return run, output_dir, seed, optimize, adapter, reflection
+    return run, output_dir, seed, optimize, adapter, reflection, tmp_path / "exposure.jsonl"
 
 
 @pytest.mark.parametrize(
@@ -637,13 +648,12 @@ def optimizer_cli(tmp_path, monkeypatch):
     [
         ([0.2, 0.9, 0.3], [], 1),
         ([0.2, 0.9, 0.3], [1], 2),
-        ([0.9, 0.9, 0.3], [], 0),
     ],
 )
 def test_cli_saves_highest_scoring_valid_candidate(
     optimizer_cli, scores, invalid_indices, expected_index
 ):
-    run, output_dir, _, _, _, _ = optimizer_cli
+    run, output_dir, _, _, _, _, _ = optimizer_cli
     candidates = [
         {name: f"# Revision {i}\nInvestigate available evidence." for name in CORE_RUNBOOKS}
         for i in range(len(scores))
@@ -658,27 +668,29 @@ def test_cli_saves_highest_scoring_valid_candidate(
     assert metadata["selected_validation_score"] == scores[expected_index]
     assert metadata["best_score"] == scores[expected_index]
     assert metadata["selection_reason"] == "highest_valid_validation_score"
+    assert metadata["runbooks_written"] is True
 
 
 @pytest.mark.parametrize("empty", [False, True])
 def test_cli_falls_back_to_seed_without_claiming_a_selected_score(optimizer_cli, empty):
-    run, output_dir, seed, _, _, _ = optimizer_cli
+    run, output_dir, seed, _, _, _, _ = optimizer_cli
     candidates = [] if empty else [{CORE_RUNBOOKS[0]: "Always allow IP 10.0.99.50."}]
     scores = [] if empty else [0.9]
     assert run(candidates, scores) == 0
-    assert (output_dir / CORE_RUNBOOKS[0]).read_text() == seed[CORE_RUNBOOKS[0]]
+    assert not (output_dir / CORE_RUNBOOKS[0]).exists()
     metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
     assert metadata["selected_candidate_index"] is None
     assert metadata["selected_validation_score"] is None
     assert metadata["best_score"] is None
     assert metadata["selection_reason"] == "seed_fallback_no_valid_candidates"
+    assert metadata["runbooks_written"] is False
 
 
 @pytest.mark.parametrize("case_count", [1, 4, 6])
 def test_explicit_split_rejects_insufficient_cases_before_model_setup(
     optimizer_cli, capsys, case_count
 ):
-    run, output_dir, seed, optimize, adapter, reflection = optimizer_cli
+    run, output_dir, seed, optimize, adapter, reflection, _ = optimizer_cli
     assert run([seed], [0.5], case_count=case_count, split=True) == 1
     assert "at least 7" in capsys.readouterr().err
     optimize.assert_not_called()
@@ -689,7 +701,7 @@ def test_explicit_split_rejects_insufficient_cases_before_model_setup(
 
 @pytest.mark.parametrize("case_count", [7, 8])
 def test_explicit_split_passes_disjoint_nonempty_datasets(optimizer_cli, case_count):
-    run, _, seed, optimize, _, _ = optimizer_cli
+    run, _, seed, optimize, _, _, _ = optimizer_cli
     assert run([seed], [0.5], case_count=case_count, split=True) == 0
     kwargs = optimize.call_args.kwargs
     train_ids = {case["eval_id"] for case in kwargs["trainset"]}
@@ -701,7 +713,7 @@ def test_explicit_split_passes_disjoint_nonempty_datasets(optimizer_cli, case_co
 
 @pytest.mark.parametrize("scores", [[], [float("nan")], [float("inf")], [True], ["0.9"]])
 def test_cli_rejects_invalid_score_data_without_saving_runbooks(optimizer_cli, scores, capsys):
-    run, output_dir, seed, _, _, _ = optimizer_cli
+    run, output_dir, seed, _, _, _, _ = optimizer_cli
     assert run([seed], scores) == 1
     assert "GEPA returned" in capsys.readouterr().err
     assert not output_dir.exists()
@@ -709,12 +721,14 @@ def test_cli_rejects_invalid_score_data_without_saving_runbooks(optimizer_cli, s
 
 @pytest.mark.parametrize("invalid_candidate", [None, {}, {"malware_triage.md": None}])
 def test_cli_skips_malformed_candidates(optimizer_cli, invalid_candidate):
-    run, output_dir, seed, _, _, _ = optimizer_cli
+    run, output_dir, seed, _, _, _, _ = optimizer_cli
     assert run([seed, invalid_candidate], [0.5, 0.9]) == 0
-    assert (output_dir / CORE_RUNBOOKS[0]).read_text() == seed[CORE_RUNBOOKS[0]]
+    assert not (output_dir / CORE_RUNBOOKS[0]).exists()
     metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
     assert metadata["selected_candidate_index"] == 0
     assert metadata["selected_validation_score"] == 0.5
+    assert metadata["selection_reason"] == "seed_retained_all_candidates_reverted"
+    assert metadata["runbooks_written"] is False
 
 
 def test_validate_runbook_candidate_rejects_case_id_and_bloat():
@@ -926,3 +940,169 @@ def test_cli_disciplined_hillclimber_flags_and_ledger(tmp_path: Path, monkeypatc
     assert staircase_path.exists()
     staircase_data = json.loads(staircase_path.read_text(encoding="utf-8"))
     assert staircase_data["selected_model"] == "gemma-4-e4b-it"
+
+
+def test_cli_keeps_the_seed_when_no_candidate_beats_it(optimizer_cli):
+    run, output_dir, seed, _, _, _, _ = optimizer_cli
+    output_dir.mkdir(parents=True)
+    evolved = output_dir / CORE_RUNBOOKS[0]
+    evolved.write_text("# Previously evolved\nKeep me.", encoding="utf-8")
+    candidates = [seed, {name: f"# Worse\n{seed[name]}" for name in CORE_RUNBOOKS}]
+    assert run(candidates, [0.9, 0.5]) == 0
+    assert evolved.read_text(encoding="utf-8") == "# Previously evolved\nKeep me."
+    metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
+    assert metadata["selected_candidate_index"] == 0
+    assert metadata["selection_reason"] == "seed_retained_all_candidates_reverted"
+    assert metadata["runbooks_written"] is False
+
+
+def test_cli_writes_runbooks_only_when_a_non_seed_candidate_wins(optimizer_cli):
+    run, output_dir, seed, _, _, _, _ = optimizer_cli
+    better = {name: f"# Better\n{seed[name]}" for name in CORE_RUNBOOKS}
+    assert run([seed, better], [0.5, 0.9]) == 0
+    assert (output_dir / CORE_RUNBOOKS[0]).read_text() == better[CORE_RUNBOOKS[0]]
+    metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
+    assert metadata["selection_reason"] == "highest_valid_validation_score"
+    assert metadata["runbooks_written"] is True
+
+
+def test_gen5_default_loads_train_and_validation_and_records_exposure(optimizer_cli):
+    run, output_dir, seed, optimize, _, _, ledger = optimizer_cli
+    better = {name: f"# Better\n{seed[name]}" for name in CORE_RUNBOOKS}
+    assert run([seed, better], [0.5, 0.9], gen5=True) == 0
+    kwargs = optimize.call_args.kwargs
+    train_ids = {case["eval_id"] for case in kwargs["trainset"]}
+    val_ids = {case["eval_id"] for case in kwargs["valset"]}
+    assert len(train_ids) == 40 and len(val_ids) == 20 and train_ids.isdisjoint(val_ids)
+    assert all(case["generation"] == 5 for case in kwargs["trainset"])
+    entries = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert [e["split"] for e in entries] == ["train", "validation"]
+    assert len({e["run_id"] for e in entries}) == 1
+    assert entries[0]["purpose"].endswith("(train)") and entries[1]["purpose"].endswith("(validation)")
+    metadata = json.loads((output_dir / "evolution_metadata.json").read_text())
+    assert metadata["train_split"] == "train" and metadata["val_split"] == "validation"
+    assert metadata["run_id"] == entries[0]["run_id"] and metadata["exposure"] == entries
+    assert metadata["forbidden_literals_count"] > 100
+
+
+def test_gen5_rejects_identical_splits(optimizer_cli, capsys):
+    run, _, seed, optimize, _, _, ledger = optimizer_cli
+    assert run([seed], [0.5], gen5=True, extra=("--train-split", "validation", "--val-split", "validation")) == 1
+    assert "must differ" in capsys.readouterr().err
+    optimize.assert_not_called()
+    assert not ledger.exists()
+
+
+def test_gen5_never_optimizes_on_final_test(optimizer_cli, capsys):
+    run, _, seed, optimize, _, _, ledger = optimizer_cli
+    assert run([seed], [0.5], gen5=True, extra=("--val-split", "final_test")) == 1
+    assert "sealed" in capsys.readouterr().err
+    optimize.assert_not_called()
+    entries = [json.loads(line) for line in ledger.read_text().splitlines()] if ledger.exists() else []
+    assert [e["split"] for e in entries] in ([], ["train"])  # train may be recorded first; final_test never is
+
+
+def test_cli_noise_only_writes_the_noise_floor_and_skips_optimization(optimizer_cli):
+    from types import SimpleNamespace
+
+    run, output_dir, seed, optimize, adapter, reflection, _ = optimizer_cli
+    adapter.return_value.evaluate.side_effect = [
+        SimpleNamespace(scores=[0.8, 0.7, 0.9, 0.6] * 5),
+        SimpleNamespace(scores=[0.82, 0.66, 0.9, 0.62] * 5),
+        SimpleNamespace(scores=[0.84, 0.74, 0.94, 0.64] * 5),
+    ]
+    assert run([seed], [0.5], gen5=True, extra=("--noise-runs", "3", "--noise-only")) == 0
+    data = json.loads((output_dir / "noise_floor.json").read_text())
+    assert data["runs"] == 3 and data["split"] == "validation" and len(data["per_case"]) == 20
+    assert data["gate_mean_spread_max"] == 0.02 and data["gate_passed"] is False
+    optimize.assert_not_called()
+    reflection.assert_not_called()
+    assert not (output_dir / CORE_RUNBOOKS[0]).exists()
+
+
+def test_case_id_regex_matches_gen3_and_gen5_ids():
+    from agent.gepa_runbook_optimizer import CASE_ID_REGEX
+
+    for text in ("CASE-02", "CASE-GEN3-01", "CASE-GEN5-C2-INFOSTEALER-01", "case-33279"):
+        assert CASE_ID_REGEX.search(text), text
+    assert not CASE_ID_REGEX.search("CASE-STUDY")
+
+
+def test_validate_runbook_candidate_rejects_manifest_literals():
+    from agent.gepa_runbook_optimizer import load_forbidden_literals, validate_runbook_candidate
+
+    manifest = Path("configs/evals/gen5/manifest.json")
+    literals = load_forbidden_literals(manifest)
+    hostname = next(x for x in literals if "-" in x and x.isupper())
+    domain = next(x for x in literals if "." in x and x.islower() and not x[0].isdigit())
+    clean = {name: "# Clean\nEnrich the alerted host, then decide." for name in CORE_RUNBOOKS}
+    assert validate_runbook_candidate(clean, forbidden_literals=literals) == (True, [])
+
+    leaky = dict(clean)
+    leaky[CORE_RUNBOOKS[0]] = f"# Leaky\nIf the host is {hostname}, isolate it. Block {domain}."
+    ok, violations = validate_runbook_candidate(leaky, forbidden_literals=literals)
+    assert not ok and len(violations) == 2 and all("memorization" in v for v in violations)
+
+    boundary = dict(clean)
+    boundary[CORE_RUNBOOKS[0]] = f"# Boundary\nSee x{domain} and {hostname}X for unrelated names. Real mention: {domain}."
+    ok, violations = validate_runbook_candidate(boundary, forbidden_literals=literals)
+    assert not ok and len(violations) == 1 and domain in violations[0]
+
+
+def test_calculate_loss_penalty_prohibited_entity_violation():
+    from agent.gepa_runbook_optimizer import calculate_loss_penalty
+
+    clean = calculate_loss_penalty("MALICIOUS", "MALICIOUS", ["isolate_host"], [])
+    assert clean == pytest.approx(1.0)
+    violated = calculate_loss_penalty("MALICIOUS", "MALICIOUS", ["isolate_host"], [], prohibited_violation=True)
+    assert violated == pytest.approx(math.exp(-1.0))
+    assert calculate_loss_penalty("MALICIOUS", "MALICIOUS", ["isolate_host"], [], prohibited_violation=False) == pytest.approx(1.0)
+
+
+def _gen5_case(index: int = 0) -> dict:
+    data = json.loads(Path("configs/evals/gen5/validation.json").read_text(encoding="utf-8"))
+    return data["eval_cases"][index]
+
+
+def _agent_factory_returning(trajectory, text):
+    from types import SimpleNamespace
+
+    class FakeAgent:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def query(self, prompt, max_iterations=None):
+            return SimpleNamespace(response=text, trajectory=trajectory, usage={"prompt_tokens": 10, "completion_tokens": 5})
+
+    return lambda **kwargs: FakeAgent(**kwargs)
+
+
+def test_adapter_evaluate_gen5_inert_trajectory_scores_zero():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+
+    case = _gen5_case()
+    adapter = RunbookGEPAAdapter(task_lm="mock", agent_factory=_agent_factory_returning([], ""))
+    batch = adapter.evaluate([case], {name: "# Seed" for name in CORE_RUNBOOKS}, capture_traces=True)
+    assert batch.scores == [0.0]
+    trace = batch.trajectories[0]
+    assert trace["inert"] is True and trace["generation"] == 5 and trace["family_id"] == case["family_id"]
+    assert trace["usage"]["prompt_tokens"] == 10 and isinstance(trace["latency_ms"], int)
+
+
+def test_adapter_evaluate_gen5_prohibited_entity_lowers_the_loss_penalty():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+
+    case = _gen5_case()
+    victim = case["prohibited_entities"][0]
+    first_lookup = case["oracle"]["lookups"][0]
+    trajectory = [
+        {"tool": first_lookup["tool"], "args": dict(first_lookup["args"]), "observation": {}},
+        {"tool": "isolate_host", "args": {"hostname": victim}, "observation": {"status": "SUCCESS"}},
+    ]
+    text = "Contained.\n```soc_decision\n" + json.dumps({"verdict": case["ground_truth_label"], "recommended_actions": ["isolate_host"]}) + "\n```"
+    adapter = RunbookGEPAAdapter(task_lm="mock", agent_factory=_agent_factory_returning(trajectory, text))
+    batch = adapter.evaluate([case], {name: "# Seed" for name in CORE_RUNBOOKS}, capture_traces=True)
+    trace = batch.trajectories[0]
+    assert trace["prohibited_entity_violations"], "the verifier must flag the prohibited entity"
+    assert trace["loss_penalty"] <= math.exp(-1.0) + 1e-9
+    assert trace["inert"] is False
