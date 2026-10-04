@@ -172,3 +172,46 @@ def test_snapshot_and_reset_roundtrip_in_replace_mode():
     assert env.hosts["WKS-AUS-17"].isolated is False
     assert env.blocked_indicators == set()
     assert "DESKTOP-FIN-08" not in env.hosts
+
+
+def test_from_eval_case_uses_environment_state_in_replace_mode():
+    case = {"eval_id": "CASE-GEN5-C2-INFOSTEALER-01", "generation": 5, "environment_state": replace_state()}
+    env = SocEnvironment.from_eval_case(case)
+    assert env.mode == "replace"
+    assert set(env.hosts) == {"WKS-AUS-17", "WKS-AUS-22"}
+    assert env.faults == {}
+
+
+def test_from_eval_case_applies_fault_on_top_of_environment_state():
+    case = {
+        "eval_id": "CASE-GEN5-TOOL-OUTAGE-503-01",
+        "generation": 5,
+        "environment_state": replace_state(),
+        "fault_injection": {"tool": "get_domain_report", "status_code": 503, "error": "Upstream TI unavailable"},
+    }
+    env = SocEnvironment.from_eval_case(case)
+    assert env.mode == "replace"
+    assert env.query_tool("get_domain_report", {"domain": "cdn-sync-metrics41.com"}) == {
+        "error": "Upstream TI unavailable",
+        "status_code": 503,
+        "status": "ERROR",
+    }
+
+
+def test_from_eval_case_rejects_gen5_case_without_environment_state():
+    with pytest.raises(ValueError, match="environment_state"):
+        SocEnvironment.from_eval_case({"eval_id": "CASE-GEN5-X-01", "generation": 5})
+
+
+def test_from_eval_case_keeps_gen3_overlay_behavior():
+    env = SocEnvironment.from_eval_case({"eval_id": "CASE-GEN3-01-LOKIBOT-C2"})
+    assert env.mode == "overlay"
+    assert "DESKTOP-FIN-08" in env.hosts
+    faulted = SocEnvironment.from_eval_case({"eval_id": "CASE-GEN3-09", "fault_injection": {"tool": "get_domain_report"}})
+    assert faulted.faults == {"get_domain_report": {"status_code": 503, "error": "Service Unavailable"}}
+
+
+def test_from_eval_case_rejects_non_object_environment_state():
+    with pytest.raises(ValueError, match="environment_state"):
+        SocEnvironment.from_eval_case({"eval_id": "X", "generation": 5, "environment_state": ["not", "a", "dict"]})
+

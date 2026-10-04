@@ -423,8 +423,21 @@ class SocEnvironment:
 
     @classmethod
     def from_eval_case(cls, case: Dict[str, Any]) -> "SocEnvironment":
-        """Create an isolated case environment with its declared tool fault."""
-        environment = cls()
+        """Create an isolated case environment from its declared world and tool fault.
+
+        Gen 5 cases carry a full ``environment_state`` (``mode: replace``) and are
+        self-contained. Gen 3 cases carry none and get the overlay default.
+        """
+        state = case.get("environment_state")
+        generation = int(case.get("generation") or 3)
+        if state is None and generation >= 5:
+            raise ValueError(
+                f"case {case.get('eval_id', '<unknown>')} declares generation {generation} "
+                "but has no environment_state"
+            )
+        if state is not None and not isinstance(state, dict):
+            raise ValueError("environment_state must be a JSON object")
+        environment = cls(initial_state=state)
         fault = case.get("fault_injection")
         if fault is not None:
             if not isinstance(fault, dict) or not isinstance(fault.get("tool"), str) or not fault["tool"].strip():
