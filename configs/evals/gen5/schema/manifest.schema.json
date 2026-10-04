@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gemma-deploy.local/gen5/manifest.schema.json",
+  "title": "Gen 5 suite manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evalset_id", "generation", "pool_version", "instancer_version", "built_from_git_sha",
+    "families", "cases", "splits", "forbidden_literals", "forbidden_literals_sha256", "supersedes"
+  ],
+  "properties": {
+    "evalset_id": {"const": "soc_tier1_families"},
+    "generation": {"const": 5},
+    "pool_version": {"type": "string", "pattern": "^pools-v[0-9]+$"},
+    "instancer_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "built_from_git_sha": {"type": "string", "pattern": "^([0-9a-f]{40}|unknown)$"},
+    "families": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["family_id", "split_role", "template_sha256", "instances"],
+        "properties": {
+          "family_id": {"type": "string", "pattern": "^FAM-[A-Z0-9]+(-[A-Z0-9]+)*$"},
+          "split_role": {"enum": ["seen", "validation_ood", "final_test_ood"]},
+          "template_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "instances": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["eval_id", "family_id", "instance_index", "instance_seed", "split", "difficulty", "label", "case_sha256", "literals"],
+        "properties": {
+          "eval_id": {"type": "string", "pattern": "^CASE-GEN5-[A-Z0-9]+(-[A-Z0-9]+)*-[0-9]{2}$"},
+          "family_id": {"type": "string"},
+          "instance_index": {"type": "integer", "minimum": 0},
+          "instance_seed": {"type": "integer", "minimum": 0},
+          "split": {"enum": ["train", "validation", "final_test"]},
+          "difficulty": {"type": "integer", "minimum": 1, "maximum": 3},
+          "label": {"enum": ["MALICIOUS", "BENIGN", "SUSPICIOUS", "INCONCLUSIVE"]},
+          "case_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "literals": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "splits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["train", "validation", "final_test"],
+      "properties": {
+        "train": {"type": "array", "items": {"type": "string"}},
+        "validation": {"type": "array", "items": {"type": "string"}},
+        "final_test": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "forbidden_literals": {"type": "array", "items": {"type": "string"}},
+    "forbidden_literals_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "supersedes": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+  }
+}

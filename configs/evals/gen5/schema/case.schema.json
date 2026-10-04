@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gemma-deploy.local/gen5/case.schema.json",
+  "title": "Gen 5 materialized SOC Tier 1 case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eval_id", "name", "generation", "family_id", "instance_index", "instance_seed",
+    "pool_version", "template_sha256", "difficulty", "transport", "asset_criticality",
+    "ground_truth_label", "counterfactual_pair_id", "prompt", "environment_state",
+    "expected_actions", "prohibited_actions", "expected_entities", "prohibited_entities",
+    "cmdb_context", "reference", "assertions", "fault_injection", "liveness", "oracle"
+  ],
+  "properties": {
+    "eval_id": {"type": "string", "pattern": "^CASE-GEN5-[A-Z0-9]+(-[A-Z0-9]+)*-[0-9]{2}$"},
+    "name": {"type": "string", "minLength": 8},
+    "generation": {"const": 5},
+    "family_id": {"type": "string", "pattern": "^FAM-[A-Z0-9]+(-[A-Z0-9]+)*$"},
+    "instance_index": {"type": "integer", "minimum": 0},
+    "instance_seed": {"type": "integer", "minimum": 0},
+    "pool_version": {"type": "string", "pattern": "^pools-v[0-9]+$"},
+    "template_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "difficulty": {"type": "integer", "minimum": 1, "maximum": 3},
+    "transport": {"const": "sandbox"},
+    "asset_criticality": {"enum": ["LOW", "STANDARD", "HIGH", "CRITICAL"]},
+    "ground_truth_label": {"enum": ["MALICIOUS", "BENIGN", "SUSPICIOUS", "INCONCLUSIVE"]},
+    "counterfactual_pair_id": {"type": ["string", "null"], "pattern": "^PAIR-[0-9]{2}$"},
+    "prompt": {"type": "string", "minLength": 40},
+    "environment_state": {"$ref": "#/$defs/environment_state"},
+    "expected_actions": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "prohibited_actions": {"type": "array", "items": {"type": "string"}},
+    "expected_entities": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "prohibited_entities": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "cmdb_context": {"$ref": "#/$defs/cmdb_context"},
+    "reference": {"$ref": "#/$defs/reference"},
+    "assertions": {"$ref": "#/$defs/assertions"},
+    "fault_injection": {"$ref": "#/$defs/fault_injection"},
+    "liveness": {"$ref": "#/$defs/liveness"},
+    "oracle": {"$ref": "#/$defs/oracle"}
+  },
+  "$defs": {
+    "ipv4": {"type": "string", "pattern": "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$"},
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hostname", "ip", "criticality_tier"],
+      "properties": {
+        "hostname": {"type": "string", "pattern": "^[A-Z]{2,4}-[A-Z]{3}-[0-9]{2}$"},
+        "ip": {"$ref": "#/$defs/ipv4"},
+        "criticality_tier": {"enum": ["LOW", "STANDARD", "HIGH", "CRITICAL"]},
+        "isolated": {"type": "boolean"},
+        "os": {"type": "string"},
+        "active_user": {"type": "string"},
+        "installed_services": {"type": "array", "items": {"type": "string"}},
+        "telemetry": {"type": "object"}
+      }
+    },
+    "ip_indicator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ip", "reputation", "verdict"],
+      "properties": {
+        "ip": {"$ref": "#/$defs/ipv4"},
+        "reputation": {"type": "string"},
+        "verdict": {"type": "string"},
+        "category": {"type": "string"},
+        "asn": {"type": "string"},
+        "cidr": {"type": "string"},
+        "routing_status": {"type": "string"},
+        "threat_family": {"type": "string"},
+        "malicious_votes": {"type": "integer"},
+        "harmless_votes": {"type": "integer"},
+        "vt_positives": {"type": "integer"},
+        "vt_total": {"type": "integer"},
+        "reverse_dns": {"type": "string"},
+        "service": {"type": "string"},
+        "host_association": {"type": "string"},
+        "country": {"type": "string"}
+      }
+    },
+    "domain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "reputation", "verdict", "category"],
+      "properties": {
+        "domain": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*\\.[a-z]{2,}$"},
+        "reputation": {"type": "string"},
+        "verdict": {"type": "string"},
+        "category": {"type": "string"},
+        "malicious_votes": {"type": "integer"},
+        "harmless_votes": {"type": "integer"},
+        "threat_family": {"type": "string"},
+        "resolutions": {"type": "array", "items": {"type": "string"}},
+        "first_seen": {"type": ["string", "null"]},
+        "registrar": {"type": "string"},
+        "created_date": {"type": ["string", "null"]},
+        "vt_positives": {"type": "integer"},
+        "vt_total": {"type": "integer"},
+        "categories": {"type": "array", "items": {"type": "string"}},
+        "passive_dns": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "file_hash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "filename", "cert_status", "vendor", "threat_name", "verdict"],
+      "properties": {
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "filename": {"type": "string"},
+        "cert_status": {"enum": ["VALID_CERTIFICATE", "REVOKED_CERTIFICATE", "UNSIGNED"]},
+        "vendor": {"type": "string"},
+        "threat_name": {"type": "string"},
+        "verdict": {"type": "string"},
+        "detections": {"type": "string"},
+        "signer": {"type": "string"},
+        "certificate_status": {"type": "string"},
+        "revocation_date": {"type": ["string", "null"]},
+        "vt_positives": {"type": "integer"},
+        "vt_total": {"type": "integer"}
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "title", "priority", "stage", "status", "assignee"],
+      "properties": {
+        "case_id": {"type": "string", "pattern": "^CASE-[0-9]{5}$"},
+        "title": {"type": "string"},
+        "priority": {"enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
+        "stage": {"enum": ["TRIAGE", "INVESTIGATION", "CONTAINMENT", "RESOLVED"]},
+        "status": {"enum": ["OPEN", "IN_PROGRESS", "CLOSED"]},
+        "assignee": {"type": "string"},
+        "comments": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["event_timestamp", "metadata"],
+      "properties": {
+        "event_timestamp": {"type": "string"},
+        "metadata": {"type": "object", "required": ["event_type"], "properties": {"event_type": {"type": "string"}}}
+      }
+    },
+    "environment_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "hosts", "ips", "domains", "hashes", "cases", "events"],
+      "properties": {
+        "mode": {"const": "replace"},
+        "hosts": {"type": "object", "minProperties": 2, "additionalProperties": {"$ref": "#/$defs/host"}},
+        "ips": {"type": "object", "additionalProperties": {"$ref": "#/$defs/ip_indicator"}},
+        "domains": {"type": "object", "additionalProperties": {"$ref": "#/$defs/domain"}},
+        "hashes": {"type": "object", "additionalProperties": {"$ref": "#/$defs/file_hash"}},
+        "cases": {"type": "object", "minProperties": 1, "additionalProperties": {"$ref": "#/$defs/case"}},
+        "events": {"type": "array", "items": {"$ref": "#/$defs/event"}},
+        "faults": {"type": "object"}
+      }
+    },
+    "tool_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "args"],
+      "properties": {
+        "tool": {"type": "string"},
+        "args": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "action_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "args"],
+      "properties": {
+        "action": {"type": "string"},
+        "args": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lookups", "actions"],
+      "properties": {
+        "lookups": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"$ref": "#/$defs/tool_call"}},
+        "actions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/action_call"}}
+      }
+    },
+    "liveness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_epistemic_steps"],
+      "properties": {"min_epistemic_steps": {"type": "integer", "minimum": 1}}
+    },
+    "fault_injection": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tool", "status_code", "error"],
+          "properties": {
+            "tool": {"type": "string"},
+            "status_code": {"type": "integer"},
+            "error": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "assertions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["must_contain", "must_not_contain"],
+      "properties": {
+        "must_contain": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "must_not_contain": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expected_verdict", "recommended_action", "grading_rubric"],
+      "properties": {
+        "expected_verdict": {"enum": ["MALICIOUS", "BENIGN", "SUSPICIOUS", "INCONCLUSIVE"]},
+        "expected_threat_family": {"type": "string"},
+        "recommended_action": {"type": "string", "minLength": 20},
+        "grading_rubric": {"type": "string", "minLength": 20}
+      }
+    },
+    "cmdb_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset_id", "owner", "business_role", "criticality", "blast_radius"],
+      "properties": {
+        "asset_id": {"type": "string"},
+        "owner": {"type": "string"},
+        "business_role": {"type": "string"},
+        "criticality": {"enum": ["LOW", "STANDARD", "HIGH", "CRITICAL"]},
+        "blast_radius": {"type": "string"},
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}
