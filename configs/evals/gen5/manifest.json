@@ -3,7 +3,7 @@
   "generation": 5,
   "pool_version": "pools-v1",
   "instancer_version": "1.0.0",
-  "built_from_git_sha": "e6da8f0b901e91d3e381199648a6c80ee0230da8",
+  "built_from_git_sha": "8e5912cd1a34da5b237d1db9f076fa97e5f2fe7d",
   "families": [
     {
       "family_id": "FAM-AUTHORIZED-SCANNER",
@@ -2006,10 +2006,5 @@
     "zara.okafor"
   ],
   "forbidden_literals_sha256": "a268028c529e523ad83acc1cc9b7209dd5f5c98dbec48c147bc02a7b97003369",
-  "supersedes": [
-    "1abfb42181f8a3056eae9226681b820ea11ae38d0dc0c96d0964c75760169da2",
-    "2bc965c5e80617740650c36db7814904d17e398c84bc4610397583117eb8f13a",
-    "665354367b72b2478272d1ff1ab9b6e8e63c1fe3f21795f864fd001b625ce512",
-    "c9519edfc6c111ae0ff6d26d8f2e4140d67d6a182e427589c54630033ed1e2c6"
-  ]
+  "supersedes": []
 }
