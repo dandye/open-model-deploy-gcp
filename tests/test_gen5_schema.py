@@ -112,8 +112,10 @@ def test_case_schema_rejects_overlay_mode():
     case_schema = load_schema("case")
     env_validator = Draft202012Validator({"$ref": "#/$defs/environment_state", "$defs": case_schema["$defs"]})
     state = {"mode": "overlay", "hosts": {}, "ips": {}, "domains": {}, "hashes": {}, "cases": {}, "events": []}
-    with pytest.raises(ValidationError):
-        env_validator.validate(state)
+    errors = list(env_validator.iter_errors(state))
+    assert any(e.validator == "const" and list(e.path) == ["mode"] for e in errors)
+    state["mode"] = "replace"
+    assert not any(list(e.path) == ["mode"] for e in env_validator.iter_errors(state))
 
 
 @pytest.mark.parametrize("path", sorted((GEN5_ROOT / "families").glob("FAM-*.json")) or [None])
