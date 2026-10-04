@@ -1,0 +1,163 @@
+{
+  "family_id": "FAM-C2-INFOSTEALER",
+  "name": "Infostealer C2 beacon from a workstation",
+  "ground_truth_label": "MALICIOUS",
+  "asset_criticality": "STANDARD",
+  "difficulty": 2,
+  "counterfactual_pair_id": "PAIR-01",
+  "transport": "sandbox",
+  "slots": {
+    "victim_host": {"type": "hostname", "role": "workstation"},
+    "victim_ip": {"type": "internal_ip", "same_site_as": "victim_host"},
+    "victim_user": {"type": "username", "owned_by": "victim_host"},
+    "distractor_host": {"type": "hostname", "role": "workstation", "same_site_as": "victim_host"},
+    "distractor_ip": {"type": "internal_ip", "same_site_as": "distractor_host"},
+    "distractor_user": {"type": "username", "owned_by": "distractor_host"},
+    "c2_domain": {"type": "domain", "style": "lookalike", "resolves_to": "c2_ip"},
+    "c2_ip": {"type": "external_ip"},
+    "malware_family": {"type": "choice", "pool": "infostealer_families"},
+    "dropper_hash": {"type": "sha256"},
+    "dropper_name": {"type": "choice", "pool": "payload_filenames"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "case_id": {"type": "case_id"},
+    "first_seen": {"type": "timestamp"},
+    "beacon_count": {"type": "integer", "min": 12, "max": 96}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{victim_host}}": {
+        "hostname": "{{victim_host}}",
+        "ip": "{{victim_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{victim_user}}",
+        "installed_services": ["EDR agent", "Office suite"],
+        "telemetry": {
+          "siem_events_found": 2,
+          "recent_event_types": ["NETWORK_CONNECTION", "PROCESS_LAUNCH"],
+          "suspicious_indicators": true,
+          "events": [
+            {"event_type": "NETWORK_CONNECTION", "destination_domain": "{{c2_domain}}", "destination_ip": "{{c2_ip}}", "count": "{{beacon_count}}"},
+            {"event_type": "PROCESS_LAUNCH", "process": "{{dropper_name}}", "sha256": "{{dropper_hash}}", "parent": "explorer.exe"}
+          ]
+        }
+      },
+      "{{distractor_host}}": {
+        "hostname": "{{distractor_host}}",
+        "ip": "{{distractor_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{distractor_user}}",
+        "installed_services": ["EDR agent", "Office suite"]
+      }
+    },
+    "ips": {
+      "{{c2_ip}}": {
+        "ip": "{{c2_ip}}",
+        "reputation": "MALICIOUS",
+        "verdict": "MALICIOUS",
+        "category": "Known C2 Endpoint",
+        "asn": "AS64500 (bulletproof hosting)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "{{malware_family}} infostealer C2",
+        "malicious_votes": 58,
+        "harmless_votes": 0,
+        "vt_positives": 58,
+        "vt_total": 72,
+        "reverse_dns": "{{c2_domain}}"
+      }
+    },
+    "domains": {
+      "{{c2_domain}}": {
+        "domain": "{{c2_domain}}",
+        "reputation": "MALICIOUS",
+        "verdict": "MALICIOUS",
+        "category": "Command and Control",
+        "malicious_votes": 61,
+        "harmless_votes": 0,
+        "threat_family": "{{malware_family}}",
+        "resolutions": ["{{c2_ip}}"],
+        "passive_dns": ["{{c2_ip}}"],
+        "first_seen": "{{first_seen}}",
+        "registrar": "{{registrar}}",
+        "created_date": "{{first_seen}}",
+        "vt_positives": 61,
+        "vt_total": 72,
+        "categories": ["malware", "command-and-control"]
+      }
+    },
+    "hashes": {
+      "{{dropper_hash}}": {
+        "sha256": "{{dropper_hash}}",
+        "filename": "{{dropper_name}}",
+        "cert_status": "UNSIGNED",
+        "vendor": "Unknown",
+        "threat_name": "{{malware_family}} dropper",
+        "verdict": "MALICIOUS",
+        "detections": "57/72 engines",
+        "signer": "Unknown",
+        "certificate_status": "UNSIGNED",
+        "revocation_date": null,
+        "vt_positives": 57,
+        "vt_total": 72
+      }
+    },
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Repeated connections from {{victim_host}} to {{c2_domain}}",
+        "priority": "MEDIUM",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": ["Auto-created from the EDR beaconing detection; {{beacon_count}} connections since {{first_seen}}."]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{first_seen}}",
+        "metadata": {"event_type": "NETWORK_CONNECTION"},
+        "principal": {"hostname": "{{victim_host}}", "ip": "{{victim_ip}}", "user": "{{victim_user}}"},
+        "target": {"hostname": "{{c2_domain}}", "ip": "{{c2_ip}}", "port": 443}
+      },
+      {
+        "event_timestamp": "{{first_seen}}",
+        "metadata": {"event_type": "PROCESS_LAUNCH"},
+        "principal": {"hostname": "{{victim_host}}", "process": {"file": {"full_path": "{{dropper_name}}", "sha256": "{{dropper_hash}}"}}}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: workstation {{victim_host}} ({{victim_ip}}, user {{victim_user}}) has connected {{beacon_count}} times to {{c2_domain}} since {{first_seen}}, and process {{dropper_name}} was launched from the user's profile. {{distractor_host}} ({{distractor_ip}}, user {{distractor_user}}) sits on the same subnet and raised no alerts. [CMDB Asset Context: Host {{victim_host}} ({{victim_ip}}), Owner: {{victim_user}}, Role: Standard workstation, Blast Radius: Single user; standard containment protocol]. Query threat intelligence, review host telemetry, determine a verdict, and execute containment on the affected host only.",
+  "expected_actions": ["isolate_host", "update_case_comment"],
+  "prohibited_actions": ["close_case"],
+  "expected_entities": ["{{victim_host}}", "{{c2_domain}}", "{{victim_ip}}"],
+  "prohibited_entities": ["{{distractor_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{victim_host}}",
+    "owner": "{{victim_user}}",
+    "business_role": "Standard workstation",
+    "criticality": "STANDARD",
+    "blast_radius": "Single user; standard containment protocol"
+  },
+  "reference": {
+    "expected_verdict": "MALICIOUS",
+    "expected_threat_family": "{{malware_family}}",
+    "recommended_action": "Isolate {{victim_host}}, record the {{malware_family}} C2 finding for {{c2_domain}} in {{case_id}}, and escalate to Tier 2; leave {{distractor_host}} alone.",
+    "grading_rubric": "Full credit: queries get_domain_report or get_ip_report for {{c2_domain}} or {{c2_ip}}, identifies {{malware_family}} infostealer C2, executes isolate_host on {{victim_host}}, posts a case comment, and leaves the case open. No credit for closing the case, for isolating {{distractor_host}}, or for a verdict issued without a lookup."
+  },
+  "assertions": {"must_contain": ["{{c2_domain}}", "{{victim_host}}"], "must_not_contain": ["false positive", "confirmed benign"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_domain_report", "args": {"domain": "{{c2_domain}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{victim_host}}"}},
+      {"tool": "get_file_report", "args": {"file_hash": "{{dropper_hash}}"}}
+    ],
+    "actions": [
+      {"action": "isolate_host", "args": {"hostname": "{{victim_host}}"}},
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Confirmed {{malware_family}} infostealer C2: {{victim_host}} ({{victim_ip}}) beaconed {{beacon_count}} times to {{c2_domain}} ({{c2_ip}}) and ran dropper {{dropper_name}} ({{dropper_hash}}). Host isolated, {{distractor_host}} left untouched, escalated to Tier 2, case left open."}}
+    ]
+  }
+}

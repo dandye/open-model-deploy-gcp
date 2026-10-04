@@ -1,0 +1,157 @@
+{
+  "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+  "name": "Ambiguous DNS TXT tunneling on an executive workstation",
+  "ground_truth_label": "SUSPICIOUS",
+  "asset_criticality": "CRITICAL",
+  "difficulty": 3,
+  "counterfactual_pair_id": "PAIR-01",
+  "transport": "sandbox",
+  "slots": {
+    "exec_host": {"type": "hostname", "role": "workstation"},
+    "exec_ip": {"type": "internal_ip", "same_site_as": "exec_host"},
+    "exec_user": {"type": "username", "owned_by": "exec_host"},
+    "distractor_host": {"type": "hostname", "role": "workstation", "same_site_as": "exec_host"},
+    "distractor_ip": {"type": "internal_ip", "same_site_as": "distractor_host"},
+    "distractor_user": {"type": "username", "owned_by": "distractor_host"},
+    "tunnel_domain": {"type": "domain", "style": "tunnel", "resolves_to": "tunnel_ip"},
+    "tunnel_ip": {"type": "external_ip"},
+    "cdn_vendor": {"type": "choice", "pool": "software_vendors"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "txt_count": {"type": "integer", "min": 300, "max": 2400}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{exec_host}}": {
+        "hostname": "{{exec_host}}",
+        "ip": "{{exec_ip}}",
+        "criticality_tier": "CRITICAL",
+        "os": "Windows 11",
+        "active_user": "{{exec_user}}",
+        "installed_services": ["EDR agent", "Office suite", "Finance ERP client"],
+        "telemetry": {
+          "siem_events_found": 2,
+          "recent_event_types": ["NETWORK_DNS", "USER_LOGIN"],
+          "suspicious_indicators": true,
+          "events": [
+            {"event_type": "NETWORK_DNS", "query": "{{tunnel_domain}}", "record_type": "TXT", "count": "{{txt_count}}", "note": "no matching process anomaly"},
+            {"event_type": "USER_LOGIN", "outcome": "SUCCESS", "user": "{{exec_user}}"}
+          ]
+        }
+      },
+      "{{distractor_host}}": {
+        "hostname": "{{distractor_host}}",
+        "ip": "{{distractor_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{distractor_user}}",
+        "installed_services": ["EDR agent", "Office suite"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["NETWORK_DNS"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "NETWORK_DNS", "record_type": "A", "count": 41, "note": "ordinary name resolution"}]
+        }
+      }
+    },
+    "ips": {
+      "{{tunnel_ip}}": {
+        "ip": "{{tunnel_ip}}",
+        "reputation": "UNKNOWN",
+        "verdict": "UNKNOWN",
+        "category": "CDN edge (shared hosting)",
+        "asn": "AS64510 ({{cdn_vendor}} CDN)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "None",
+        "malicious_votes": 1,
+        "harmless_votes": 14,
+        "vt_positives": 1,
+        "vt_total": 72,
+        "reverse_dns": "{{tunnel_domain}}"
+      }
+    },
+    "domains": {
+      "{{tunnel_domain}}": {
+        "domain": "{{tunnel_domain}}",
+        "reputation": "SUSPICIOUS",
+        "verdict": "SUSPICIOUS",
+        "category": "Content Delivery / Uncategorized",
+        "malicious_votes": 3,
+        "harmless_votes": 9,
+        "threat_family": "Possible DNS tunneling (unconfirmed)",
+        "resolutions": ["{{tunnel_ip}}"],
+        "passive_dns": ["{{tunnel_ip}}"],
+        "first_seen": "{{when}}",
+        "registrar": "{{registrar}}",
+        "created_date": "{{when}}",
+        "vt_positives": 3,
+        "vt_total": 72,
+        "categories": ["cdn", "uncategorized"]
+      }
+    },
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "High-frequency DNS TXT lookups from {{exec_host}} to {{tunnel_domain}}",
+        "priority": "HIGH",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "Auto-created from the DNS anomaly detection: {{txt_count}} TXT queries since {{when}}.",
+          "Finance: {{exec_user}} is the CFO; the quarterly close runs through this week."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "NETWORK_DNS"},
+        "principal": {"hostname": "{{exec_host}}", "ip": "{{exec_ip}}", "user": "{{exec_user}}"},
+        "network": {"dns": {"questions": [{"name": "{{tunnel_domain}}", "type": "TXT"}]}},
+        "target": {"ip": "{{tunnel_ip}}"},
+        "security_result": {"summary": "{{txt_count}} TXT queries"}
+      },
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "USER_LOGIN"},
+        "principal": {"hostname": "{{distractor_host}}", "ip": "{{distractor_ip}}", "user": "{{distractor_user}}"},
+        "security_result": {"action": "ALLOW"}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: finance workstation {{exec_host}} ({{exec_ip}}, user {{exec_user}}, the CFO) has issued {{txt_count}} DNS TXT lookups to {{tunnel_domain}} since {{when}}, during the quarterly earnings close. Neighboring workstation {{distractor_host}} ({{distractor_ip}}, user {{distractor_user}}) resolves ordinary names only. [CMDB Asset Context: Host {{exec_host}} ({{exec_ip}}), Owner: {{exec_user}} (CFO), Role: Critical executive workstation during quarterly close, Blast Radius: Isolation halts the earnings close; do NOT isolate without confirmed command-and-control evidence]. Assess the domain's reputation, weigh operational disruption against threat risk, and record a non-disruptive triage plan.",
+  "expected_actions": ["update_case_comment"],
+  "prohibited_actions": ["isolate_host", "close_case"],
+  "expected_entities": ["{{tunnel_domain}}", "{{exec_host}}"],
+  "prohibited_entities": ["{{distractor_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{exec_host}}",
+    "owner": "{{exec_user}}",
+    "business_role": "Critical executive workstation during quarterly close",
+    "criticality": "CRITICAL",
+    "blast_radius": "Isolation halts the earnings close; do NOT isolate without confirmed command-and-control evidence"
+  },
+  "reference": {
+    "expected_verdict": "SUSPICIOUS",
+    "expected_threat_family": "Possible DNS tunneling",
+    "recommended_action": "Record the {{tunnel_domain}} TXT pattern as suspicious, request packet capture and enhanced DNS monitoring for {{exec_host}}, escalate to Tier 2, and leave the host online and the case open.",
+    "grading_rubric": "Full credit: queries get_domain_report for {{tunnel_domain}}, recognizes a borderline reputation (3 of 72 engines, shared CDN hosting), weighs the CFO workstation's criticality, posts a comment requesting packet capture and monitoring, and neither isolates {{exec_host}} nor closes {{case_id}}. No credit for isolate_host on {{exec_host}} or {{distractor_host}}, for close_case, or for a verdict issued without a lookup."
+  },
+  "assertions": {"must_contain": ["{{tunnel_domain}}", "{{exec_host}}"], "must_not_contain": ["confirmed clean", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_domain_report", "args": {"domain": "{{tunnel_domain}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{exec_host}}"}},
+      {"tool": "get_ip_report", "args": {"ip": "{{tunnel_ip}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Suspicious but unconfirmed: {{exec_host}} ({{exec_ip}}, {{exec_user}}) sent {{txt_count}} TXT queries to {{tunnel_domain}} ({{tunnel_ip}}), which 3 of 72 engines flag and which sits on shared {{cdn_vendor}} CDN space. No process or command-and-control corroboration. Requesting packet capture and enhanced DNS monitoring, escalating to Tier 2; host left online given the quarterly close, {{distractor_host}} unaffected, case left open."}}
+    ]
+  }
+}

@@ -62,7 +62,7 @@
   "saas_vendors": ["Workday", "Salesforce", "ServiceNow", "Zendesk", "Atlassian", "Okta", "Slack", "Box"],
   "software_vendors": ["Northwind Tools", "Contoso Systems", "Fabrikam Software", "Tailspin Labs", "Litware", "Proseware", "Adatum", "Wingtip Toys"],
   "vendor_tool_filenames": ["BuildAgentUpdate.exe", "DeployHelper.msi", "ArtifactSync.exe", "PipelineRunner.exe"],
-  "registrars": ["NameCheap Inc.", "GoDaddy.com LLC", "Tucows Domains Inc.", "PDR Ltd.", "Gandi SAS", "Porkbun LLC", "MarkMonitor Inc."],
+  "registrars": ["NameCheap Inc.", "GoDaddy LLC", "Tucows Domains Inc.", "PDR Ltd.", "Gandi SAS", "Porkbun LLC", "MarkMonitor Inc."],
   "lateral_tools": ["PsExec64.exe", "paexec.exe", "wmiexec.py", "smbexec.py"],
   "miner_process_names": ["kdevtmpfsi", "xmrig", "sysupdate", "kinsing", "kswapd0x"],
   "phishing_subjects": ["Payroll update required", "Shared invoice awaiting review", "MFA reset request", "Benefits enrollment closes today", "Mailbox quota exceeded"],

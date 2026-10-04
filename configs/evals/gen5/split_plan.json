@@ -1,0 +1,20 @@
+{
+  "pool_version": "pools-v1",
+  "roles": {
+    "seen": {"instances": 6, "splits": {"train": [0, 1, 2, 3], "validation": [4], "final_test": [5]}},
+    "validation_ood": {"instances": 5, "splits": {"validation": [0, 1, 2, 3, 4]}},
+    "final_test_ood": {"instances": 5, "splits": {"final_test": [0, 1, 2, 3, 4]}}
+  },
+  "families": {
+    "FAM-C2-INFOSTEALER": {"role": "seen", "instances": 6},
+    "FAM-DOC-IP-FALSE-POSITIVE": {"role": "seen", "instances": 6},
+    "FAM-PHISHING-CREDENTIAL": {"role": "seen", "instances": 6},
+    "FAM-DUPLICATE-CASE": {"role": "seen", "instances": 6},
+    "FAM-RANSOMWARE-CRITICAL": {"role": "seen", "instances": 6},
+    "FAM-DNS-TUNNEL-AMBIGUOUS": {"role": "seen", "instances": 6},
+    "FAM-LATERAL-PSEXEC": {"role": "seen", "instances": 6},
+    "FAM-SUPPLYCHAIN-REVOKED-CERT": {"role": "seen", "instances": 6},
+    "FAM-TOOL-OUTAGE-503": {"role": "seen", "instances": 6},
+    "FAM-AUTHORIZED-SCANNER": {"role": "seen", "instances": 6}
+  }
+}

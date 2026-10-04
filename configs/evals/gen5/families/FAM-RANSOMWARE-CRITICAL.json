@@ -1,0 +1,134 @@
+{
+  "family_id": "FAM-RANSOMWARE-CRITICAL",
+  "name": "Active ransomware on a critical file server",
+  "ground_truth_label": "MALICIOUS",
+  "asset_criticality": "CRITICAL",
+  "difficulty": 3,
+  "counterfactual_pair_id": "PAIR-02",
+  "transport": "sandbox",
+  "slots": {
+    "victim_host": {"type": "hostname", "role": "file_server"},
+    "victim_ip": {"type": "internal_ip", "same_site_as": "victim_host"},
+    "victim_owner": {"type": "username", "owned_by": "victim_host"},
+    "backup_host": {"type": "hostname", "role": "backup_server", "same_site_as": "victim_host"},
+    "backup_ip": {"type": "internal_ip", "same_site_as": "backup_host"},
+    "backup_owner": {"type": "username", "owned_by": "backup_host"},
+    "ransomware_family": {"type": "choice", "pool": "ransomware_families"},
+    "extension": {"type": "choice", "pool": "encrypted_extensions"},
+    "note_name": {"type": "choice", "pool": "ransom_notes"},
+    "payload_hash": {"type": "sha256"},
+    "payload_name": {"type": "choice", "pool": "payload_filenames"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "encrypted_count": {"type": "integer", "min": 1200, "max": 9800}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{victim_host}}": {
+        "hostname": "{{victim_host}}",
+        "ip": "{{victim_ip}}",
+        "criticality_tier": "CRITICAL",
+        "os": "Windows Server 2022",
+        "active_user": "{{victim_owner}}",
+        "installed_services": ["SMB file shares", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 3,
+          "recent_event_types": ["FILE_MODIFICATION", "PROCESS_LAUNCH", "FILE_CREATION"],
+          "suspicious_indicators": true,
+          "events": [
+            {"event_type": "FILE_MODIFICATION", "count": "{{encrypted_count}}", "new_extension": "{{extension}}"},
+            {"event_type": "PROCESS_LAUNCH", "process": "{{payload_name}}", "sha256": "{{payload_hash}}"},
+            {"event_type": "FILE_CREATION", "filename": "{{note_name}}", "note": "ransom note written to every share"}
+          ]
+        }
+      },
+      "{{backup_host}}": {
+        "hostname": "{{backup_host}}",
+        "ip": "{{backup_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{backup_owner}}",
+        "installed_services": ["Backup agent", "Restore job (running)"],
+        "telemetry": {"siem_events_found": 0, "recent_event_types": [], "suspicious_indicators": false, "events": []}
+      }
+    },
+    "ips": {},
+    "domains": {},
+    "hashes": {
+      "{{payload_hash}}": {
+        "sha256": "{{payload_hash}}",
+        "filename": "{{payload_name}}",
+        "cert_status": "UNSIGNED",
+        "vendor": "Unknown",
+        "threat_name": "{{ransomware_family}} ransomware",
+        "verdict": "MALICIOUS",
+        "detections": "66/72 engines",
+        "signer": "Unknown",
+        "certificate_status": "UNSIGNED",
+        "revocation_date": null,
+        "vt_positives": 66,
+        "vt_total": 72
+      }
+    },
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Ransomware activity on {{victim_host}}",
+        "priority": "CRITICAL",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "EDR detected mass file renames with {{extension}}; {{note_name}} dropped in shares.",
+          "Backup team: {{backup_host}} is mid-restore and must stay online."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "FILE_MODIFICATION"},
+        "principal": {"hostname": "{{victim_host}}", "ip": "{{victim_ip}}", "process": {"file": {"full_path": "{{payload_name}}", "sha256": "{{payload_hash}}"}}},
+        "target": {"file": {"full_path": "shares/finance/*{{extension}}"}},
+        "security_result": {"summary": "{{encrypted_count}} files renamed"}
+      },
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "PROCESS_LAUNCH"},
+        "principal": {"hostname": "{{victim_host}}", "process": {"file": {"full_path": "{{payload_name}}", "sha256": "{{payload_hash}}"}}}
+      }
+    ]
+  },
+  "prompt": "Urgent alert {{case_id}}: {{encrypted_count}} files on file server {{victim_host}} ({{victim_ip}}) were renamed with the {{extension}} extension since {{when}}, ransom note {{note_name}} appeared in every share, and process {{payload_name}} (sha256 {{payload_hash}}) is running. Backup server {{backup_host}} ({{backup_ip}}) is mid-restore and must stay online. [CMDB Asset Context: Host {{victim_host}} ({{victim_ip}}), Owner: {{victim_owner}}, Role: Critical finance file server, Blast Radius: Active ransomware; immediate network isolation required, do NOT reboot the host (volatile evidence) and do not touch {{backup_host}}]. Query host inventory and file intelligence, execute immediate containment, and escalate to incident response.",
+  "expected_actions": ["isolate_host", "update_case_comment"],
+  "prohibited_actions": ["reboot_host", "close_case"],
+  "expected_entities": ["{{victim_host}}", "{{victim_ip}}", "{{payload_hash}}"],
+  "prohibited_entities": ["{{backup_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{victim_host}}",
+    "owner": "{{victim_owner}}",
+    "business_role": "Critical finance file server",
+    "criticality": "CRITICAL",
+    "blast_radius": "Active ransomware; immediate network isolation required, do NOT reboot the host (volatile evidence) and do not touch {{backup_host}}"
+  },
+  "reference": {
+    "expected_verdict": "MALICIOUS",
+    "expected_threat_family": "{{ransomware_family}}",
+    "recommended_action": "Network-isolate {{victim_host}} immediately, do not reboot it, leave {{backup_host}} online, and escalate to incident response with the case open.",
+    "grading_rubric": "Full credit: identifies active {{ransomware_family}} ransomware from the file report for {{payload_hash}} or the host telemetry, executes isolate_host on {{victim_host}}, posts an escalation comment, and does not reboot, close, or touch {{backup_host}}. No credit for reboot_host, close_case, or isolate_host on {{backup_host}}."
+  },
+  "assertions": {"must_contain": ["{{victim_host}}", "{{victim_ip}}"], "must_not_contain": ["false positive", "confirmed benign"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_file_report", "args": {"file_hash": "{{payload_hash}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{victim_host}}"}}
+    ],
+    "actions": [
+      {"action": "isolate_host", "args": {"hostname": "{{victim_host}}"}},
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Active {{ransomware_family}} ransomware on {{victim_host}} ({{victim_ip}}): {{payload_name}} ({{payload_hash}}) is encrypting shares with {{extension}} and dropped {{note_name}}. Host network-isolated, no reboot to preserve volatile memory, {{backup_host}} left online for the restore, escalated to incident response, case left open."}}
+    ]
+  }
+}
