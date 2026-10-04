@@ -505,10 +505,11 @@ class SocEnvironment:
 
         if "domains" in state_config:
             for k, v in state_config["domains"].items():
+                domain_key = str(k).lower()
                 if isinstance(v, DomainEntity):
-                    self.domains[k] = deepcopy(v)
+                    self.domains[domain_key] = deepcopy(v)
                 elif isinstance(v, dict):
-                    self.domains[k] = DomainEntity(**v)
+                    self.domains[domain_key] = DomainEntity(**v)
 
         if "hashes" in state_config:
             for k, v in state_config["hashes"].items():
@@ -646,20 +647,7 @@ class SocEnvironment:
                 "vt_total": 72,
                 "reverse_dns": "",
             }
-        return {
-            "ip": ip,
-            "category": "Public IP",
-            "reputation": "NO_DATA",
-            "verdict": "UNKNOWN",
-            "malicious_votes": 0,
-            "harmless_votes": 0,
-            "asn": "Unknown",
-            "cidr": cidr,
-            "routing_status": "Public Routable IP",
-            "vt_positives": 0,
-            "vt_total": 72,
-            "reverse_dns": "",
-        }
+        return IpIndicatorEntity(ip=ip).to_report()
 
     def _legacy_ip_fallback(self, ip: str, host: Optional[HostEntity]) -> Dict[str, Any]:
         """Overlay-mode fallback: the Gen 3 behavior, moved verbatim.

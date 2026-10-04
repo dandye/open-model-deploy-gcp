@@ -421,3 +421,26 @@ def test_overlay_block_indicator_result_has_no_unknown_flag():
     result = env.execute_action("block_indicator", {"indicator": "whatever.example"})
     assert result["status"] == "SUCCESS"
     assert "unknown_indicator" not in result
+
+
+def test_strict_public_ip_default_is_the_entity_report():
+    env = SocEnvironment(initial_state=replace_state())
+    assert env.query_tool("get_ip_address_report", {"ip": "8.8.8.8"}) == IpIndicatorEntity(ip="8.8.8.8").to_report()
+
+
+def test_domain_keys_are_normalized_to_lowercase_on_load():
+    state = deepcopy(replace_state())
+    state["domains"] = {
+        "CDN-Sync.example": {
+            "domain": "CDN-Sync.example",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Command and Control",
+        }
+    }
+    env = SocEnvironment(initial_state=state)
+    assert set(env.domains) == {"cdn-sync.example"}
+    assert env.query_tool("get_domain_report", {"domain": "cdn-sync.example"})["verdict"] == "MALICIOUS"
+    assert env.query_tool("lookup_entity", {"entity_id": "CDN-SYNC.EXAMPLE"})["verdict"] == "MALICIOUS"
+    assert env.execute_action("block_indicator", {"indicator": "CDN-Sync.example"})["unknown_indicator"] is False
+    assert set(SocEnvironment(initial_state=deepcopy(env.get_state_snapshot())).domains) == {"cdn-sync.example"}
