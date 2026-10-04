@@ -1,0 +1,264 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.18.188.96",
+          "GW-DEN-67"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "GW-DEN-67",
+        "blast_radius": "Remote workforce access; the gateway and DC-DEN-90 are the targets, not the source",
+        "business_role": "Remote access gateway",
+        "criticality": "HIGH",
+        "owner": "elias.raman"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-53427": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-53427",
+            "comments": [
+              "Auth monitor: 2277 failed logins across 225 accounts from 198.18.188.96 since 2026-09-27T14:19:00Z; no success recorded.",
+              "Identity: sampled accounts include freya.hartmann and zara.hartmann; lockout policy is holding."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Password spray against GW-DEN-67 from 198.18.188.96"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-27T14:19:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.188.96"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "GW-DEN-67",
+              "ip": "10.19.0.14",
+              "user": "freya.hartmann"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-27T14:19:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.188.96"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "GW-DEN-67",
+              "ip": "10.19.0.14",
+              "user": "zara.hartmann"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-27T14:19:00Z",
+            "intermediary": {
+              "hostname": "GW-DEN-67"
+            },
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.188.96"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "2277 failures across 225 accounts"
+            },
+            "target": {
+              "hostname": "DC-DEN-90",
+              "ip": "10.19.0.246"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "DC-DEN-90": {
+            "active_user": "zara.rahimi",
+            "criticality_tier": "CRITICAL",
+            "hostname": "DC-DEN-90",
+            "installed_services": [
+              "Active Directory Domain Services",
+              "DNS",
+              "EDR agent"
+            ],
+            "ip": "10.19.0.246",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "2277",
+                  "event_type": "USER_LOGIN",
+                  "forwarded_from": "GW-DEN-67",
+                  "note": "lockout policy holding; no account locked beyond threshold",
+                  "outcome": "FAILURE"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "GW-DEN-67": {
+            "active_user": "elias.raman",
+            "criticality_tier": "HIGH",
+            "hostname": "GW-DEN-67",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.19.0.14",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "2277",
+                  "distinct_accounts": "225",
+                  "event_type": "USER_LOGIN",
+                  "outcome": "FAILURE",
+                  "sample_accounts": [
+                    "freya.hartmann",
+                    "zara.hartmann"
+                  ],
+                  "source_ip": "198.18.188.96"
+                },
+                {
+                  "count": 0,
+                  "event_type": "USER_LOGIN",
+                  "note": "no successful authentication from this source",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.18.188.96"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.18.188.96": {
+            "asn": "AS64550 (VPS provider)",
+            "category": "Brute-force / credential stuffing source",
+            "country": "Unknown",
+            "harmless_votes": 0,
+            "ip": "198.18.188.96",
+            "malicious_votes": 29,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Password spraying infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 29,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-02",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "198.18.188.96",
+        "GW-DEN-67"
+      ],
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 1,
+      "instance_seed": 664842556906909470,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Password spray against the VPN gateway from an external address [02]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.18.188.96"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-53427",
+              "comment": "Password spray confirmed: 198.18.188.96 made 2277 failed logins across 225 accounts (including freya.hartmann and zara.hartmann) against GW-DEN-67 (10.19.0.14), validated by DC-DEN-90; the source carries a malicious brute-force reputation and no login succeeded. 198.18.188.96 blocked at the perimeter, GW-DEN-67 and DC-DEN-90 left online, escalated to Tier 2 for account monitoring, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.18.188.96"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "GW-DEN-67"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "198.18.188.96"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "DC-DEN-90",
+        "GW-DEN-67"
+      ],
+      "prompt": "Triage alert CASE-53427: external address 198.18.188.96 has made 2277 failed authentication attempts across 225 distinct accounts (including freya.hartmann and zara.hartmann) against VPN gateway GW-DEN-67 (10.19.0.14) since 2026-09-27T14:19:00Z; the attempts are validated by domain controller DC-DEN-90 (10.19.0.246). No success has been recorded. [CMDB Asset Context: Host GW-DEN-67 (10.19.0.14), Owner: elias.raman, Role: Remote access gateway, Blast Radius: Remote workforce access; the gateway and DC-DEN-90 are the targets, not the source]. Query the source reputation and gateway telemetry, determine the verdict, and contain the attack at its source.",
+      "reference": {
+        "expected_threat_family": "Password spraying (T1110.003)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.18.188.96 or lookup_entity for GW-DEN-67, recognizes a password spray (MITRE T1110.003), executes block_indicator on 198.18.188.96, posts a comment, and keeps the case open. No credit for isolate_host on GW-DEN-67 or DC-DEN-90 (they are the victims and isolating them removes remote access and authentication for the site), or for close_case.",
+        "recommended_action": "Block 198.18.188.96 at the perimeter, record the spray with the sampled accounts in CASE-53427, request monitoring for any later success, escalate to Tier 2, and leave GW-DEN-67 and DC-DEN-90 online."
+      },
+      "template_sha256": "8354ee0781f06c57ebf2a8c15236819524687d466039ec6b0a42649394e6b368",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

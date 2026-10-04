@@ -1,0 +1,62 @@
+version = "1.0"
+schema_version = "1.3"
+
+[task]
+name = "secops/soc-gen5-clean_skills-validation-case-saas-beacon-benign-02"
+description = "Gen 5 SOC Tier 1 interactive triage, validation split (clean_skills arm)"
+categories = ["security", "soc-tier1", "gen5-families", "validation", "clean_skills"]
+
+[metadata]
+author_name = "Dan Dye"
+author_email = "dandye@google.com"
+difficulty = "medium"
+difficulty_level = 2
+category = "security-operations"
+tags = ["secops", "soc-tier1", "harbor", "gen5", "clean_skills", "validation", "CASE-GEN5-SAAS-BEACON-BENIGN-02"]
+eval_id = "CASE-GEN5-SAAS-BEACON-BENIGN-02"
+generation = 5
+family_id = "FAM-SAAS-BEACON-BENIGN"
+split = "validation"
+case_sha256 = "701e5dd48eefd4c2c5e57d04c5f2ab9e530a8e05e3aff69f116500980e7e04e4"
+skill_arm = "clean_skills"
+asset_criticality = "STANDARD"
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 300.0
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+allow_internet = false
+
+[environment.env]
+SOC_CASE_ID = "CASE-GEN5-SAAS-BEACON-BENIGN-02"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[agent.env]
+SOC_CASE_ID = "CASE-GEN5-SAAS-BEACON-BENIGN-02"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[verifier.env]
+SOC_CASE_ID = "CASE-GEN5-SAAS-BEACON-BENIGN-02"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+SOC_SPLIT = "validation"
+SOC_JEV_BACKEND = "mock"
+
+[solution.env]
+SOC_CASE_ID = "CASE-GEN5-SAAS-BEACON-BENIGN-02"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"

@@ -228,6 +228,15 @@ class TestJustfileRecipes(unittest.TestCase):
                 )
                 self.assertFalse(is_emoji, f"Emoji character '{char}' (code {code}) found in {fpath.name}")
 
+    def test_justfile_contains_gen5_harbor_recipes(self):
+        """Gen 5 Harbor recipes exist, are in the help menu, and gen5-check runs the Harbor --check."""
+        content = (ROOT_DIR / "Justfile").read_text(encoding="utf-8")
+        for recipe in ("harbor-soc-gen5-generate", "harbor-soc-gen5-check", "harbor-soc-gen5-test"):
+            self.assertIn(f"{recipe}", content, f"Recipe '{recipe}' not defined in Justfile")
+            self.assertIn(f"just {recipe}", content, f"Help menu missing 'just {recipe}'")
+        self.assertIn("generate_harbor_soc_tasks.py --gen3", content, "harbor-soc-generate must keep the Gen 3 tree behind --gen3")
+        self.assertIn("generate_harbor_soc_tasks.py --check", content, "gen5-check must run the Harbor --check")
+
 
 if __name__ == "__main__":
     unittest.main()

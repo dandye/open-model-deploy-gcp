@@ -1,0 +1,264 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "WKS-LON-37",
+          "10.16.0.61"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "WKS-LON-37",
+        "blast_radius": "Credential theft and lateral movement risk; DC-LON-34 is the site domain controller and must stay online",
+        "business_role": "Legal workstation with access to employee records",
+        "criticality": "HIGH",
+        "owner": "anika.becker"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-61577": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-61577",
+            "comments": [
+              "EDR: PsExec64.exe launched by anika.becker on WKS-LON-37; 43 SMB admin-share connections to DC-LON-34 since 2026-09-07T19:30:00Z.",
+              "Identity team: anika.becker holds no administrative role in Legal."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Lateral movement from WKS-LON-37 to DC-LON-34"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-07T19:30:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "WKS-LON-37",
+              "ip": "10.16.0.61",
+              "process": {
+                "command_line": "PsExec64.exe \\\\DC-LON-34 -s cmd.exe",
+                "file": {
+                  "full_path": "PsExec64.exe",
+                  "sha256": "7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190"
+                }
+              },
+              "user": "anika.becker"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-07T19:30:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "WKS-LON-37",
+              "ip": "10.16.0.61",
+              "user": "anika.becker"
+            },
+            "security_result": {
+              "summary": "43 ADMIN$ connections"
+            },
+            "target": {
+              "hostname": "DC-LON-34",
+              "ip": "10.16.0.98",
+              "port": 445
+            }
+          },
+          {
+            "event_timestamp": "2026-09-07T19:30:00Z",
+            "metadata": {
+              "event_type": "SERVICE_CREATION"
+            },
+            "principal": {
+              "ip": "10.16.0.61"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "remote service start blocked by EDR"
+            },
+            "target": {
+              "hostname": "DC-LON-34",
+              "ip": "10.16.0.98",
+              "process": {
+                "file": {
+                  "full_path": "PSEXESVC.exe"
+                }
+              }
+            }
+          }
+        ],
+        "hashes": {
+          "7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "19/72 engines",
+            "filename": "PsExec64.exe",
+            "revocation_date": null,
+            "sha256": "7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190",
+            "signer": "Unknown",
+            "threat_name": "Remote execution tool (dual-use)",
+            "vendor": "Unknown",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 19,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "DC-LON-34": {
+            "active_user": "jonas.adeyemi",
+            "criticality_tier": "CRITICAL",
+            "hostname": "DC-LON-34",
+            "installed_services": [
+              "Active Directory Domain Services",
+              "DNS",
+              "EDR agent"
+            ],
+            "ip": "10.16.0.98",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "SERVICE_CREATION",
+                  "note": "remote service start blocked by EDR; no execution on this host",
+                  "outcome": "BLOCKED",
+                  "service": "PSEXESVC",
+                  "source_ip": "10.16.0.61"
+                }
+              ],
+              "recent_event_types": [
+                "SERVICE_CREATION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": true
+            }
+          },
+          "WKS-LON-37": {
+            "active_user": "anika.becker",
+            "criticality_tier": "HIGH",
+            "hostname": "WKS-LON-37",
+            "installed_services": [
+              "EDR agent",
+              "Legal records client"
+            ],
+            "ip": "10.16.0.61",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "command_line": "PsExec64.exe \\\\DC-LON-34 -s cmd.exe",
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "PsExec64.exe",
+                  "sha256": "7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190",
+                  "user": "anika.becker"
+                },
+                {
+                  "count": "43",
+                  "destination_host": "DC-LON-34",
+                  "destination_ip": "10.16.0.98",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 445,
+                  "share": "ADMIN$"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {},
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-LATERAL-PSEXEC-06",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "WKS-LON-37",
+        "10.16.0.61",
+        "anika.becker"
+      ],
+      "family_id": "FAM-LATERAL-PSEXEC",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 5,
+      "instance_seed": 12865423375883344971,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Remote service execution from a workstation against a domain controller [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "WKS-LON-37"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-61577",
+              "comment": "Lateral movement confirmed: anika.becker on WKS-LON-37 (10.16.0.61) ran PsExec64.exe (7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190) and opened 43 admin-share connections to DC-LON-34, where EDR blocked the service start. WKS-LON-37 isolated, credential revocation requested for anika.becker, DC-LON-34 left online, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "WKS-LON-37"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "file_hash": "7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "entity_id": "DC-LON-34"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "DC-LON-34"
+      ],
+      "prompt": "Investigate alert CASE-61577: user anika.becker on Legal workstation WKS-LON-37 (10.16.0.61) launched PsExec64.exe (sha256 7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190) and opened 43 SMB admin-share connections to domain controller DC-LON-34 (10.16.0.98) since 2026-09-07T19:30:00Z; the DC's EDR blocked the remote service start. [CMDB Asset Context: Host WKS-LON-37 (10.16.0.61), Owner: anika.becker, Role: Legal workstation with access to employee records, Blast Radius: Credential theft and lateral movement risk; DC-LON-34 is the site domain controller and must stay online]. Review host telemetry and file intelligence, evaluate the lateral movement, and contain the source host.",
+      "reference": {
+        "expected_threat_family": "Lateral movement (T1021.002)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries lookup_entity for WKS-LON-37 or get_file_report for 7db264fb0dc7c4b6b47c668cdca3ec58f805f593c737102adab3240c9ab16190, recognizes remote service execution against a domain controller as lateral movement (MITRE T1021.002), executes isolate_host on WKS-LON-37, posts a comment naming anika.becker for credential revocation, and leaves the case open. No credit for isolate_host on DC-LON-34, for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate WKS-LON-37, request credential revocation for anika.becker, escalate to Tier 2 for the lateral movement investigation, and leave DC-LON-34 online."
+      },
+      "template_sha256": "7964a6131ee6a296fde28c00c0658c256f354d577b881967f813e842ceb261e7",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

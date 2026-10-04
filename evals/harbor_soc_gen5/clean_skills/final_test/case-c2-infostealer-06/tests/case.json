@@ -1,0 +1,255 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "portal-signal18.info",
+          "PC-TOR-16"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "PC-TOR-16",
+        "blast_radius": "Single user; standard containment protocol",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "owner": "leila.kowalski"
+      },
+      "counterfactual_pair_id": "PAIR-01",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-97581": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-97581",
+            "comments": [
+              "Auto-created from the EDR beaconing detection; 24 connections since 2026-09-27T13:54:00Z."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Repeated connections from PC-TOR-16 to portal-signal18.info"
+          }
+        },
+        "domains": {
+          "portal-signal18.info": {
+            "categories": [
+              "malware",
+              "command-and-control"
+            ],
+            "category": "Command and Control",
+            "created_date": "2026-09-27T13:54:00Z",
+            "domain": "portal-signal18.info",
+            "first_seen": "2026-09-27T13:54:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 61,
+            "passive_dns": [
+              "198.19.13.24"
+            ],
+            "registrar": "GoDaddy LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.19.13.24"
+            ],
+            "threat_family": "Rhadamanthys",
+            "verdict": "MALICIOUS",
+            "vt_positives": 61,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-27T13:54:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "PC-TOR-16",
+              "ip": "10.14.0.10",
+              "user": "leila.kowalski"
+            },
+            "target": {
+              "hostname": "portal-signal18.info",
+              "ip": "198.19.13.24",
+              "port": 443
+            }
+          },
+          {
+            "event_timestamp": "2026-09-27T13:54:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "PC-TOR-16",
+              "process": {
+                "file": {
+                  "full_path": "winlogon_helper.exe",
+                  "sha256": "42b7a021552cb9b437f792798b8bc54ecb02b256c659644d93524a6be1a88a98"
+                }
+              }
+            }
+          }
+        ],
+        "hashes": {
+          "42b7a021552cb9b437f792798b8bc54ecb02b256c659644d93524a6be1a88a98": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "57/72 engines",
+            "filename": "winlogon_helper.exe",
+            "revocation_date": null,
+            "sha256": "42b7a021552cb9b437f792798b8bc54ecb02b256c659644d93524a6be1a88a98",
+            "signer": "Unknown",
+            "threat_name": "Rhadamanthys dropper",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 57,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "LT-TOR-94": {
+            "active_user": "lars.qureshi",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-TOR-94",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.14.0.224",
+            "os": "Windows 11"
+          },
+          "PC-TOR-16": {
+            "active_user": "leila.kowalski",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-TOR-16",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.14.0.10",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "24",
+                  "destination_domain": "portal-signal18.info",
+                  "destination_ip": "198.19.13.24",
+                  "event_type": "NETWORK_CONNECTION"
+                },
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "explorer.exe",
+                  "process": "winlogon_helper.exe",
+                  "sha256": "42b7a021552cb9b437f792798b8bc54ecb02b256c659644d93524a6be1a88a98"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION",
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.19.13.24": {
+            "asn": "AS64500 (bulletproof hosting)",
+            "category": "Known C2 Endpoint",
+            "harmless_votes": 0,
+            "ip": "198.19.13.24",
+            "malicious_votes": 58,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "portal-signal18.info",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Rhadamanthys infostealer C2",
+            "verdict": "MALICIOUS",
+            "vt_positives": 58,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-C2-INFOSTEALER-06",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "PC-TOR-16",
+        "portal-signal18.info",
+        "10.14.0.10"
+      ],
+      "family_id": "FAM-C2-INFOSTEALER",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 5,
+      "instance_seed": 2665088815418675025,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Infostealer C2 beacon from a workstation [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "PC-TOR-16"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-97581",
+              "comment": "Confirmed Rhadamanthys infostealer C2: PC-TOR-16 (10.14.0.10) beaconed 24 times to portal-signal18.info (198.19.13.24) and ran dropper winlogon_helper.exe (42b7a021552cb9b437f792798b8bc54ecb02b256c659644d93524a6be1a88a98). Host isolated, LT-TOR-94 left untouched, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "portal-signal18.info"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "PC-TOR-16"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "file_hash": "42b7a021552cb9b437f792798b8bc54ecb02b256c659644d93524a6be1a88a98"
+            },
+            "tool": "get_file_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "LT-TOR-94"
+      ],
+      "prompt": "Triage alert CASE-97581: workstation PC-TOR-16 (10.14.0.10, user leila.kowalski) has connected 24 times to portal-signal18.info since 2026-09-27T13:54:00Z, and process winlogon_helper.exe was launched from the user's profile. LT-TOR-94 (10.14.0.224, user lars.qureshi) sits on the same subnet and raised no alerts. [CMDB Asset Context: Host PC-TOR-16 (10.14.0.10), Owner: leila.kowalski, Role: Standard workstation, Blast Radius: Single user; standard containment protocol]. Query threat intelligence, review host telemetry, determine a verdict, and execute containment on the affected host only.",
+      "reference": {
+        "expected_threat_family": "Rhadamanthys",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_domain_report or get_ip_report for portal-signal18.info or 198.19.13.24, identifies Rhadamanthys infostealer C2, executes isolate_host on PC-TOR-16, posts a case comment, and leaves the case open. No credit for closing the case, for isolating LT-TOR-94, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate PC-TOR-16, record the Rhadamanthys C2 finding for portal-signal18.info in CASE-97581, and escalate to Tier 2; leave LT-TOR-94 alone."
+      },
+      "template_sha256": "ea80943589c31e5d6316c25d984b17d6e3380a0dce2d4c33316e43621522c056",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

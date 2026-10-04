@@ -1,0 +1,283 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "BLD-SAO-41",
+          "assets-pool90.xyz"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "BLD-SAO-41",
+        "blast_radius": "Single developer; standard containment, while CI-SAO-48 serves the whole team",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "owner": "leila.mehta"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-16067": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-16067",
+            "comments": [
+              "EDR: sysupdate at 96 percent CPU since 2026-09-01T04:03:00Z; outbound to assets-pool90.xyz port 3333.",
+              "Platform: CI-SAO-48 runs nightly builds and is expected to be busy."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Sustained CPU and stratum traffic from BLD-SAO-41"
+          }
+        },
+        "domains": {
+          "assets-pool90.xyz": {
+            "categories": [
+              "cryptomining",
+              "malware"
+            ],
+            "category": "Cryptocurrency Mining Pool",
+            "created_date": "2026-09-01T04:03:00Z",
+            "domain": "assets-pool90.xyz",
+            "first_seen": "2026-09-01T04:03:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 44,
+            "passive_dns": [
+              "198.19.109.42"
+            ],
+            "registrar": "GoDaddy LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.19.109.42"
+            ],
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-01T04:03:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-41",
+              "ip": "10.15.0.93",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/sysupdate",
+                  "sha256": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+                }
+              },
+              "user": "leila.mehta"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-01T04:03:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-41",
+              "ip": "10.15.0.93"
+            },
+            "target": {
+              "hostname": "assets-pool90.xyz",
+              "ip": "198.19.109.42",
+              "port": 3333
+            }
+          }
+        ],
+        "hashes": {
+          "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "52/72 engines",
+            "filename": "sysupdate",
+            "revocation_date": null,
+            "sha256": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183",
+            "signer": "Unknown",
+            "threat_name": "Cryptominer",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "BLD-SAO-41": {
+            "active_user": "leila.mehta",
+            "criticality_tier": "STANDARD",
+            "hostname": "BLD-SAO-41",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.93",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": "96",
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "cron",
+                  "process": "sysupdate",
+                  "sha256": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+                },
+                {
+                  "destination_domain": "assets-pool90.xyz",
+                  "destination_ip": "198.19.109.42",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "CI-SAO-48": {
+            "active_user": "keiko.nilsen",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-SAO-48",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.191",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": 92,
+                  "event_type": "PROCESS_LAUNCH",
+                  "note": "scheduled nightly build; no external connections",
+                  "parent": "ci-agent",
+                  "process": "make"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.109.42": {
+            "asn": "AS64530 (bulletproof hosting)",
+            "category": "Cryptomining pool",
+            "harmless_votes": 0,
+            "ip": "198.19.109.42",
+            "malicious_votes": 37,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "assets-pool90.xyz",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 37,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "BLD-SAO-41",
+        "assets-pool90.xyz",
+        "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+      ],
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 4,
+      "instance_seed": 8376964649900413962,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Cryptominer on a developer box next to a busy build server [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SAO-41"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "assets-pool90.xyz"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-16067",
+              "comment": "Confirmed cryptominer on BLD-SAO-41 (10.15.0.93, leila.mehta): sysupdate (cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183) at 96 percent CPU with stratum connections to assets-pool90.xyz (198.19.109.42). Host isolated, assets-pool90.xyz blocked, CI-SAO-48 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "domain": "assets-pool90.xyz"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "BLD-SAO-41"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-SAO-48"
+      ],
+      "prompt": "Triage alert CASE-16067: developer box BLD-SAO-41 (10.15.0.93, user leila.mehta) has run process sysupdate (sha256 cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183) at 96 percent CPU since 2026-09-01T04:03:00Z with persistent connections to assets-pool90.xyz on port 3333. Shared build server CI-SAO-48 (10.15.0.191) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SAO-41 (10.15.0.93), Owner: leila.mehta, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SAO-48 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "reference": {
+        "expected_threat_family": "Cryptominer",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183 or get_domain_report for assets-pool90.xyz, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SAO-41 and block_indicator on assets-pool90.xyz, posts a comment, and keeps the case open. No credit for isolate_host on CI-SAO-48 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate BLD-SAO-41, block assets-pool90.xyz, record the finding in CASE-16067, escalate to Tier 2 for root cause, and leave CI-SAO-48 alone."
+      },
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

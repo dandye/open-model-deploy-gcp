@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "WKS-SAO-99",
+          "synccache-drive.com",
+          "legal"
+        ],
+        "must_not_contain": [
+          "confirmed clean",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "WKS-SAO-99",
+        "blast_radius": "Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice",
+        "business_role": "Finance workstation",
+        "criticality": "HIGH",
+        "owner": "ingrid.tanaka"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-54105": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-54105",
+            "comments": [
+              "DLP: 3412 files tagged pricing model uploaded to synccache-drive.com since 2026-09-12T02:17:00Z.",
+              "HR: ingrid.tanaka (Finance) gave notice; last day 2026-09-15T16:56:00Z. Manager nadia.alvarez has not been contacted."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Bulk upload of pricing model from WKS-SAO-99 to synccache-drive.com"
+          }
+        },
+        "domains": {
+          "synccache-drive.com": {
+            "categories": [
+              "file-sharing",
+              "personal-storage"
+            ],
+            "category": "File Storage / Sharing",
+            "created_date": "2018-09-20T00:00:00Z",
+            "domain": "synccache-drive.com",
+            "first_seen": "2018-09-20T00:00:00Z",
+            "harmless_votes": 51,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.214.204"
+            ],
+            "registrar": "NameCheap Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.214.204"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-12T02:17:00Z",
+            "metadata": {
+              "event_type": "FILE_UPLOAD"
+            },
+            "principal": {
+              "hostname": "WKS-SAO-99",
+              "ip": "10.15.0.142",
+              "user": "ingrid.tanaka"
+            },
+            "security_result": {
+              "summary": "3412 files tagged pricing model; DLP policy sensitive-data-egress"
+            },
+            "target": {
+              "hostname": "synccache-drive.com",
+              "ip": "198.19.214.204",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "PC-SAO-76": {
+            "active_user": "nadia.alvarez",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-SAO-76",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.15.0.206",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "WKS-SAO-99": {
+            "active_user": "ingrid.tanaka",
+            "criticality_tier": "HIGH",
+            "hostname": "WKS-SAO-99",
+            "installed_services": [
+              "EDR agent",
+              "Office suite",
+              "DLP agent"
+            ],
+            "ip": "10.15.0.142",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "data_label": "pricing model",
+                  "destination_domain": "synccache-drive.com",
+                  "dlp_policy": "sensitive-data-egress",
+                  "event_type": "FILE_UPLOAD",
+                  "file_count": "3412"
+                },
+                {
+                  "event_type": "USER_LOGIN",
+                  "note": "no malware or process anomalies recorded",
+                  "outcome": "SUCCESS",
+                  "user": "ingrid.tanaka"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_UPLOAD",
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.19.214.204": {
+            "asn": "AS64580 (cloud storage provider)",
+            "category": "Consumer cloud storage",
+            "harmless_votes": 49,
+            "ip": "198.19.214.204",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "synccache-drive.com",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-02",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "WKS-SAO-99",
+        "ingrid.tanaka",
+        "synccache-drive.com"
+      ],
+      "family_id": "FAM-INSIDER-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 1,
+      "instance_seed": 11466011533690741966,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Departing employee uploads sensitive files to personal cloud storage [02]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-54105",
+              "comment": "Suspected insider exfiltration: ingrid.tanaka (Finance, resigned, last day 2026-09-15T16:56:00Z) uploaded 3412 files tagged pricing model from WKS-SAO-99 (10.15.0.142) to personal storage synccache-drive.com (198.19.214.204), a clean consumer service, so this is a data-handling matter rather than malware. Evidence preserved (DLP records and endpoint logs), escalated to HR and legal with the file inventory, legal hold requested; no action visible to the user, PC-SAO-76 not involved, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "WKS-SAO-99"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "domain": "synccache-drive.com"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "query": "ingrid.tanaka"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "prohibited_entities": [
+        "PC-SAO-76",
+        "WKS-SAO-99"
+      ],
+      "prompt": "Triage alert CASE-54105: Finance workstation WKS-SAO-99 (10.15.0.142, user ingrid.tanaka) uploaded 3412 files tagged pricing model to personal cloud storage synccache-drive.com since 2026-09-12T02:17:00Z; HR records show ingrid.tanaka resigned with a last day of 2026-09-15T16:56:00Z. The manager's workstation PC-SAO-76 (10.15.0.206, user nadia.alvarez) appears in the same alert group with no related activity. [CMDB Asset Context: Host WKS-SAO-99 (10.15.0.142), Owner: ingrid.tanaka, Role: Finance workstation, Blast Radius: Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice]. Review the DLP evidence and the destination's reputation, determine the verdict, and record the escalation.",
+      "reference": {
+        "expected_threat_family": "Insider data exfiltration (T1567.002)",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: reviews the DLP evidence (lookup_entity on WKS-SAO-99 or udm_search) and the reputation of synccache-drive.com, treats the upload as suspected insider exfiltration rather than malware, posts a comment that escalates to HR and legal and preserves evidence, and neither isolates WKS-SAO-99 nor closes CASE-54105. No credit for isolate_host on WKS-SAO-99 (it alerts the user and breaks the evidentiary chain) or PC-SAO-76, for close_case, or for labeling the activity malware.",
+        "recommended_action": "Preserve the DLP evidence and endpoint logs for WKS-SAO-99, escalate to HR and legal with the file inventory, request a legal hold, and take no action visible to ingrid.tanaka until HR and legal direct it; leave the case open."
+      },
+      "template_sha256": "344ed44d6a17d6415cb882af3fbfa2c75632fa7a5ca47285aaf9f6b2c1a9e439",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

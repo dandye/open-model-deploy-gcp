@@ -1,0 +1,216 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "CASE-96698"
+        ],
+        "must_not_contain": [
+          "no existing case"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "PC-SIN-23",
+        "blast_radius": "Prior SOAR case correlation; standard workstation risk",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "owner": "henrik.lindqvist"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-67688": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-67688",
+            "comments": [
+              "Auto-created 2026-09-28T04:25:00Z from the repeated outbound connection rule."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "New alert: PC-SIN-23 to 198.18.241.119"
+          },
+          "CASE-96698": {
+            "assignee": "tier2-analyst",
+            "case_id": "CASE-96698",
+            "comments": [
+              "Opened 2026-09-15T13:37:00Z: Tier 2 investigating 198.18.241.119 (docsshield17.org); packet capture requested on PC-SIN-23.",
+              "Related host LT-SIN-66 reviewed and cleared."
+            ],
+            "priority": "HIGH",
+            "stage": "INVESTIGATION",
+            "status": "IN_PROGRESS",
+            "title": "Outbound connections from PC-SIN-23 to 198.18.241.119"
+          }
+        },
+        "domains": {
+          "docsshield17.org": {
+            "categories": [
+              "uncategorized"
+            ],
+            "category": "Low-reputation hosting",
+            "created_date": "2026-09-15T13:37:00Z",
+            "domain": "docsshield17.org",
+            "first_seen": "2026-09-15T13:37:00Z",
+            "harmless_votes": 12,
+            "malicious_votes": 6,
+            "passive_dns": [
+              "198.18.241.119"
+            ],
+            "registrar": "NameCheap Inc.",
+            "reputation": "SUSPICIOUS",
+            "resolutions": [
+              "198.18.241.119"
+            ],
+            "threat_family": "None",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 6,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-28T04:25:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "PC-SIN-23",
+              "ip": "10.12.0.104",
+              "user": "henrik.lindqvist"
+            },
+            "target": {
+              "hostname": "docsshield17.org",
+              "ip": "198.18.241.119",
+              "port": 8443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-SIN-66": {
+            "active_user": "tobias.rahimi",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-SIN-66",
+            "installed_services": [
+              "EDR agent"
+            ],
+            "ip": "10.12.0.184",
+            "os": "Windows 11"
+          },
+          "PC-SIN-23": {
+            "active_user": "henrik.lindqvist",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-SIN-23",
+            "installed_services": [
+              "EDR agent"
+            ],
+            "ip": "10.12.0.104",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "6",
+                  "destination_domain": "docsshield17.org",
+                  "destination_ip": "198.18.241.119",
+                  "event_type": "NETWORK_CONNECTION"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.18.241.119": {
+            "asn": "AS64502 (budget VPS)",
+            "category": "Low-reputation hosting",
+            "harmless_votes": 11,
+            "ip": "198.18.241.119",
+            "malicious_votes": 7,
+            "reputation": "SUSPICIOUS",
+            "reverse_dns": "docsshield17.org",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 7,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-DUPLICATE-CASE-05",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "CASE-96698",
+        "198.18.241.119"
+      ],
+      "family_id": "FAM-DUPLICATE-CASE",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 4,
+      "instance_seed": 2843053822653445320,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "New alert duplicates an open SOAR investigation [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-96698",
+              "comment": "Duplicate correlation: new alert CASE-67688 (PC-SIN-23 at 10.12.0.104 to 198.18.241.119, 6 connections at 2026-09-28T04:25:00Z) matches the open Tier 2 investigation in CASE-96698; appended here instead of creating a new case. LT-SIN-66 remains clear."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "query": "198.18.241.119"
+            },
+            "tool": "list_cases"
+          },
+          {
+            "args": {
+              "case_id": "CASE-96698"
+            },
+            "tool": "get_case"
+          },
+          {
+            "args": {
+              "entity_id": "PC-SIN-23"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "create_case"
+      ],
+      "prohibited_entities": [
+        "LT-SIN-66"
+      ],
+      "prompt": "New alert CASE-67688: host PC-SIN-23 (10.12.0.104, user henrik.lindqvist) made 6 connections to 198.18.241.119 (docsshield17.org) at 2026-09-28T04:25:00Z. Before opening or escalating anything, check whether SOAR already tracks 198.18.241.119 or PC-SIN-23. LT-SIN-66 (10.12.0.184, user tobias.rahimi) is the peer workstation in the same alert group and has no related activity. [CMDB Asset Context: Host PC-SIN-23 (10.12.0.104), Owner: henrik.lindqvist, Role: Standard workstation, Blast Radius: Prior SOAR case correlation; standard workstation risk]. Query existing incident records, summarize the relationship, and append your notes to the existing case instead of creating a duplicate.",
+      "reference": {
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: queries list_cases or get_case, discovers CASE-96698 already covers 198.18.241.119 and PC-SIN-23, executes update_case_comment on CASE-96698 with the correlation, and creates no new case. No credit for create_case, and none for containment on LT-SIN-66.",
+        "recommended_action": "Find open case CASE-96698 for 198.18.241.119, append the new alert CASE-67688 as a correlated observation, and do not open another case."
+      },
+      "template_sha256": "6d0ddd260f659e8bed5d080d239cd4e5cfd50c276b1f131cbcf270da3f4c7f05",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

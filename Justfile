@@ -63,7 +63,10 @@ default:
     @printf "\033[1;33mGEN 5 FAMILY-INSTANCED SOC EVALS (configs/evals/gen5):\033[0m\n"
     @printf "  \033[1;32mjust gen5-build\033[0m                        \033[2mBuild bundles and manifest from the family templates\033[0m\n"
     @printf "  \033[1;32mjust gen5-check\033[0m                        \033[2mLockfile check plus schema and suite tests\033[0m\n"
-    @printf "  \033[1;32mjust gen5-calibrate [trials]\033[0m           \033[2mFour reference policies, gates, GEN5_CALIBRATION.md\033[0m\n\n"
+    @printf "  \033[1;32mjust gen5-calibrate [trials]\033[0m           \033[2mFour reference policies, gates, GEN5_CALIBRATION.md\033[0m\n"
+    @printf "  \033[1;32mjust harbor-soc-gen5-generate [arms]\033[0m  \033[2mGenerate the Gen 5 Harbor tree (validation + final_test)\033[0m\n"
+    @printf "  \033[1;32mjust harbor-soc-gen5-check\033[0m           \033[2mFail on drift between the generator and evals/harbor_soc_gen5\033[0m\n"
+    @printf "  \033[1;32mjust harbor-soc-gen5-test\033[0m            \033[2mGen 5 Harbor layout, isolation, and container oracle tests\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -359,13 +362,25 @@ gke-ray-cleanup NAMESPACE="gemma-benchmarks":
 # Harbor Framework SOC Tier 1 Skills Evaluation Suite (harbor-gke-ext v1.3)
 # ------------------------------------------------------------------------------
 
-# Generate all 30 Harbor SOC task directories (no_skills, clean_skills, noisy_skills) and evals.json
+# Generate the frozen Gen 3 Harbor tree (evals/harbor_soc): 4 arms x 10 cases, plus evals.json
 harbor-soc-generate:
-    @.venv/bin/python3 scripts/generate_harbor_soc_tasks.py
+    @.venv/bin/python3 scripts/generate_harbor_soc_tasks.py --gen3
 
-# Verify all 30 Harbor SOC tasks, SHA-256 environment deduplication, and 100% oracle calibration
+# Verify all 40 Gen 3 Harbor SOC tasks, SHA-256 environment deduplication, and 100% oracle calibration
 harbor-soc-test:
     @.venv/bin/pytest tests/test_harbor_soc_skills.py tests/test_soc_sandbox_cli.py tests/test_verify_harbor_soc.py tests/test_harbor_soc_tasks.py -v
+
+# Generate the Gen 5 Harbor tree (evals/harbor_soc_gen5): default arms clean_skills and gepa_evolved_skills x validation and final_test (Usage: just harbor-soc-gen5-generate ["clean_skills gepa_evolved_skills"])
+harbor-soc-gen5-generate ARMS="clean_skills gepa_evolved_skills":
+    @.venv/bin/python scripts/generate_harbor_soc_tasks.py --arms {{ARMS}}
+
+# Regenerate the Gen 5 Harbor tree into a temp dir and fail on any byte-level drift from the committed tree
+harbor-soc-gen5-check:
+    @.venv/bin/python scripts/generate_harbor_soc_tasks.py --check
+
+# Gen 5 Harbor layout, answer-key isolation, one environment hash, container oracle, --check
+harbor-soc-gen5-test:
+    @.venv/bin/python -m pytest tests/test_harbor_soc_gen5_tasks.py tests/test_gen5_transport_parity.py -q
 
 # ------------------------------------------------------------------------------
 # Gen 5 Family-Instanced SOC Evaluation Suite (configs/evals/gen5)
@@ -375,9 +390,10 @@ harbor-soc-test:
 gen5-build:
     @.venv/bin/python scripts/gen5_instancer.py build
 
-# Verify the committed bundles match the templates, then run the schema and suite tests
+# Verify the committed bundles and the Harbor tree match their generators, then run the schema and suite tests
 gen5-check:
     @.venv/bin/python scripts/gen5_instancer.py check
+    @.venv/bin/python scripts/generate_harbor_soc_tasks.py --check
     @.venv/bin/python -m pytest tests/test_gen5_schema.py tests/test_gen5_suite.py -q
 
 # Run the four Gen 5 reference policies in both transports and apply the spec 8.1 gates (Usage: just gen5-calibrate [trials])

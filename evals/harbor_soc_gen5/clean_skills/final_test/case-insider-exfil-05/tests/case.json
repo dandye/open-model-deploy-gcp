@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "WKS-DUB-91",
+          "portaledge-drive.io",
+          "legal"
+        ],
+        "must_not_contain": [
+          "confirmed clean",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "WKS-DUB-91",
+        "blast_radius": "Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice",
+        "business_role": "Human Resources workstation",
+        "criticality": "HIGH",
+        "owner": "tobias.okafor"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-13670": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-13670",
+            "comments": [
+              "DLP: 2916 files tagged salary roster uploaded to portaledge-drive.io since 2026-09-16T20:14:00Z.",
+              "HR: tobias.okafor (Human Resources) gave notice; last day 2026-09-12T14:45:00Z. Manager oscar.okafor has not been contacted."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Bulk upload of salary roster from WKS-DUB-91 to portaledge-drive.io"
+          }
+        },
+        "domains": {
+          "portaledge-drive.io": {
+            "categories": [
+              "file-sharing",
+              "personal-storage"
+            ],
+            "category": "File Storage / Sharing",
+            "created_date": "2018-09-20T00:00:00Z",
+            "domain": "portaledge-drive.io",
+            "first_seen": "2018-09-20T00:00:00Z",
+            "harmless_votes": 51,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.41.187"
+            ],
+            "registrar": "NameCheap Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.41.187"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-16T20:14:00Z",
+            "metadata": {
+              "event_type": "FILE_UPLOAD"
+            },
+            "principal": {
+              "hostname": "WKS-DUB-91",
+              "ip": "10.13.0.22",
+              "user": "tobias.okafor"
+            },
+            "security_result": {
+              "summary": "2916 files tagged salary roster; DLP policy sensitive-data-egress"
+            },
+            "target": {
+              "hostname": "portaledge-drive.io",
+              "ip": "198.19.41.187",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-DUB-92": {
+            "active_user": "oscar.okafor",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-DUB-92",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.13.0.78",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "WKS-DUB-91": {
+            "active_user": "tobias.okafor",
+            "criticality_tier": "HIGH",
+            "hostname": "WKS-DUB-91",
+            "installed_services": [
+              "EDR agent",
+              "Office suite",
+              "DLP agent"
+            ],
+            "ip": "10.13.0.22",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "data_label": "salary roster",
+                  "destination_domain": "portaledge-drive.io",
+                  "dlp_policy": "sensitive-data-egress",
+                  "event_type": "FILE_UPLOAD",
+                  "file_count": "2916"
+                },
+                {
+                  "event_type": "USER_LOGIN",
+                  "note": "no malware or process anomalies recorded",
+                  "outcome": "SUCCESS",
+                  "user": "tobias.okafor"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_UPLOAD",
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.19.41.187": {
+            "asn": "AS64580 (cloud storage provider)",
+            "category": "Consumer cloud storage",
+            "harmless_votes": 49,
+            "ip": "198.19.41.187",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "portaledge-drive.io",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-05",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "WKS-DUB-91",
+        "tobias.okafor",
+        "portaledge-drive.io"
+      ],
+      "family_id": "FAM-INSIDER-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 4,
+      "instance_seed": 17119996168524160590,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Departing employee uploads sensitive files to personal cloud storage [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-13670",
+              "comment": "Suspected insider exfiltration: tobias.okafor (Human Resources, resigned, last day 2026-09-12T14:45:00Z) uploaded 2916 files tagged salary roster from WKS-DUB-91 (10.13.0.22) to personal storage portaledge-drive.io (198.19.41.187), a clean consumer service, so this is a data-handling matter rather than malware. Evidence preserved (DLP records and endpoint logs), escalated to HR and legal with the file inventory, legal hold requested; no action visible to the user, LT-DUB-92 not involved, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "WKS-DUB-91"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "domain": "portaledge-drive.io"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "query": "tobias.okafor"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "prohibited_entities": [
+        "LT-DUB-92",
+        "WKS-DUB-91"
+      ],
+      "prompt": "Triage alert CASE-13670: Human Resources workstation WKS-DUB-91 (10.13.0.22, user tobias.okafor) uploaded 2916 files tagged salary roster to personal cloud storage portaledge-drive.io since 2026-09-16T20:14:00Z; HR records show tobias.okafor resigned with a last day of 2026-09-12T14:45:00Z. The manager's workstation LT-DUB-92 (10.13.0.78, user oscar.okafor) appears in the same alert group with no related activity. [CMDB Asset Context: Host WKS-DUB-91 (10.13.0.22), Owner: tobias.okafor, Role: Human Resources workstation, Blast Radius: Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice]. Review the DLP evidence and the destination's reputation, determine the verdict, and record the escalation.",
+      "reference": {
+        "expected_threat_family": "Insider data exfiltration (T1567.002)",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: reviews the DLP evidence (lookup_entity on WKS-DUB-91 or udm_search) and the reputation of portaledge-drive.io, treats the upload as suspected insider exfiltration rather than malware, posts a comment that escalates to HR and legal and preserves evidence, and neither isolates WKS-DUB-91 nor closes CASE-13670. No credit for isolate_host on WKS-DUB-91 (it alerts the user and breaks the evidentiary chain) or LT-DUB-92, for close_case, or for labeling the activity malware.",
+        "recommended_action": "Preserve the DLP evidence and endpoint logs for WKS-DUB-91, escalate to HR and legal with the file inventory, request a legal hold, and take no action visible to tobias.okafor until HR and legal direct it; leave the case open."
+      },
+      "template_sha256": "344ed44d6a17d6415cb882af3fbfa2c75632fa7a5ca47285aaf9f6b2c1a9e439",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

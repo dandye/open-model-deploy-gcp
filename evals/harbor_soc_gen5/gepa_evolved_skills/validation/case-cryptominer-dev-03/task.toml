@@ -1,0 +1,62 @@
+version = "1.0"
+schema_version = "1.3"
+
+[task]
+name = "secops/soc-gen5-gepa_evolved_skills-validation-case-cryptominer-dev-03"
+description = "Gen 5 SOC Tier 1 interactive triage, validation split (gepa_evolved_skills arm)"
+categories = ["security", "soc-tier1", "gen5-families", "validation", "gepa_evolved_skills"]
+
+[metadata]
+author_name = "Dan Dye"
+author_email = "dandye@google.com"
+difficulty = "medium"
+difficulty_level = 2
+category = "security-operations"
+tags = ["secops", "soc-tier1", "harbor", "gen5", "gepa_evolved_skills", "validation", "CASE-GEN5-CRYPTOMINER-DEV-03"]
+eval_id = "CASE-GEN5-CRYPTOMINER-DEV-03"
+generation = 5
+family_id = "FAM-CRYPTOMINER-DEV"
+split = "validation"
+case_sha256 = "37798ae8500f51d8bd80897b7073970da03b7bfce69454a8b1119514d97532bf"
+skill_arm = "gepa_evolved_skills"
+asset_criticality = "STANDARD"
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 300.0
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+allow_internet = false
+
+[environment.env]
+SOC_CASE_ID = "CASE-GEN5-CRYPTOMINER-DEV-03"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[agent.env]
+SOC_CASE_ID = "CASE-GEN5-CRYPTOMINER-DEV-03"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[verifier.env]
+SOC_CASE_ID = "CASE-GEN5-CRYPTOMINER-DEV-03"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+SOC_SPLIT = "validation"
+SOC_JEV_BACKEND = "mock"
+
+[solution.env]
+SOC_CASE_ID = "CASE-GEN5-CRYPTOMINER-DEV-03"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"

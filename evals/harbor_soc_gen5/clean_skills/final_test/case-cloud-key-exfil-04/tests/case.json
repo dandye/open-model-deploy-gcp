@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "CKEY-7DE5AC4082AD1585",
+          "rotat"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "analytics-core",
+        "blast_radius": "Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-LON-07 or CI-LON-62 stops neither the download nor the attacker",
+        "business_role": "Production data store for analytics-core",
+        "criticality": "CRITICAL",
+        "owner": "amara.kowalski"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-72677": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-72677",
+            "comments": [
+              "Cloud audit: CKEY-7DE5AC4082AD1585 (project analytics-core) authenticated from 198.18.124.21 and downloaded 773 GB tagged customer export since 2026-09-08T05:13:00Z.",
+              "Platform: the key's expected callers are CI-LON-62 and BAS-LON-07 only; it was issued on 2026-09-25T11:09:00Z by amara.kowalski."
+            ],
+            "priority": "CRITICAL",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Service account key CKEY-7DE5AC4082AD1585 used from external address 198.18.124.21"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-08T05:13:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "ip": "198.18.124.21",
+              "user": "CKEY-7DE5AC4082AD1585"
+            },
+            "security_result": {
+              "summary": "773 GB downloaded; data label customer export"
+            },
+            "target": {
+              "application": "storage.objects.get",
+              "resource": "projects/analytics-core/buckets/exports"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-08T05:13:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "hostname": "CI-LON-62",
+              "ip": "10.16.0.214",
+              "user": "CKEY-7DE5AC4082AD1585"
+            },
+            "security_result": {
+              "summary": "expected deploy traffic"
+            },
+            "target": {
+              "application": "storage.objects.create",
+              "resource": "projects/analytics-core/buckets/artifacts"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "BAS-LON-07": {
+            "active_user": "amara.kowalski",
+            "criticality_tier": "HIGH",
+            "hostname": "BAS-LON-07",
+            "installed_services": [
+              "SSH bastion",
+              "Cloud CLI",
+              "EDR agent"
+            ],
+            "ip": "10.16.0.8",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "created_at": "2026-09-25T11:09:00Z",
+                  "created_by": "amara.kowalski",
+                  "event_type": "CLOUD_KEY_CREATED",
+                  "key_id": "CKEY-7DE5AC4082AD1585",
+                  "project": "analytics-core"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_KEY_CREATED"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "CI-LON-62": {
+            "active_user": "lars.farouk",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-LON-62",
+            "installed_services": [
+              "CI runner",
+              "Deploy agent",
+              "EDR agent"
+            ],
+            "ip": "10.16.0.214",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "CLOUD_API_CALL",
+                  "key_id": "CKEY-7DE5AC4082AD1585",
+                  "method": "storage.objects.create",
+                  "note": "expected caller; deploy artifacts only",
+                  "source_ip": "10.16.0.214"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_API_CALL"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.124.21": {
+            "asn": "AS64570 (anonymizing VPN provider)",
+            "category": "Anonymizing VPN exit / abuse reports",
+            "country": "Unknown",
+            "harmless_votes": 1,
+            "ip": "198.18.124.21",
+            "malicious_votes": 24,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Credential abuse infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 24,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-04",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "CKEY-7DE5AC4082AD1585",
+        "198.18.124.21"
+      ],
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 3,
+      "instance_seed": 8533543600075001837,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Leaked cloud service account key used for bulk download from outside [04]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.18.124.21"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-72677",
+              "comment": "Compromised credential: service account key CKEY-7DE5AC4082AD1585 (project analytics-core) was used from 198.18.124.21, an anonymizing exit with a malicious reputation, to download 773 GB tagged customer export; its only expected callers are CI-LON-62 and BAS-LON-07. 198.18.124.21 blocked, immediate rotation and revocation of CKEY-7DE5AC4082AD1585 requested from the cloud platform team, audit log preserved, escalated to incident response and privacy; BAS-LON-07 and CI-LON-62 left online, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.18.124.21"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "query": "CKEY-7DE5AC4082AD1585"
+            },
+            "tool": "udm_search"
+          },
+          {
+            "args": {
+              "entity_id": "CI-LON-62"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "BAS-LON-07",
+        "CI-LON-62"
+      ],
+      "prompt": "Urgent alert CASE-72677: service account key CKEY-7DE5AC4082AD1585 for cloud project analytics-core authenticated from external address 198.18.124.21 and downloaded 773 GB of objects tagged customer export since 2026-09-08T05:13:00Z. The key was issued on bastion BAS-LON-07 (10.16.0.8) by amara.kowalski and is normally used only by deploy runner CI-LON-62 (10.16.0.214). [CMDB Asset Context: Asset analytics-core storage, Owner: amara.kowalski, Role: Production data store, Blast Radius: Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-LON-07 or CI-LON-62 stops neither the download nor the attacker]. Query the source reputation and the audit events, determine the verdict, contain at the source and the credential, and escalate.",
+      "reference": {
+        "expected_threat_family": "Credential theft and cloud data exfiltration (T1552, T1530)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.18.124.21 and the audit events for CKEY-7DE5AC4082AD1585, recognizes a compromised service account key used from outside its expected callers, executes block_indicator on 198.18.124.21, posts a comment that names rotation of CKEY-7DE5AC4082AD1585 and the escalation, and keeps the case open. No credit for isolate_host on BAS-LON-07 or CI-LON-62, which does not stop an attacker holding the key, or for close_case.",
+        "recommended_action": "Block 198.18.124.21, request immediate rotation and revocation of CKEY-7DE5AC4082AD1585 from the cloud platform team, preserve the audit log, escalate to incident response and privacy, and leave BAS-LON-07 and CI-LON-62 online."
+      },
+      "template_sha256": "ddaa282204594701a2f8c41406b4e9845988ae94147e6ed6ab0ffe0f99e593b9",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

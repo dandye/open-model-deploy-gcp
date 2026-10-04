@@ -1,0 +1,296 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "telemetry-link-verify.org",
+          "rafael.mensah"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "WKS-LON-29",
+        "blast_radius": "Credential harvesting on a standard workstation; sso-assets15.net is the production identity provider",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "owner": "rafael.mensah"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-26427": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-26427",
+            "comments": [
+              "User rafael.mensah reported the message after submitting credentials; amara.mehta received the same message and did not open it."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Phishing report: Benefits enrollment closes today from admin@telemetry-link-verify.org"
+          }
+        },
+        "domains": {
+          "sso-assets15.net": {
+            "categories": [
+              "business",
+              "identity"
+            ],
+            "category": "Identity provider (corporate SSO)",
+            "created_date": "2019-03-12T00:00:00Z",
+            "domain": "sso-assets15.net",
+            "first_seen": "2019-03-12T00:00:00Z",
+            "harmless_votes": 71,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.239.198"
+            ],
+            "registrar": "MarkMonitor Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.239.198"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          },
+          "telemetry-link-verify.org": {
+            "categories": [
+              "phishing"
+            ],
+            "category": "Phishing / credential harvesting",
+            "created_date": "2026-09-25T19:20:00Z",
+            "domain": "telemetry-link-verify.org",
+            "first_seen": "2026-09-25T19:20:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 46,
+            "passive_dns": [
+              "198.19.115.249"
+            ],
+            "registrar": "Porkbun LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.19.115.249"
+            ],
+            "threat_family": "Credential harvesting kit",
+            "verdict": "MALICIOUS",
+            "vt_positives": 46,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-25T19:20:00Z",
+            "metadata": {
+              "event_type": "EMAIL_TRANSACTION"
+            },
+            "network": {
+              "email": {
+                "subject": "Benefits enrollment closes today"
+              }
+            },
+            "principal": {
+              "user": "admin@telemetry-link-verify.org"
+            },
+            "target": {
+              "hostname": "WKS-LON-29",
+              "user": "rafael.mensah"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-25T19:20:00Z",
+            "metadata": {
+              "event_type": "NETWORK_HTTP"
+            },
+            "principal": {
+              "hostname": "WKS-LON-29",
+              "ip": "10.16.0.30",
+              "user": "rafael.mensah"
+            },
+            "target": {
+              "hostname": "telemetry-link-verify.org",
+              "ip": "198.19.115.249",
+              "url": "https://telemetry-link-verify.org/login"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-LON-73": {
+            "active_user": "amara.mehta",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-LON-73",
+            "installed_services": [
+              "EDR agent",
+              "Mail client"
+            ],
+            "ip": "10.16.0.245",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "EMAIL_TRANSACTION",
+                  "note": "message not opened",
+                  "recipient": "amara.mehta",
+                  "sender": "admin@telemetry-link-verify.org",
+                  "subject": "Benefits enrollment closes today"
+                }
+              ],
+              "recent_event_types": [
+                "EMAIL_TRANSACTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "WKS-LON-29": {
+            "active_user": "rafael.mensah",
+            "criticality_tier": "STANDARD",
+            "hostname": "WKS-LON-29",
+            "installed_services": [
+              "EDR agent",
+              "Mail client"
+            ],
+            "ip": "10.16.0.30",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "EMAIL_TRANSACTION",
+                  "recipient": "rafael.mensah",
+                  "sender": "admin@telemetry-link-verify.org",
+                  "subject": "Benefits enrollment closes today"
+                },
+                {
+                  "event_type": "NETWORK_HTTP",
+                  "method": "POST",
+                  "note": "credential form submitted",
+                  "url": "https://telemetry-link-verify.org/login"
+                }
+              ],
+              "recent_event_types": [
+                "EMAIL_TRANSACTION",
+                "NETWORK_HTTP"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.19.115.249": {
+            "asn": "AS64501 (abuse-tolerant hosting)",
+            "category": "Phishing hosting",
+            "harmless_votes": 0,
+            "ip": "198.19.115.249",
+            "malicious_votes": 44,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "telemetry-link-verify.org",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Credential harvesting kit",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          },
+          "198.19.239.198": {
+            "asn": "AS64496 (identity provider)",
+            "category": "Corporate identity provider",
+            "harmless_votes": 70,
+            "ip": "198.19.239.198",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "sso-assets15.net",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "telemetry-link-verify.org",
+        "rafael.mensah"
+      ],
+      "family_id": "FAM-PHISHING-CREDENTIAL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 4,
+      "instance_seed": 18068289004783861064,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Credential-harvesting phishing with a lookalike sign-in page [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "telemetry-link-verify.org"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-26427",
+              "comment": "Credential-harvesting phishing from admin@telemetry-link-verify.org targeted rafael.mensah on WKS-LON-29; telemetry-link-verify.org blocked, credential reset requested for rafael.mensah, sso-assets15.net verified as the legitimate identity provider and left untouched, LT-LON-73 not affected. Case left open for credential review."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "telemetry-link-verify.org"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "domain": "sso-assets15.net"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "WKS-LON-29"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "sso-assets15.net",
+        "LT-LON-73"
+      ],
+      "prompt": "Triage phishing alert CASE-26427: employee rafael.mensah on WKS-LON-29 (10.16.0.30) received an email with subject 'Benefits enrollment closes today' from admin@telemetry-link-verify.org and submitted credentials on a page imitating the corporate sign-in portal sso-assets15.net. LT-LON-73 (10.16.0.245, user amara.mehta) received the same message and did not open it. [CMDB Asset Context: Host WKS-LON-29 (10.16.0.30), Owner: rafael.mensah, Role: Standard workstation, Blast Radius: Credential harvesting on a standard workstation; sso-assets15.net is the production identity provider]. Query indicator reputation, block the malicious infrastructure, document the finding, and leave the legitimate sign-in portal untouched.",
+      "reference": {
+        "expected_threat_family": "Credential harvesting phishing",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_domain_report for telemetry-link-verify.org, identifies credential harvesting, executes block_indicator on telemetry-link-verify.org, posts a case comment naming rafael.mensah for a credential reset, and leaves the case open. No credit for closing the case, for blocking sso-assets15.net, or for isolating LT-LON-73.",
+        "recommended_action": "Block telemetry-link-verify.org, request a credential reset for rafael.mensah, document the finding in CASE-26427, and do not block sso-assets15.net."
+      },
+      "template_sha256": "f98c151fd6cb47a346ecd3a257f03c546e0b322d6684442fdfe7ac3df86af470",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

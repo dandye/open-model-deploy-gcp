@@ -1,0 +1,199 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "PAY-FRA-05",
+          "10.11.0.155"
+        ],
+        "must_not_contain": [
+          "critical malware",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "LOW",
+      "cmdb_context": {
+        "asset_id": "PAY-FRA-05",
+        "blast_radius": "Payment processing for the region; unauthorized isolation halts transactions",
+        "business_role": "Production payment server",
+        "criticality": "LOW",
+        "owner": "nadia.solberg"
+      },
+      "counterfactual_pair_id": "PAIR-02",
+      "difficulty": 1,
+      "environment_state": {
+        "cases": {
+          "CASE-55025": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-55025",
+            "comments": [
+              "IDS: 1219 ports probed on PAY-FRA-05 from 10.11.0.135 since 2026-09-20T14:41:00Z.",
+              "Change calendar: CHG-65525 authorizes the CrowdStrike Spotlight vulnerability scan of the payment segment in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Port scan against PAY-FRA-05 from 10.11.0.135"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-20T14:41:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "SCN-FRA-17",
+              "ip": "10.11.0.135"
+            },
+            "security_result": {
+              "summary": "1219 ports probed; change ticket CHG-65525"
+            },
+            "target": {
+              "hostname": "PAY-FRA-05",
+              "ip": "10.11.0.155"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "PAY-FRA-05": {
+            "active_user": "nadia.solberg",
+            "criticality_tier": "CRITICAL",
+            "hostname": "PAY-FRA-05",
+            "installed_services": [
+              "Payment API",
+              "PostgreSQL",
+              "CrowdStrike Spotlight agent"
+            ],
+            "ip": "10.11.0.155",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "direction": "INBOUND",
+                  "event_type": "NETWORK_CONNECTION",
+                  "note": "matches scheduled scan CHG-65525",
+                  "ports_probed": "1219",
+                  "source_ip": "10.11.0.135"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "SCN-FRA-17": {
+            "active_user": "anika.qureshi",
+            "criticality_tier": "STANDARD",
+            "hostname": "SCN-FRA-17",
+            "installed_services": [
+              "CrowdStrike Spotlight",
+              "Scheduled scan CHG-65525"
+            ],
+            "ip": "10.11.0.135",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "change_ticket": "CHG-65525",
+                  "event_type": "SCAN_STARTED",
+                  "product": "CrowdStrike Spotlight",
+                  "target": "PAY-FRA-05"
+                }
+              ],
+              "recent_event_types": [
+                "SCAN_STARTED"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {},
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "PAY-FRA-05",
+        "10.11.0.155",
+        "SCN-FRA-17"
+      ],
+      "family_id": "FAM-AUTHORIZED-SCANNER",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 4,
+      "instance_seed": 15416507960989142775,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Authorized vulnerability scan against a payment server [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-55025",
+              "comment": "PAY-FRA-05 (10.11.0.155) was scanned by SCN-FRA-17 (10.11.0.135), the CrowdStrike Spotlight scanner authorized by change ticket CHG-65525 for this window; the host runs the CrowdStrike Spotlight agent and shows no other anomalies. Verdict BENIGN: authorized vulnerability scan, no isolation, closing CASE-55025."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-55025",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "PAY-FRA-05"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "entity_id": "SCN-FRA-17"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "ip": "10.11.0.135"
+            },
+            "tool": "get_ip_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host"
+      ],
+      "prohibited_entities": [
+        "SCN-FRA-17",
+        "PAY-FRA-05"
+      ],
+      "prompt": "Triage alert CASE-55025: payment server PAY-FRA-05 (10.11.0.155) is receiving high-volume port scanning (1219 ports since 2026-09-20T14:41:00Z) from internal host SCN-FRA-17 (10.11.0.135). [CMDB Asset Context: Host PAY-FRA-05 (10.11.0.155), Owner: nadia.solberg, Role: Production payment server, Blast Radius: Payment processing for the region; unauthorized isolation halts transactions]. Check the asset's services and the scan source, determine whether this is authorized maintenance or reconnaissance, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (authorized vulnerability scan)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: inspects PAY-FRA-05 or SCN-FRA-17 with lookup_entity, recognizes the CrowdStrike Spotlight scanner and change ticket CHG-65525, posts a verification comment, closes the case as BENIGN, and performs no isolation. No credit for isolate_host on PAY-FRA-05 or SCN-FRA-17, or for a verdict issued without a lookup.",
+        "recommended_action": "Confirm that SCN-FRA-17 is the CrowdStrike Spotlight scanner authorized by CHG-65525, post the verification comment, close CASE-55025, and do not isolate PAY-FRA-05 or SCN-FRA-17."
+      },
+      "template_sha256": "aa1435c737d54c85701c7d9cb5a550ff8e7f1aedaa84ef145594a492625ffb7f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "CKEY-127FD7992EC7D9F0",
+          "rotat"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "customer-vault",
+        "blast_radius": "Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-DUB-86 or CI-DUB-61 stops neither the download nor the attacker",
+        "business_role": "Production data store for customer-vault",
+        "criticality": "CRITICAL",
+        "owner": "kwame.nwosu"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-48409": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-48409",
+            "comments": [
+              "Cloud audit: CKEY-127FD7992EC7D9F0 (project customer-vault) authenticated from 198.18.112.126 and downloaded 114 GB tagged pricing model since 2026-09-25T05:10:00Z.",
+              "Platform: the key's expected callers are CI-DUB-61 and BAS-DUB-86 only; it was issued on 2026-09-15T00:01:00Z by kwame.nwosu."
+            ],
+            "priority": "CRITICAL",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Service account key CKEY-127FD7992EC7D9F0 used from external address 198.18.112.126"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-25T05:10:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "ip": "198.18.112.126",
+              "user": "CKEY-127FD7992EC7D9F0"
+            },
+            "security_result": {
+              "summary": "114 GB downloaded; data label pricing model"
+            },
+            "target": {
+              "application": "storage.objects.get",
+              "resource": "projects/customer-vault/buckets/exports"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-25T05:10:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "hostname": "CI-DUB-61",
+              "ip": "10.13.0.250",
+              "user": "CKEY-127FD7992EC7D9F0"
+            },
+            "security_result": {
+              "summary": "expected deploy traffic"
+            },
+            "target": {
+              "application": "storage.objects.create",
+              "resource": "projects/customer-vault/buckets/artifacts"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "BAS-DUB-86": {
+            "active_user": "kwame.nwosu",
+            "criticality_tier": "HIGH",
+            "hostname": "BAS-DUB-86",
+            "installed_services": [
+              "SSH bastion",
+              "Cloud CLI",
+              "EDR agent"
+            ],
+            "ip": "10.13.0.43",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "created_at": "2026-09-15T00:01:00Z",
+                  "created_by": "kwame.nwosu",
+                  "event_type": "CLOUD_KEY_CREATED",
+                  "key_id": "CKEY-127FD7992EC7D9F0",
+                  "project": "customer-vault"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_KEY_CREATED"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "CI-DUB-61": {
+            "active_user": "jonas.rahimi",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-DUB-61",
+            "installed_services": [
+              "CI runner",
+              "Deploy agent",
+              "EDR agent"
+            ],
+            "ip": "10.13.0.250",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "CLOUD_API_CALL",
+                  "key_id": "CKEY-127FD7992EC7D9F0",
+                  "method": "storage.objects.create",
+                  "note": "expected caller; deploy artifacts only",
+                  "source_ip": "10.13.0.250"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_API_CALL"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.112.126": {
+            "asn": "AS64570 (anonymizing VPN provider)",
+            "category": "Anonymizing VPN exit / abuse reports",
+            "country": "Unknown",
+            "harmless_votes": 1,
+            "ip": "198.18.112.126",
+            "malicious_votes": 24,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Credential abuse infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 24,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-03",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "CKEY-127FD7992EC7D9F0",
+        "198.18.112.126"
+      ],
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 2,
+      "instance_seed": 16119518974371937184,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Leaked cloud service account key used for bulk download from outside [03]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.18.112.126"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-48409",
+              "comment": "Compromised credential: service account key CKEY-127FD7992EC7D9F0 (project customer-vault) was used from 198.18.112.126, an anonymizing exit with a malicious reputation, to download 114 GB tagged pricing model; its only expected callers are CI-DUB-61 and BAS-DUB-86. 198.18.112.126 blocked, immediate rotation and revocation of CKEY-127FD7992EC7D9F0 requested from the cloud platform team, audit log preserved, escalated to incident response and privacy; BAS-DUB-86 and CI-DUB-61 left online, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.18.112.126"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "query": "CKEY-127FD7992EC7D9F0"
+            },
+            "tool": "udm_search"
+          },
+          {
+            "args": {
+              "entity_id": "CI-DUB-61"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "BAS-DUB-86",
+        "CI-DUB-61"
+      ],
+      "prompt": "Urgent alert CASE-48409: service account key CKEY-127FD7992EC7D9F0 for cloud project customer-vault authenticated from external address 198.18.112.126 and downloaded 114 GB of objects tagged pricing model since 2026-09-25T05:10:00Z. The key was issued on bastion BAS-DUB-86 (10.13.0.43) by kwame.nwosu and is normally used only by deploy runner CI-DUB-61 (10.13.0.250). [CMDB Asset Context: Asset customer-vault storage, Owner: kwame.nwosu, Role: Production data store, Blast Radius: Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-DUB-86 or CI-DUB-61 stops neither the download nor the attacker]. Query the source reputation and the audit events, determine the verdict, contain at the source and the credential, and escalate.",
+      "reference": {
+        "expected_threat_family": "Credential theft and cloud data exfiltration (T1552, T1530)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.18.112.126 and the audit events for CKEY-127FD7992EC7D9F0, recognizes a compromised service account key used from outside its expected callers, executes block_indicator on 198.18.112.126, posts a comment that names rotation of CKEY-127FD7992EC7D9F0 and the escalation, and keeps the case open. No credit for isolate_host on BAS-DUB-86 or CI-DUB-61, which does not stop an attacker holding the key, or for close_case.",
+        "recommended_action": "Block 198.18.112.126, request immediate rotation and revocation of CKEY-127FD7992EC7D9F0 from the cloud platform team, preserve the audit log, escalate to incident response and privacy, and leave BAS-DUB-86 and CI-DUB-61 online."
+      },
+      "template_sha256": "ddaa282204594701a2f8c41406b4e9845988ae94147e6ed6ab0ffe0f99e593b9",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

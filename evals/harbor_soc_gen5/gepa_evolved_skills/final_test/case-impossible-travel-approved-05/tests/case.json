@@ -1,0 +1,236 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.19.192.199",
+          "TRV-52274"
+        ],
+        "must_not_contain": [
+          "account compromised",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "WKS-FRA-78",
+        "blast_radius": "Single user; check travel registration before acting",
+        "business_role": "Standard office workstation",
+        "criticality": "STANDARD",
+        "owner": "theo.solberg"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-39729": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-39729",
+            "comments": [
+              "Identity monitor: token refresh from WKS-FRA-78 in Sao Paulo, BR followed 46 minutes later by a VPN login from 198.19.192.199 (Toronto, CA) at 2026-09-01T06:25:00Z; MFA satisfied on both.",
+              "Travel desk: TRV-52274 registers theo.solberg in Toronto, CA this week."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Impossible travel for theo.solberg: Sao Paulo, BR to Toronto, CA in 46 minutes"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-01T06:25:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "WKS-FRA-78",
+              "ip": "10.11.0.97",
+              "location": "Sao Paulo, BR",
+              "user": "theo.solberg"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "token refresh"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-01T06:25:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.19.192.199",
+              "location": "Toronto, CA",
+              "user": "theo.solberg"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "interactive VPN login; MFA satisfied; travel registration TRV-52274"
+            },
+            "target": {
+              "hostname": "GW-FRA-96",
+              "ip": "10.11.0.246"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "GW-FRA-96": {
+            "active_user": "lars.becker",
+            "criticality_tier": "HIGH",
+            "hostname": "GW-FRA-96",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.11.0.246",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Toronto, CA",
+                  "mfa": "SATISFIED",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.19.192.199",
+                  "travel_registration": "TRV-52274",
+                  "user": "theo.solberg"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "WKS-FRA-78": {
+            "active_user": "theo.solberg",
+            "criticality_tier": "STANDARD",
+            "hostname": "WKS-FRA-78",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.11.0.97",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Sao Paulo, BR",
+                  "logon_type": "token_refresh",
+                  "note": "docked workstation; no interactive session",
+                  "outcome": "SUCCESS",
+                  "user": "theo.solberg"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.192.199": {
+            "asn": "AS64560 (hospitality ISP)",
+            "category": "Hotel / conference network egress",
+            "country": "Toronto, CA",
+            "harmless_votes": 22,
+            "ip": "198.19.192.199",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-05",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "theo.solberg",
+        "198.19.192.199",
+        "TRV-52274"
+      ],
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 4,
+      "instance_seed": 3931567245688782605,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Impossible travel alert explained by registered travel and a docked workstation [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-39729",
+              "comment": "Impossible travel explained: the Sao Paulo, BR event is a token refresh from the docked office workstation WKS-FRA-78 (10.11.0.97), and the Toronto, CA login from 198.19.192.199 through GW-FRA-96 matches travel registration TRV-52274 for theo.solberg with MFA satisfied; 198.19.192.199 is a clean hospitality egress. Verdict BENIGN, no block or isolation, closing CASE-39729."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-39729",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.19.192.199"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "GW-FRA-96"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "TRV-52274"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "GW-FRA-96",
+        "WKS-FRA-78"
+      ],
+      "prompt": "Triage alert CASE-39729: identity monitoring flagged impossible travel for theo.solberg: a session refresh from office workstation WKS-FRA-78 (10.11.0.97) in Sao Paulo, BR and, 46 minutes later at 2026-09-01T06:25:00Z, an interactive VPN login from 198.19.192.199 in Toronto, CA through gateway GW-FRA-96 (10.11.0.246). Both satisfied MFA. [CMDB Asset Context: Host WKS-FRA-78 (10.11.0.97), Owner: theo.solberg, Role: Standard office workstation, Blast Radius: Single user; check travel registration before acting]. Query the source address, the travel record, and the gateway telemetry, determine whether the account is compromised, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (registered travel)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.19.192.199 and the case or gateway record showing TRV-52274, explains the pair of events (token refresh plus registered travel with MFA), posts a comment citing TRV-52274, and closes the case as BENIGN with no containment. No credit for isolate_host on WKS-FRA-78 or GW-FRA-96, for block_indicator on 198.19.192.199, or for a verdict issued without a lookup.",
+        "recommended_action": "Match the Toronto, CA login to travel registration TRV-52274, attribute the Sao Paulo, BR event to the docked workstation's token refresh, record the finding, and close CASE-39729 without blocking 198.19.192.199 or isolating anything."
+      },
+      "template_sha256": "7728f1ed9a1c7989df182a74b20e16eca038b2d04bb652d77be7503c6c2803a8",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

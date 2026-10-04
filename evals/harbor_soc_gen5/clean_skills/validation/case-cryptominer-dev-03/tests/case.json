@@ -1,0 +1,283 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "BLD-SAO-51",
+          "link-pool35.xyz"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "BLD-SAO-51",
+        "blast_radius": "Single developer; standard containment, while CI-SAO-06 serves the whole team",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "owner": "caleb.hartmann"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-65402": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-65402",
+            "comments": [
+              "EDR: kdevtmpfsi at 95 percent CPU since 2026-09-19T14:43:00Z; outbound to link-pool35.xyz port 3333.",
+              "Platform: CI-SAO-06 runs nightly builds and is expected to be busy."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Sustained CPU and stratum traffic from BLD-SAO-51"
+          }
+        },
+        "domains": {
+          "link-pool35.xyz": {
+            "categories": [
+              "cryptomining",
+              "malware"
+            ],
+            "category": "Cryptocurrency Mining Pool",
+            "created_date": "2026-09-19T14:43:00Z",
+            "domain": "link-pool35.xyz",
+            "first_seen": "2026-09-19T14:43:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 44,
+            "passive_dns": [
+              "198.19.89.249"
+            ],
+            "registrar": "GoDaddy LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.19.89.249"
+            ],
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-19T14:43:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-51",
+              "ip": "10.15.0.124",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/kdevtmpfsi",
+                  "sha256": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+                }
+              },
+              "user": "caleb.hartmann"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-19T14:43:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-51",
+              "ip": "10.15.0.124"
+            },
+            "target": {
+              "hostname": "link-pool35.xyz",
+              "ip": "198.19.89.249",
+              "port": 3333
+            }
+          }
+        ],
+        "hashes": {
+          "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "52/72 engines",
+            "filename": "kdevtmpfsi",
+            "revocation_date": null,
+            "sha256": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34",
+            "signer": "Unknown",
+            "threat_name": "Cryptominer",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "BLD-SAO-51": {
+            "active_user": "caleb.hartmann",
+            "criticality_tier": "STANDARD",
+            "hostname": "BLD-SAO-51",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.124",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": "95",
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "cron",
+                  "process": "kdevtmpfsi",
+                  "sha256": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+                },
+                {
+                  "destination_domain": "link-pool35.xyz",
+                  "destination_ip": "198.19.89.249",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "CI-SAO-06": {
+            "active_user": "elias.nilsen",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-SAO-06",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.74",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": 92,
+                  "event_type": "PROCESS_LAUNCH",
+                  "note": "scheduled nightly build; no external connections",
+                  "parent": "ci-agent",
+                  "process": "make"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.89.249": {
+            "asn": "AS64530 (bulletproof hosting)",
+            "category": "Cryptomining pool",
+            "harmless_votes": 0,
+            "ip": "198.19.89.249",
+            "malicious_votes": 37,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "link-pool35.xyz",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 37,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "BLD-SAO-51",
+        "link-pool35.xyz",
+        "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+      ],
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 2,
+      "instance_seed": 11172935683786949086,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Cryptominer on a developer box next to a busy build server [03]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SAO-51"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "link-pool35.xyz"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-65402",
+              "comment": "Confirmed cryptominer on BLD-SAO-51 (10.15.0.124, caleb.hartmann): kdevtmpfsi (c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34) at 95 percent CPU with stratum connections to link-pool35.xyz (198.19.89.249). Host isolated, link-pool35.xyz blocked, CI-SAO-06 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "domain": "link-pool35.xyz"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "BLD-SAO-51"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-SAO-06"
+      ],
+      "prompt": "Triage alert CASE-65402: developer box BLD-SAO-51 (10.15.0.124, user caleb.hartmann) has run process kdevtmpfsi (sha256 c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34) at 95 percent CPU since 2026-09-19T14:43:00Z with persistent connections to link-pool35.xyz on port 3333. Shared build server CI-SAO-06 (10.15.0.74) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SAO-51 (10.15.0.124), Owner: caleb.hartmann, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SAO-06 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "reference": {
+        "expected_threat_family": "Cryptominer",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34 or get_domain_report for link-pool35.xyz, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SAO-51 and block_indicator on link-pool35.xyz, posts a comment, and keeps the case open. No credit for isolate_host on CI-SAO-06 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate BLD-SAO-51, block link-pool35.xyz, record the finding in CASE-65402, escalate to Tier 2 for root cause, and leave CI-SAO-06 alone."
+      },
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

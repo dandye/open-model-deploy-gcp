@@ -1,0 +1,62 @@
+version = "1.0"
+schema_version = "1.3"
+
+[task]
+name = "secops/soc-gen5-gepa_evolved_skills-final_test-case-supplychain-revoked-cert-06"
+description = "Gen 5 SOC Tier 1 interactive triage, final_test split (gepa_evolved_skills arm)"
+categories = ["security", "soc-tier1", "gen5-families", "final_test", "gepa_evolved_skills"]
+
+[metadata]
+author_name = "Dan Dye"
+author_email = "dandye@google.com"
+difficulty = "hard"
+difficulty_level = 3
+category = "security-operations"
+tags = ["secops", "soc-tier1", "harbor", "gen5", "gepa_evolved_skills", "final_test", "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06"]
+eval_id = "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06"
+generation = 5
+family_id = "FAM-SUPPLYCHAIN-REVOKED-CERT"
+split = "final_test"
+case_sha256 = "45cb5b09a4ea734d0a991e728a79793c6a3f2a3d0ecd14cb19b86e03769b169e"
+skill_arm = "gepa_evolved_skills"
+asset_criticality = "HIGH"
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 300.0
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+allow_internet = false
+
+[environment.env]
+SOC_CASE_ID = "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[agent.env]
+SOC_CASE_ID = "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[verifier.env]
+SOC_CASE_ID = "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+SOC_SPLIT = "final_test"
+SOC_JEV_BACKEND = "mock"
+
+[solution.env]
+SOC_CASE_ID = "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06"
+SOC_SKILL_ARM = "gepa_evolved_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"

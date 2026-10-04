@@ -1,0 +1,232 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "cdn82.stream-cloud.net",
+          "CHG-56911"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "APP-DUB-48",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "owner": "elias.iyer"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-64791": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-64791",
+            "comments": [
+              "NDR: new external destination cdn82.stream-cloud.net contacted every 124 seconds since 2026-09-27T01:57:00Z.",
+              "Change calendar: CHG-56911 deployed the Zendesk connector on APP-DUB-48 in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Periodic outbound connections from APP-DUB-48 to new domain cdn82.stream-cloud.net"
+          }
+        },
+        "domains": {
+          "cdn82.stream-cloud.net": {
+            "categories": [
+              "saas",
+              "business"
+            ],
+            "category": "Business Software / SaaS",
+            "created_date": "2021-06-02T00:00:00Z",
+            "domain": "cdn82.stream-cloud.net",
+            "first_seen": "2021-06-02T00:00:00Z",
+            "harmless_votes": 58,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.18.124.53"
+            ],
+            "registrar": "PDR Ltd.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.18.124.53"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-27T01:57:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-DUB-48",
+              "ip": "10.13.0.75"
+            },
+            "security_result": {
+              "summary": "periodic connection every 124 seconds; change CHG-56911"
+            },
+            "target": {
+              "hostname": "cdn82.stream-cloud.net",
+              "ip": "198.18.124.53",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "APP-DUB-09": {
+            "active_user": "zara.tanaka",
+            "criticality_tier": "HIGH",
+            "hostname": "APP-DUB-09",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "ip": "10.13.0.57",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "APP-DUB-48": {
+            "active_user": "elias.iyer",
+            "criticality_tier": "STANDARD",
+            "hostname": "APP-DUB-48",
+            "installed_services": [
+              "Integration service (Zendesk connector)",
+              "EDR agent"
+            ],
+            "ip": "10.13.0.75",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "destination_domain": "cdn82.stream-cloud.net",
+                  "destination_ip": "198.18.124.53",
+                  "event_type": "NETWORK_CONNECTION",
+                  "interval_seconds": "124",
+                  "note": "connector deployed under CHG-56911",
+                  "port": 443
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.124.53": {
+            "asn": "AS64540 (Zendesk)",
+            "category": "SaaS provider (Zendesk)",
+            "harmless_votes": 52,
+            "ip": "198.18.124.53",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "cdn82.stream-cloud.net",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "APP-DUB-48",
+        "cdn82.stream-cloud.net",
+        "CHG-56911"
+      ],
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 4,
+      "instance_seed": 6369669290311728095,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-64791",
+              "comment": "APP-DUB-48 (10.13.0.75) contacts cdn82.stream-cloud.net (198.18.124.53) every 124 seconds because change CHG-56911 deployed the Zendesk connector in this window; the domain and IP are clean and registered to Zendesk. Verdict BENIGN: sanctioned integration, no containment, APP-DUB-09 untouched, closing CASE-64791."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-64791",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "cdn82.stream-cloud.net"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "APP-DUB-48"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "CHG-56911"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "APP-DUB-09",
+        "cdn82.stream-cloud.net"
+      ],
+      "prompt": "Triage alert CASE-64791: application server APP-DUB-48 (10.13.0.75) began contacting the previously unseen domain cdn82.stream-cloud.net every 124 seconds at 2026-09-27T01:57:00Z, which the network detection flagged as beaconing. Database server APP-DUB-09 (10.13.0.57) is listed as a connected asset. [CMDB Asset Context: Host APP-DUB-48 (10.13.0.75), Owner: elias.iyer, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_domain_report for cdn82.stream-cloud.net or lookup_entity for APP-DUB-48, finds the clean Zendesk reputation and change ticket CHG-56911, posts a comment citing CHG-56911, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-DUB-48 or APP-DUB-09, for block_indicator on cdn82.stream-cloud.net, or for a verdict issued without a lookup.",
+        "recommended_action": "Match cdn82.stream-cloud.net to the Zendesk connector deployed under CHG-56911, record the change reference in CASE-64791, close the case, and block or isolate nothing."
+      },
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

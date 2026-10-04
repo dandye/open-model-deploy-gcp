@@ -1,0 +1,255 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "gateway-drive68.info",
+          "LT-LON-06"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "LT-LON-06",
+        "blast_radius": "Single user; standard containment protocol",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "owner": "sofia.solberg"
+      },
+      "counterfactual_pair_id": "PAIR-01",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-16547": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-16547",
+            "comments": [
+              "Auto-created from the EDR beaconing detection; 96 connections since 2026-09-15T10:41:00Z."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Repeated connections from LT-LON-06 to gateway-drive68.info"
+          }
+        },
+        "domains": {
+          "gateway-drive68.info": {
+            "categories": [
+              "malware",
+              "command-and-control"
+            ],
+            "category": "Command and Control",
+            "created_date": "2026-09-15T10:41:00Z",
+            "domain": "gateway-drive68.info",
+            "first_seen": "2026-09-15T10:41:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 61,
+            "passive_dns": [
+              "198.18.109.32"
+            ],
+            "registrar": "MarkMonitor Inc.",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.18.109.32"
+            ],
+            "threat_family": "Lumma",
+            "verdict": "MALICIOUS",
+            "vt_positives": 61,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-15T10:41:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "LT-LON-06",
+              "ip": "10.16.0.172",
+              "user": "sofia.solberg"
+            },
+            "target": {
+              "hostname": "gateway-drive68.info",
+              "ip": "198.18.109.32",
+              "port": 443
+            }
+          },
+          {
+            "event_timestamp": "2026-09-15T10:41:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "LT-LON-06",
+              "process": {
+                "file": {
+                  "full_path": "msdtc_srv.exe",
+                  "sha256": "61d69e089292a1c7fdb831f98fc40cc11e482fd61736dedaa9c1057838a5c02b"
+                }
+              }
+            }
+          }
+        ],
+        "hashes": {
+          "61d69e089292a1c7fdb831f98fc40cc11e482fd61736dedaa9c1057838a5c02b": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "57/72 engines",
+            "filename": "msdtc_srv.exe",
+            "revocation_date": null,
+            "sha256": "61d69e089292a1c7fdb831f98fc40cc11e482fd61736dedaa9c1057838a5c02b",
+            "signer": "Unknown",
+            "threat_name": "Lumma dropper",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 57,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "LT-LON-06": {
+            "active_user": "sofia.solberg",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-LON-06",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.16.0.172",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "96",
+                  "destination_domain": "gateway-drive68.info",
+                  "destination_ip": "198.18.109.32",
+                  "event_type": "NETWORK_CONNECTION"
+                },
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "explorer.exe",
+                  "process": "msdtc_srv.exe",
+                  "sha256": "61d69e089292a1c7fdb831f98fc40cc11e482fd61736dedaa9c1057838a5c02b"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION",
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "PC-LON-78": {
+            "active_user": "theo.mansour",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-LON-78",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.16.0.246",
+            "os": "Windows 11"
+          }
+        },
+        "ips": {
+          "198.18.109.32": {
+            "asn": "AS64500 (bulletproof hosting)",
+            "category": "Known C2 Endpoint",
+            "harmless_votes": 0,
+            "ip": "198.18.109.32",
+            "malicious_votes": 58,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "gateway-drive68.info",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Lumma infostealer C2",
+            "verdict": "MALICIOUS",
+            "vt_positives": 58,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-C2-INFOSTEALER-05",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "LT-LON-06",
+        "gateway-drive68.info",
+        "10.16.0.172"
+      ],
+      "family_id": "FAM-C2-INFOSTEALER",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 4,
+      "instance_seed": 2003343692023785056,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Infostealer C2 beacon from a workstation [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "LT-LON-06"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-16547",
+              "comment": "Confirmed Lumma infostealer C2: LT-LON-06 (10.16.0.172) beaconed 96 times to gateway-drive68.info (198.18.109.32) and ran dropper msdtc_srv.exe (61d69e089292a1c7fdb831f98fc40cc11e482fd61736dedaa9c1057838a5c02b). Host isolated, PC-LON-78 left untouched, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "gateway-drive68.info"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "LT-LON-06"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "file_hash": "61d69e089292a1c7fdb831f98fc40cc11e482fd61736dedaa9c1057838a5c02b"
+            },
+            "tool": "get_file_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "PC-LON-78"
+      ],
+      "prompt": "Triage alert CASE-16547: workstation LT-LON-06 (10.16.0.172, user sofia.solberg) has connected 96 times to gateway-drive68.info since 2026-09-15T10:41:00Z, and process msdtc_srv.exe was launched from the user's profile. PC-LON-78 (10.16.0.246, user theo.mansour) sits on the same subnet and raised no alerts. [CMDB Asset Context: Host LT-LON-06 (10.16.0.172), Owner: sofia.solberg, Role: Standard workstation, Blast Radius: Single user; standard containment protocol]. Query threat intelligence, review host telemetry, determine a verdict, and execute containment on the affected host only.",
+      "reference": {
+        "expected_threat_family": "Lumma",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_domain_report or get_ip_report for gateway-drive68.info or 198.18.109.32, identifies Lumma infostealer C2, executes isolate_host on LT-LON-06, posts a case comment, and leaves the case open. No credit for closing the case, for isolating PC-LON-78, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate LT-LON-06, record the Lumma C2 finding for gateway-drive68.info in CASE-16547, and escalate to Tier 2; leave PC-LON-78 alone."
+      },
+      "template_sha256": "ea80943589c31e5d6316c25d984b17d6e3380a0dce2d4c33316e43621522c056",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

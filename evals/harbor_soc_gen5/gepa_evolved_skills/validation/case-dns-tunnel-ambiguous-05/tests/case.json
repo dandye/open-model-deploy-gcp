@@ -1,0 +1,260 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "proxy-hub.mesh-edge17.com",
+          "LT-SIN-47"
+        ],
+        "must_not_contain": [
+          "confirmed clean",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "LT-SIN-47",
+        "blast_radius": "Isolation halts the earnings close; do NOT isolate without confirmed command-and-control evidence",
+        "business_role": "Critical executive workstation during quarterly close",
+        "criticality": "CRITICAL",
+        "owner": "jonas.tanaka"
+      },
+      "counterfactual_pair_id": "PAIR-01",
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-76801": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-76801",
+            "comments": [
+              "Auto-created from the DNS anomaly detection: 1343 TXT queries since 2026-09-02T00:41:00Z.",
+              "Finance: jonas.tanaka is the CFO; the quarterly close runs through this week."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "High-frequency DNS TXT lookups from LT-SIN-47 to proxy-hub.mesh-edge17.com"
+          }
+        },
+        "domains": {
+          "proxy-hub.mesh-edge17.com": {
+            "categories": [
+              "cdn",
+              "uncategorized"
+            ],
+            "category": "Content Delivery / Uncategorized",
+            "created_date": "2026-09-02T00:41:00Z",
+            "domain": "proxy-hub.mesh-edge17.com",
+            "first_seen": "2026-09-02T00:41:00Z",
+            "harmless_votes": 9,
+            "malicious_votes": 3,
+            "passive_dns": [
+              "198.18.122.186"
+            ],
+            "registrar": "Porkbun LLC",
+            "reputation": "SUSPICIOUS",
+            "resolutions": [
+              "198.18.122.186"
+            ],
+            "threat_family": "Possible DNS tunneling (unconfirmed)",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 3,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-02T00:41:00Z",
+            "metadata": {
+              "event_type": "NETWORK_DNS"
+            },
+            "network": {
+              "dns": {
+                "questions": [
+                  {
+                    "name": "proxy-hub.mesh-edge17.com",
+                    "type": "TXT"
+                  }
+                ]
+              }
+            },
+            "principal": {
+              "hostname": "LT-SIN-47",
+              "ip": "10.12.0.99",
+              "user": "jonas.tanaka"
+            },
+            "security_result": {
+              "summary": "1343 TXT queries"
+            },
+            "target": {
+              "ip": "198.18.122.186"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-02T00:41:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "LT-SIN-04",
+              "ip": "10.12.0.128",
+              "user": "yara.mehta"
+            },
+            "security_result": {
+              "action": "ALLOW"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-SIN-04": {
+            "active_user": "yara.mehta",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-SIN-04",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.12.0.128",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": 41,
+                  "event_type": "NETWORK_DNS",
+                  "note": "ordinary name resolution",
+                  "record_type": "A"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_DNS"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "LT-SIN-47": {
+            "active_user": "jonas.tanaka",
+            "criticality_tier": "CRITICAL",
+            "hostname": "LT-SIN-47",
+            "installed_services": [
+              "EDR agent",
+              "Office suite",
+              "Finance ERP client"
+            ],
+            "ip": "10.12.0.99",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "1343",
+                  "event_type": "NETWORK_DNS",
+                  "note": "no matching process anomaly",
+                  "query": "proxy-hub.mesh-edge17.com",
+                  "record_type": "TXT"
+                },
+                {
+                  "event_type": "USER_LOGIN",
+                  "outcome": "SUCCESS",
+                  "user": "jonas.tanaka"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_DNS",
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.18.122.186": {
+            "asn": "AS64510 (Northwind Tools CDN)",
+            "category": "CDN edge (shared hosting)",
+            "harmless_votes": 14,
+            "ip": "198.18.122.186",
+            "malicious_votes": 1,
+            "reputation": "UNKNOWN",
+            "reverse_dns": "proxy-hub.mesh-edge17.com",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "UNKNOWN",
+            "vt_positives": 1,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "proxy-hub.mesh-edge17.com",
+        "LT-SIN-47"
+      ],
+      "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 4,
+      "instance_seed": 7284287796111069211,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Ambiguous DNS TXT tunneling on an executive workstation [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-76801",
+              "comment": "Suspicious but unconfirmed: LT-SIN-47 (10.12.0.99, jonas.tanaka) sent 1343 TXT queries to proxy-hub.mesh-edge17.com (198.18.122.186), which 3 of 72 engines flag and which sits on shared Northwind Tools CDN space. No process or command-and-control corroboration. Requesting packet capture and enhanced DNS monitoring, escalating to Tier 2; host left online given the quarterly close, LT-SIN-04 unaffected, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "proxy-hub.mesh-edge17.com"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "LT-SIN-47"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "ip": "198.18.122.186"
+            },
+            "tool": "get_ip_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "LT-SIN-04"
+      ],
+      "prompt": "Triage alert CASE-76801: finance workstation LT-SIN-47 (10.12.0.99, user jonas.tanaka, the CFO) has issued 1343 DNS TXT lookups to proxy-hub.mesh-edge17.com since 2026-09-02T00:41:00Z, during the quarterly earnings close. Neighboring workstation LT-SIN-04 (10.12.0.128, user yara.mehta) resolves ordinary names only. [CMDB Asset Context: Host LT-SIN-47 (10.12.0.99), Owner: jonas.tanaka (CFO), Role: Critical executive workstation during quarterly close, Blast Radius: Isolation halts the earnings close; do NOT isolate without confirmed command-and-control evidence]. Assess the domain's reputation, weigh operational disruption against threat risk, and record a non-disruptive triage plan.",
+      "reference": {
+        "expected_threat_family": "Possible DNS tunneling",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: queries get_domain_report for proxy-hub.mesh-edge17.com, recognizes a borderline reputation (3 of 72 engines, shared CDN hosting), weighs the CFO workstation's criticality, posts a comment requesting packet capture and monitoring, and neither isolates LT-SIN-47 nor closes CASE-76801. No credit for isolate_host on LT-SIN-47 or LT-SIN-04, for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Record the proxy-hub.mesh-edge17.com TXT pattern as suspicious, request packet capture and enhanced DNS monitoring for LT-SIN-47, escalate to Tier 2, and leave the host online and the case open."
+      },
+      "template_sha256": "4580d64b51fcc1aeac98edbafbd825d43e2a0bdd317f2839a1aa9f2b7f9e3eb7",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

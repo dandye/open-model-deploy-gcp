@@ -1,0 +1,232 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "assets47.mesh-cloud.org",
+          "CHG-97787"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "APP-SAO-97",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "owner": "felix.brandt"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-17475": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-17475",
+            "comments": [
+              "NDR: new external destination assets47.mesh-cloud.org contacted every 72 seconds since 2026-09-12T00:26:00Z.",
+              "Change calendar: CHG-97787 deployed the Slack connector on APP-SAO-97 in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Periodic outbound connections from APP-SAO-97 to new domain assets47.mesh-cloud.org"
+          }
+        },
+        "domains": {
+          "assets47.mesh-cloud.org": {
+            "categories": [
+              "saas",
+              "business"
+            ],
+            "category": "Business Software / SaaS",
+            "created_date": "2021-06-02T00:00:00Z",
+            "domain": "assets47.mesh-cloud.org",
+            "first_seen": "2021-06-02T00:00:00Z",
+            "harmless_votes": 58,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.100.155"
+            ],
+            "registrar": "Porkbun LLC",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.100.155"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-12T00:26:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-SAO-97",
+              "ip": "10.15.0.135"
+            },
+            "security_result": {
+              "summary": "periodic connection every 72 seconds; change CHG-97787"
+            },
+            "target": {
+              "hostname": "assets47.mesh-cloud.org",
+              "ip": "198.19.100.155",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "APP-SAO-41": {
+            "active_user": "amara.rahimi",
+            "criticality_tier": "HIGH",
+            "hostname": "APP-SAO-41",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.11",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "APP-SAO-97": {
+            "active_user": "felix.brandt",
+            "criticality_tier": "STANDARD",
+            "hostname": "APP-SAO-97",
+            "installed_services": [
+              "Integration service (Slack connector)",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.135",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "destination_domain": "assets47.mesh-cloud.org",
+                  "destination_ip": "198.19.100.155",
+                  "event_type": "NETWORK_CONNECTION",
+                  "interval_seconds": "72",
+                  "note": "connector deployed under CHG-97787",
+                  "port": 443
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.100.155": {
+            "asn": "AS64540 (Slack)",
+            "category": "SaaS provider (Slack)",
+            "harmless_votes": 52,
+            "ip": "198.19.100.155",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "assets47.mesh-cloud.org",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "APP-SAO-97",
+        "assets47.mesh-cloud.org",
+        "CHG-97787"
+      ],
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 1,
+      "instance_seed": 6220461006478331177,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [02]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-17475",
+              "comment": "APP-SAO-97 (10.15.0.135) contacts assets47.mesh-cloud.org (198.19.100.155) every 72 seconds because change CHG-97787 deployed the Slack connector in this window; the domain and IP are clean and registered to Slack. Verdict BENIGN: sanctioned integration, no containment, APP-SAO-41 untouched, closing CASE-17475."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-17475",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "assets47.mesh-cloud.org"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "APP-SAO-97"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "CHG-97787"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "APP-SAO-41",
+        "assets47.mesh-cloud.org"
+      ],
+      "prompt": "Triage alert CASE-17475: application server APP-SAO-97 (10.15.0.135) began contacting the previously unseen domain assets47.mesh-cloud.org every 72 seconds at 2026-09-12T00:26:00Z, which the network detection flagged as beaconing. Database server APP-SAO-41 (10.15.0.11) is listed as a connected asset. [CMDB Asset Context: Host APP-SAO-97 (10.15.0.135), Owner: felix.brandt, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_domain_report for assets47.mesh-cloud.org or lookup_entity for APP-SAO-97, finds the clean Slack reputation and change ticket CHG-97787, posts a comment citing CHG-97787, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-SAO-97 or APP-SAO-41, for block_indicator on assets47.mesh-cloud.org, or for a verdict issued without a lookup.",
+        "recommended_action": "Match assets47.mesh-cloud.org to the Slack connector deployed under CHG-97787, record the change reference in CASE-17475, close the case, and block or isolate nothing."
+      },
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

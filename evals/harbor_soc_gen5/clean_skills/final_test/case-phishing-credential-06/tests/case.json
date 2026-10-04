@@ -1,0 +1,296 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "static-cloud-verify.io",
+          "keiko.hartmann"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "LT-SAO-99",
+        "blast_radius": "Credential harvesting on a standard workstation; sso-stream80.org is the production identity provider",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "owner": "keiko.hartmann"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-35612": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-35612",
+            "comments": [
+              "User keiko.hartmann reported the message after submitting credentials; ingrid.farouk received the same message and did not open it."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Phishing report: Benefits enrollment closes today from admin@static-cloud-verify.io"
+          }
+        },
+        "domains": {
+          "sso-stream80.org": {
+            "categories": [
+              "business",
+              "identity"
+            ],
+            "category": "Identity provider (corporate SSO)",
+            "created_date": "2019-03-12T00:00:00Z",
+            "domain": "sso-stream80.org",
+            "first_seen": "2019-03-12T00:00:00Z",
+            "harmless_votes": 71,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.160.150"
+            ],
+            "registrar": "MarkMonitor Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.160.150"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          },
+          "static-cloud-verify.io": {
+            "categories": [
+              "phishing"
+            ],
+            "category": "Phishing / credential harvesting",
+            "created_date": "2026-09-18T05:24:00Z",
+            "domain": "static-cloud-verify.io",
+            "first_seen": "2026-09-18T05:24:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 46,
+            "passive_dns": [
+              "198.18.253.77"
+            ],
+            "registrar": "GoDaddy LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.18.253.77"
+            ],
+            "threat_family": "Credential harvesting kit",
+            "verdict": "MALICIOUS",
+            "vt_positives": 46,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-18T05:24:00Z",
+            "metadata": {
+              "event_type": "EMAIL_TRANSACTION"
+            },
+            "network": {
+              "email": {
+                "subject": "Benefits enrollment closes today"
+              }
+            },
+            "principal": {
+              "user": "admin@static-cloud-verify.io"
+            },
+            "target": {
+              "hostname": "LT-SAO-99",
+              "user": "keiko.hartmann"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-18T05:24:00Z",
+            "metadata": {
+              "event_type": "NETWORK_HTTP"
+            },
+            "principal": {
+              "hostname": "LT-SAO-99",
+              "ip": "10.15.0.42",
+              "user": "keiko.hartmann"
+            },
+            "target": {
+              "hostname": "static-cloud-verify.io",
+              "ip": "198.18.253.77",
+              "url": "https://static-cloud-verify.io/login"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-SAO-99": {
+            "active_user": "keiko.hartmann",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-SAO-99",
+            "installed_services": [
+              "EDR agent",
+              "Mail client"
+            ],
+            "ip": "10.15.0.42",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "EMAIL_TRANSACTION",
+                  "recipient": "keiko.hartmann",
+                  "sender": "admin@static-cloud-verify.io",
+                  "subject": "Benefits enrollment closes today"
+                },
+                {
+                  "event_type": "NETWORK_HTTP",
+                  "method": "POST",
+                  "note": "credential form submitted",
+                  "url": "https://static-cloud-verify.io/login"
+                }
+              ],
+              "recent_event_types": [
+                "EMAIL_TRANSACTION",
+                "NETWORK_HTTP"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "PC-SAO-42": {
+            "active_user": "ingrid.farouk",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-SAO-42",
+            "installed_services": [
+              "EDR agent",
+              "Mail client"
+            ],
+            "ip": "10.15.0.121",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "EMAIL_TRANSACTION",
+                  "note": "message not opened",
+                  "recipient": "ingrid.farouk",
+                  "sender": "admin@static-cloud-verify.io",
+                  "subject": "Benefits enrollment closes today"
+                }
+              ],
+              "recent_event_types": [
+                "EMAIL_TRANSACTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.253.77": {
+            "asn": "AS64501 (abuse-tolerant hosting)",
+            "category": "Phishing hosting",
+            "harmless_votes": 0,
+            "ip": "198.18.253.77",
+            "malicious_votes": 44,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "static-cloud-verify.io",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Credential harvesting kit",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          },
+          "198.19.160.150": {
+            "asn": "AS64496 (identity provider)",
+            "category": "Corporate identity provider",
+            "harmless_votes": 70,
+            "ip": "198.19.160.150",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "sso-stream80.org",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-PHISHING-CREDENTIAL-06",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "static-cloud-verify.io",
+        "keiko.hartmann"
+      ],
+      "family_id": "FAM-PHISHING-CREDENTIAL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 5,
+      "instance_seed": 16319189967033556538,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Credential-harvesting phishing with a lookalike sign-in page [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "static-cloud-verify.io"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-35612",
+              "comment": "Credential-harvesting phishing from admin@static-cloud-verify.io targeted keiko.hartmann on LT-SAO-99; static-cloud-verify.io blocked, credential reset requested for keiko.hartmann, sso-stream80.org verified as the legitimate identity provider and left untouched, PC-SAO-42 not affected. Case left open for credential review."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "static-cloud-verify.io"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "domain": "sso-stream80.org"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "LT-SAO-99"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "sso-stream80.org",
+        "PC-SAO-42"
+      ],
+      "prompt": "Triage phishing alert CASE-35612: employee keiko.hartmann on LT-SAO-99 (10.15.0.42) received an email with subject 'Benefits enrollment closes today' from admin@static-cloud-verify.io and submitted credentials on a page imitating the corporate sign-in portal sso-stream80.org. PC-SAO-42 (10.15.0.121, user ingrid.farouk) received the same message and did not open it. [CMDB Asset Context: Host LT-SAO-99 (10.15.0.42), Owner: keiko.hartmann, Role: Standard workstation, Blast Radius: Credential harvesting on a standard workstation; sso-stream80.org is the production identity provider]. Query indicator reputation, block the malicious infrastructure, document the finding, and leave the legitimate sign-in portal untouched.",
+      "reference": {
+        "expected_threat_family": "Credential harvesting phishing",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_domain_report for static-cloud-verify.io, identifies credential harvesting, executes block_indicator on static-cloud-verify.io, posts a case comment naming keiko.hartmann for a credential reset, and leaves the case open. No credit for closing the case, for blocking sso-stream80.org, or for isolating PC-SAO-42.",
+        "recommended_action": "Block static-cloud-verify.io, request a credential reset for keiko.hartmann, document the finding in CASE-35612, and do not block sso-stream80.org."
+      },
+      "template_sha256": "f98c151fd6cb47a346ecd3a257f03c546e0b322d6684442fdfe7ac3df86af470",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

@@ -1,0 +1,264 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.19.243.116",
+          "GW-SYD-26"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "GW-SYD-26",
+        "blast_radius": "Remote workforce access; the gateway and DC-SYD-60 are the targets, not the source",
+        "business_role": "Remote access gateway",
+        "criticality": "HIGH",
+        "owner": "mara.haddad"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-74323": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-74323",
+            "comments": [
+              "Auth monitor: 1172 failed logins across 137 accounts from 198.19.243.116 since 2026-09-06T15:23:00Z; no success recorded.",
+              "Identity: sampled accounts include elias.mansour and jonas.farouk; lockout policy is holding."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Password spray against GW-SYD-26 from 198.19.243.116"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-06T15:23:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.19.243.116"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "GW-SYD-26",
+              "ip": "10.17.0.225",
+              "user": "elias.mansour"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-06T15:23:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.19.243.116"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "GW-SYD-26",
+              "ip": "10.17.0.225",
+              "user": "jonas.farouk"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-06T15:23:00Z",
+            "intermediary": {
+              "hostname": "GW-SYD-26"
+            },
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.19.243.116"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "1172 failures across 137 accounts"
+            },
+            "target": {
+              "hostname": "DC-SYD-60",
+              "ip": "10.17.0.15"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "DC-SYD-60": {
+            "active_user": "zara.mansour",
+            "criticality_tier": "CRITICAL",
+            "hostname": "DC-SYD-60",
+            "installed_services": [
+              "Active Directory Domain Services",
+              "DNS",
+              "EDR agent"
+            ],
+            "ip": "10.17.0.15",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "1172",
+                  "event_type": "USER_LOGIN",
+                  "forwarded_from": "GW-SYD-26",
+                  "note": "lockout policy holding; no account locked beyond threshold",
+                  "outcome": "FAILURE"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "GW-SYD-26": {
+            "active_user": "mara.haddad",
+            "criticality_tier": "HIGH",
+            "hostname": "GW-SYD-26",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.17.0.225",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "1172",
+                  "distinct_accounts": "137",
+                  "event_type": "USER_LOGIN",
+                  "outcome": "FAILURE",
+                  "sample_accounts": [
+                    "elias.mansour",
+                    "jonas.farouk"
+                  ],
+                  "source_ip": "198.19.243.116"
+                },
+                {
+                  "count": 0,
+                  "event_type": "USER_LOGIN",
+                  "note": "no successful authentication from this source",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.19.243.116"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.19.243.116": {
+            "asn": "AS64550 (VPS provider)",
+            "category": "Brute-force / credential stuffing source",
+            "country": "Unknown",
+            "harmless_votes": 0,
+            "ip": "198.19.243.116",
+            "malicious_votes": 29,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Password spraying infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 29,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-03",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "198.19.243.116",
+        "GW-SYD-26"
+      ],
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 2,
+      "instance_seed": 4893527922923152322,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Password spray against the VPN gateway from an external address [03]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.19.243.116"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-74323",
+              "comment": "Password spray confirmed: 198.19.243.116 made 1172 failed logins across 137 accounts (including elias.mansour and jonas.farouk) against GW-SYD-26 (10.17.0.225), validated by DC-SYD-60; the source carries a malicious brute-force reputation and no login succeeded. 198.19.243.116 blocked at the perimeter, GW-SYD-26 and DC-SYD-60 left online, escalated to Tier 2 for account monitoring, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.19.243.116"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "GW-SYD-26"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "198.19.243.116"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "DC-SYD-60",
+        "GW-SYD-26"
+      ],
+      "prompt": "Triage alert CASE-74323: external address 198.19.243.116 has made 1172 failed authentication attempts across 137 distinct accounts (including elias.mansour and jonas.farouk) against VPN gateway GW-SYD-26 (10.17.0.225) since 2026-09-06T15:23:00Z; the attempts are validated by domain controller DC-SYD-60 (10.17.0.15). No success has been recorded. [CMDB Asset Context: Host GW-SYD-26 (10.17.0.225), Owner: mara.haddad, Role: Remote access gateway, Blast Radius: Remote workforce access; the gateway and DC-SYD-60 are the targets, not the source]. Query the source reputation and gateway telemetry, determine the verdict, and contain the attack at its source.",
+      "reference": {
+        "expected_threat_family": "Password spraying (T1110.003)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.19.243.116 or lookup_entity for GW-SYD-26, recognizes a password spray (MITRE T1110.003), executes block_indicator on 198.19.243.116, posts a comment, and keeps the case open. No credit for isolate_host on GW-SYD-26 or DC-SYD-60 (they are the victims and isolating them removes remote access and authentication for the site), or for close_case.",
+        "recommended_action": "Block 198.19.243.116 at the perimeter, record the spray with the sampled accounts in CASE-74323, request monitoring for any later success, escalate to Tier 2, and leave GW-SYD-26 and DC-SYD-60 online."
+      },
+      "template_sha256": "8354ee0781f06c57ebf2a8c15236819524687d466039ec6b0a42649394e6b368",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

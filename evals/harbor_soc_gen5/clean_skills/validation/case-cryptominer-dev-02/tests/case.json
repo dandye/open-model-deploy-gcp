@@ -1,0 +1,283 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "DEV-BLR-53",
+          "portal-pool26.info"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "DEV-BLR-53",
+        "blast_radius": "Single developer; standard containment, while CI-BLR-44 serves the whole team",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "owner": "sofia.iyer"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-43044": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-43044",
+            "comments": [
+              "EDR: sysupdate at 86 percent CPU since 2026-09-11T08:28:00Z; outbound to portal-pool26.info port 3333.",
+              "Platform: CI-BLR-44 runs nightly builds and is expected to be busy."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Sustained CPU and stratum traffic from DEV-BLR-53"
+          }
+        },
+        "domains": {
+          "portal-pool26.info": {
+            "categories": [
+              "cryptomining",
+              "malware"
+            ],
+            "category": "Cryptocurrency Mining Pool",
+            "created_date": "2026-09-11T08:28:00Z",
+            "domain": "portal-pool26.info",
+            "first_seen": "2026-09-11T08:28:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 44,
+            "passive_dns": [
+              "198.19.170.246"
+            ],
+            "registrar": "MarkMonitor Inc.",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.19.170.246"
+            ],
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-11T08:28:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "DEV-BLR-53",
+              "ip": "10.18.0.60",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/sysupdate",
+                  "sha256": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+                }
+              },
+              "user": "sofia.iyer"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-11T08:28:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "DEV-BLR-53",
+              "ip": "10.18.0.60"
+            },
+            "target": {
+              "hostname": "portal-pool26.info",
+              "ip": "198.19.170.246",
+              "port": 3333
+            }
+          }
+        ],
+        "hashes": {
+          "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "52/72 engines",
+            "filename": "sysupdate",
+            "revocation_date": null,
+            "sha256": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273",
+            "signer": "Unknown",
+            "threat_name": "Cryptominer",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "CI-BLR-44": {
+            "active_user": "sofia.mansour",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-BLR-44",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "ip": "10.18.0.154",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": 92,
+                  "event_type": "PROCESS_LAUNCH",
+                  "note": "scheduled nightly build; no external connections",
+                  "parent": "ci-agent",
+                  "process": "make"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "DEV-BLR-53": {
+            "active_user": "sofia.iyer",
+            "criticality_tier": "STANDARD",
+            "hostname": "DEV-BLR-53",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "ip": "10.18.0.60",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": "86",
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "cron",
+                  "process": "sysupdate",
+                  "sha256": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+                },
+                {
+                  "destination_domain": "portal-pool26.info",
+                  "destination_ip": "198.19.170.246",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.19.170.246": {
+            "asn": "AS64530 (bulletproof hosting)",
+            "category": "Cryptomining pool",
+            "harmless_votes": 0,
+            "ip": "198.19.170.246",
+            "malicious_votes": 37,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "portal-pool26.info",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 37,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "DEV-BLR-53",
+        "portal-pool26.info",
+        "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+      ],
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 1,
+      "instance_seed": 7498727452709974120,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Cryptominer on a developer box next to a busy build server [02]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "DEV-BLR-53"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "portal-pool26.info"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-43044",
+              "comment": "Confirmed cryptominer on DEV-BLR-53 (10.18.0.60, sofia.iyer): sysupdate (339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273) at 86 percent CPU with stratum connections to portal-pool26.info (198.19.170.246). Host isolated, portal-pool26.info blocked, CI-BLR-44 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "domain": "portal-pool26.info"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "DEV-BLR-53"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-BLR-44"
+      ],
+      "prompt": "Triage alert CASE-43044: developer box DEV-BLR-53 (10.18.0.60, user sofia.iyer) has run process sysupdate (sha256 339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273) at 86 percent CPU since 2026-09-11T08:28:00Z with persistent connections to portal-pool26.info on port 3333. Shared build server CI-BLR-44 (10.18.0.154) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host DEV-BLR-53 (10.18.0.60), Owner: sofia.iyer, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-BLR-44 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "reference": {
+        "expected_threat_family": "Cryptominer",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for 339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273 or get_domain_report for portal-pool26.info, identifies a cryptominer with a stratum pool connection, executes isolate_host on DEV-BLR-53 and block_indicator on portal-pool26.info, posts a comment, and keeps the case open. No credit for isolate_host on CI-BLR-44 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate DEV-BLR-53, block portal-pool26.info, record the finding in CASE-43044, escalate to Tier 2 for root cause, and leave CI-BLR-44 alone."
+      },
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

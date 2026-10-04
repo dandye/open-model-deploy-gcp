@@ -1,0 +1,260 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "link-signal.portal-edge60.info",
+          "LT-LON-80"
+        ],
+        "must_not_contain": [
+          "confirmed clean",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "LT-LON-80",
+        "blast_radius": "Isolation halts the earnings close; do NOT isolate without confirmed command-and-control evidence",
+        "business_role": "Critical executive workstation during quarterly close",
+        "criticality": "CRITICAL",
+        "owner": "freya.brandt"
+      },
+      "counterfactual_pair_id": "PAIR-01",
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-22080": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-22080",
+            "comments": [
+              "Auto-created from the DNS anomaly detection: 782 TXT queries since 2026-09-09T10:35:00Z.",
+              "Finance: freya.brandt is the CFO; the quarterly close runs through this week."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "High-frequency DNS TXT lookups from LT-LON-80 to link-signal.portal-edge60.info"
+          }
+        },
+        "domains": {
+          "link-signal.portal-edge60.info": {
+            "categories": [
+              "cdn",
+              "uncategorized"
+            ],
+            "category": "Content Delivery / Uncategorized",
+            "created_date": "2026-09-09T10:35:00Z",
+            "domain": "link-signal.portal-edge60.info",
+            "first_seen": "2026-09-09T10:35:00Z",
+            "harmless_votes": 9,
+            "malicious_votes": 3,
+            "passive_dns": [
+              "198.18.186.29"
+            ],
+            "registrar": "NameCheap Inc.",
+            "reputation": "SUSPICIOUS",
+            "resolutions": [
+              "198.18.186.29"
+            ],
+            "threat_family": "Possible DNS tunneling (unconfirmed)",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 3,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-09T10:35:00Z",
+            "metadata": {
+              "event_type": "NETWORK_DNS"
+            },
+            "network": {
+              "dns": {
+                "questions": [
+                  {
+                    "name": "link-signal.portal-edge60.info",
+                    "type": "TXT"
+                  }
+                ]
+              }
+            },
+            "principal": {
+              "hostname": "LT-LON-80",
+              "ip": "10.16.0.213",
+              "user": "freya.brandt"
+            },
+            "security_result": {
+              "summary": "782 TXT queries"
+            },
+            "target": {
+              "ip": "198.18.186.29"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-09T10:35:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "LT-LON-33",
+              "ip": "10.16.0.225",
+              "user": "dmitri.alvarez"
+            },
+            "security_result": {
+              "action": "ALLOW"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-LON-33": {
+            "active_user": "dmitri.alvarez",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-LON-33",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.16.0.225",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": 41,
+                  "event_type": "NETWORK_DNS",
+                  "note": "ordinary name resolution",
+                  "record_type": "A"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_DNS"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "LT-LON-80": {
+            "active_user": "freya.brandt",
+            "criticality_tier": "CRITICAL",
+            "hostname": "LT-LON-80",
+            "installed_services": [
+              "EDR agent",
+              "Office suite",
+              "Finance ERP client"
+            ],
+            "ip": "10.16.0.213",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "782",
+                  "event_type": "NETWORK_DNS",
+                  "note": "no matching process anomaly",
+                  "query": "link-signal.portal-edge60.info",
+                  "record_type": "TXT"
+                },
+                {
+                  "event_type": "USER_LOGIN",
+                  "outcome": "SUCCESS",
+                  "user": "freya.brandt"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_DNS",
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.18.186.29": {
+            "asn": "AS64510 (Adatum CDN)",
+            "category": "CDN edge (shared hosting)",
+            "harmless_votes": 14,
+            "ip": "198.18.186.29",
+            "malicious_votes": 1,
+            "reputation": "UNKNOWN",
+            "reverse_dns": "link-signal.portal-edge60.info",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "UNKNOWN",
+            "vt_positives": 1,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-06",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "link-signal.portal-edge60.info",
+        "LT-LON-80"
+      ],
+      "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 5,
+      "instance_seed": 457906146774935842,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Ambiguous DNS TXT tunneling on an executive workstation [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-22080",
+              "comment": "Suspicious but unconfirmed: LT-LON-80 (10.16.0.213, freya.brandt) sent 782 TXT queries to link-signal.portal-edge60.info (198.18.186.29), which 3 of 72 engines flag and which sits on shared Adatum CDN space. No process or command-and-control corroboration. Requesting packet capture and enhanced DNS monitoring, escalating to Tier 2; host left online given the quarterly close, LT-LON-33 unaffected, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "link-signal.portal-edge60.info"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "LT-LON-80"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "ip": "198.18.186.29"
+            },
+            "tool": "get_ip_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "LT-LON-33"
+      ],
+      "prompt": "Triage alert CASE-22080: finance workstation LT-LON-80 (10.16.0.213, user freya.brandt, the CFO) has issued 782 DNS TXT lookups to link-signal.portal-edge60.info since 2026-09-09T10:35:00Z, during the quarterly earnings close. Neighboring workstation LT-LON-33 (10.16.0.225, user dmitri.alvarez) resolves ordinary names only. [CMDB Asset Context: Host LT-LON-80 (10.16.0.213), Owner: freya.brandt (CFO), Role: Critical executive workstation during quarterly close, Blast Radius: Isolation halts the earnings close; do NOT isolate without confirmed command-and-control evidence]. Assess the domain's reputation, weigh operational disruption against threat risk, and record a non-disruptive triage plan.",
+      "reference": {
+        "expected_threat_family": "Possible DNS tunneling",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: queries get_domain_report for link-signal.portal-edge60.info, recognizes a borderline reputation (3 of 72 engines, shared CDN hosting), weighs the CFO workstation's criticality, posts a comment requesting packet capture and monitoring, and neither isolates LT-LON-80 nor closes CASE-22080. No credit for isolate_host on LT-LON-80 or LT-LON-33, for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Record the link-signal.portal-edge60.info TXT pattern as suspicious, request packet capture and enhanced DNS monitoring for LT-LON-80, escalate to Tier 2, and leave the host online and the case open."
+      },
+      "template_sha256": "4580d64b51fcc1aeac98edbafbd825d43e2a0bdd317f2839a1aa9f2b7f9e3eb7",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

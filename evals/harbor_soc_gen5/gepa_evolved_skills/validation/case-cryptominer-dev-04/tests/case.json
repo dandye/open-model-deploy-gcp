@@ -1,0 +1,283 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "BLD-SIN-57",
+          "pulse-pool83.io"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "BLD-SIN-57",
+        "blast_radius": "Single developer; standard containment, while CI-SIN-73 serves the whole team",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "owner": "yara.okafor"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-75383": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-75383",
+            "comments": [
+              "EDR: xmrig at 98 percent CPU since 2026-09-26T18:07:00Z; outbound to pulse-pool83.io port 3333.",
+              "Platform: CI-SIN-73 runs nightly builds and is expected to be busy."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Sustained CPU and stratum traffic from BLD-SIN-57"
+          }
+        },
+        "domains": {
+          "pulse-pool83.io": {
+            "categories": [
+              "cryptomining",
+              "malware"
+            ],
+            "category": "Cryptocurrency Mining Pool",
+            "created_date": "2026-09-26T18:07:00Z",
+            "domain": "pulse-pool83.io",
+            "first_seen": "2026-09-26T18:07:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 44,
+            "passive_dns": [
+              "198.19.89.170"
+            ],
+            "registrar": "GoDaddy LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.19.89.170"
+            ],
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-26T18:07:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SIN-57",
+              "ip": "10.12.0.69",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/xmrig",
+                  "sha256": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+                }
+              },
+              "user": "yara.okafor"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-26T18:07:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SIN-57",
+              "ip": "10.12.0.69"
+            },
+            "target": {
+              "hostname": "pulse-pool83.io",
+              "ip": "198.19.89.170",
+              "port": 3333
+            }
+          }
+        ],
+        "hashes": {
+          "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "52/72 engines",
+            "filename": "xmrig",
+            "revocation_date": null,
+            "sha256": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed",
+            "signer": "Unknown",
+            "threat_name": "Cryptominer",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "BLD-SIN-57": {
+            "active_user": "yara.okafor",
+            "criticality_tier": "STANDARD",
+            "hostname": "BLD-SIN-57",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "ip": "10.12.0.69",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": "98",
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "cron",
+                  "process": "xmrig",
+                  "sha256": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+                },
+                {
+                  "destination_domain": "pulse-pool83.io",
+                  "destination_ip": "198.19.89.170",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "CI-SIN-73": {
+            "active_user": "priya.dahl",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-SIN-73",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "ip": "10.12.0.133",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": 92,
+                  "event_type": "PROCESS_LAUNCH",
+                  "note": "scheduled nightly build; no external connections",
+                  "parent": "ci-agent",
+                  "process": "make"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.89.170": {
+            "asn": "AS64530 (bulletproof hosting)",
+            "category": "Cryptomining pool",
+            "harmless_votes": 0,
+            "ip": "198.19.89.170",
+            "malicious_votes": 37,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "pulse-pool83.io",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 37,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "BLD-SIN-57",
+        "pulse-pool83.io",
+        "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+      ],
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 3,
+      "instance_seed": 15832693400203645431,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Cryptominer on a developer box next to a busy build server [04]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SIN-57"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "pulse-pool83.io"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-75383",
+              "comment": "Confirmed cryptominer on BLD-SIN-57 (10.12.0.69, yara.okafor): xmrig (c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed) at 98 percent CPU with stratum connections to pulse-pool83.io (198.19.89.170). Host isolated, pulse-pool83.io blocked, CI-SIN-73 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "domain": "pulse-pool83.io"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "BLD-SIN-57"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-SIN-73"
+      ],
+      "prompt": "Triage alert CASE-75383: developer box BLD-SIN-57 (10.12.0.69, user yara.okafor) has run process xmrig (sha256 c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed) at 98 percent CPU since 2026-09-26T18:07:00Z with persistent connections to pulse-pool83.io on port 3333. Shared build server CI-SIN-73 (10.12.0.133) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SIN-57 (10.12.0.69), Owner: yara.okafor, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SIN-73 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "reference": {
+        "expected_threat_family": "Cryptominer",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed or get_domain_report for pulse-pool83.io, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SIN-57 and block_indicator on pulse-pool83.io, posts a comment, and keeps the case open. No credit for isolate_host on CI-SIN-73 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate BLD-SIN-57, block pulse-pool83.io, record the finding in CASE-75383, escalate to Tier 2 for root cause, and leave CI-SIN-73 alone."
+      },
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

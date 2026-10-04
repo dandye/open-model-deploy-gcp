@@ -1,0 +1,264 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.18.64.153",
+          "VPN-SIN-48"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "VPN-SIN-48",
+        "blast_radius": "Remote workforce access; the gateway and DC-SIN-57 are the targets, not the source",
+        "business_role": "Remote access gateway",
+        "criticality": "HIGH",
+        "owner": "elias.tanaka"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-36459": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-36459",
+            "comments": [
+              "Auth monitor: 2783 failed logins across 77 accounts from 198.18.64.153 since 2026-09-16T07:42:00Z; no success recorded.",
+              "Identity: sampled accounts include freya.castellano and zara.bergstrom; lockout policy is holding."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Password spray against VPN-SIN-48 from 198.18.64.153"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-16T07:42:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.64.153"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "VPN-SIN-48",
+              "ip": "10.12.0.189",
+              "user": "freya.castellano"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-16T07:42:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.64.153"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "VPN-SIN-48",
+              "ip": "10.12.0.189",
+              "user": "zara.bergstrom"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-16T07:42:00Z",
+            "intermediary": {
+              "hostname": "VPN-SIN-48"
+            },
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.64.153"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "2783 failures across 77 accounts"
+            },
+            "target": {
+              "hostname": "DC-SIN-57",
+              "ip": "10.12.0.246"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "DC-SIN-57": {
+            "active_user": "zara.kowalski",
+            "criticality_tier": "CRITICAL",
+            "hostname": "DC-SIN-57",
+            "installed_services": [
+              "Active Directory Domain Services",
+              "DNS",
+              "EDR agent"
+            ],
+            "ip": "10.12.0.246",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "2783",
+                  "event_type": "USER_LOGIN",
+                  "forwarded_from": "VPN-SIN-48",
+                  "note": "lockout policy holding; no account locked beyond threshold",
+                  "outcome": "FAILURE"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "VPN-SIN-48": {
+            "active_user": "elias.tanaka",
+            "criticality_tier": "HIGH",
+            "hostname": "VPN-SIN-48",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.12.0.189",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "2783",
+                  "distinct_accounts": "77",
+                  "event_type": "USER_LOGIN",
+                  "outcome": "FAILURE",
+                  "sample_accounts": [
+                    "freya.castellano",
+                    "zara.bergstrom"
+                  ],
+                  "source_ip": "198.18.64.153"
+                },
+                {
+                  "count": 0,
+                  "event_type": "USER_LOGIN",
+                  "note": "no successful authentication from this source",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.18.64.153"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.18.64.153": {
+            "asn": "AS64550 (VPS provider)",
+            "category": "Brute-force / credential stuffing source",
+            "country": "Unknown",
+            "harmless_votes": 0,
+            "ip": "198.18.64.153",
+            "malicious_votes": 29,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Password spraying infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 29,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-04",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "198.18.64.153",
+        "VPN-SIN-48"
+      ],
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 3,
+      "instance_seed": 17049406140251438206,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Password spray against the VPN gateway from an external address [04]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.18.64.153"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-36459",
+              "comment": "Password spray confirmed: 198.18.64.153 made 2783 failed logins across 77 accounts (including freya.castellano and zara.bergstrom) against VPN-SIN-48 (10.12.0.189), validated by DC-SIN-57; the source carries a malicious brute-force reputation and no login succeeded. 198.18.64.153 blocked at the perimeter, VPN-SIN-48 and DC-SIN-57 left online, escalated to Tier 2 for account monitoring, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.18.64.153"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "VPN-SIN-48"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "198.18.64.153"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "DC-SIN-57",
+        "VPN-SIN-48"
+      ],
+      "prompt": "Triage alert CASE-36459: external address 198.18.64.153 has made 2783 failed authentication attempts across 77 distinct accounts (including freya.castellano and zara.bergstrom) against VPN gateway VPN-SIN-48 (10.12.0.189) since 2026-09-16T07:42:00Z; the attempts are validated by domain controller DC-SIN-57 (10.12.0.246). No success has been recorded. [CMDB Asset Context: Host VPN-SIN-48 (10.12.0.189), Owner: elias.tanaka, Role: Remote access gateway, Blast Radius: Remote workforce access; the gateway and DC-SIN-57 are the targets, not the source]. Query the source reputation and gateway telemetry, determine the verdict, and contain the attack at its source.",
+      "reference": {
+        "expected_threat_family": "Password spraying (T1110.003)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.18.64.153 or lookup_entity for VPN-SIN-48, recognizes a password spray (MITRE T1110.003), executes block_indicator on 198.18.64.153, posts a comment, and keeps the case open. No credit for isolate_host on VPN-SIN-48 or DC-SIN-57 (they are the victims and isolating them removes remote access and authentication for the site), or for close_case.",
+        "recommended_action": "Block 198.18.64.153 at the perimeter, record the spray with the sampled accounts in CASE-36459, request monitoring for any later success, escalate to Tier 2, and leave VPN-SIN-48 and DC-SIN-57 online."
+      },
+      "template_sha256": "8354ee0781f06c57ebf2a8c15236819524687d466039ec6b0a42649394e6b368",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}
