@@ -90,8 +90,8 @@ def filter_cases(
     difficulty: Optional[Sequence[int]] = None,
 ) -> List[Dict[str, Any]]:
     """Keeps the cases whose family is in `families` (short or full ids) and whose difficulty is in `difficulty`."""
-    wanted_families = {_normalize_family(f) for f in families} if families else None
-    wanted_difficulty = {int(d) for d in difficulty} if difficulty else None
+    wanted_families = {_normalize_family(f) for f in families} if families is not None else None
+    wanted_difficulty = {int(d) for d in difficulty} if difficulty is not None else None
     kept: List[Dict[str, Any]] = []
     for case in cases:
         if wanted_families is not None and _normalize_family(case.get("family_id", "")) not in wanted_families:
@@ -127,6 +127,28 @@ def check_preregistration(path: Path) -> Dict[str, Any]:
     return {"path": rel, "sha256": sha256_file(path)}
 
 
+def _require_access(
+    split: str,
+    purpose: str,
+    unseal_final_test: bool = False,
+    preregistration: Optional[Path] = None,
+) -> Optional[Dict[str, Any]]:
+    if split not in SPLITS:
+        raise ExposureError(f"unknown split {split!r}; expected one of {SPLITS}")
+    if not str(purpose or "").strip():
+        raise ExposureError("a non-empty purpose is required to load a Gen 5 split (use --purpose)")
+    if split == "final_test":
+        if not unseal_final_test:
+            raise FinalTestSealedError(
+                "final_test is sealed. Pass --unseal-final-test --purpose '...' --preregistration <file> "
+                "after the pre-registration is approved (spec section 8.2.5)."
+            )
+        if preregistration is None:
+            raise FinalTestSealedError("final_test requires --preregistration <approved comparison file>")
+        return check_preregistration(preregistration)
+    return None
+
+
 def expose_cases(
     split: str,
     cases: Sequence[Dict[str, Any]],
@@ -139,10 +161,12 @@ def expose_cases(
     ledger: Optional[Path] = None,
 ) -> Dict[str, Any]:
     """Applies the final_test seal, builds the ledger entry, and appends it unless `record` is False."""
-    if split not in SPLITS:
-        raise ExposureError(f"unknown split {split!r}; expected one of {SPLITS}")
-    if not str(purpose or "").strip():
-        raise ExposureError("a non-empty purpose is required to load a Gen 5 split (use --purpose)")
+    prereg_info = _require_access(
+        split,
+        purpose=purpose,
+        unseal_final_test=unseal_final_test,
+        preregistration=preregistration,
+    )
     entry: Dict[str, Any] = {
         "timestamp": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "run_id": run_id or new_run_id(),
@@ -152,15 +176,8 @@ def expose_cases(
         "purpose": str(purpose).strip(),
         "model": str(model or "unknown"),
     }
-    if split == "final_test":
-        if not unseal_final_test:
-            raise FinalTestSealedError(
-                "final_test is sealed. Pass --unseal-final-test --purpose '...' --preregistration <file> "
-                "after the pre-registration is approved (spec section 8.2.5)."
-            )
-        if preregistration is None:
-            raise FinalTestSealedError("final_test requires --preregistration <approved comparison file>")
-        entry["preregistration"] = check_preregistration(preregistration)
+    if prereg_info is not None:
+        entry["preregistration"] = prereg_info
     if record:
         append_exposure(entry, ledger)
     return entry
@@ -199,6 +216,12 @@ def load_split(
     ledger: Optional[Path] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Loads one split, applies the filters, and records the exposure. Returns (cases, ledger entry)."""
+    _require_access(
+        split,
+        purpose=purpose,
+        unseal_final_test=unseal_final_test,
+        preregistration=preregistration,
+    )
     bundle = read_bundle(split, root)
     cases = filter_cases(list(bundle.get("eval_cases", [])), families=families, difficulty=difficulty)
     if not cases:

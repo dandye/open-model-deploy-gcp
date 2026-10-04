@@ -129,3 +129,32 @@ def test_new_run_id_is_unique_and_sortable() -> None:
     first, second = ex.new_run_id(), ex.new_run_id()
     assert first != second
     assert len(first.split("-")) == 2
+
+
+def test_sealed_final_test_is_refused_before_the_bundle_is_read(ledger: Path, tmp_path: Path, monkeypatch) -> None:
+    def _explode(*args, **kwargs):
+        raise AssertionError("bundle must not be read")
+
+    monkeypatch.setattr(ex, "read_bundle", _explode)
+    with pytest.raises(ex.FinalTestSealedError):
+        ex.load_split("final_test", purpose="peek", model="m")
+    with pytest.raises(ex.FinalTestSealedError):
+        ex.load_split("final_test", purpose="peek", model="m", unseal_final_test=True)
+    unapproved = tmp_path / "unapproved.json"
+    unapproved.write_text(json.dumps({"acceptance": {"approved_by": None, "approved_at": None}, "gen5": {"hypotheses": ["H1"]}}), encoding="utf-8")
+    with pytest.raises(ex.FinalTestSealedError):
+        ex.load_split("final_test", purpose="peek", model="m", unseal_final_test=True, preregistration=unapproved)
+    with pytest.raises(ex.ExposureError):
+        ex.load_split("train", purpose="", model="m")
+    assert not ledger.exists()
+
+
+def test_empty_filters_match_nothing(ledger: Path) -> None:
+    cases = ex.read_bundle("train")["eval_cases"]
+    assert ex.filter_cases(cases, families=[]) == []
+    assert ex.filter_cases(cases, difficulty=[]) == []
+    assert ex.filter_cases(cases) == list(cases)
+    with pytest.raises(ex.ExposureError):
+        ex.load_split("train", purpose="t", model="m", families=[], record=False)
+    assert not ledger.exists()
+
