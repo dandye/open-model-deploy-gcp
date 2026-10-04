@@ -1,0 +1,2724 @@
+[
+  {
+    "args": {
+      "ip": "10.0.4.15"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "LOW",
+      "harmless_votes": 100,
+      "host_association": "VM-DEV-SANDBOX-12",
+      "ip": "10.0.4.15",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "vm-dev-sandbox-12.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.5.23"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "HIGH",
+      "harmless_votes": 100,
+      "host_association": "DESKTOP-FIN-08",
+      "ip": "10.0.5.23",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "desktop-fin-08.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.8.99"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "STANDARD",
+      "harmless_votes": 100,
+      "host_association": "DESKTOP-HR-04",
+      "ip": "10.0.8.99",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "desktop-hr-04.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.99.50"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 Private Subnet",
+      "category": "Internal Authorized Scanner",
+      "cidr": "10.0.99.0/24",
+      "harmless_votes": 100,
+      "host_association": "SRV-PROD-PAYMENT-01",
+      "ip": "10.0.99.50",
+      "malicious_votes": 0,
+      "reputation": "BENIGN_AUTHORIZED",
+      "reverse_dns": "srv-prod-payment-01.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "service": "Qualys Vulnerability Scanner",
+      "verdict": "SAFE",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.99.50"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 Private Subnet",
+      "category": "Internal Authorized Scanner",
+      "cidr": "10.0.99.0/24",
+      "harmless_votes": 100,
+      "host_association": "SRV-PROD-PAYMENT-01",
+      "ip": "10.0.99.50",
+      "malicious_votes": 0,
+      "reputation": "BENIGN_AUTHORIZED",
+      "reverse_dns": "srv-prod-payment-01.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "service": "Qualys Vulnerability Scanner",
+      "verdict": "SAFE",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "198.51.100.42"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Malicious Hosting)",
+      "category": "Known C2 Endpoint",
+      "cidr": "198.51.100.0/24",
+      "harmless_votes": 0,
+      "ip": "198.51.100.42",
+      "malicious_votes": 68,
+      "reputation": "MALICIOUS",
+      "reverse_dns": "update-service-win32.com",
+      "routing_status": "Public Routable IP",
+      "threat_family": "Lokibot / InfoStealer C2",
+      "verdict": "MALICIOUS",
+      "vt_positives": 68,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "192.0.2.10"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS0 (Documentation)",
+      "category": "Documentation / Reserved RFC-5737",
+      "cidr": "192.0.2.0/24",
+      "harmless_votes": 100,
+      "ip": "192.0.2.10",
+      "malicious_votes": 0,
+      "reputation": "BENIGN / NON-ROUTABLE",
+      "reverse_dns": "test-doc-192-0-2-10.example.net",
+      "routing_status": "RFC-5737 TEST-NET-1 (Non-Routable Documentation Subnet)",
+      "verdict": "SAFE",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "203.0.113.7"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS0 (Documentation)",
+      "category": "Documentation / Reserved RFC-5737",
+      "cidr": "203.0.113.0/24",
+      "harmless_votes": 100,
+      "ip": "203.0.113.7",
+      "malicious_votes": 0,
+      "reputation": "BENIGN / NON-ROUTABLE",
+      "reverse_dns": "test-doc-203-0-113-7.example.net",
+      "routing_status": "RFC-5737 TEST-NET-3 (Non-Routable Documentation Subnet)",
+      "verdict": "SAFE",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "198.51.100.9"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS0 (Documentation)",
+      "category": "Documentation / Reserved RFC-5737",
+      "cidr": "198.51.100.0/24",
+      "harmless_votes": 100,
+      "ip": "198.51.100.9",
+      "malicious_votes": 0,
+      "reputation": "BENIGN / NON-ROUTABLE",
+      "reverse_dns": "test-doc-198-51-100-9.example.net",
+      "routing_status": "RFC-5737 TEST-NET-2 (Non-Routable Documentation Subnet)",
+      "verdict": "SAFE",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.4.15"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "LOW",
+      "harmless_votes": 100,
+      "host_association": "VM-DEV-SANDBOX-12",
+      "ip": "10.0.4.15",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "vm-dev-sandbox-12.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.5.23"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "HIGH",
+      "harmless_votes": 100,
+      "host_association": "DESKTOP-FIN-08",
+      "ip": "10.0.5.23",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "desktop-fin-08.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.8.99"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "STANDARD",
+      "harmless_votes": 100,
+      "host_association": "DESKTOP-HR-04",
+      "ip": "10.0.8.99",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "desktop-hr-04.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.77.77"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Public Transit)",
+      "category": "Public IP",
+      "cidr": "10.0.77.0/24",
+      "harmless_votes": 2,
+      "ip": "10.0.77.77",
+      "malicious_votes": 42,
+      "reputation": "SUSPICIOUS",
+      "reverse_dns": "host-10-0-77-77.isp-routing.net",
+      "routing_status": "Public Routable IP",
+      "verdict": "POTENTIALLY_MALICIOUS",
+      "vt_positives": 42,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "172.16.3.4"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Public Transit)",
+      "category": "Public IP",
+      "cidr": "172.16.3.0/24",
+      "harmless_votes": 2,
+      "ip": "172.16.3.4",
+      "malicious_votes": 42,
+      "reputation": "SUSPICIOUS",
+      "reverse_dns": "host-172-16-3-4.isp-routing.net",
+      "routing_status": "Public Routable IP",
+      "verdict": "POTENTIALLY_MALICIOUS",
+      "vt_positives": 42,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "198.18.4.20"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Public Transit)",
+      "category": "Public IP",
+      "cidr": "198.18.4.0/24",
+      "harmless_votes": 2,
+      "ip": "198.18.4.20",
+      "malicious_votes": 42,
+      "reputation": "SUSPICIOUS",
+      "reverse_dns": "host-198-18-4-20.isp-routing.net",
+      "routing_status": "Public Routable IP",
+      "verdict": "POTENTIALLY_MALICIOUS",
+      "vt_positives": 42,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": "8.8.8.8"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Public Transit)",
+      "category": "Public IP",
+      "cidr": "8.8.8.0/24",
+      "harmless_votes": 2,
+      "ip": "8.8.8.8",
+      "malicious_votes": 42,
+      "reputation": "SUSPICIOUS",
+      "reverse_dns": "host-8-8-8-8.isp-routing.net",
+      "routing_status": "Public Routable IP",
+      "verdict": "POTENTIALLY_MALICIOUS",
+      "vt_positives": 42,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "ip": ""
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Public Transit)",
+      "category": "Public IP",
+      "cidr": ".0/24",
+      "harmless_votes": 2,
+      "ip": "",
+      "malicious_votes": 42,
+      "reputation": "SUSPICIOUS",
+      "reverse_dns": "host-.isp-routing.net",
+      "routing_status": "Public Routable IP",
+      "verdict": "POTENTIALLY_MALICIOUS",
+      "vt_positives": 42,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "entity_id": "10.0.5.23"
+    },
+    "kind": "query",
+    "name": "get_ip_report",
+    "result": {
+      "asn": "RFC-1918 (Private Corporate Network)",
+      "category": "Internal Corporate Subnet",
+      "cidr": "10.0.0.0/16",
+      "criticality_tier": "HIGH",
+      "harmless_votes": 100,
+      "host_association": "DESKTOP-FIN-08",
+      "ip": "10.0.5.23",
+      "malicious_votes": 0,
+      "reputation": "INTERNAL",
+      "reverse_dns": "desktop-fin-08.corp.internal",
+      "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+      "verdict": "NEUTRAL",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "query": "198.51.100.42"
+    },
+    "kind": "query",
+    "name": "get_ip_address_report",
+    "result": {
+      "asn": "AS13335 (Malicious Hosting)",
+      "category": "Known C2 Endpoint",
+      "cidr": "198.51.100.0/24",
+      "harmless_votes": 0,
+      "ip": "198.51.100.42",
+      "malicious_votes": 68,
+      "reputation": "MALICIOUS",
+      "reverse_dns": "update-service-win32.com",
+      "routing_status": "Public Routable IP",
+      "threat_family": "Lokibot / InfoStealer C2",
+      "verdict": "MALICIOUS",
+      "vt_positives": 68,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "error-503.service-unavailable.org"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "domain": "error-503.service-unavailable.org",
+      "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
+      "status_code": 503
+    }
+  },
+  {
+    "args": {
+      "domain": "evil.com"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "C2 Infrastructure",
+        "Phishing",
+        "Malware"
+      ],
+      "category": "C2 Infrastructure",
+      "created_date": "2025-11-20",
+      "domain": "evil.com",
+      "first_seen": "2025-11-20",
+      "harmless_votes": 0,
+      "malicious_votes": 68,
+      "passive_dns": [
+        "198.51.100.42"
+      ],
+      "registrar": "Tucows Domains Inc.",
+      "reputation": "MALICIOUS",
+      "resolutions": [
+        "198.51.100.42"
+      ],
+      "threat_family": "Lokibot / InfoStealer C2",
+      "verdict": "MALICIOUS",
+      "vt_positives": 68,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "google.com"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Search Engine",
+        "Portal"
+      ],
+      "category": "Search Engine",
+      "created_date": "1997-09-15",
+      "domain": "google.com",
+      "first_seen": "1997-09-15",
+      "harmless_votes": 100,
+      "malicious_votes": 0,
+      "passive_dns": [
+        "142.250.190.46"
+      ],
+      "registrar": "MarkMonitor Inc.",
+      "reputation": "BENIGN",
+      "resolutions": [
+        "142.250.190.46"
+      ],
+      "threat_family": "None",
+      "verdict": "BENIGN",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "malicious.com"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Phishing",
+        "Credential Harvesting"
+      ],
+      "category": "Phishing",
+      "created_date": "2026-01-05",
+      "domain": "malicious.com",
+      "first_seen": "2026-01-05",
+      "harmless_votes": 1,
+      "malicious_votes": 68,
+      "passive_dns": [
+        "198.51.100.99"
+      ],
+      "registrar": "GoDaddy.com, LLC",
+      "reputation": "MALICIOUS",
+      "resolutions": [
+        "198.51.100.99"
+      ],
+      "threat_family": "Lokibot / InfoStealer C2",
+      "verdict": "MALICIOUS",
+      "vt_positives": 68,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "tunnel-data.cdn-edge-update.net"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Dynamic DNS / CDN Tunnel",
+        "Content Delivery Network"
+      ],
+      "category": "Dynamic DNS / CDN Tunnel",
+      "created_date": "2026-08-10",
+      "domain": "tunnel-data.cdn-edge-update.net",
+      "first_seen": "2026-08-01",
+      "harmless_votes": 22,
+      "malicious_votes": 18,
+      "passive_dns": [
+        "203.0.113.15"
+      ],
+      "registrar": "Cloudflare, Inc.",
+      "reputation": "BORDERLINE_SUSPICIOUS",
+      "resolutions": [
+        "203.0.113.15"
+      ],
+      "threat_family": "None",
+      "verdict": "BORDERLINE_SUSPICIOUS",
+      "vt_positives": 18,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "update-service-win32.com"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Lokibot / InfoStealer C2",
+        "Malware",
+        "Command and Control"
+      ],
+      "category": "Lokibot / InfoStealer C2",
+      "created_date": "2026-06-15",
+      "domain": "update-service-win32.com",
+      "first_seen": "2026-07-01",
+      "harmless_votes": 0,
+      "malicious_votes": 68,
+      "passive_dns": [
+        "198.51.100.42"
+      ],
+      "registrar": "NameCheap, Inc.",
+      "reputation": "MALICIOUS",
+      "resolutions": [
+        "198.51.100.42"
+      ],
+      "threat_family": "Lokibot / InfoStealer C2",
+      "verdict": "MALICIOUS",
+      "vt_positives": 68,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "error-503.service-unavailable.org"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "domain": "error-503.service-unavailable.org",
+      "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
+      "status_code": 503
+    }
+  },
+  {
+    "args": {
+      "domain": "unknown-domain.example"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Uncategorized Domain"
+      ],
+      "category": "Uncategorized Domain",
+      "created_date": "2020-01-01",
+      "domain": "unknown-domain.example",
+      "harmless_votes": 95,
+      "malicious_votes": 0,
+      "passive_dns": [
+        "192.0.2.1"
+      ],
+      "registrar": "MarkMonitor Inc.",
+      "reputation": "BENIGN",
+      "resolutions": [
+        "192.0.2.1"
+      ],
+      "threat_family": "None",
+      "verdict": "BENIGN",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": "EVIL.EXAMPLE"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Uncategorized Domain"
+      ],
+      "category": "Uncategorized Domain",
+      "created_date": "2020-01-01",
+      "domain": "evil.example",
+      "harmless_votes": 95,
+      "malicious_votes": 0,
+      "passive_dns": [
+        "192.0.2.1"
+      ],
+      "registrar": "MarkMonitor Inc.",
+      "reputation": "BENIGN",
+      "resolutions": [
+        "192.0.2.1"
+      ],
+      "threat_family": "None",
+      "verdict": "BENIGN",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "domain": ""
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Uncategorized Domain"
+      ],
+      "category": "Uncategorized Domain",
+      "created_date": "2020-01-01",
+      "domain": "",
+      "harmless_votes": 95,
+      "malicious_votes": 0,
+      "passive_dns": [
+        "192.0.2.1"
+      ],
+      "registrar": "MarkMonitor Inc.",
+      "reputation": "BENIGN",
+      "resolutions": [
+        "192.0.2.1"
+      ],
+      "threat_family": "None",
+      "verdict": "BENIGN",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "query": "update-service-win32.com"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "categories": [
+        "Lokibot / InfoStealer C2",
+        "Malware",
+        "Command and Control"
+      ],
+      "category": "Lokibot / InfoStealer C2",
+      "created_date": "2026-06-15",
+      "domain": "update-service-win32.com",
+      "first_seen": "2026-07-01",
+      "harmless_votes": 0,
+      "malicious_votes": 68,
+      "passive_dns": [
+        "198.51.100.42"
+      ],
+      "registrar": "NameCheap, Inc.",
+      "reputation": "MALICIOUS",
+      "resolutions": [
+        "198.51.100.42"
+      ],
+      "threat_family": "Lokibot / InfoStealer C2",
+      "verdict": "MALICIOUS",
+      "vt_positives": 68,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "file_hash": "275a50710b101da9773f64f4332e92719baa0ab607e034df1ca3bcf88f954f90"
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "VALID_CERTIFICATE",
+      "certificate_status": "VALID",
+      "detections": "0/72 engines",
+      "filename": "trusted_tool.exe",
+      "hash": "275a50710b101da9773f64f4332e92719baa0ab607e034df1ca3bcf88f954f90",
+      "hash_type": "SHA-256",
+      "revocation_date": null,
+      "signer": "Microsoft Corporation",
+      "threat_name": "None",
+      "vendor": "Microsoft Corporation",
+      "verdict": "BENIGN",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "file_hash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "REVOKED_CERTIFICATE",
+      "certificate_status": "REVOKED_BY_CA",
+      "detections": "12/72 engines",
+      "filename": "invoice_update.exe",
+      "hash": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+      "hash_type": "SHA-256",
+      "revocation_date": "2026-08-15",
+      "signer": "Acme Corp",
+      "threat_name": "Signed.SupplyChain.Anomaly",
+      "vendor": "Acme Corp (Compromised Signing Key)",
+      "verdict": "SUSPICIOUS",
+      "vt_positives": 12,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "file_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "UNSIGNED",
+      "certificate_status": "UNSIGNED",
+      "detections": "54/72 engines",
+      "filename": "payload_dropper.bin",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hash_type": "SHA-256",
+      "revocation_date": null,
+      "signer": "None",
+      "threat_name": "Trojan.Lokibot.Generic",
+      "vendor": "Unknown",
+      "verdict": "MALICIOUS",
+      "vt_positives": 54,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "file_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "UNSIGNED",
+      "certificate_status": "UNSIGNED",
+      "detections": "54/72 engines",
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hash_type": "SHA-256",
+      "revocation_date": null,
+      "signer": "None",
+      "threat_name": "Trojan.Lokibot.Generic",
+      "vendor": "Unknown",
+      "verdict": "MALICIOUS",
+      "vt_positives": 54,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "file_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "UNSIGNED",
+      "certificate_status": "UNSIGNED",
+      "detections": "54/72 engines",
+      "hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "hash_type": "MD5",
+      "revocation_date": null,
+      "signer": "None",
+      "threat_name": "Trojan.Lokibot.Generic",
+      "vendor": "Unknown",
+      "verdict": "MALICIOUS",
+      "vt_positives": 54,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "file_hash": ""
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "UNSIGNED",
+      "certificate_status": "UNSIGNED",
+      "detections": "54/72 engines",
+      "hash": "",
+      "hash_type": "SHA-256",
+      "revocation_date": null,
+      "signer": "None",
+      "threat_name": "Trojan.Lokibot.Generic",
+      "vendor": "Unknown",
+      "verdict": "MALICIOUS",
+      "vt_positives": 54,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "sha256": "275a50710b101da9773f64f4332e92719baa0ab607e034df1ca3bcf88f954f90"
+    },
+    "kind": "query",
+    "name": "get_file_report",
+    "result": {
+      "cert_status": "VALID_CERTIFICATE",
+      "certificate_status": "VALID",
+      "detections": "0/72 engines",
+      "filename": "trusted_tool.exe",
+      "hash": "275a50710b101da9773f64f4332e92719baa0ab607e034df1ca3bcf88f954f90",
+      "hash_type": "SHA-256",
+      "revocation_date": null,
+      "signer": "Microsoft Corporation",
+      "threat_name": "None",
+      "vendor": "Microsoft Corporation",
+      "verdict": "BENIGN",
+      "vt_positives": 0,
+      "vt_total": 72
+    }
+  },
+  {
+    "args": {
+      "entity_id": "DESKTOP-FIN-08"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "jdoe",
+      "criticality_tier": "HIGH",
+      "entity": "DESKTOP-FIN-08",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "jdoe"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "AccountingApp",
+        "Office365",
+        "CrowdStrike"
+      ],
+      "ip": "10.0.5.23",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Windows 10 Enterprise",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "jdoe"
+        },
+        {
+          "command_line": "powershell.exe -enc ...",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "powershell.exe",
+          "user": "jdoe"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.5.23",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "entity": "DESKTOP-FIN-08",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "active_user": "jdoe",
+      "criticality_tier": "HIGH",
+      "entity": "DESKTOP-FIN-08",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "jdoe"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "AccountingApp",
+        "Office365",
+        "CrowdStrike"
+      ],
+      "ip": "10.0.5.23",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Windows 10 Enterprise",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "jdoe"
+        },
+        {
+          "command_line": "powershell.exe -enc ...",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "powershell.exe",
+          "user": "jdoe"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.5.23",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "entity_id": "DESKTOP-HR-04"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "mwilson",
+      "criticality_tier": "STANDARD",
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "VPN_AUTHENTICATION",
+          "source_ip": "198.51.100.42",
+          "status": "SUCCESS",
+          "timestamp": "2026-08-31T17:55:12Z",
+          "user": "mwilson"
+        },
+        {
+          "event_type": "SMB_SESSION",
+          "logon_type": "Type 3 Network Logon",
+          "share": "\\\\10.0.8.99\\ADMIN$",
+          "source_ip": "10.0.8.99",
+          "target_host": "10.0.8.99",
+          "timestamp": "2026-08-31T17:58:04Z"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "event_type": "PROCESS_LAUNCH",
+          "pid": 5124,
+          "process_name": "PsExec.exe",
+          "timestamp": "2026-08-31T17:59:22Z"
+        }
+      ],
+      "installed_services": [
+        "WorkdayClient",
+        "Office365"
+      ],
+      "ip": "10.0.8.99",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "os": "Windows 10",
+      "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1044,
+          "ppid": 420,
+          "process_name": "explorer.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 4820,
+          "ppid": 1044,
+          "process_name": "cmd.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 5124,
+          "ppid": 4820,
+          "process_name": "PsExec.exe",
+          "user": "SYSTEM"
+        }
+      ],
+      "recent_event_types": [
+        "VPN_AUTHENTICATION",
+        "PROCESS_LAUNCH",
+        "SMB_SESSION"
+      ],
+      "siem_events_found": 28,
+      "source_ip": "10.0.8.99",
+      "suspicious_indicators": true,
+      "target_host": "10.0.8.99"
+    }
+  },
+  {
+    "args": {
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "active_user": "mwilson",
+      "criticality_tier": "STANDARD",
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "VPN_AUTHENTICATION",
+          "source_ip": "198.51.100.42",
+          "status": "SUCCESS",
+          "timestamp": "2026-08-31T17:55:12Z",
+          "user": "mwilson"
+        },
+        {
+          "event_type": "SMB_SESSION",
+          "logon_type": "Type 3 Network Logon",
+          "share": "\\\\10.0.8.99\\ADMIN$",
+          "source_ip": "10.0.8.99",
+          "target_host": "10.0.8.99",
+          "timestamp": "2026-08-31T17:58:04Z"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "event_type": "PROCESS_LAUNCH",
+          "pid": 5124,
+          "process_name": "PsExec.exe",
+          "timestamp": "2026-08-31T17:59:22Z"
+        }
+      ],
+      "installed_services": [
+        "WorkdayClient",
+        "Office365"
+      ],
+      "ip": "10.0.8.99",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "os": "Windows 10",
+      "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1044,
+          "ppid": 420,
+          "process_name": "explorer.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 4820,
+          "ppid": 1044,
+          "process_name": "cmd.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 5124,
+          "ppid": 4820,
+          "process_name": "PsExec.exe",
+          "user": "SYSTEM"
+        }
+      ],
+      "recent_event_types": [
+        "VPN_AUTHENTICATION",
+        "PROCESS_LAUNCH",
+        "SMB_SESSION"
+      ],
+      "siem_events_found": 28,
+      "source_ip": "10.0.8.99",
+      "suspicious_indicators": true,
+      "target_host": "10.0.8.99"
+    }
+  },
+  {
+    "args": {
+      "entity_id": "SRV-PROD-PAYMENT-01"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "svc_payment",
+      "criticality_tier": "CRITICAL",
+      "entity": "SRV-PROD-PAYMENT-01",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.99.50",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "svc_payment"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.99.50",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "PaymentGateway",
+        "Qualys Scanner",
+        "SSH"
+      ],
+      "ip": "10.0.99.50",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Ubuntu 22.04 LTS",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "svc_payment"
+        },
+        {
+          "command_line": "app.exe",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "app.exe",
+          "user": "svc_payment"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.99.50",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity": "SRV-PROD-PAYMENT-01",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "active_user": "svc_payment",
+      "criticality_tier": "CRITICAL",
+      "entity": "SRV-PROD-PAYMENT-01",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.99.50",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "svc_payment"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.99.50",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "PaymentGateway",
+        "Qualys Scanner",
+        "SSH"
+      ],
+      "ip": "10.0.99.50",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Ubuntu 22.04 LTS",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "svc_payment"
+        },
+        {
+          "command_line": "app.exe",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "app.exe",
+          "user": "svc_payment"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.99.50",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity_id": "VM-DEV-SANDBOX-12"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "devuser",
+      "criticality_tier": "LOW",
+      "entity": "VM-DEV-SANDBOX-12",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.4.15",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "devuser"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.4.15",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "Docker",
+        "Python3",
+        "Git"
+      ],
+      "ip": "10.0.4.15",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Debian 12",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "devuser"
+        },
+        {
+          "command_line": "app.exe",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "app.exe",
+          "user": "devuser"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.4.15",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity": "VM-DEV-SANDBOX-12",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "active_user": "devuser",
+      "criticality_tier": "LOW",
+      "entity": "VM-DEV-SANDBOX-12",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.4.15",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "devuser"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.4.15",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "Docker",
+        "Python3",
+        "Git"
+      ],
+      "ip": "10.0.4.15",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Debian 12",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "devuser"
+        },
+        {
+          "command_line": "app.exe",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "app.exe",
+          "user": "devuser"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.4.15",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity_id": "DESKTOP-HR-04"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "mwilson",
+      "criticality_tier": "STANDARD",
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "VPN_AUTHENTICATION",
+          "source_ip": "198.51.100.42",
+          "status": "SUCCESS",
+          "timestamp": "2026-08-31T17:55:12Z",
+          "user": "mwilson"
+        },
+        {
+          "event_type": "SMB_SESSION",
+          "logon_type": "Type 3 Network Logon",
+          "share": "\\\\10.0.8.99\\ADMIN$",
+          "source_ip": "10.0.8.99",
+          "target_host": "10.0.8.99",
+          "timestamp": "2026-08-31T17:58:04Z"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "event_type": "PROCESS_LAUNCH",
+          "pid": 5124,
+          "process_name": "PsExec.exe",
+          "timestamp": "2026-08-31T17:59:22Z"
+        }
+      ],
+      "installed_services": [
+        "WorkdayClient",
+        "Office365"
+      ],
+      "ip": "10.0.8.99",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "os": "Windows 10",
+      "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1044,
+          "ppid": 420,
+          "process_name": "explorer.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 4820,
+          "ppid": 1044,
+          "process_name": "cmd.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 5124,
+          "ppid": 4820,
+          "process_name": "PsExec.exe",
+          "user": "SYSTEM"
+        }
+      ],
+      "recent_event_types": [
+        "VPN_AUTHENTICATION",
+        "PROCESS_LAUNCH",
+        "SMB_SESSION"
+      ],
+      "siem_events_found": 28,
+      "source_ip": "10.0.8.99",
+      "suspicious_indicators": true,
+      "target_host": "10.0.8.99"
+    }
+  },
+  {
+    "args": {
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "active_user": "mwilson",
+      "criticality_tier": "STANDARD",
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "VPN_AUTHENTICATION",
+          "source_ip": "198.51.100.42",
+          "status": "SUCCESS",
+          "timestamp": "2026-08-31T17:55:12Z",
+          "user": "mwilson"
+        },
+        {
+          "event_type": "SMB_SESSION",
+          "logon_type": "Type 3 Network Logon",
+          "share": "\\\\10.0.8.99\\ADMIN$",
+          "source_ip": "10.0.8.99",
+          "target_host": "10.0.8.99",
+          "timestamp": "2026-08-31T17:58:04Z"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "event_type": "PROCESS_LAUNCH",
+          "pid": 5124,
+          "process_name": "PsExec.exe",
+          "timestamp": "2026-08-31T17:59:22Z"
+        }
+      ],
+      "installed_services": [
+        "WorkdayClient",
+        "Office365"
+      ],
+      "ip": "10.0.8.99",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "os": "Windows 10",
+      "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1044,
+          "ppid": 420,
+          "process_name": "explorer.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 4820,
+          "ppid": 1044,
+          "process_name": "cmd.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 5124,
+          "ppid": 4820,
+          "process_name": "PsExec.exe",
+          "user": "SYSTEM"
+        }
+      ],
+      "recent_event_types": [
+        "VPN_AUTHENTICATION",
+        "PROCESS_LAUNCH",
+        "SMB_SESSION"
+      ],
+      "siem_events_found": 28,
+      "source_ip": "10.0.8.99",
+      "suspicious_indicators": true,
+      "target_host": "10.0.8.99"
+    }
+  },
+  {
+    "args": {
+      "entity_id": "10.0.8.99"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "mwilson",
+      "criticality_tier": "STANDARD",
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "VPN_AUTHENTICATION",
+          "source_ip": "198.51.100.42",
+          "status": "SUCCESS",
+          "timestamp": "2026-08-31T17:55:12Z",
+          "user": "mwilson"
+        },
+        {
+          "event_type": "SMB_SESSION",
+          "logon_type": "Type 3 Network Logon",
+          "share": "\\\\10.0.8.99\\ADMIN$",
+          "source_ip": "10.0.8.99",
+          "target_host": "10.0.8.99",
+          "timestamp": "2026-08-31T17:58:04Z"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "event_type": "PROCESS_LAUNCH",
+          "pid": 5124,
+          "process_name": "PsExec.exe",
+          "timestamp": "2026-08-31T17:59:22Z"
+        }
+      ],
+      "installed_services": [
+        "WorkdayClient",
+        "Office365"
+      ],
+      "ip": "10.0.8.99",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "os": "Windows 10",
+      "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1044,
+          "ppid": 420,
+          "process_name": "explorer.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 4820,
+          "ppid": 1044,
+          "process_name": "cmd.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 5124,
+          "ppid": 4820,
+          "process_name": "PsExec.exe",
+          "user": "SYSTEM"
+        }
+      ],
+      "recent_event_types": [
+        "VPN_AUTHENTICATION",
+        "PROCESS_LAUNCH",
+        "SMB_SESSION"
+      ],
+      "siem_events_found": 28,
+      "source_ip": "10.0.8.99",
+      "suspicious_indicators": true,
+      "target_host": "10.0.8.99"
+    }
+  },
+  {
+    "args": {
+      "entity": "10.0.8.99",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "active_user": "mwilson",
+      "criticality_tier": "STANDARD",
+      "entity": "DESKTOP-HR-04",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "VPN_AUTHENTICATION",
+          "source_ip": "198.51.100.42",
+          "status": "SUCCESS",
+          "timestamp": "2026-08-31T17:55:12Z",
+          "user": "mwilson"
+        },
+        {
+          "event_type": "SMB_SESSION",
+          "logon_type": "Type 3 Network Logon",
+          "share": "\\\\10.0.8.99\\ADMIN$",
+          "source_ip": "10.0.8.99",
+          "target_host": "10.0.8.99",
+          "timestamp": "2026-08-31T17:58:04Z"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "event_type": "PROCESS_LAUNCH",
+          "pid": 5124,
+          "process_name": "PsExec.exe",
+          "timestamp": "2026-08-31T17:59:22Z"
+        }
+      ],
+      "installed_services": [
+        "WorkdayClient",
+        "Office365"
+      ],
+      "ip": "10.0.8.99",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "os": "Windows 10",
+      "process_command": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1044,
+          "ppid": 420,
+          "process_name": "explorer.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "cmd.exe /c psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 4820,
+          "ppid": 1044,
+          "process_name": "cmd.exe",
+          "user": "mwilson"
+        },
+        {
+          "command_line": "psexec.exe -u admin -p ... \\\\10.0.8.99 cmd.exe",
+          "pid": 5124,
+          "ppid": 4820,
+          "process_name": "PsExec.exe",
+          "user": "SYSTEM"
+        }
+      ],
+      "recent_event_types": [
+        "VPN_AUTHENTICATION",
+        "PROCESS_LAUNCH",
+        "SMB_SESSION"
+      ],
+      "siem_events_found": 28,
+      "source_ip": "10.0.8.99",
+      "suspicious_indicators": true,
+      "target_host": "10.0.8.99"
+    }
+  },
+  {
+    "args": {
+      "entity_id": "evil-host"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "entity": "evil-host",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "entity": "evil-host",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "entity": "evil-host",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "entity_id": "WKS-FIN-99"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "entity": "WKS-FIN-99",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.5.23",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "entity": "WKS-FIN-99",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "entity": "WKS-FIN-99",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.5.23",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "entity_id": "admin-box"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "entity": "admin-box",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity": "admin-box",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "entity": "admin-box",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 3 Network Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity_id": "nobody"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "entity": "nobody",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity": "nobody",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "entity": "nobody",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity_id": ""
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "entity": "",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "entity": "",
+      "entity_type": "host"
+    },
+    "kind": "query",
+    "name": "summarize_entity",
+    "result": {
+      "entity": "",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "192.0.2.10",
+          "timestamp": "2026-08-25T14:25:00Z"
+        }
+      ],
+      "last_active": "2026-08-25T14:30:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1000,
+          "ppid": 400,
+          "process_name": "explorer.exe",
+          "user": "system"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "192.0.2.10",
+      "suspicious_indicators": false
+    }
+  },
+  {
+    "args": {
+      "query": ""
+    },
+    "kind": "query",
+    "name": "list_cases",
+    "result": {
+      "cases": [
+        {
+          "assigned_to": "Tier 1 Queue",
+          "case_id": "CASE-33279",
+          "priority": "HIGH",
+          "stage": "TRIAGE",
+          "status": "OPEN",
+          "title": "Suspected Lokibot C2 Beaconing"
+        },
+        {
+          "assigned_to": "Tier 1 Queue",
+          "case_id": "CASE-17305",
+          "priority": "CRITICAL",
+          "stage": "TRIAGE",
+          "status": "OPEN",
+          "title": "Anomalous Internal Admin Port Scan"
+        }
+      ],
+      "total": 2
+    }
+  },
+  {
+    "args": {
+      "query": "lokibot"
+    },
+    "kind": "query",
+    "name": "list_cases",
+    "result": {
+      "cases": [
+        {
+          "assigned_to": "Tier 1 Queue",
+          "case_id": "CASE-33279",
+          "priority": "HIGH",
+          "stage": "TRIAGE",
+          "status": "OPEN",
+          "title": "Suspected Lokibot C2 Beaconing"
+        }
+      ],
+      "total": 1
+    }
+  },
+  {
+    "args": {
+      "query": "duplicate"
+    },
+    "kind": "query",
+    "name": "list_cases",
+    "result": {
+      "cases": [],
+      "total": 0
+    }
+  },
+  {
+    "args": {
+      "query": "HIGH"
+    },
+    "kind": "query",
+    "name": "list_cases",
+    "result": {
+      "cases": [
+        {
+          "assigned_to": "Tier 1 Queue",
+          "case_id": "CASE-33279",
+          "priority": "HIGH",
+          "stage": "TRIAGE",
+          "status": "OPEN",
+          "title": "Suspected Lokibot C2 Beaconing"
+        }
+      ],
+      "total": 1
+    }
+  },
+  {
+    "args": {
+      "query": "nothing-matches-this"
+    },
+    "kind": "query",
+    "name": "list_cases",
+    "result": {
+      "cases": [],
+      "total": 0
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-17305"
+    },
+    "kind": "query",
+    "name": "get_case",
+    "result": {
+      "assignee": "Tier 1 Queue",
+      "case_id": "CASE-17305",
+      "comments": [
+        "Qualys vulnerability scan detected on SRV-PROD-PAYMENT-01",
+        "golden comment",
+        "golden alias"
+      ],
+      "priority": "CRITICAL",
+      "stage": "TRIAGE",
+      "status": "OPEN",
+      "title": "Anomalous Internal Admin Port Scan"
+    }
+  },
+  {
+    "args": {
+      "siem_alert_id": "alerts/CASE-17305"
+    },
+    "kind": "query",
+    "name": "fetch_alert_data",
+    "result": {
+      "assignee": "Tier 1 Queue",
+      "case_id": "CASE-17305",
+      "comments": [
+        "Qualys vulnerability scan detected on SRV-PROD-PAYMENT-01",
+        "golden comment",
+        "golden alias"
+      ],
+      "priority": "CRITICAL",
+      "stage": "TRIAGE",
+      "status": "OPEN",
+      "title": "Anomalous Internal Admin Port Scan"
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-33279"
+    },
+    "kind": "query",
+    "name": "get_case",
+    "result": {
+      "assignee": "Tier 1 Queue",
+      "case_id": "CASE-33279",
+      "comments": [
+        "Automated SIEM alert ingested from DESKTOP-FIN-08 beaconing to update-service-win32.com"
+      ],
+      "priority": "HIGH",
+      "stage": "TRIAGE",
+      "status": "OPEN",
+      "title": "Suspected Lokibot C2 Beaconing"
+    }
+  },
+  {
+    "args": {
+      "siem_alert_id": "alerts/CASE-33279"
+    },
+    "kind": "query",
+    "name": "fetch_alert_data",
+    "result": {
+      "assignee": "Tier 1 Queue",
+      "case_id": "CASE-33279",
+      "comments": [
+        "Automated SIEM alert ingested from DESKTOP-FIN-08 beaconing to update-service-win32.com"
+      ],
+      "priority": "HIGH",
+      "stage": "TRIAGE",
+      "status": "OPEN",
+      "title": "Suspected Lokibot C2 Beaconing"
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-NOPE"
+    },
+    "kind": "query",
+    "name": "get_case",
+    "result": {
+      "error": "Case or alert 'CASE-NOPE' not found",
+      "status": "NOT_FOUND"
+    }
+  },
+  {
+    "args": {
+      "siem_alert_id": "alerts/CASE-NOPE"
+    },
+    "kind": "query",
+    "name": "fetch_alert_data",
+    "result": {
+      "error": "Case or alert 'CASE-NOPE' not found",
+      "status": "NOT_FOUND"
+    }
+  },
+  {
+    "args": {
+      "query": "principal.hostname = \"DESKTOP-FIN-08\""
+    },
+    "kind": "query",
+    "name": "udm_search",
+    "result": {
+      "events": [
+        {
+          "event_timestamp": "2026-08-31T17:45:00Z",
+          "metadata": {
+            "event_type": "NETWORK_CONNECTION"
+          },
+          "principal": {
+            "hostname": "DESKTOP-FIN-08",
+            "ip": "10.0.5.23"
+          },
+          "target": {
+            "hostname": "update-service-win32.com",
+            "ip": "198.51.100.42"
+          }
+        },
+        {
+          "event_timestamp": "2026-08-31T17:46:12Z",
+          "metadata": {
+            "event_type": "PROCESS_LAUNCH"
+          },
+          "principal": {
+            "hostname": "DESKTOP-FIN-08",
+            "user": {
+              "userid": "jdoe"
+            }
+          },
+          "target": {
+            "process": {
+              "command_line": "powershell.exe -enc ..."
+            }
+          }
+        }
+      ],
+      "query": "principal.hostname = \"DESKTOP-FIN-08\"",
+      "total_events": 5
+    }
+  },
+  {
+    "args": {
+      "query": ""
+    },
+    "kind": "query",
+    "name": "udm_search",
+    "result": {
+      "events": [
+        {
+          "event_timestamp": "2026-08-31T17:45:00Z",
+          "metadata": {
+            "event_type": "NETWORK_CONNECTION"
+          },
+          "principal": {
+            "hostname": "DESKTOP-FIN-08",
+            "ip": "10.0.5.23"
+          },
+          "target": {
+            "hostname": "update-service-win32.com",
+            "ip": "198.51.100.42"
+          }
+        },
+        {
+          "event_timestamp": "2026-08-31T17:46:12Z",
+          "metadata": {
+            "event_type": "PROCESS_LAUNCH"
+          },
+          "principal": {
+            "hostname": "DESKTOP-FIN-08",
+            "user": {
+              "userid": "jdoe"
+            }
+          },
+          "target": {
+            "process": {
+              "command_line": "powershell.exe -enc ..."
+            }
+          }
+        }
+      ],
+      "query": "",
+      "total_events": 5
+    }
+  },
+  {
+    "args": {},
+    "kind": "query",
+    "name": "no_such_tool",
+    "result": {
+      "error": "Tool 'no_such_tool' not supported by SocEnvironment",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "hostname": "DESKTOP-FIN-08"
+    },
+    "kind": "action",
+    "name": "isolate_host",
+    "result": {
+      "action": "isolate_host",
+      "criticality_tier": "HIGH",
+      "hostname": "DESKTOP-FIN-08",
+      "ip": "10.0.5.23",
+      "isolated": true,
+      "message": "Host 'DESKTOP-FIN-08' (10.0.5.23) successfully isolated from network.",
+      "status": "SUCCESS"
+    }
+  },
+  {
+    "args": {
+      "ip": "10.0.0.250"
+    },
+    "kind": "action",
+    "name": "isolate",
+    "result": {
+      "action": "isolate_host",
+      "error": "Host '10.0.0.250' not found in inventory.",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "hostname": "DESKTOP-FIN-08"
+    },
+    "kind": "action",
+    "name": "unisolate_host",
+    "result": {
+      "action": "unblock_host",
+      "hostname": "DESKTOP-FIN-08",
+      "ip": "10.0.5.23",
+      "isolated": false,
+      "message": "Host 'DESKTOP-FIN-08' network isolation removed.",
+      "status": "SUCCESS"
+    }
+  },
+  {
+    "args": {
+      "hostname": "ghost"
+    },
+    "kind": "action",
+    "name": "unblock_host",
+    "result": {
+      "action": "unblock_host",
+      "error": "Host 'ghost' not found in inventory.",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "indicator": "error-503.service-unavailable.org"
+    },
+    "kind": "action",
+    "name": "block_indicator",
+    "result": {
+      "action": "block_indicator",
+      "indicator": "error-503.service-unavailable.org",
+      "message": "Indicator 'error-503.service-unavailable.org' added to firewall and EDR blocklist.",
+      "status": "SUCCESS"
+    }
+  },
+  {
+    "args": {
+      "domain": "evil.example"
+    },
+    "kind": "action",
+    "name": "block_domain",
+    "result": {
+      "action": "block_indicator",
+      "indicator": "evil.example",
+      "message": "Indicator 'evil.example' added to firewall and EDR blocklist.",
+      "status": "SUCCESS"
+    }
+  },
+  {
+    "args": {
+      "ip": "198.51.100.42"
+    },
+    "kind": "action",
+    "name": "block_ip",
+    "result": {
+      "action": "block_indicator",
+      "indicator": "198.51.100.42",
+      "message": "Indicator '198.51.100.42' added to firewall and EDR blocklist.",
+      "status": "SUCCESS"
+    }
+  },
+  {
+    "args": {},
+    "kind": "action",
+    "name": "block_hash",
+    "result": {
+      "action": "block_indicator",
+      "error": "No valid indicator provided to block.",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-17305",
+      "comment": "golden comment"
+    },
+    "kind": "action",
+    "name": "update_case_comment",
+    "result": {
+      "action": "update_case_comment",
+      "bytes_posted": 14,
+      "case_id": "CASE-17305",
+      "status": "SUCCESS",
+      "total_comments": 2
+    }
+  },
+  {
+    "args": {
+      "caseId": "cases/CASE-17305",
+      "text": "golden alias"
+    },
+    "kind": "action",
+    "name": "post_case_comment",
+    "result": {
+      "action": "update_case_comment",
+      "bytes_posted": 12,
+      "case_id": "CASE-17305",
+      "status": "SUCCESS",
+      "total_comments": 3
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-NOPE",
+      "comment": "x"
+    },
+    "kind": "action",
+    "name": "add_case_comment",
+    "result": {
+      "action": "update_case_comment",
+      "error": "Case 'CASE-NOPE' not found.",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-17305",
+      "verdict": "BENIGN"
+    },
+    "kind": "action",
+    "name": "close_case",
+    "result": {
+      "action": "close_case",
+      "case_id": "CASE-17305",
+      "stage": "RESOLVED",
+      "status": "SUCCESS",
+      "status_value": "CLOSED",
+      "verdict": "BENIGN"
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-NOPE"
+    },
+    "kind": "action",
+    "name": "resolve_case",
+    "result": {
+      "action": "close_case",
+      "error": "Case 'CASE-NOPE' not found.",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "hostname": "DESKTOP-FIN-08"
+    },
+    "kind": "action",
+    "name": "reboot_host",
+    "result": {
+      "action": "reboot_host",
+      "error": "Unsupported action 'reboot_host'",
+      "status": "ERROR"
+    }
+  },
+  {
+    "args": {
+      "case_id": "CASE-17305"
+    },
+    "kind": "query",
+    "name": "get_case",
+    "result": {
+      "assignee": "Tier 1 Queue",
+      "case_id": "CASE-17305",
+      "comments": [
+        "Qualys vulnerability scan detected on SRV-PROD-PAYMENT-01",
+        "golden comment",
+        "golden alias"
+      ],
+      "priority": "CRITICAL",
+      "stage": "RESOLVED",
+      "status": "CLOSED",
+      "title": "Anomalous Internal Admin Port Scan"
+    }
+  },
+  {
+    "args": {
+      "entity_id": "DESKTOP-FIN-08"
+    },
+    "kind": "query",
+    "name": "lookup_entity",
+    "result": {
+      "active_user": "jdoe",
+      "criticality_tier": "HIGH",
+      "entity": "DESKTOP-FIN-08",
+      "entity_type": "host",
+      "events": [
+        {
+          "event_type": "USER_LOGIN",
+          "logon_type": "Type 2 Interactive Logon",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-31T17:40:00Z",
+          "user": "jdoe"
+        },
+        {
+          "destination_ip": "198.51.100.42",
+          "destination_port": 443,
+          "event_type": "NETWORK_CONNECTION",
+          "source_ip": "10.0.5.23",
+          "timestamp": "2026-08-31T17:45:00Z"
+        }
+      ],
+      "installed_services": [
+        "AccountingApp",
+        "Office365",
+        "CrowdStrike"
+      ],
+      "ip": "10.0.5.23",
+      "isolated": false,
+      "last_active": "2026-08-31T18:00:00Z",
+      "logon_type": "Type 2 Interactive Logon",
+      "os": "Windows 10 Enterprise",
+      "process_tree": [
+        {
+          "command_line": "C:\\Windows\\explorer.exe",
+          "pid": 1100,
+          "ppid": 450,
+          "process_name": "explorer.exe",
+          "user": "jdoe"
+        },
+        {
+          "command_line": "powershell.exe -enc ...",
+          "pid": 2480,
+          "ppid": 1100,
+          "process_name": "powershell.exe",
+          "user": "jdoe"
+        }
+      ],
+      "recent_event_types": [
+        "USER_LOGIN",
+        "NETWORK_CONNECTION",
+        "PROCESS_LAUNCH"
+      ],
+      "siem_events_found": 14,
+      "source_ip": "10.0.5.23",
+      "suspicious_indicators": true
+    }
+  },
+  {
+    "args": {
+      "error": "Service Unavailable",
+      "status_code": 503
+    },
+    "kind": "fault",
+    "name": "get_domain_report",
+    "result": {
+      "fault_injected": "get_domain_report"
+    }
+  },
+  {
+    "args": {
+      "domain": "error-503.service-unavailable.org"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "error": "Service Unavailable",
+      "status": "ERROR",
+      "status_code": 503
+    }
+  },
+  {
+    "args": {},
+    "kind": "clear_faults",
+    "name": "",
+    "result": {
+      "faults_cleared": true
+    }
+  },
+  {
+    "args": {
+      "domain": "error-503.service-unavailable.org"
+    },
+    "kind": "query",
+    "name": "get_domain_report",
+    "result": {
+      "domain": "error-503.service-unavailable.org",
+      "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
+      "status_code": 503
+    }
+  },
+  {
+    "blocked_indicators": [
+      "198.51.100.42",
+      "error-503.service-unavailable.org",
+      "evil.example"
+    ],
+    "case_states": {
+      "CASE-17305": [
+        "CLOSED",
+        "RESOLVED",
+        3
+      ],
+      "CASE-33279": [
+        "OPEN",
+        "TRIAGE",
+        1
+      ]
+    },
+    "isolated_hosts": [],
+    "kind": "final_state"
+  }
+]
