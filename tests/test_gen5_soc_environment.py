@@ -215,3 +215,68 @@ def test_from_eval_case_rejects_non_object_environment_state():
     with pytest.raises(ValueError, match="environment_state"):
         SocEnvironment.from_eval_case({"eval_id": "X", "generation": 5, "environment_state": ["not", "a", "dict"]})
 
+
+def test_strict_ip_report_inventory_hit_renders_the_entity():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_ip_address_report", {"ip": "198.18.4.20"})
+    assert report["reputation"] == "MALICIOUS"
+    assert report["threat_family"] == "Vidar / InfoStealer C2"
+    assert report["reverse_dns"] == "cdn-sync-metrics41.com"
+    assert report["cidr"] == "198.18.4.0/24"
+
+
+def test_strict_ip_report_for_a_host_ip_is_internal_with_association():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_ip_report", {"entity_id": "10.7.0.17"})
+    assert report["reputation"] == "INTERNAL"
+    assert report["verdict"] == "NEUTRAL"
+    assert report["host_association"] == "WKS-AUS-17"
+    assert report["criticality_tier"] == "STANDARD"
+    assert report["reverse_dns"] == "wks-aus-17.corp.internal"
+    assert report["harmless_votes"] == 0
+
+
+def test_strict_ip_report_for_rfc5737_is_documentation_with_zero_votes():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_ip_address_report", {"ip": "203.0.113.7"})
+    assert report["category"] == "Documentation / Reserved RFC-5737"
+    assert report["routing_status"] == "RFC-5737 TEST-NET-3 (Non-Routable Documentation Subnet)"
+    assert report["verdict"] == "SAFE"
+    assert report["harmless_votes"] == 0
+    assert report["cidr"] == "203.0.113.0/24"
+
+
+def test_strict_ip_report_for_unknown_rfc1918_is_internal_unknown():
+    env = SocEnvironment(initial_state=replace_state())
+    for ip in ("10.200.1.1", "172.16.3.4", "192.168.50.5"):
+        report = env.query_tool("get_ip_address_report", {"ip": ip})
+        assert report["reputation"] == "INTERNAL", ip
+        assert report["host_association"] == "Unknown", ip
+
+
+def test_strict_ip_report_for_unknown_external_is_no_data_not_suspicious():
+    env = SocEnvironment(initial_state=replace_state())
+    for ip in ("198.18.9.9", "8.8.8.8", "1.1.1.1"):
+        report = env.query_tool("get_ip_address_report", {"ip": ip})
+        assert report["reputation"] == "NO_DATA", ip
+        assert report["verdict"] == "UNKNOWN", ip
+        assert report["malicious_votes"] == 0, ip
+        assert "threat_family" not in report, ip
+
+
+def test_strict_ip_report_does_not_carry_the_gen3_lokibot_special_case():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_ip_address_report", {"ip": "198.51.100.42"})
+    assert report["reputation"] != "MALICIOUS"
+    assert report["malicious_votes"] == 0
+    assert "threat_family" not in report
+    assert report["routing_status"] == "RFC-5737 TEST-NET-2 (Non-Routable Documentation Subnet)"
+
+
+def test_overlay_ip_report_keeps_legacy_fallbacks():
+    env = SocEnvironment()
+    assert env.query_tool("get_ip_address_report", {"ip": "8.8.8.8"})["reputation"] == "SUSPICIOUS"
+    assert env.query_tool("get_ip_address_report", {"ip": "198.51.100.42"})["threat_family"] == "Lokibot / InfoStealer C2"
+    assert env.query_tool("get_ip_address_report", {"ip": "10.0.99.50"})["service"] == "Qualys Vulnerability Scanner"
+
+

@@ -12,6 +12,26 @@ import ipaddress
 import json
 from typing import Any, Dict, List, Optional, Set
 
+_RFC5737_PREFIXES = ("192.0.2.", "198.51.100.", "203.0.113.")
+_RFC1918_NETWORKS = (
+    ipaddress.IPv4Network("10.0.0.0/8"),
+    ipaddress.IPv4Network("172.16.0.0/12"),
+    ipaddress.IPv4Network("192.168.0.0/16"),
+)
+
+
+def _is_rfc1918(ip: str) -> bool:
+    """True only for the three RFC 1918 blocks (not for TEST-NET or benchmarking space)."""
+    try:
+        address = ipaddress.IPv4Address(ip)
+    except (ipaddress.AddressValueError, ValueError):
+        return False
+    return any(address in network for network in _RFC1918_NETWORKS)
+
+
+def _slash24(ip: str) -> str:
+    return f"{ip.rsplit('.', 1)[0]}.0/24" if ip.count(".") == 3 else ""
+
 
 @dataclass
 class HostEntity:
@@ -564,6 +584,139 @@ class SocEnvironment:
                 return host
         return None
 
+    def _ip_report(self, ip: str) -> Dict[str, Any]:
+        """Inventory first, then the mode-specific fallback."""
+        if ip in self.ips:
+            return self.ips[ip].to_report()
+        host = self._find_host(ip)
+        if self.strict:
+            return self._strict_ip_fallback(ip, host)
+        return self._legacy_ip_fallback(ip, host)
+
+    def _strict_ip_fallback(self, ip: str, host: Optional[HostEntity]) -> Dict[str, Any]:
+        """Replace-mode fallback: structural facts only, no fabricated reputation."""
+        cidr = _slash24(ip)
+        if host is not None:
+            return {
+                "ip": ip,
+                "category": "Internal Corporate Subnet",
+                "reputation": "INTERNAL",
+                "verdict": "NEUTRAL",
+                "host_association": host.hostname,
+                "criticality_tier": host.criticality_tier,
+                "asn": "RFC-1918 (Private Corporate Network)",
+                "cidr": cidr,
+                "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+                "malicious_votes": 0,
+                "harmless_votes": 0,
+                "vt_positives": 0,
+                "vt_total": 72,
+                "reverse_dns": f"{host.hostname.lower()}.corp.internal",
+            }
+        if ip.startswith(_RFC5737_PREFIXES):
+            rfc_num = "1" if ip.startswith("192.0.2.") else ("2" if ip.startswith("198.51.100.") else "3")
+            return {
+                "ip": ip,
+                "category": "Documentation / Reserved RFC-5737",
+                "reputation": "BENIGN / NON-ROUTABLE",
+                "verdict": "SAFE",
+                "malicious_votes": 0,
+                "harmless_votes": 0,
+                "asn": "AS0 (Documentation)",
+                "cidr": cidr,
+                "routing_status": f"RFC-5737 TEST-NET-{rfc_num} (Non-Routable Documentation Subnet)",
+                "vt_positives": 0,
+                "vt_total": 72,
+                "reverse_dns": "",
+            }
+        if _is_rfc1918(ip):
+            return {
+                "ip": ip,
+                "category": "Internal Corporate Subnet",
+                "reputation": "INTERNAL",
+                "verdict": "NEUTRAL",
+                "host_association": "Unknown",
+                "asn": "RFC-1918 (Private Corporate Network)",
+                "cidr": cidr,
+                "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+                "malicious_votes": 0,
+                "harmless_votes": 0,
+                "vt_positives": 0,
+                "vt_total": 72,
+                "reverse_dns": "",
+            }
+        return {
+            "ip": ip,
+            "category": "Public IP",
+            "reputation": "NO_DATA",
+            "verdict": "UNKNOWN",
+            "malicious_votes": 0,
+            "harmless_votes": 0,
+            "asn": "Unknown",
+            "cidr": cidr,
+            "routing_status": "Public Routable IP",
+            "vt_positives": 0,
+            "vt_total": 72,
+            "reverse_dns": "",
+        }
+
+    def _legacy_ip_fallback(self, ip: str, host: Optional[HostEntity]) -> Dict[str, Any]:
+        """Overlay-mode fallback: the Gen 3 behavior, moved verbatim.
+
+        The two exact-match special cases (10.0.99.50 and 198.51.100.42) are not
+        here because they now live in _get_default_ips() and are served by the
+        inventory lookup in _ip_report before this method runs.
+        """
+        if ip.startswith("192.0.2.") or ip.startswith("198.51.100.") or ip.startswith("203.0.113."):
+            rfc_num = "1" if ip.startswith("192.0.2.") else ("2" if ip.startswith("198.51.100.") else "3")
+            cidr_prefix = "192.0.2.0/24" if ip.startswith("192.0.2.") else ("198.51.100.0/24" if ip.startswith("198.51.100.") else "203.0.113.0/24")
+            return {
+                "ip": ip,
+                "category": "Documentation / Reserved RFC-5737",
+                "reputation": "BENIGN / NON-ROUTABLE",
+                "verdict": "SAFE",
+                "malicious_votes": 0,
+                "harmless_votes": 100,
+                "asn": "AS0 (Documentation)",
+                "cidr": cidr_prefix,
+                "routing_status": f"RFC-5737 TEST-NET-{rfc_num} (Non-Routable Documentation Subnet)",
+                "vt_positives": 0,
+                "vt_total": 72,
+                "reverse_dns": f"test-doc-{ip.replace('.', '-')}.example.net",
+            }
+        if ip in ["10.0.4.15", "10.0.5.23", "10.0.8.99"] or (host is not None):
+            host_name = host.hostname if host else ("DESKTOP-FIN-08" if ip == "10.0.5.23" else "Unknown")
+            return {
+                "ip": ip,
+                "category": "Internal Corporate Subnet",
+                "reputation": "INTERNAL",
+                "verdict": "NEUTRAL",
+                "host_association": host_name,
+                "criticality_tier": host.criticality_tier if host else "STANDARD",
+                "asn": "RFC-1918 (Private Corporate Network)",
+                "cidr": "10.0.0.0/16",
+                "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
+                "vt_positives": 0,
+                "vt_total": 72,
+                "reverse_dns": f"{host_name.lower()}.corp.internal",
+                "malicious_votes": 0,
+                "harmless_votes": 100,
+            }
+        return {
+            "ip": ip,
+            "category": "Public IP",
+            "reputation": "SUSPICIOUS",
+            "verdict": "POTENTIALLY_MALICIOUS",
+            "malicious_votes": 42,
+            "harmless_votes": 2,
+            "asn": "AS13335 (Public Transit)",
+            "cidr": f"{ip.rsplit('.', 1)[0]}.0/24",
+            "routing_status": "Public Routable IP",
+            "vt_positives": 42,
+            "vt_total": 72,
+            "reverse_dns": f"host-{ip.replace('.', '-')}.isp-routing.net",
+        }
+
     def query_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Executes epistemic information-gathering tool queries against the sandbox state."""
         # 1. Check for active fault injection on this tool
@@ -580,89 +733,7 @@ class SocEnvironment:
         # 2. IP address report query
         if tool_name in ["get_ip_address_report", "get_ip_report"]:
             ip = str(args.get("ip") or args.get("entity_id") or args.get("query") or "").strip()
-            host = self._find_host(ip)
-            if ip == "10.0.99.50":
-                return {
-                    "ip": ip,
-                    "category": "Internal Authorized Scanner",
-                    "reputation": "BENIGN_AUTHORIZED",
-                    "verdict": "SAFE",
-                    "service": "Qualys Vulnerability Scanner",
-                    "malicious_votes": 0,
-                    "harmless_votes": 100,
-                    "host_association": host.hostname if host else "SRV-PROD-PAYMENT-01",
-                    "asn": "RFC-1918 Private Subnet",
-                    "cidr": "10.0.99.0/24",
-                    "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
-                    "vt_positives": 0,
-                    "vt_total": 72,
-                    "reverse_dns": "srv-prod-payment-01.corp.internal",
-                }
-            if ip.startswith("192.0.2.") or ip.startswith("198.51.100.") or ip.startswith("203.0.113."):
-                if ip == "198.51.100.42":
-                    return {
-                        "ip": ip,
-                        "category": "Known C2 Endpoint",
-                        "reputation": "MALICIOUS",
-                        "verdict": "MALICIOUS",
-                        "malicious_votes": 68,
-                        "harmless_votes": 0,
-                        "threat_family": "Lokibot / InfoStealer C2",
-                        "asn": "AS13335 (Malicious Hosting)",
-                        "cidr": "198.51.100.0/24",
-                        "routing_status": "Public Routable IP",
-                        "vt_positives": 68,
-                        "vt_total": 72,
-                        "reverse_dns": "update-service-win32.com",
-                    }
-                rfc_num = "1" if ip.startswith("192.0.2.") else ("2" if ip.startswith("198.51.100.") else "3")
-                cidr_prefix = "192.0.2.0/24" if ip.startswith("192.0.2.") else ("198.51.100.0/24" if ip.startswith("198.51.100.") else "203.0.113.0/24")
-                return {
-                    "ip": ip,
-                    "category": "Documentation / Reserved RFC-5737",
-                    "reputation": "BENIGN / NON-ROUTABLE",
-                    "verdict": "SAFE",
-                    "malicious_votes": 0,
-                    "harmless_votes": 100,
-                    "asn": "AS0 (Documentation)",
-                    "cidr": cidr_prefix,
-                    "routing_status": f"RFC-5737 TEST-NET-{rfc_num} (Non-Routable Documentation Subnet)",
-                    "vt_positives": 0,
-                    "vt_total": 72,
-                    "reverse_dns": f"test-doc-{ip.replace('.', '-')}.example.net",
-                }
-            if ip in ["10.0.4.15", "10.0.5.23", "10.0.8.99"] or (host is not None):
-                host_name = host.hostname if host else ("DESKTOP-FIN-08" if ip == "10.0.5.23" else "Unknown")
-                return {
-                    "ip": ip,
-                    "category": "Internal Corporate Subnet",
-                    "reputation": "INTERNAL",
-                    "verdict": "NEUTRAL",
-                    "host_association": host_name,
-                    "criticality_tier": host.criticality_tier if host else "STANDARD",
-                    "asn": "RFC-1918 (Private Corporate Network)",
-                    "cidr": "10.0.0.0/16",
-                    "routing_status": "RFC-1918 (Non-Routable Private Subnet)",
-                    "vt_positives": 0,
-                    "vt_total": 72,
-                    "reverse_dns": f"{host_name.lower()}.corp.internal",
-                    "malicious_votes": 0,
-                    "harmless_votes": 100,
-                }
-            return {
-                "ip": ip,
-                "category": "Public IP",
-                "reputation": "SUSPICIOUS",
-                "verdict": "POTENTIALLY_MALICIOUS",
-                "malicious_votes": 42,
-                "harmless_votes": 2,
-                "asn": "AS13335 (Public Transit)",
-                "cidr": f"{ip.rsplit('.', 1)[0]}.0/24",
-                "routing_status": "Public Routable IP",
-                "vt_positives": 42,
-                "vt_total": 72,
-                "reverse_dns": f"host-{ip.replace('.', '-')}.isp-routing.net",
-            }
+            return self._ip_report(ip)
 
         # 3. Domain report query
         if tool_name == "get_domain_report":
