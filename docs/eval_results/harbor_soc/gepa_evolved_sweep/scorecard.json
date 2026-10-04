@@ -1,0 +1,152 @@
+{
+  "metadata": {
+    "timestamp": "2026-10-02T04:33:53.612792+00:00",
+    "models": [
+      "gemini-3.5-flash-lite",
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-lite"
+    ],
+    "arms": [
+      "no_skills",
+      "clean_skills",
+      "gepa_evolved_skills"
+    ],
+    "project_id": "dandye-0324-chronicle",
+    "location": "us-central1",
+    "total_trials": 90
+  },
+  "models": {
+    "gemini-3.5-flash-lite": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 70.0,
+          "mean_reward": 0.7704,
+          "state_and_safety_compliance_60pct": 0.492,
+          "action_economy_20pct": 0.1384,
+          "assertions_and_jev_20pct": 0.14,
+          "mean_operational_loss_usd": 505.0,
+          "mean_latency_s": 7.69,
+          "total_tools_called": 35
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 90.0,
+          "mean_reward": 0.8413,
+          "state_and_safety_compliance_60pct": 0.5199,
+          "action_economy_20pct": 0.1504,
+          "assertions_and_jev_20pct": 0.171,
+          "mean_operational_loss_usd": 5.0,
+          "mean_latency_s": 7.36,
+          "total_tools_called": 35
+        },
+        "gepa_evolved_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 60.0,
+          "mean_reward": 0.7459,
+          "state_and_safety_compliance_60pct": 0.4164,
+          "action_economy_20pct": 0.19,
+          "assertions_and_jev_20pct": 0.1395,
+          "mean_operational_loss_usd": 6505.0,
+          "mean_latency_s": 12.29,
+          "total_tools_called": 37
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": 0.0709,
+        "gepa_vs_clean_delta": -0.0954,
+        "gepa_vs_clean_pct": -11.34,
+        "gepa_outperforms_clean": false,
+        "gepa_vs_no_skills_lift": -0.0245
+      }
+    },
+    "gemini-2.5-flash": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 80.0,
+          "mean_reward": 0.8109,
+          "state_and_safety_compliance_60pct": 0.54,
+          "action_economy_20pct": 0.0984,
+          "assertions_and_jev_20pct": 0.1725,
+          "mean_operational_loss_usd": 5000.0,
+          "mean_latency_s": 29.52,
+          "total_tools_called": 49
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 90.0,
+          "mean_reward": 0.8555,
+          "state_and_safety_compliance_60pct": 0.572,
+          "action_economy_20pct": 0.114,
+          "assertions_and_jev_20pct": 0.1695,
+          "mean_operational_loss_usd": 505.0,
+          "mean_latency_s": 28.82,
+          "total_tools_called": 50
+        },
+        "gepa_evolved_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 60.0,
+          "mean_reward": 0.7033,
+          "state_and_safety_compliance_60pct": 0.4243,
+          "action_economy_20pct": 0.156,
+          "assertions_and_jev_20pct": 0.123,
+          "mean_operational_loss_usd": 1000.0,
+          "mean_latency_s": 27.89,
+          "total_tools_called": 31
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": 0.0446,
+        "gepa_vs_clean_delta": -0.1522,
+        "gepa_vs_clean_pct": -17.79,
+        "gepa_outperforms_clean": false,
+        "gepa_vs_no_skills_lift": -0.1076
+      }
+    },
+    "gemini-2.5-flash-lite": {
+      "arms": {
+        "no_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 60.0,
+          "mean_reward": 0.6731,
+          "state_and_safety_compliance_60pct": 0.4724,
+          "action_economy_20pct": 0.0412,
+          "assertions_and_jev_20pct": 0.1595,
+          "mean_operational_loss_usd": 10500.0,
+          "mean_latency_s": 13.5,
+          "total_tools_called": 50
+        },
+        "clean_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 50.0,
+          "mean_reward": 0.6551,
+          "state_and_safety_compliance_60pct": 0.4323,
+          "action_economy_20pct": 0.0668,
+          "assertions_and_jev_20pct": 0.156,
+          "mean_operational_loss_usd": 5500.0,
+          "mean_latency_s": 11.22,
+          "total_tools_called": 45
+        },
+        "gepa_evolved_skills": {
+          "trials_count": 10,
+          "pass_rate_pct": 10.0,
+          "mean_reward": 0.4361,
+          "state_and_safety_compliance_60pct": 0.2844,
+          "action_economy_20pct": 0.0532,
+          "assertions_and_jev_20pct": 0.0985,
+          "mean_operational_loss_usd": 11005.0,
+          "mean_latency_s": 11.63,
+          "total_tools_called": 30
+        }
+      },
+      "degradation_delta": {
+        "clean_vs_no_skills_lift": -0.018,
+        "gepa_vs_clean_delta": -0.219,
+        "gepa_vs_clean_pct": -33.43,
+        "gepa_outperforms_clean": false,
+        "gepa_vs_no_skills_lift": -0.237
+      }
+    }
+  }
+}

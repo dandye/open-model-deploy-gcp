@@ -1,0 +1,432 @@
+{
+  "evalset_id": "soc_tier1_interactive",
+  "generation": 3,
+  "name": "Gemma SOC Tier 1 Interactive Evaluation Suite (Gen 3)",
+  "description": "Evaluates self-hosted Gemma and agentic models on interactive multi-step SOC Tier 1 alert triage, state-machine investigations, epistemic search efficiency, fault-injection resilience, counterfactual consistency, and cost-weighted operational action decisions.",
+  "eval_cases": [
+    {
+      "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+      "name": "Lokibot C2 InfoStealer Host Containment",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.15), Owner: J. Smith, Role: Standard financial workstation, Blast Radius: Standard containment protocol]. Query threat intelligence, evaluate active processes, determine threat verdict, and execute host containment actions.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "DESKTOP-FIN-08",
+        "update-service-win32.com",
+        "10.0.4.15"
+      ],
+      "counterfactual_pair_id": "PAIR-01",
+      "cmdb_context": {
+        "asset_id": "DESKTOP-FIN-08",
+        "ip_address": "10.0.4.15",
+        "owner": "J. Smith",
+        "business_role": "Standard financial workstation",
+        "criticality": "STANDARD",
+        "blast_radius": "Standard containment protocol"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Lokibot",
+        "recommended_action": "Isolate host DESKTOP-FIN-08, block C2 domain update-service-win32.com, and escalate to Tier 2 Responder",
+        "grading_rubric": "Grade using the 100-point Gen 3 Interactive Rubric: Epistemic Investigation (25 pts for querying get_domain_report or get_ip_report on update-service-win32.com), Analysis & Decision (25 pts for identifying Lokibot info-stealer malware), Pragmatic Action Execution (25 pts for executing isolate_host on DESKTOP-FIN-08 and avoiding prohibited close_case), SOAR Documentation & Operational Artifacts (25 pts for updating case comments with IOCs and MITRE ATT&CK mapping). Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "update-service-win32.com",
+          "DESKTOP-FIN-08"
+        ],
+        "must_not_contain": [
+          "False Positive",
+          "confirmed benign"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment & Safe Resolution",
+      "prompt": "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01. [CMDB Asset Context: Host GW-CORE-VPN-01, Owner: Network Infrastructure Operations, Role: Core VPN Gateway, Blast Radius: Enterprise ingress gateway; verify route legitimacy and assess unauthorized access risk]. Query threat intelligence, verify routing classification, and resolve alert.",
+      "asset_criticality": "LOW",
+      "ground_truth_label": "BENIGN",
+      "expected_actions": [
+        "close_case"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "expected_entities": [
+        "192.0.2.100"
+      ],
+      "counterfactual_pair_id": null,
+      "cmdb_context": {
+        "asset_id": "GW-CORE-VPN-01",
+        "owner": "Network Infrastructure Operations",
+        "business_role": "Core VPN Gateway",
+        "criticality": "LOW",
+        "blast_radius": "Enterprise ingress gateway; verify route legitimacy and assess unauthorized access risk"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN / NON-ROUTABLE",
+        "recommended_action": "Identify IP as RFC-5737 documentation test block, conclude benign, and close case without isolating hosts or blocking indicators",
+        "grading_rubric": "Verify the model queries get_ip_report for 192.0.2.100, identifies it as reserved RFC-5737 documentation test subnet, correctly labels verdict as BENIGN, executes close_case, and avoids unnecessary isolate_host containment actions. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "192.0.2.100"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE",
+          "Lokibot",
+          "APT29"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+      "name": "Credential Harvesting Phishing & Domain Block",
+      "prompt": "Triage incoming phishing alert: Employee john.doe received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'. [CMDB Asset Context: Host DESKTOP-MKT-14 (10.0.6.55), Owner: John Doe (john.doe), Role: Standard marketing workstation, Blast Radius: Phishing credential harvesting alert on standard workstation]. Query indicator reputation and block malicious infrastructure.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "evil.com",
+        "john.doe"
+      ],
+      "counterfactual_pair_id": null,
+      "cmdb_context": {
+        "asset_id": "DESKTOP-MKT-14",
+        "ip_address": "10.0.6.55",
+        "owner": "John Doe",
+        "business_role": "Standard marketing workstation",
+        "criticality": "STANDARD",
+        "blast_radius": "Phishing credential harvesting alert on standard workstation"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS / PHISHING",
+        "recommended_action": "Block indicator evil.com, reset user credentials for john.doe, and update case documentation",
+        "grading_rubric": "Assess whether the agent queries domain reputation for evil.com, identifies credential harvesting phishing campaign, invokes block_indicator on evil.com, documents findings in case comment, and escalates for credential revocation. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "john.doe",
+          "evil.com"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection & Merged Appending",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. [CMDB Asset Context: Host DESKTOP-ENG-22 (10.0.7.12), Owner: Alex Rivera, Role: Standard workstation, Blast Radius: Prior SOAR case correlation (CASE-33279); standard workstation risk]. Query existing incident records, summarize relationship, and update case comment without creating duplicate cases.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "SUSPICIOUS",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "create_case"
+      ],
+      "expected_entities": [
+        "CASE-33279",
+        "198.51.100.42"
+      ],
+      "counterfactual_pair_id": null,
+      "cmdb_context": {
+        "asset_id": "DESKTOP-ENG-22",
+        "ip_address": "10.0.7.12",
+        "owner": "Alex Rivera",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "blast_radius": "Prior SOAR case correlation (CASE-33279); standard workstation risk"
+      },
+      "reference": {
+        "expected_verdict": "EXISTING_CASE_FOUND / DUPLICATE",
+        "recommended_action": "Locate open CASE-33279, append latest IOC correlation to existing case notes, and avoid opening duplicate SOAR tickets",
+        "grading_rubric": "Verify that the model queries list_cases or get_case, discovers CASE-33279 is already open for 198.51.100.42, executes update_case_comment to append investigative notes, and refrains from creating redundant cases. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "33279"
+        ],
+        "must_not_contain": [
+          "no existing cases"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Production Ransomware Host Isolation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.5.23), Owner: Financial Controller, Role: Critical financial controller asset (DESKTOP-FIN-08), Blast Radius: Active ransomware, immediate isolation required ($250k FN breach risk), do NOT reboot host]. Query host inventory, execute immediate containment, and escalate to incident response.",
+      "asset_criticality": "CRITICAL",
+      "ground_truth_label": "MALICIOUS",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "reboot_host",
+        "close_case"
+      ],
+      "expected_entities": [
+        "10.0.5.23",
+        "DESKTOP-FIN-08"
+      ],
+      "counterfactual_pair_id": "PAIR-02",
+      "cmdb_context": {
+        "asset_id": "DESKTOP-FIN-08",
+        "ip_address": "10.0.5.23",
+        "owner": "Financial Controller",
+        "business_role": "Critical financial controller asset (DESKTOP-FIN-08)",
+        "criticality": "CRITICAL",
+        "blast_radius": "Active ransomware, immediate isolation required ($250k FN breach risk), do NOT reboot host"
+      },
+      "reference": {
+        "expected_verdict": "CRITICAL_MALICIOUS",
+        "recommended_action": "Immediate host network isolation of 10.0.5.23 (DESKTOP-FIN-08), avoid system reboot or ransom payment, and escalate to Tier 2 Incident Response",
+        "grading_rubric": "Verify that the agent identifies active ransomware infection, prioritizes immediate network isolation of 10.0.5.23 via isolate_host, explicitly instructs against rebooting the host or paying ransom, and posts critical escalation notes. Passing >= 90 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "DESKTOP-FIN-08",
+          "10.0.5.23"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+      "name": "Ambiguous DNS Tunneling Triage on Critical Asset",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (CFO Workstation) making high-frequency TXT lookups to tunnel-data.cdn-edge-update.net. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.10), Owner: Sarah Jenkins (CFO), Role: Critical CFO workstation (Sarah Jenkins) during quarterly earnings close, Blast Radius: High-volume DNS queries to CDN tunnel. Explicit warning: Unauthorized isolation incurs $50k FP downtime disruption; do NOT isolate without confirmed malicious C2 evidence]. Assess reputation, balance operational disruption vs threat risk, and formulate non-disruptive triage.",
+      "asset_criticality": "CRITICAL",
+      "ground_truth_label": "SUSPICIOUS",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "expected_entities": [
+        "DESKTOP-FIN-08",
+        "tunnel-data.cdn-edge-update.net"
+      ],
+      "counterfactual_pair_id": "PAIR-01",
+      "cmdb_context": {
+        "asset_id": "DESKTOP-FIN-08",
+        "ip_address": "10.0.4.10",
+        "owner": "Sarah Jenkins",
+        "business_role": "Critical CFO workstation (Sarah Jenkins) during quarterly earnings close",
+        "criticality": "CRITICAL",
+        "blast_radius": "Explicit warning: Unauthorized isolation incurs $50k FP downtime disruption; do NOT isolate without confirmed malicious C2 evidence"
+      },
+      "reference": {
+        "expected_verdict": "BORDERLINE_SUSPICIOUS",
+        "recommended_action": "Flag high-frequency TXT lookups for enhanced network monitoring, update case comment with forensic notes, and avoid immediate host isolation on CFO workstation to prevent high blast-radius operational downtime",
+        "grading_rubric": "Assess whether the agent queries domain reputation for tunnel-data.cdn-edge-update.net, recognizes borderline suspicious DNS telemetry, considers asset criticality (CFO workstation), avoids premature isolate_host disruption ($50k FP loss), and updates case comments requesting enhanced packet capture. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "tunnel-data.cdn-edge-update.net",
+          "DESKTOP-FIN-08"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "CONFIRMED CLEAN"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+      "name": "PsExec Lateral Movement & Compromised Host Isolation",
+      "prompt": "Investigate alert: User mwilson on host DESKTOP-HR-04 (10.0.8.99) executing PsExec commands and anomalous SMB connections across internal subnets. [CMDB Asset Context: Host DESKTOP-HR-04 (10.0.8.99), Owner: HR Operations, Role: High-criticality HR asset (DESKTOP-HR-04) storing employee PII, Blast Radius: High-criticality repository of executive and employee records ($50k breach risk)]. Triage host telemetry, evaluate lateral movement risk, and determine containment actions.",
+      "asset_criticality": "HIGH",
+      "ground_truth_label": "MALICIOUS",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "DESKTOP-HR-04",
+        "10.0.8.99",
+        "mwilson"
+      ],
+      "counterfactual_pair_id": null,
+      "cmdb_context": {
+        "asset_id": "DESKTOP-HR-04",
+        "ip_address": "10.0.8.99",
+        "owner": "HR Operations",
+        "business_role": "High-criticality HR asset (DESKTOP-HR-04) storing employee PII",
+        "criticality": "HIGH",
+        "blast_radius": "High-criticality repository of executive and employee records ($50k breach risk)"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS / LATERAL_MOVEMENT",
+        "recommended_action": "Isolate host DESKTOP-HR-04, revoke compromised credentials for mwilson, and escalate for lateral movement investigation",
+        "grading_rubric": "Verify that the agent queries host inventory for DESKTOP-HR-04, recognizes PsExec service installation as MITRE T1021.002 lateral movement, executes isolate_host to sever network access, and updates case documentation. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "DESKTOP-HR-04",
+          "10.0.8.99"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "False Positive"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+      "name": "Supply Chain Binary Anomaly with Revoked Certificate",
+      "prompt": "Analyze binary telemetry for file hash a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 (invoice_update.exe) claiming to be signed by Acme Corp. [CMDB Asset Context: Asset Enterprise Software Deployment Pipeline, Owner: IT Operations, Role: Supply chain binary (invoice_update.exe), Blast Radius: Enterprise build and deployment infrastructure]. Query file intelligence, determine risk status, and execute containment.",
+      "asset_criticality": "HIGH",
+      "ground_truth_label": "SUSPICIOUS",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+        "invoice_update.exe",
+        "Acme Corp"
+      ],
+      "counterfactual_pair_id": null,
+      "cmdb_context": {
+        "asset_id": "Enterprise Software Deployment Pipeline",
+        "owner": "IT Operations",
+        "business_role": "Supply chain binary (invoice_update.exe)",
+        "criticality": "HIGH",
+        "blast_radius": "Enterprise build and deployment infrastructure"
+      },
+      "reference": {
+        "expected_verdict": "SUSPICIOUS / SUPPLY_CHAIN_ANOMALY",
+        "recommended_action": "Block file hash indicator, quarantine invoice_update.exe across enterprise endpoints, and investigate compromised code signing certificates",
+        "grading_rubric": "Assess whether the agent invokes get_file_report on hash a1b2c3d4..., detects revoked certificate status from Acme Corp, executes block_indicator, and documents supply chain tampering risks in case comments. Passing >= 80 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "invoice_update.exe"
+        ],
+        "must_not_contain": [
+          "VALID_CERTIFICATE",
+          "clean software"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+      "name": "Degraded Tool Outage Handling & Evidentiary Resilience",
+      "prompt": "Enrich destination domain error-503.service-unavailable.org involved in outbound connection alert. [CMDB Asset Context: Host PROXY-GW-02 (10.0.1.10), Owner: Security Operations Engineering, Role: Outbound proxy gateway, Blast Radius: Upstream 503 intelligence outage, degraded mode, do NOT close or isolate without verified evidence]. Query domain intelligence, gracefully handle upstream service degradation, and document investigation status.",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "INCONCLUSIVE",
+      "fault_injection": {
+        "tool": "get_domain_report",
+        "status_code": 503,
+        "error": "Service Unavailable"
+      },
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "expected_entities": [
+        "error-503.service-unavailable.org"
+      ],
+      "counterfactual_pair_id": null,
+      "cmdb_context": {
+        "asset_id": "PROXY-GW-02",
+        "ip_address": "10.0.1.10",
+        "owner": "Security Operations Engineering",
+        "business_role": "Outbound proxy gateway",
+        "criticality": "STANDARD",
+        "blast_radius": "Upstream 503 intelligence outage, degraded mode, do NOT close or isolate without verified evidence"
+      },
+      "reference": {
+        "expected_verdict": "INCONCLUSIVE_DEGRADED",
+        "recommended_action": "Acknowledge upstream threat intelligence outage (503 Service Unavailable), document inconclusive investigation status, and avoid fabricating false verdicts or executing premature containment",
+        "grading_rubric": "Verify that the agent handles the injected 503 error gracefully, does NOT hallucinate clean or malicious reputation, records degraded-mode status in update_case_comment, and retains case for retry. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "error-503.service-unavailable.org",
+          "503"
+        ],
+        "must_not_contain": [
+          "BENIGN / CONFIRMED SAFE",
+          "CRITICAL MALWARE CONFIRMED"
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+      "name": "Authorized Qualys Vulnerability Scanner Noise Triage",
+      "prompt": "Triage alert for host SRV-PROD-PAYMENT-01 (10.0.99.50) receiving high-volume port scanning activity from internal subnet. [CMDB Asset Context: Host SRV-PROD-PAYMENT-01 (10.0.99.50), Owner: Payment Infrastructure Engineering, Role: Critical production payment server (SRV-PROD-PAYMENT-01), Blast Radius: Mission-critical payment processing pipeline; unauthorized isolation incurs $50k downtime loss]. Check asset services, determine if scan represents authorized maintenance or adversary reconnaissance, and resolve alert.",
+      "asset_criticality": "LOW",
+      "ground_truth_label": "BENIGN",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host"
+      ],
+      "expected_entities": [
+        "SRV-PROD-PAYMENT-01",
+        "10.0.99.50",
+        "Qualys Scanner"
+      ],
+      "counterfactual_pair_id": "PAIR-02",
+      "cmdb_context": {
+        "asset_id": "SRV-PROD-PAYMENT-01",
+        "ip_address": "10.0.99.50",
+        "owner": "Payment Infrastructure Engineering",
+        "business_role": "Critical production payment server (SRV-PROD-PAYMENT-01)",
+        "criticality": "LOW",
+        "blast_radius": "Mission-critical payment processing pipeline; unauthorized isolation incurs $50k downtime loss"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN_AUTHORIZED",
+        "recommended_action": "Identify port scan as authorized Qualys vulnerability scanner maintenance, update case comments, close case, and avoid isolating production payment server",
+        "grading_rubric": "Verify that the agent inspects host services for SRV-PROD-PAYMENT-01, recognizes Qualys Scanner service, avoids disruptive host isolation on production payment host ($50k FP blast radius), posts verification comment, and resolves alert with close_case. Passing >= 85 pts."
+      },
+      "assertions": {
+        "must_contain": [
+          "SRV-PROD-PAYMENT-01",
+          "10.0.99.50"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE ATTACK",
+          "isolate payment server"
+        ]
+      }
+    }
+  ]
+}

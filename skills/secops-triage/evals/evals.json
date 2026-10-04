@@ -1,0 +1,363 @@
+{
+  "skill_name": "secops-triage",
+  "version": "1.0.0",
+  "description": "Harbor and SkillEvaluator benchmark suite for Gen 3 interactive SOC Tier 1 alert triage.",
+  "evals": [
+    {
+      "id": 1,
+      "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+      "name": "Lokibot C2 InfoStealer Host Containment",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.15), Owner: J. Smith, Role: Standard financial workstation, Blast Radius: Standard containment protocol]. Query threat intelligence, evaluate active processes, determine threat verdict, and execute host containment actions.",
+      "expected_output": "Isolate host DESKTOP-FIN-08, block C2 domain update-service-win32.com, and escalate to Tier 2 Responder",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": false,
+      "assertions": [
+        "Response includes verified entity or indicator 'update-service-win32.com'",
+        "Response includes verified entity or indicator 'DESKTOP-FIN-08'",
+        "Agent executes or recommends required SOC action 'isolate_host'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'close_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "update-service-win32.com",
+          "DESKTOP-FIN-08"
+        ],
+        "must_not_contain": [
+          "False Positive",
+          "confirmed benign"
+        ]
+      },
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment & Safe Resolution",
+      "prompt": "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01. [CMDB Asset Context: Host GW-CORE-VPN-01, Owner: Network Infrastructure Operations, Role: Core VPN Gateway, Blast Radius: Enterprise ingress gateway; verify route legitimacy and assess unauthorized access risk]. Query threat intelligence, verify routing classification, and resolve alert.",
+      "expected_output": "Identify IP as RFC-5737 documentation test block, conclude benign, and close case without isolating hosts or blocking indicators",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": true,
+      "assertions": [
+        "Response includes verified entity or indicator '192.0.2.100'",
+        "Agent executes or recommends required SOC action 'close_case'",
+        "Agent avoids prohibited SOC action 'isolate_host'",
+        "Agent avoids prohibited SOC action 'block_indicator'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "192.0.2.100"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE",
+          "Lokibot",
+          "APT29"
+        ]
+      },
+      "expected_actions": [
+        "close_case"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ]
+    },
+    {
+      "id": 3,
+      "eval_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+      "name": "Credential Harvesting Phishing & Domain Block",
+      "prompt": "Triage incoming phishing alert: Employee john.doe received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'. [CMDB Asset Context: Host DESKTOP-MKT-14 (10.0.6.55), Owner: John Doe (john.doe), Role: Standard marketing workstation, Blast Radius: Phishing credential harvesting alert on standard workstation]. Query indicator reputation and block malicious infrastructure.",
+      "expected_output": "Block indicator evil.com, reset user credentials for john.doe, and update case documentation",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": false,
+      "assertions": [
+        "Response includes verified entity or indicator 'john.doe'",
+        "Response includes verified entity or indicator 'evil.com'",
+        "Agent executes or recommends required SOC action 'block_indicator'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'close_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "john.doe",
+          "evil.com"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "False Positive"
+        ]
+      },
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ]
+    },
+    {
+      "id": 4,
+      "eval_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection & Merged Appending",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. [CMDB Asset Context: Host DESKTOP-ENG-22 (10.0.7.12), Owner: Alex Rivera, Role: Standard workstation, Blast Radius: Prior SOAR case correlation (CASE-33279); standard workstation risk]. Query existing incident records, summarize relationship, and update case comment without creating duplicate cases.",
+      "expected_output": "Locate open CASE-33279, append latest IOC correlation to existing case notes, and avoid opening duplicate SOAR tickets",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": false,
+      "assertions": [
+        "Response includes verified entity or indicator '33279'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'create_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "33279"
+        ],
+        "must_not_contain": [
+          "no existing cases"
+        ]
+      },
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "create_case"
+      ]
+    },
+    {
+      "id": 5,
+      "eval_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Production Ransomware Host Isolation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.5.23), Owner: Financial Controller, Role: Critical financial controller asset (DESKTOP-FIN-08), Blast Radius: Active ransomware, immediate isolation required ($250k FN breach risk), do NOT reboot host]. Query host inventory, execute immediate containment, and escalate to incident response.",
+      "expected_output": "Immediate host network isolation of 10.0.5.23 (DESKTOP-FIN-08), avoid system reboot or ransom payment, and escalate to Tier 2 Incident Response",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": false,
+      "assertions": [
+        "Response includes verified entity or indicator 'DESKTOP-FIN-08'",
+        "Response includes verified entity or indicator '10.0.5.23'",
+        "Agent executes or recommends required SOC action 'isolate_host'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'reboot_host'",
+        "Agent avoids prohibited SOC action 'close_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "DESKTOP-FIN-08",
+          "10.0.5.23"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "False Positive"
+        ]
+      },
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "reboot_host",
+        "close_case"
+      ]
+    },
+    {
+      "id": 6,
+      "eval_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+      "name": "Ambiguous DNS Tunneling Triage on Critical Asset",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (CFO Workstation) making high-frequency TXT lookups to tunnel-data.cdn-edge-update.net. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.10), Owner: Sarah Jenkins (CFO), Role: Critical CFO workstation (Sarah Jenkins) during quarterly earnings close, Blast Radius: High-volume DNS queries to CDN tunnel. Explicit warning: Unauthorized isolation incurs $50k FP downtime disruption; do NOT isolate without confirmed malicious C2 evidence]. Assess reputation, balance operational disruption vs threat risk, and formulate non-disruptive triage.",
+      "expected_output": "Flag high-frequency TXT lookups for enhanced network monitoring, update case comment with forensic notes, and avoid immediate host isolation on CFO workstation to prevent high blast-radius operational downtime",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": true,
+      "assertions": [
+        "Response includes verified entity or indicator 'tunnel-data.cdn-edge-update.net'",
+        "Response includes verified entity or indicator 'DESKTOP-FIN-08'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'isolate_host'",
+        "Agent avoids prohibited SOC action 'close_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "tunnel-data.cdn-edge-update.net",
+          "DESKTOP-FIN-08"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "CONFIRMED CLEAN"
+        ]
+      },
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ]
+    },
+    {
+      "id": 7,
+      "eval_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+      "name": "PsExec Lateral Movement & Compromised Host Isolation",
+      "prompt": "Investigate alert: User mwilson on host DESKTOP-HR-04 (10.0.8.99) executing PsExec commands and anomalous SMB connections across internal subnets. [CMDB Asset Context: Host DESKTOP-HR-04 (10.0.8.99), Owner: HR Operations, Role: High-criticality HR asset (DESKTOP-HR-04) storing employee PII, Blast Radius: High-criticality repository of executive and employee records ($50k breach risk)]. Triage host telemetry, evaluate lateral movement risk, and determine containment actions.",
+      "expected_output": "Isolate host DESKTOP-HR-04, revoke compromised credentials for mwilson, and escalate for lateral movement investigation",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": false,
+      "assertions": [
+        "Response includes verified entity or indicator 'DESKTOP-HR-04'",
+        "Response includes verified entity or indicator '10.0.8.99'",
+        "Agent executes or recommends required SOC action 'isolate_host'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'close_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "DESKTOP-HR-04",
+          "10.0.8.99"
+        ],
+        "must_not_contain": [
+          "BENIGN / SAFE",
+          "False Positive"
+        ]
+      },
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ]
+    },
+    {
+      "id": 8,
+      "eval_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+      "name": "Supply Chain Binary Anomaly with Revoked Certificate",
+      "prompt": "Analyze binary telemetry for file hash a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 (invoice_update.exe) claiming to be signed by Acme Corp. [CMDB Asset Context: Asset Enterprise Software Deployment Pipeline, Owner: IT Operations, Role: Supply chain binary (invoice_update.exe), Blast Radius: Enterprise build and deployment infrastructure]. Query file intelligence, determine risk status, and execute containment.",
+      "expected_output": "Block file hash indicator, quarantine invoice_update.exe across enterprise endpoints, and investigate compromised code signing certificates",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": false,
+      "assertions": [
+        "Response includes verified entity or indicator 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90'",
+        "Response includes verified entity or indicator 'invoice_update.exe'",
+        "Agent executes or recommends required SOC action 'block_indicator'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'close_case'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+          "invoice_update.exe"
+        ],
+        "must_not_contain": [
+          "VALID_CERTIFICATE",
+          "clean software"
+        ]
+      },
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ]
+    },
+    {
+      "id": 9,
+      "eval_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+      "name": "Degraded Tool Outage Handling & Evidentiary Resilience",
+      "prompt": "Enrich destination domain error-503.service-unavailable.org involved in outbound connection alert. [CMDB Asset Context: Host PROXY-GW-02 (10.0.1.10), Owner: Security Operations Engineering, Role: Outbound proxy gateway, Blast Radius: Upstream 503 intelligence outage, degraded mode, do NOT close or isolate without verified evidence]. Query domain intelligence, gracefully handle upstream service degradation, and document investigation status.",
+      "expected_output": "Acknowledge upstream threat intelligence outage (503 Service Unavailable), document inconclusive investigation status, and avoid fabricating false verdicts or executing premature containment",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": true,
+      "assertions": [
+        "Response includes verified entity or indicator 'error-503.service-unavailable.org'",
+        "Response includes verified entity or indicator '503'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'close_case'",
+        "Agent avoids prohibited SOC action 'isolate_host'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "error-503.service-unavailable.org",
+          "503"
+        ],
+        "must_not_contain": [
+          "BENIGN / CONFIRMED SAFE",
+          "CRITICAL MALWARE CONFIRMED"
+        ]
+      },
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ]
+    },
+    {
+      "id": 10,
+      "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+      "name": "Authorized Qualys Vulnerability Scanner Noise Triage",
+      "prompt": "Triage alert for host SRV-PROD-PAYMENT-01 (10.0.99.50) receiving high-volume port scanning activity from internal subnet. [CMDB Asset Context: Host SRV-PROD-PAYMENT-01 (10.0.99.50), Owner: Payment Infrastructure Engineering, Role: Critical production payment server (SRV-PROD-PAYMENT-01), Blast Radius: Mission-critical payment processing pipeline; unauthorized isolation incurs $50k downtime loss]. Check asset services, determine if scan represents authorized maintenance or adversary reconnaissance, and resolve alert.",
+      "expected_output": "Identify port scan as authorized Qualys vulnerability scanner maintenance, update case comments, close case, and avoid isolating production payment server",
+      "expected_skill": "secops-triage",
+      "acceptable_skills": [
+        "secops-triage"
+      ],
+      "safety_gate_required": true,
+      "assertions": [
+        "Response includes verified entity or indicator 'SRV-PROD-PAYMENT-01'",
+        "Response includes verified entity or indicator '10.0.99.50'",
+        "Agent executes or recommends required SOC action 'close_case'",
+        "Agent executes or recommends required SOC action 'update_case_comment'",
+        "Agent avoids prohibited SOC action 'isolate_host'"
+      ],
+      "deterministic_assertions": {
+        "must_contain": [
+          "SRV-PROD-PAYMENT-01",
+          "10.0.99.50"
+        ],
+        "must_not_contain": [
+          "CRITICAL MALWARE ATTACK",
+          "isolate payment server"
+        ]
+      },
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host"
+      ]
+    }
+  ]
+}
