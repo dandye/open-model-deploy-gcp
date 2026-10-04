@@ -717,6 +717,130 @@ class SocEnvironment:
             "reverse_dns": f"host-{ip.replace('.', '-')}.isp-routing.net",
         }
 
+    def _domain_report(self, domain: str) -> Dict[str, Any]:
+        """Legacy 503 special case (overlay only), then inventory, then fallback."""
+        if not self.strict and domain == "error-503.service-unavailable.org":
+            return {
+                "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
+                "status_code": 503,
+                "domain": domain,
+            }
+        if domain in self.domains:
+            ent = self.domains[domain]
+            res = {
+                "domain": ent.domain,
+                "verdict": ent.verdict,
+                "category": ent.category,
+                "categories": ent.categories if ent.categories else [ent.category],
+                "reputation": ent.reputation,
+                "malicious_votes": ent.malicious_votes,
+                "harmless_votes": ent.harmless_votes,
+                "vt_positives": ent.vt_positives if ent.vt_positives else ent.malicious_votes,
+                "vt_total": ent.vt_total if ent.vt_total else 72,
+                "registrar": ent.registrar,
+                "created_date": ent.created_date or ent.first_seen or "2026-01-01",
+                "threat_family": ent.threat_family,
+                "passive_dns": ent.passive_dns if ent.passive_dns else ent.resolutions,
+                "resolutions": ent.resolutions if ent.resolutions else ent.passive_dns,
+            }
+            if ent.first_seen:
+                res["first_seen"] = ent.first_seen
+            return res
+        if self.strict:
+            return self._strict_domain_fallback(domain)
+        return self._legacy_domain_fallback(domain)
+
+    def _strict_domain_fallback(self, domain: str) -> Dict[str, Any]:
+        return {
+            "domain": domain,
+            "verdict": "UNKNOWN",
+            "category": "Uncategorized Domain",
+            "categories": ["Uncategorized Domain"],
+            "reputation": "NO_DATA",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 0,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "registrar": "Unknown",
+            "created_date": None,
+            "passive_dns": [],
+            "resolutions": [],
+        }
+
+    def _legacy_domain_fallback(self, domain: str) -> Dict[str, Any]:
+        return {
+            "domain": domain,
+            "verdict": "BENIGN",
+            "category": "Uncategorized Domain",
+            "categories": ["Uncategorized Domain"],
+            "reputation": "BENIGN",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 95,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "registrar": "MarkMonitor Inc.",
+            "created_date": "2020-01-01",
+            "passive_dns": ["192.0.2.1"],
+            "resolutions": ["192.0.2.1"],
+        }
+
+    def _file_report(self, file_hash: str) -> Dict[str, Any]:
+        if file_hash in self.hashes:
+            h = self.hashes[file_hash]
+            return {
+                "hash": h.sha256,
+                "hash_type": "SHA-256",
+                "filename": h.filename,
+                "verdict": h.verdict,
+                "threat_name": h.threat_name,
+                "certificate_status": h.certificate_status,
+                "cert_status": h.cert_status,
+                "vendor": h.vendor,
+                "signer": h.signer,
+                "revocation_date": h.revocation_date,
+                "vt_positives": h.vt_positives,
+                "vt_total": h.vt_total,
+                "detections": h.detections,
+            }
+        if self.strict:
+            return self._strict_file_fallback(file_hash)
+        return self._legacy_file_fallback(file_hash)
+
+    def _strict_file_fallback(self, file_hash: str) -> Dict[str, Any]:
+        return {
+            "hash": file_hash,
+            "hash_type": "MD5" if len(file_hash) == 32 else "SHA-256",
+            "verdict": "UNKNOWN",
+            "threat_name": "None",
+            "certificate_status": "UNKNOWN",
+            "cert_status": "UNKNOWN",
+            "vendor": "Unknown",
+            "signer": "Unknown",
+            "revocation_date": None,
+            "vt_positives": 0,
+            "vt_total": 0,
+            "detections": "0/0 engines",
+            "status": "NOT_FOUND",
+        }
+
+    def _legacy_file_fallback(self, file_hash: str) -> Dict[str, Any]:
+        return {
+            "hash": file_hash,
+            "hash_type": "MD5" if len(file_hash) == 32 else "SHA-256",
+            "verdict": "MALICIOUS",
+            "threat_name": "Trojan.Lokibot.Generic",
+            "certificate_status": "UNSIGNED",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "signer": "None",
+            "revocation_date": None,
+            "vt_positives": 54,
+            "vt_total": 72,
+            "detections": "54/72 engines",
+        }
+
     def query_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Executes epistemic information-gathering tool queries against the sandbox state."""
         # 1. Check for active fault injection on this tool
@@ -738,84 +862,12 @@ class SocEnvironment:
         # 3. Domain report query
         if tool_name == "get_domain_report":
             domain = str(args.get("domain") or args.get("query") or "").strip().lower()
-            if domain == "error-503.service-unavailable.org":
-                return {
-                    "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
-                    "status_code": 503,
-                    "domain": domain,
-                }
-            if domain in self.domains:
-                ent = self.domains[domain]
-                res = {
-                    "domain": ent.domain,
-                    "verdict": ent.verdict,
-                    "category": ent.category,
-                    "categories": ent.categories if ent.categories else [ent.category],
-                    "reputation": ent.reputation,
-                    "malicious_votes": ent.malicious_votes,
-                    "harmless_votes": ent.harmless_votes,
-                    "vt_positives": ent.vt_positives if ent.vt_positives else ent.malicious_votes,
-                    "vt_total": ent.vt_total if ent.vt_total else 72,
-                    "registrar": ent.registrar,
-                    "created_date": ent.created_date or ent.first_seen or "2026-01-01",
-                    "threat_family": ent.threat_family,
-                    "passive_dns": ent.passive_dns if ent.passive_dns else ent.resolutions,
-                    "resolutions": ent.resolutions if ent.resolutions else ent.passive_dns,
-                }
-                if ent.first_seen:
-                    res["first_seen"] = ent.first_seen
-                return res
-            return {
-                "domain": domain,
-                "verdict": "BENIGN",
-                "category": "Uncategorized Domain",
-                "categories": ["Uncategorized Domain"],
-                "reputation": "BENIGN",
-                "threat_family": "None",
-                "malicious_votes": 0,
-                "harmless_votes": 95,
-                "vt_positives": 0,
-                "vt_total": 72,
-                "registrar": "MarkMonitor Inc.",
-                "created_date": "2020-01-01",
-                "passive_dns": ["192.0.2.1"],
-                "resolutions": ["192.0.2.1"],
-            }
+            return self._domain_report(domain)
 
         # 4. File report query
         if tool_name == "get_file_report":
             file_hash = str(args.get("file_hash") or args.get("hash") or args.get("sha256") or "").strip()
-            if file_hash in self.hashes:
-                h = self.hashes[file_hash]
-                return {
-                    "hash": h.sha256,
-                    "hash_type": "SHA-256",
-                    "filename": h.filename,
-                    "verdict": h.verdict,
-                    "threat_name": h.threat_name,
-                    "certificate_status": h.certificate_status,
-                    "cert_status": h.cert_status,
-                    "vendor": h.vendor,
-                    "signer": h.signer,
-                    "revocation_date": h.revocation_date,
-                    "vt_positives": h.vt_positives,
-                    "vt_total": h.vt_total,
-                    "detections": h.detections,
-                }
-            return {
-                "hash": file_hash,
-                "hash_type": "MD5" if len(file_hash) == 32 else "SHA-256",
-                "verdict": "MALICIOUS",
-                "threat_name": "Trojan.Lokibot.Generic",
-                "certificate_status": "UNSIGNED",
-                "cert_status": "UNSIGNED",
-                "vendor": "Unknown",
-                "signer": "None",
-                "revocation_date": None,
-                "vt_positives": 54,
-                "vt_total": 72,
-                "detections": "54/72 engines",
-            }
+            return self._file_report(file_hash)
 
         # 5. Entity lookup / summarization
         if tool_name in ["lookup_entity", "summarize_entity"]:

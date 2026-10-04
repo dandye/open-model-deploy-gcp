@@ -280,3 +280,48 @@ def test_overlay_ip_report_keeps_legacy_fallbacks():
     assert env.query_tool("get_ip_address_report", {"ip": "10.0.99.50"})["service"] == "Qualys Vulnerability Scanner"
 
 
+def test_strict_domain_report_inventory_hit_and_unknown():
+    env = SocEnvironment(initial_state=replace_state())
+    hit = env.query_tool("get_domain_report", {"domain": "CDN-Sync-Metrics41.com"})
+    assert hit["verdict"] == "MALICIOUS"
+    assert hit["resolutions"] == ["198.18.4.20"]
+    miss = env.query_tool("get_domain_report", {"domain": "updates.vendor-portal.example"})
+    assert miss["reputation"] == "NO_DATA"
+    assert miss["verdict"] == "UNKNOWN"
+    assert miss["resolutions"] == []
+    assert miss["passive_dns"] == []
+    assert miss["registrar"] == "Unknown"
+    assert miss["created_date"] is None
+
+
+def test_strict_domain_report_has_no_hardcoded_503_domain():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_domain_report", {"domain": "error-503.service-unavailable.org"})
+    assert "error" not in report
+    assert report["reputation"] == "NO_DATA"
+
+
+def test_overlay_domain_report_keeps_hardcoded_503_and_benign_default():
+    env = SocEnvironment()
+    assert env.query_tool("get_domain_report", {"domain": "error-503.service-unavailable.org"})["status_code"] == 503
+    assert env.query_tool("get_domain_report", {"domain": "unknown-domain.example"})["verdict"] == "BENIGN"
+
+
+def test_strict_file_report_unknown_hash_is_not_fabricated_malware():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_file_report", {"file_hash": "c" * 64})
+    assert report["verdict"] == "UNKNOWN"
+    assert report["status"] == "NOT_FOUND"
+    assert report["threat_name"] == "None"
+    assert report["detections"] == "0/0 engines"
+    assert report["hash_type"] == "SHA-256"
+    md5 = env.query_tool("get_file_report", {"hash": "d" * 32})
+    assert md5["hash_type"] == "MD5"
+
+
+def test_overlay_file_report_keeps_lokibot_default():
+    env = SocEnvironment()
+    assert env.query_tool("get_file_report", {"file_hash": "c" * 64})["threat_name"] == "Trojan.Lokibot.Generic"
+
+
+
