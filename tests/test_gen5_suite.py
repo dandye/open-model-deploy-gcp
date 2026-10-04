@@ -18,8 +18,8 @@ from agent.soc_environment import SocEnvironment
 from scripts import gen5_instancer as inst
 
 ROOT = inst.GEN5_ROOT
-EXPECTED_SPLIT_SIZES = {"train": 40, "validation": 10, "final_test": 10}  # Task 4: 40 / 20 / 30
-EXPECTED_FAMILY_COUNT = 10  # Task 4: 16
+EXPECTED_SPLIT_SIZES = {"train": 40, "validation": 20, "final_test": 30}
+EXPECTED_FAMILY_COUNT = 16
 HOST_RE = re.compile(r"^[A-Z]{2,4}-[A-Z]{3}-[0-9]{2}$")
 DOMAIN_RE = re.compile(r"^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$")
 SEEN_SPLIT_BY_INDEX = {0: "train", 1: "train", 2: "train", 3: "train", 4: "validation", 5: "final_test"}
@@ -193,3 +193,57 @@ def test_oracle_runs_against_a_replace_mode_environment(all_cases: List[Dict[str
             result = env.execute_action(action["action"], dict(action["args"]))
             assert result.get("status") == "SUCCESS", (case["eval_id"], action, result)
             assert not result.get("unknown_indicator"), (case["eval_id"], action)
+
+
+FAMILY_CATALOG = {
+    # family_id: (role, label, criticality, difficulty, expected, prohibited, pair)
+    "FAM-C2-INFOSTEALER": ("seen", "MALICIOUS", "STANDARD", 2, ["isolate_host", "update_case_comment"], ["close_case"], "PAIR-01"),
+    "FAM-DOC-IP-FALSE-POSITIVE": ("seen", "BENIGN", "LOW", 1, ["close_case"], ["block_indicator", "isolate_host"], None),
+    "FAM-PHISHING-CREDENTIAL": ("seen", "MALICIOUS", "STANDARD", 2, ["block_indicator", "update_case_comment"], ["close_case"], None),
+    "FAM-DUPLICATE-CASE": ("seen", "SUSPICIOUS", "STANDARD", 2, ["update_case_comment"], ["create_case"], None),
+    "FAM-RANSOMWARE-CRITICAL": ("seen", "MALICIOUS", "CRITICAL", 3, ["isolate_host", "update_case_comment"], ["close_case", "reboot_host"], "PAIR-02"),
+    "FAM-DNS-TUNNEL-AMBIGUOUS": ("seen", "SUSPICIOUS", "CRITICAL", 3, ["update_case_comment"], ["close_case", "isolate_host"], "PAIR-01"),
+    "FAM-LATERAL-PSEXEC": ("seen", "MALICIOUS", "HIGH", 3, ["isolate_host", "update_case_comment"], ["close_case"], None),
+    "FAM-SUPPLYCHAIN-REVOKED-CERT": ("seen", "SUSPICIOUS", "HIGH", 3, ["block_indicator", "update_case_comment"], ["close_case"], None),
+    "FAM-TOOL-OUTAGE-503": ("seen", "INCONCLUSIVE", "STANDARD", 3, ["update_case_comment"], ["close_case", "isolate_host"], None),
+    "FAM-AUTHORIZED-SCANNER": ("seen", "BENIGN", "LOW", 1, ["close_case", "update_case_comment"], ["isolate_host"], "PAIR-02"),
+    "FAM-CRYPTOMINER-DEV": ("validation_ood", "MALICIOUS", "STANDARD", 2, ["block_indicator", "isolate_host", "update_case_comment"], ["close_case"], "PAIR-03"),
+    "FAM-SAAS-BEACON-BENIGN": ("validation_ood", "BENIGN", "STANDARD", 2, ["close_case", "update_case_comment"], ["block_indicator", "isolate_host"], "PAIR-03"),
+    "FAM-PASSWORD-SPRAY": ("final_test_ood", "MALICIOUS", "HIGH", 2, ["block_indicator", "update_case_comment"], ["close_case", "isolate_host"], "PAIR-04"),
+    "FAM-CLOUD-KEY-EXFIL": ("final_test_ood", "MALICIOUS", "CRITICAL", 3, ["block_indicator", "update_case_comment"], ["close_case", "isolate_host"], None),
+    "FAM-INSIDER-EXFIL": ("final_test_ood", "SUSPICIOUS", "HIGH", 3, ["update_case_comment"], ["close_case", "isolate_host"], None),
+    "FAM-IMPOSSIBLE-TRAVEL-APPROVED": ("final_test_ood", "BENIGN", "STANDARD", 2, ["close_case", "update_case_comment"], ["block_indicator", "isolate_host"], "PAIR-04"),
+}
+
+
+def test_family_catalog_matches_the_spec(manifest: Dict[str, Any], all_cases: List[Dict[str, Any]]) -> None:
+    role_by_family = {entry["family_id"]: entry["split_role"] for entry in manifest["families"]}
+    assert set(role_by_family) == set(FAMILY_CATALOG)
+    by_family: Dict[str, Dict[str, Any]] = {}
+    for case in all_cases:
+        by_family.setdefault(case["family_id"], case)
+    for family_id, (role, label, criticality, difficulty, expected, prohibited, pair) in FAMILY_CATALOG.items():
+        case = by_family[family_id]
+        assert role_by_family[family_id] == role, family_id
+        assert case["ground_truth_label"] == label, family_id
+        assert case["asset_criticality"] == criticality, family_id
+        assert case["difficulty"] == difficulty, family_id
+        assert sorted(case["expected_actions"]) == expected, family_id
+        assert sorted(case["prohibited_actions"]) == prohibited, family_id
+        assert case["counterfactual_pair_id"] == pair, family_id
+    labels = Counter(spec[1] for spec in FAMILY_CATALOG.values())
+    assert labels == {"MALICIOUS": 7, "BENIGN": 4, "SUSPICIOUS": 4, "INCONCLUSIVE": 1}
+    roles = Counter(spec[0] for spec in FAMILY_CATALOG.values())
+    assert roles == {"seen": 10, "validation_ood": 2, "final_test_ood": 4}
+
+
+def test_close_all_can_only_score_on_the_expected_cases(all_cases: List[Dict[str, Any]]) -> None:
+    """Pins the Close-all calibration arithmetic from the scoring decisions: 28 cases do not prohibit close_case."""
+    open_to_close = [case["eval_id"] for case in all_cases if "close_case" not in case["prohibited_actions"]]
+    assert len(open_to_close) == 28
+    families = {eval_id.rsplit("-", 1)[0] for eval_id in open_to_close}
+    assert families == {
+        "CASE-GEN5-DOC-IP-FALSE-POSITIVE", "CASE-GEN5-DUPLICATE-CASE", "CASE-GEN5-AUTHORIZED-SCANNER",
+        "CASE-GEN5-SAAS-BEACON-BENIGN", "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED",
+    }
+

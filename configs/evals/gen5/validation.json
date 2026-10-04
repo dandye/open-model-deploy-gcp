@@ -445,6 +445,1386 @@
       }
     },
     {
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+      "name": "Cryptominer on a developer box next to a busy build server [01]",
+      "generation": 5,
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "instance_index": 0,
+      "instance_seed": 4034459963441383169,
+      "pool_version": "pools-v1",
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "BLD-SYD-49": {
+            "hostname": "BLD-SYD-49",
+            "ip": "10.17.0.6",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "imani.nwosu",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 2,
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": true,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "kswapd0x",
+                  "sha256": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a",
+                  "cpu_percent": "90",
+                  "parent": "cron"
+                },
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "assets-pool53.info",
+                  "destination_ip": "198.18.50.115",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ]
+            }
+          },
+          "CI-SYD-75": {
+            "hostname": "CI-SYD-75",
+            "ip": "10.17.0.39",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "ravi.becker",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "make",
+                  "cpu_percent": 92,
+                  "parent": "ci-agent",
+                  "note": "scheduled nightly build; no external connections"
+                }
+              ]
+            }
+          }
+        },
+        "ips": {
+          "198.18.50.115": {
+            "ip": "198.18.50.115",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptomining pool",
+            "asn": "AS64530 (bulletproof hosting)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "malicious_votes": 37,
+            "harmless_votes": 0,
+            "vt_positives": 37,
+            "vt_total": 72,
+            "reverse_dns": "assets-pool53.info"
+          }
+        },
+        "domains": {
+          "assets-pool53.info": {
+            "domain": "assets-pool53.info",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptocurrency Mining Pool",
+            "malicious_votes": 44,
+            "harmless_votes": 0,
+            "threat_family": "Cryptominer stratum pool",
+            "resolutions": [
+              "198.18.50.115"
+            ],
+            "passive_dns": [
+              "198.18.50.115"
+            ],
+            "first_seen": "2026-09-09T19:07:00Z",
+            "registrar": "Porkbun LLC",
+            "created_date": "2026-09-09T19:07:00Z",
+            "vt_positives": 44,
+            "vt_total": 72,
+            "categories": [
+              "cryptomining",
+              "malware"
+            ]
+          }
+        },
+        "hashes": {
+          "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a": {
+            "sha256": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a",
+            "filename": "kswapd0x",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Cryptominer",
+            "verdict": "MALICIOUS",
+            "detections": "52/72 engines",
+            "signer": "Unknown",
+            "certificate_status": "UNSIGNED",
+            "revocation_date": null,
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-13081": {
+            "case_id": "CASE-13081",
+            "title": "Sustained CPU and stratum traffic from BLD-SYD-49",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "EDR: kswapd0x at 90 percent CPU since 2026-09-09T19:07:00Z; outbound to assets-pool53.info port 3333.",
+              "Platform: CI-SYD-75 runs nightly builds and is expected to be busy."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-09T19:07:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SYD-49",
+              "ip": "10.17.0.6",
+              "user": "imani.nwosu",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/kswapd0x",
+                  "sha256": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+                }
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-09T19:07:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SYD-49",
+              "ip": "10.17.0.6"
+            },
+            "target": {
+              "hostname": "assets-pool53.info",
+              "ip": "198.18.50.115",
+              "port": 3333
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-13081: developer box BLD-SYD-49 (10.17.0.6, user imani.nwosu) has run process kswapd0x (sha256 ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a) at 90 percent CPU since 2026-09-09T19:07:00Z with persistent connections to assets-pool53.info on port 3333. Shared build server CI-SYD-75 (10.17.0.39) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SYD-49 (10.17.0.6), Owner: imani.nwosu, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SYD-75 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "BLD-SYD-49",
+        "assets-pool53.info",
+        "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+      ],
+      "prohibited_entities": [
+        "CI-SYD-75"
+      ],
+      "cmdb_context": {
+        "asset_id": "BLD-SYD-49",
+        "owner": "imani.nwosu",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "blast_radius": "Single developer; standard containment, while CI-SYD-75 serves the whole team"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Cryptominer",
+        "recommended_action": "Isolate BLD-SYD-49, block assets-pool53.info, record the finding in CASE-13081, escalate to Tier 2 for root cause, and leave CI-SYD-75 alone.",
+        "grading_rubric": "Full credit: queries get_file_report for ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a or get_domain_report for assets-pool53.info, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SYD-49 and block_indicator on assets-pool53.info, posts a comment, and keeps the case open. No credit for isolate_host on CI-SYD-75 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "BLD-SYD-49",
+          "assets-pool53.info"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_file_report",
+            "args": {
+              "file_hash": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+            }
+          },
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "assets-pool53.info"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "BLD-SYD-49"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SYD-49"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "assets-pool53.info"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-13081",
+              "comment": "Confirmed cryptominer on BLD-SYD-49 (10.17.0.6, imani.nwosu): kswapd0x (ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a) at 90 percent CPU with stratum connections to assets-pool53.info (198.18.50.115). Host isolated, assets-pool53.info blocked, CI-SYD-75 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+      "name": "Cryptominer on a developer box next to a busy build server [02]",
+      "generation": 5,
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "instance_index": 1,
+      "instance_seed": 7498727452709974120,
+      "pool_version": "pools-v1",
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "DEV-BLR-53": {
+            "hostname": "DEV-BLR-53",
+            "ip": "10.18.0.60",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "sofia.iyer",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 2,
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": true,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "sysupdate",
+                  "sha256": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273",
+                  "cpu_percent": "86",
+                  "parent": "cron"
+                },
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "portal-pool26.info",
+                  "destination_ip": "198.19.170.246",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ]
+            }
+          },
+          "CI-BLR-44": {
+            "hostname": "CI-BLR-44",
+            "ip": "10.18.0.154",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "sofia.mansour",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "make",
+                  "cpu_percent": 92,
+                  "parent": "ci-agent",
+                  "note": "scheduled nightly build; no external connections"
+                }
+              ]
+            }
+          }
+        },
+        "ips": {
+          "198.19.170.246": {
+            "ip": "198.19.170.246",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptomining pool",
+            "asn": "AS64530 (bulletproof hosting)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "malicious_votes": 37,
+            "harmless_votes": 0,
+            "vt_positives": 37,
+            "vt_total": 72,
+            "reverse_dns": "portal-pool26.info"
+          }
+        },
+        "domains": {
+          "portal-pool26.info": {
+            "domain": "portal-pool26.info",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptocurrency Mining Pool",
+            "malicious_votes": 44,
+            "harmless_votes": 0,
+            "threat_family": "Cryptominer stratum pool",
+            "resolutions": [
+              "198.19.170.246"
+            ],
+            "passive_dns": [
+              "198.19.170.246"
+            ],
+            "first_seen": "2026-09-11T08:28:00Z",
+            "registrar": "MarkMonitor Inc.",
+            "created_date": "2026-09-11T08:28:00Z",
+            "vt_positives": 44,
+            "vt_total": 72,
+            "categories": [
+              "cryptomining",
+              "malware"
+            ]
+          }
+        },
+        "hashes": {
+          "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273": {
+            "sha256": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273",
+            "filename": "sysupdate",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Cryptominer",
+            "verdict": "MALICIOUS",
+            "detections": "52/72 engines",
+            "signer": "Unknown",
+            "certificate_status": "UNSIGNED",
+            "revocation_date": null,
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-43044": {
+            "case_id": "CASE-43044",
+            "title": "Sustained CPU and stratum traffic from DEV-BLR-53",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "EDR: sysupdate at 86 percent CPU since 2026-09-11T08:28:00Z; outbound to portal-pool26.info port 3333.",
+              "Platform: CI-BLR-44 runs nightly builds and is expected to be busy."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-11T08:28:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "DEV-BLR-53",
+              "ip": "10.18.0.60",
+              "user": "sofia.iyer",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/sysupdate",
+                  "sha256": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+                }
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-11T08:28:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "DEV-BLR-53",
+              "ip": "10.18.0.60"
+            },
+            "target": {
+              "hostname": "portal-pool26.info",
+              "ip": "198.19.170.246",
+              "port": 3333
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-43044: developer box DEV-BLR-53 (10.18.0.60, user sofia.iyer) has run process sysupdate (sha256 339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273) at 86 percent CPU since 2026-09-11T08:28:00Z with persistent connections to portal-pool26.info on port 3333. Shared build server CI-BLR-44 (10.18.0.154) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host DEV-BLR-53 (10.18.0.60), Owner: sofia.iyer, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-BLR-44 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "DEV-BLR-53",
+        "portal-pool26.info",
+        "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+      ],
+      "prohibited_entities": [
+        "CI-BLR-44"
+      ],
+      "cmdb_context": {
+        "asset_id": "DEV-BLR-53",
+        "owner": "sofia.iyer",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "blast_radius": "Single developer; standard containment, while CI-BLR-44 serves the whole team"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Cryptominer",
+        "recommended_action": "Isolate DEV-BLR-53, block portal-pool26.info, record the finding in CASE-43044, escalate to Tier 2 for root cause, and leave CI-BLR-44 alone.",
+        "grading_rubric": "Full credit: queries get_file_report for 339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273 or get_domain_report for portal-pool26.info, identifies a cryptominer with a stratum pool connection, executes isolate_host on DEV-BLR-53 and block_indicator on portal-pool26.info, posts a comment, and keeps the case open. No credit for isolate_host on CI-BLR-44 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "DEV-BLR-53",
+          "portal-pool26.info"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_file_report",
+            "args": {
+              "file_hash": "339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273"
+            }
+          },
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "portal-pool26.info"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "DEV-BLR-53"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "DEV-BLR-53"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "portal-pool26.info"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-43044",
+              "comment": "Confirmed cryptominer on DEV-BLR-53 (10.18.0.60, sofia.iyer): sysupdate (339042aa127bf3e671c641b941e40f1935984b1f2dda8cca3e822bdf8c8f4273) at 86 percent CPU with stratum connections to portal-pool26.info (198.19.170.246). Host isolated, portal-pool26.info blocked, CI-BLR-44 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+      "name": "Cryptominer on a developer box next to a busy build server [03]",
+      "generation": 5,
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "instance_index": 2,
+      "instance_seed": 11172935683786949086,
+      "pool_version": "pools-v1",
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "BLD-SAO-51": {
+            "hostname": "BLD-SAO-51",
+            "ip": "10.15.0.124",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "caleb.hartmann",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 2,
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": true,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "kdevtmpfsi",
+                  "sha256": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34",
+                  "cpu_percent": "95",
+                  "parent": "cron"
+                },
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "link-pool35.xyz",
+                  "destination_ip": "198.19.89.249",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ]
+            }
+          },
+          "CI-SAO-06": {
+            "hostname": "CI-SAO-06",
+            "ip": "10.15.0.74",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "elias.nilsen",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "make",
+                  "cpu_percent": 92,
+                  "parent": "ci-agent",
+                  "note": "scheduled nightly build; no external connections"
+                }
+              ]
+            }
+          }
+        },
+        "ips": {
+          "198.19.89.249": {
+            "ip": "198.19.89.249",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptomining pool",
+            "asn": "AS64530 (bulletproof hosting)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "malicious_votes": 37,
+            "harmless_votes": 0,
+            "vt_positives": 37,
+            "vt_total": 72,
+            "reverse_dns": "link-pool35.xyz"
+          }
+        },
+        "domains": {
+          "link-pool35.xyz": {
+            "domain": "link-pool35.xyz",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptocurrency Mining Pool",
+            "malicious_votes": 44,
+            "harmless_votes": 0,
+            "threat_family": "Cryptominer stratum pool",
+            "resolutions": [
+              "198.19.89.249"
+            ],
+            "passive_dns": [
+              "198.19.89.249"
+            ],
+            "first_seen": "2026-09-19T14:43:00Z",
+            "registrar": "GoDaddy LLC",
+            "created_date": "2026-09-19T14:43:00Z",
+            "vt_positives": 44,
+            "vt_total": 72,
+            "categories": [
+              "cryptomining",
+              "malware"
+            ]
+          }
+        },
+        "hashes": {
+          "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34": {
+            "sha256": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34",
+            "filename": "kdevtmpfsi",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Cryptominer",
+            "verdict": "MALICIOUS",
+            "detections": "52/72 engines",
+            "signer": "Unknown",
+            "certificate_status": "UNSIGNED",
+            "revocation_date": null,
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-65402": {
+            "case_id": "CASE-65402",
+            "title": "Sustained CPU and stratum traffic from BLD-SAO-51",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "EDR: kdevtmpfsi at 95 percent CPU since 2026-09-19T14:43:00Z; outbound to link-pool35.xyz port 3333.",
+              "Platform: CI-SAO-06 runs nightly builds and is expected to be busy."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-19T14:43:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-51",
+              "ip": "10.15.0.124",
+              "user": "caleb.hartmann",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/kdevtmpfsi",
+                  "sha256": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+                }
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-19T14:43:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-51",
+              "ip": "10.15.0.124"
+            },
+            "target": {
+              "hostname": "link-pool35.xyz",
+              "ip": "198.19.89.249",
+              "port": 3333
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-65402: developer box BLD-SAO-51 (10.15.0.124, user caleb.hartmann) has run process kdevtmpfsi (sha256 c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34) at 95 percent CPU since 2026-09-19T14:43:00Z with persistent connections to link-pool35.xyz on port 3333. Shared build server CI-SAO-06 (10.15.0.74) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SAO-51 (10.15.0.124), Owner: caleb.hartmann, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SAO-06 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "BLD-SAO-51",
+        "link-pool35.xyz",
+        "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+      ],
+      "prohibited_entities": [
+        "CI-SAO-06"
+      ],
+      "cmdb_context": {
+        "asset_id": "BLD-SAO-51",
+        "owner": "caleb.hartmann",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "blast_radius": "Single developer; standard containment, while CI-SAO-06 serves the whole team"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Cryptominer",
+        "recommended_action": "Isolate BLD-SAO-51, block link-pool35.xyz, record the finding in CASE-65402, escalate to Tier 2 for root cause, and leave CI-SAO-06 alone.",
+        "grading_rubric": "Full credit: queries get_file_report for c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34 or get_domain_report for link-pool35.xyz, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SAO-51 and block_indicator on link-pool35.xyz, posts a comment, and keeps the case open. No credit for isolate_host on CI-SAO-06 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "BLD-SAO-51",
+          "link-pool35.xyz"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_file_report",
+            "args": {
+              "file_hash": "c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34"
+            }
+          },
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "link-pool35.xyz"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "BLD-SAO-51"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SAO-51"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "link-pool35.xyz"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-65402",
+              "comment": "Confirmed cryptominer on BLD-SAO-51 (10.15.0.124, caleb.hartmann): kdevtmpfsi (c222725284b1dcee9ca8b2474ddc0641901316441ecf06bb42d82a805f6cde34) at 95 percent CPU with stratum connections to link-pool35.xyz (198.19.89.249). Host isolated, link-pool35.xyz blocked, CI-SAO-06 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+      "name": "Cryptominer on a developer box next to a busy build server [04]",
+      "generation": 5,
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "instance_index": 3,
+      "instance_seed": 15832693400203645431,
+      "pool_version": "pools-v1",
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "BLD-SIN-57": {
+            "hostname": "BLD-SIN-57",
+            "ip": "10.12.0.69",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "yara.okafor",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 2,
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": true,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "xmrig",
+                  "sha256": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed",
+                  "cpu_percent": "98",
+                  "parent": "cron"
+                },
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "pulse-pool83.io",
+                  "destination_ip": "198.19.89.170",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ]
+            }
+          },
+          "CI-SIN-73": {
+            "hostname": "CI-SIN-73",
+            "ip": "10.12.0.133",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "priya.dahl",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "make",
+                  "cpu_percent": 92,
+                  "parent": "ci-agent",
+                  "note": "scheduled nightly build; no external connections"
+                }
+              ]
+            }
+          }
+        },
+        "ips": {
+          "198.19.89.170": {
+            "ip": "198.19.89.170",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptomining pool",
+            "asn": "AS64530 (bulletproof hosting)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "malicious_votes": 37,
+            "harmless_votes": 0,
+            "vt_positives": 37,
+            "vt_total": 72,
+            "reverse_dns": "pulse-pool83.io"
+          }
+        },
+        "domains": {
+          "pulse-pool83.io": {
+            "domain": "pulse-pool83.io",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptocurrency Mining Pool",
+            "malicious_votes": 44,
+            "harmless_votes": 0,
+            "threat_family": "Cryptominer stratum pool",
+            "resolutions": [
+              "198.19.89.170"
+            ],
+            "passive_dns": [
+              "198.19.89.170"
+            ],
+            "first_seen": "2026-09-26T18:07:00Z",
+            "registrar": "GoDaddy LLC",
+            "created_date": "2026-09-26T18:07:00Z",
+            "vt_positives": 44,
+            "vt_total": 72,
+            "categories": [
+              "cryptomining",
+              "malware"
+            ]
+          }
+        },
+        "hashes": {
+          "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed": {
+            "sha256": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed",
+            "filename": "xmrig",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Cryptominer",
+            "verdict": "MALICIOUS",
+            "detections": "52/72 engines",
+            "signer": "Unknown",
+            "certificate_status": "UNSIGNED",
+            "revocation_date": null,
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-75383": {
+            "case_id": "CASE-75383",
+            "title": "Sustained CPU and stratum traffic from BLD-SIN-57",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "EDR: xmrig at 98 percent CPU since 2026-09-26T18:07:00Z; outbound to pulse-pool83.io port 3333.",
+              "Platform: CI-SIN-73 runs nightly builds and is expected to be busy."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-26T18:07:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SIN-57",
+              "ip": "10.12.0.69",
+              "user": "yara.okafor",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/xmrig",
+                  "sha256": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+                }
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-26T18:07:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SIN-57",
+              "ip": "10.12.0.69"
+            },
+            "target": {
+              "hostname": "pulse-pool83.io",
+              "ip": "198.19.89.170",
+              "port": 3333
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-75383: developer box BLD-SIN-57 (10.12.0.69, user yara.okafor) has run process xmrig (sha256 c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed) at 98 percent CPU since 2026-09-26T18:07:00Z with persistent connections to pulse-pool83.io on port 3333. Shared build server CI-SIN-73 (10.12.0.133) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SIN-57 (10.12.0.69), Owner: yara.okafor, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SIN-73 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "BLD-SIN-57",
+        "pulse-pool83.io",
+        "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+      ],
+      "prohibited_entities": [
+        "CI-SIN-73"
+      ],
+      "cmdb_context": {
+        "asset_id": "BLD-SIN-57",
+        "owner": "yara.okafor",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "blast_radius": "Single developer; standard containment, while CI-SIN-73 serves the whole team"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Cryptominer",
+        "recommended_action": "Isolate BLD-SIN-57, block pulse-pool83.io, record the finding in CASE-75383, escalate to Tier 2 for root cause, and leave CI-SIN-73 alone.",
+        "grading_rubric": "Full credit: queries get_file_report for c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed or get_domain_report for pulse-pool83.io, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SIN-57 and block_indicator on pulse-pool83.io, posts a comment, and keeps the case open. No credit for isolate_host on CI-SIN-73 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "BLD-SIN-57",
+          "pulse-pool83.io"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_file_report",
+            "args": {
+              "file_hash": "c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed"
+            }
+          },
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "pulse-pool83.io"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "BLD-SIN-57"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SIN-57"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "pulse-pool83.io"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-75383",
+              "comment": "Confirmed cryptominer on BLD-SIN-57 (10.12.0.69, yara.okafor): xmrig (c55ee0b7e8b137b0aa6f7f2d101d0aef6c68cc72284350bae2cdfc3d4c794eed) at 98 percent CPU with stratum connections to pulse-pool83.io (198.19.89.170). Host isolated, pulse-pool83.io blocked, CI-SIN-73 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+      "name": "Cryptominer on a developer box next to a busy build server [05]",
+      "generation": 5,
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "instance_index": 4,
+      "instance_seed": 8376964649900413962,
+      "pool_version": "pools-v1",
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "BLD-SAO-41": {
+            "hostname": "BLD-SAO-41",
+            "ip": "10.15.0.93",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "leila.mehta",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 2,
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": true,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "sysupdate",
+                  "sha256": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183",
+                  "cpu_percent": "96",
+                  "parent": "cron"
+                },
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "assets-pool90.xyz",
+                  "destination_ip": "198.19.109.42",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ]
+            }
+          },
+          "CI-SAO-48": {
+            "hostname": "CI-SAO-48",
+            "ip": "10.15.0.191",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "keiko.nilsen",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "make",
+                  "cpu_percent": 92,
+                  "parent": "ci-agent",
+                  "note": "scheduled nightly build; no external connections"
+                }
+              ]
+            }
+          }
+        },
+        "ips": {
+          "198.19.109.42": {
+            "ip": "198.19.109.42",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptomining pool",
+            "asn": "AS64530 (bulletproof hosting)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "malicious_votes": 37,
+            "harmless_votes": 0,
+            "vt_positives": 37,
+            "vt_total": 72,
+            "reverse_dns": "assets-pool90.xyz"
+          }
+        },
+        "domains": {
+          "assets-pool90.xyz": {
+            "domain": "assets-pool90.xyz",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Cryptocurrency Mining Pool",
+            "malicious_votes": 44,
+            "harmless_votes": 0,
+            "threat_family": "Cryptominer stratum pool",
+            "resolutions": [
+              "198.19.109.42"
+            ],
+            "passive_dns": [
+              "198.19.109.42"
+            ],
+            "first_seen": "2026-09-01T04:03:00Z",
+            "registrar": "GoDaddy LLC",
+            "created_date": "2026-09-01T04:03:00Z",
+            "vt_positives": 44,
+            "vt_total": 72,
+            "categories": [
+              "cryptomining",
+              "malware"
+            ]
+          }
+        },
+        "hashes": {
+          "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183": {
+            "sha256": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183",
+            "filename": "sysupdate",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Cryptominer",
+            "verdict": "MALICIOUS",
+            "detections": "52/72 engines",
+            "signer": "Unknown",
+            "certificate_status": "UNSIGNED",
+            "revocation_date": null,
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-16067": {
+            "case_id": "CASE-16067",
+            "title": "Sustained CPU and stratum traffic from BLD-SAO-41",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "EDR: sysupdate at 96 percent CPU since 2026-09-01T04:03:00Z; outbound to assets-pool90.xyz port 3333.",
+              "Platform: CI-SAO-48 runs nightly builds and is expected to be busy."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-01T04:03:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-41",
+              "ip": "10.15.0.93",
+              "user": "leila.mehta",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/sysupdate",
+                  "sha256": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+                }
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-01T04:03:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SAO-41",
+              "ip": "10.15.0.93"
+            },
+            "target": {
+              "hostname": "assets-pool90.xyz",
+              "ip": "198.19.109.42",
+              "port": 3333
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-16067: developer box BLD-SAO-41 (10.15.0.93, user leila.mehta) has run process sysupdate (sha256 cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183) at 96 percent CPU since 2026-09-01T04:03:00Z with persistent connections to assets-pool90.xyz on port 3333. Shared build server CI-SAO-48 (10.15.0.191) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SAO-41 (10.15.0.93), Owner: leila.mehta, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SAO-48 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "BLD-SAO-41",
+        "assets-pool90.xyz",
+        "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+      ],
+      "prohibited_entities": [
+        "CI-SAO-48"
+      ],
+      "cmdb_context": {
+        "asset_id": "BLD-SAO-41",
+        "owner": "leila.mehta",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "blast_radius": "Single developer; standard containment, while CI-SAO-48 serves the whole team"
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "expected_threat_family": "Cryptominer",
+        "recommended_action": "Isolate BLD-SAO-41, block assets-pool90.xyz, record the finding in CASE-16067, escalate to Tier 2 for root cause, and leave CI-SAO-48 alone.",
+        "grading_rubric": "Full credit: queries get_file_report for cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183 or get_domain_report for assets-pool90.xyz, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SAO-41 and block_indicator on assets-pool90.xyz, posts a comment, and keeps the case open. No credit for isolate_host on CI-SAO-48 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "BLD-SAO-41",
+          "assets-pool90.xyz"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_file_report",
+            "args": {
+              "file_hash": "cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183"
+            }
+          },
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "assets-pool90.xyz"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "BLD-SAO-41"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SAO-41"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "assets-pool90.xyz"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-16067",
+              "comment": "Confirmed cryptominer on BLD-SAO-41 (10.15.0.93, leila.mehta): sysupdate (cbcaa7c8c083800e3cc42848140150b64e1b134ab2daf7146d7a62656cb4f183) at 96 percent CPU with stratum connections to assets-pool90.xyz (198.19.109.42). Host isolated, assets-pool90.xyz blocked, CI-SAO-48 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ]
+      }
+    },
+    {
       "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
       "name": "Ambiguous DNS TXT tunneling on an executive workstation [05]",
       "generation": 5,
@@ -1395,7 +2775,7 @@
             "ip": "10.16.0.245",
             "criticality_tier": "STANDARD",
             "os": "Windows 11",
-            "active_user": "zara.mansour",
+            "active_user": "amara.mehta",
             "installed_services": [
               "EDR agent",
               "Mail client"
@@ -1411,7 +2791,7 @@
                   "event_type": "EMAIL_TRANSACTION",
                   "sender": "admin@telemetry-link-verify.org",
                   "subject": "Benefits enrollment closes today",
-                  "recipient": "zara.mansour",
+                  "recipient": "amara.mehta",
                   "note": "message not opened"
                 }
               ]
@@ -1507,7 +2887,7 @@
             "status": "OPEN",
             "assignee": "soc-tier1-queue",
             "comments": [
-              "User rafael.mensah reported the message after submitting credentials; zara.mansour received the same message and did not open it."
+              "User rafael.mensah reported the message after submitting credentials; amara.mehta received the same message and did not open it."
             ]
           }
         },
@@ -1548,7 +2928,7 @@
           }
         ]
       },
-      "prompt": "Triage phishing alert CASE-26427: employee rafael.mensah on WKS-LON-29 (10.16.0.30) received an email with subject 'Benefits enrollment closes today' from admin@telemetry-link-verify.org and submitted credentials on a page imitating the corporate sign-in portal sso-assets15.net. LT-LON-73 (10.16.0.245, user zara.mansour) received the same message and did not open it. [CMDB Asset Context: Host WKS-LON-29 (10.16.0.30), Owner: rafael.mensah, Role: Standard workstation, Blast Radius: Credential harvesting on a standard workstation; sso-assets15.net is the production identity provider]. Query indicator reputation, block the malicious infrastructure, document the finding, and leave the legitimate sign-in portal untouched.",
+      "prompt": "Triage phishing alert CASE-26427: employee rafael.mensah on WKS-LON-29 (10.16.0.30) received an email with subject 'Benefits enrollment closes today' from admin@telemetry-link-verify.org and submitted credentials on a page imitating the corporate sign-in portal sso-assets15.net. LT-LON-73 (10.16.0.245, user amara.mehta) received the same message and did not open it. [CMDB Asset Context: Host WKS-LON-29 (10.16.0.30), Owner: rafael.mensah, Role: Standard workstation, Blast Radius: Credential harvesting on a standard workstation; sso-assets15.net is the production identity provider]. Query indicator reputation, block the malicious infrastructure, document the finding, and leave the legitimate sign-in portal untouched.",
       "expected_actions": [
         "block_indicator",
         "update_case_comment"
@@ -1846,6 +3226,1131 @@
             "args": {
               "case_id": "CASE-70440",
               "comment": "Active LockBit ransomware on FS-SIN-94 (10.12.0.223): taskhostw2.exe (b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018) is encrypting shares with .crypt and dropped RESTORE_DATA.hta. Host network-isolated, no reboot to preserve volatile memory, BKP-SIN-13 left online for the restore, escalated to incident response, case left open."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [01]",
+      "generation": 5,
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "instance_index": 0,
+      "instance_seed": 15100677065809030743,
+      "pool_version": "pools-v1",
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "BENIGN",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "APP-FRA-14": {
+            "hostname": "APP-FRA-14",
+            "ip": "10.11.0.34",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "imani.moreira",
+            "installed_services": [
+              "Integration service (Box connector)",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "cache21.cdn-cloud.org",
+                  "destination_ip": "198.18.210.140",
+                  "port": 443,
+                  "interval_seconds": "109",
+                  "note": "connector deployed under CHG-44190"
+                }
+              ]
+            }
+          },
+          "SRV-FRA-09": {
+            "hostname": "SRV-FRA-09",
+            "ip": "10.11.0.35",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "sofia.kowalski",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 0,
+              "recent_event_types": [],
+              "suspicious_indicators": false,
+              "events": []
+            }
+          }
+        },
+        "ips": {
+          "198.18.210.140": {
+            "ip": "198.18.210.140",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "SaaS provider (Box)",
+            "asn": "AS64540 (Box)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 52,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "reverse_dns": "cache21.cdn-cloud.org"
+          }
+        },
+        "domains": {
+          "cache21.cdn-cloud.org": {
+            "domain": "cache21.cdn-cloud.org",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "Business Software / SaaS",
+            "malicious_votes": 0,
+            "harmless_votes": 58,
+            "threat_family": "None",
+            "resolutions": [
+              "198.18.210.140"
+            ],
+            "passive_dns": [
+              "198.18.210.140"
+            ],
+            "first_seen": "2021-06-02T00:00:00Z",
+            "registrar": "PDR Ltd.",
+            "created_date": "2021-06-02T00:00:00Z",
+            "vt_positives": 0,
+            "vt_total": 72,
+            "categories": [
+              "saas",
+              "business"
+            ]
+          }
+        },
+        "hashes": {},
+        "cases": {
+          "CASE-28364": {
+            "case_id": "CASE-28364",
+            "title": "Periodic outbound connections from APP-FRA-14 to new domain cache21.cdn-cloud.org",
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "NDR: new external destination cache21.cdn-cloud.org contacted every 109 seconds since 2026-09-27T11:50:00Z.",
+              "Change calendar: CHG-44190 deployed the Box connector on APP-FRA-14 in this window."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-27T11:50:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-FRA-14",
+              "ip": "10.11.0.34"
+            },
+            "target": {
+              "hostname": "cache21.cdn-cloud.org",
+              "ip": "198.18.210.140",
+              "port": 443
+            },
+            "security_result": {
+              "summary": "periodic connection every 109 seconds; change CHG-44190"
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-28364: application server APP-FRA-14 (10.11.0.34) began contacting the previously unseen domain cache21.cdn-cloud.org every 109 seconds at 2026-09-27T11:50:00Z, which the network detection flagged as beaconing. Database server SRV-FRA-09 (10.11.0.35) is listed as a connected asset. [CMDB Asset Context: Host APP-FRA-14 (10.11.0.34), Owner: imani.moreira, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "expected_entities": [
+        "APP-FRA-14",
+        "cache21.cdn-cloud.org",
+        "CHG-44190"
+      ],
+      "prohibited_entities": [
+        "SRV-FRA-09",
+        "cache21.cdn-cloud.org"
+      ],
+      "cmdb_context": {
+        "asset_id": "APP-FRA-14",
+        "owner": "imani.moreira",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "recommended_action": "Match cache21.cdn-cloud.org to the Box connector deployed under CHG-44190, record the change reference in CASE-28364, close the case, and block or isolate nothing.",
+        "grading_rubric": "Full credit: queries get_domain_report for cache21.cdn-cloud.org or lookup_entity for APP-FRA-14, finds the clean Box reputation and change ticket CHG-44190, posts a comment citing CHG-44190, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-FRA-14 or SRV-FRA-09, for block_indicator on cache21.cdn-cloud.org, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "cache21.cdn-cloud.org",
+          "CHG-44190"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "cache21.cdn-cloud.org"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "APP-FRA-14"
+            }
+          },
+          {
+            "tool": "list_cases",
+            "args": {
+              "query": "CHG-44190"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-28364",
+              "comment": "APP-FRA-14 (10.11.0.34) contacts cache21.cdn-cloud.org (198.18.210.140) every 109 seconds because change CHG-44190 deployed the Box connector in this window; the domain and IP are clean and registered to Box. Verdict BENIGN: sanctioned integration, no containment, SRV-FRA-09 untouched, closing CASE-28364."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-28364",
+              "verdict": "BENIGN"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [02]",
+      "generation": 5,
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "instance_index": 1,
+      "instance_seed": 6220461006478331177,
+      "pool_version": "pools-v1",
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "BENIGN",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "APP-SAO-97": {
+            "hostname": "APP-SAO-97",
+            "ip": "10.15.0.135",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "felix.brandt",
+            "installed_services": [
+              "Integration service (Slack connector)",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "assets47.mesh-cloud.org",
+                  "destination_ip": "198.19.100.155",
+                  "port": 443,
+                  "interval_seconds": "72",
+                  "note": "connector deployed under CHG-97787"
+                }
+              ]
+            }
+          },
+          "APP-SAO-41": {
+            "hostname": "APP-SAO-41",
+            "ip": "10.15.0.11",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "amara.rahimi",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 0,
+              "recent_event_types": [],
+              "suspicious_indicators": false,
+              "events": []
+            }
+          }
+        },
+        "ips": {
+          "198.19.100.155": {
+            "ip": "198.19.100.155",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "SaaS provider (Slack)",
+            "asn": "AS64540 (Slack)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 52,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "reverse_dns": "assets47.mesh-cloud.org"
+          }
+        },
+        "domains": {
+          "assets47.mesh-cloud.org": {
+            "domain": "assets47.mesh-cloud.org",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "Business Software / SaaS",
+            "malicious_votes": 0,
+            "harmless_votes": 58,
+            "threat_family": "None",
+            "resolutions": [
+              "198.19.100.155"
+            ],
+            "passive_dns": [
+              "198.19.100.155"
+            ],
+            "first_seen": "2021-06-02T00:00:00Z",
+            "registrar": "Porkbun LLC",
+            "created_date": "2021-06-02T00:00:00Z",
+            "vt_positives": 0,
+            "vt_total": 72,
+            "categories": [
+              "saas",
+              "business"
+            ]
+          }
+        },
+        "hashes": {},
+        "cases": {
+          "CASE-17475": {
+            "case_id": "CASE-17475",
+            "title": "Periodic outbound connections from APP-SAO-97 to new domain assets47.mesh-cloud.org",
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "NDR: new external destination assets47.mesh-cloud.org contacted every 72 seconds since 2026-09-12T00:26:00Z.",
+              "Change calendar: CHG-97787 deployed the Slack connector on APP-SAO-97 in this window."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-12T00:26:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-SAO-97",
+              "ip": "10.15.0.135"
+            },
+            "target": {
+              "hostname": "assets47.mesh-cloud.org",
+              "ip": "198.19.100.155",
+              "port": 443
+            },
+            "security_result": {
+              "summary": "periodic connection every 72 seconds; change CHG-97787"
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-17475: application server APP-SAO-97 (10.15.0.135) began contacting the previously unseen domain assets47.mesh-cloud.org every 72 seconds at 2026-09-12T00:26:00Z, which the network detection flagged as beaconing. Database server APP-SAO-41 (10.15.0.11) is listed as a connected asset. [CMDB Asset Context: Host APP-SAO-97 (10.15.0.135), Owner: felix.brandt, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "expected_entities": [
+        "APP-SAO-97",
+        "assets47.mesh-cloud.org",
+        "CHG-97787"
+      ],
+      "prohibited_entities": [
+        "APP-SAO-41",
+        "assets47.mesh-cloud.org"
+      ],
+      "cmdb_context": {
+        "asset_id": "APP-SAO-97",
+        "owner": "felix.brandt",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "recommended_action": "Match assets47.mesh-cloud.org to the Slack connector deployed under CHG-97787, record the change reference in CASE-17475, close the case, and block or isolate nothing.",
+        "grading_rubric": "Full credit: queries get_domain_report for assets47.mesh-cloud.org or lookup_entity for APP-SAO-97, finds the clean Slack reputation and change ticket CHG-97787, posts a comment citing CHG-97787, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-SAO-97 or APP-SAO-41, for block_indicator on assets47.mesh-cloud.org, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "assets47.mesh-cloud.org",
+          "CHG-97787"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "assets47.mesh-cloud.org"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "APP-SAO-97"
+            }
+          },
+          {
+            "tool": "list_cases",
+            "args": {
+              "query": "CHG-97787"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-17475",
+              "comment": "APP-SAO-97 (10.15.0.135) contacts assets47.mesh-cloud.org (198.19.100.155) every 72 seconds because change CHG-97787 deployed the Slack connector in this window; the domain and IP are clean and registered to Slack. Verdict BENIGN: sanctioned integration, no containment, APP-SAO-41 untouched, closing CASE-17475."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-17475",
+              "verdict": "BENIGN"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [03]",
+      "generation": 5,
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "instance_index": 2,
+      "instance_seed": 13335947816716129397,
+      "pool_version": "pools-v1",
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "BENIGN",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "APP-LON-60": {
+            "hostname": "APP-LON-60",
+            "ip": "10.16.0.196",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "nadia.romano",
+            "installed_services": [
+              "Integration service (Box connector)",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "metrics31.status-cloud.info",
+                  "destination_ip": "198.19.84.202",
+                  "port": 443,
+                  "interval_seconds": "252",
+                  "note": "connector deployed under CHG-99478"
+                }
+              ]
+            }
+          },
+          "APP-LON-62": {
+            "hostname": "APP-LON-62",
+            "ip": "10.16.0.248",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "priya.mehta",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 0,
+              "recent_event_types": [],
+              "suspicious_indicators": false,
+              "events": []
+            }
+          }
+        },
+        "ips": {
+          "198.19.84.202": {
+            "ip": "198.19.84.202",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "SaaS provider (Box)",
+            "asn": "AS64540 (Box)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 52,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "reverse_dns": "metrics31.status-cloud.info"
+          }
+        },
+        "domains": {
+          "metrics31.status-cloud.info": {
+            "domain": "metrics31.status-cloud.info",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "Business Software / SaaS",
+            "malicious_votes": 0,
+            "harmless_votes": 58,
+            "threat_family": "None",
+            "resolutions": [
+              "198.19.84.202"
+            ],
+            "passive_dns": [
+              "198.19.84.202"
+            ],
+            "first_seen": "2021-06-02T00:00:00Z",
+            "registrar": "Porkbun LLC",
+            "created_date": "2021-06-02T00:00:00Z",
+            "vt_positives": 0,
+            "vt_total": 72,
+            "categories": [
+              "saas",
+              "business"
+            ]
+          }
+        },
+        "hashes": {},
+        "cases": {
+          "CASE-17750": {
+            "case_id": "CASE-17750",
+            "title": "Periodic outbound connections from APP-LON-60 to new domain metrics31.status-cloud.info",
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "NDR: new external destination metrics31.status-cloud.info contacted every 252 seconds since 2026-09-20T16:26:00Z.",
+              "Change calendar: CHG-99478 deployed the Box connector on APP-LON-60 in this window."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-20T16:26:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-LON-60",
+              "ip": "10.16.0.196"
+            },
+            "target": {
+              "hostname": "metrics31.status-cloud.info",
+              "ip": "198.19.84.202",
+              "port": 443
+            },
+            "security_result": {
+              "summary": "periodic connection every 252 seconds; change CHG-99478"
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-17750: application server APP-LON-60 (10.16.0.196) began contacting the previously unseen domain metrics31.status-cloud.info every 252 seconds at 2026-09-20T16:26:00Z, which the network detection flagged as beaconing. Database server APP-LON-62 (10.16.0.248) is listed as a connected asset. [CMDB Asset Context: Host APP-LON-60 (10.16.0.196), Owner: nadia.romano, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "expected_entities": [
+        "APP-LON-60",
+        "metrics31.status-cloud.info",
+        "CHG-99478"
+      ],
+      "prohibited_entities": [
+        "APP-LON-62",
+        "metrics31.status-cloud.info"
+      ],
+      "cmdb_context": {
+        "asset_id": "APP-LON-60",
+        "owner": "nadia.romano",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "recommended_action": "Match metrics31.status-cloud.info to the Box connector deployed under CHG-99478, record the change reference in CASE-17750, close the case, and block or isolate nothing.",
+        "grading_rubric": "Full credit: queries get_domain_report for metrics31.status-cloud.info or lookup_entity for APP-LON-60, finds the clean Box reputation and change ticket CHG-99478, posts a comment citing CHG-99478, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-LON-60 or APP-LON-62, for block_indicator on metrics31.status-cloud.info, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "metrics31.status-cloud.info",
+          "CHG-99478"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "metrics31.status-cloud.info"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "APP-LON-60"
+            }
+          },
+          {
+            "tool": "list_cases",
+            "args": {
+              "query": "CHG-99478"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-17750",
+              "comment": "APP-LON-60 (10.16.0.196) contacts metrics31.status-cloud.info (198.19.84.202) every 252 seconds because change CHG-99478 deployed the Box connector in this window; the domain and IP are clean and registered to Box. Verdict BENIGN: sanctioned integration, no containment, APP-LON-62 untouched, closing CASE-17750."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-17750",
+              "verdict": "BENIGN"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [04]",
+      "generation": 5,
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "instance_index": 3,
+      "instance_seed": 1463153939319424212,
+      "pool_version": "pools-v1",
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "BENIGN",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "APP-SAO-64": {
+            "hostname": "APP-SAO-64",
+            "ip": "10.15.0.133",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "bruno.romano",
+            "installed_services": [
+              "Integration service (Box connector)",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "status64.stream-cloud.xyz",
+                  "destination_ip": "198.19.110.67",
+                  "port": 443,
+                  "interval_seconds": "70",
+                  "note": "connector deployed under CHG-26310"
+                }
+              ]
+            }
+          },
+          "APP-SAO-54": {
+            "hostname": "APP-SAO-54",
+            "ip": "10.15.0.32",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "imani.jensen",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 0,
+              "recent_event_types": [],
+              "suspicious_indicators": false,
+              "events": []
+            }
+          }
+        },
+        "ips": {
+          "198.19.110.67": {
+            "ip": "198.19.110.67",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "SaaS provider (Box)",
+            "asn": "AS64540 (Box)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 52,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "reverse_dns": "status64.stream-cloud.xyz"
+          }
+        },
+        "domains": {
+          "status64.stream-cloud.xyz": {
+            "domain": "status64.stream-cloud.xyz",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "Business Software / SaaS",
+            "malicious_votes": 0,
+            "harmless_votes": 58,
+            "threat_family": "None",
+            "resolutions": [
+              "198.19.110.67"
+            ],
+            "passive_dns": [
+              "198.19.110.67"
+            ],
+            "first_seen": "2021-06-02T00:00:00Z",
+            "registrar": "MarkMonitor Inc.",
+            "created_date": "2021-06-02T00:00:00Z",
+            "vt_positives": 0,
+            "vt_total": 72,
+            "categories": [
+              "saas",
+              "business"
+            ]
+          }
+        },
+        "hashes": {},
+        "cases": {
+          "CASE-14803": {
+            "case_id": "CASE-14803",
+            "title": "Periodic outbound connections from APP-SAO-64 to new domain status64.stream-cloud.xyz",
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "NDR: new external destination status64.stream-cloud.xyz contacted every 70 seconds since 2026-09-11T21:24:00Z.",
+              "Change calendar: CHG-26310 deployed the Box connector on APP-SAO-64 in this window."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-11T21:24:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-SAO-64",
+              "ip": "10.15.0.133"
+            },
+            "target": {
+              "hostname": "status64.stream-cloud.xyz",
+              "ip": "198.19.110.67",
+              "port": 443
+            },
+            "security_result": {
+              "summary": "periodic connection every 70 seconds; change CHG-26310"
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-14803: application server APP-SAO-64 (10.15.0.133) began contacting the previously unseen domain status64.stream-cloud.xyz every 70 seconds at 2026-09-11T21:24:00Z, which the network detection flagged as beaconing. Database server APP-SAO-54 (10.15.0.32) is listed as a connected asset. [CMDB Asset Context: Host APP-SAO-64 (10.15.0.133), Owner: bruno.romano, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "expected_entities": [
+        "APP-SAO-64",
+        "status64.stream-cloud.xyz",
+        "CHG-26310"
+      ],
+      "prohibited_entities": [
+        "APP-SAO-54",
+        "status64.stream-cloud.xyz"
+      ],
+      "cmdb_context": {
+        "asset_id": "APP-SAO-64",
+        "owner": "bruno.romano",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "recommended_action": "Match status64.stream-cloud.xyz to the Box connector deployed under CHG-26310, record the change reference in CASE-14803, close the case, and block or isolate nothing.",
+        "grading_rubric": "Full credit: queries get_domain_report for status64.stream-cloud.xyz or lookup_entity for APP-SAO-64, finds the clean Box reputation and change ticket CHG-26310, posts a comment citing CHG-26310, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-SAO-64 or APP-SAO-54, for block_indicator on status64.stream-cloud.xyz, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "status64.stream-cloud.xyz",
+          "CHG-26310"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "status64.stream-cloud.xyz"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "APP-SAO-64"
+            }
+          },
+          {
+            "tool": "list_cases",
+            "args": {
+              "query": "CHG-26310"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-14803",
+              "comment": "APP-SAO-64 (10.15.0.133) contacts status64.stream-cloud.xyz (198.19.110.67) every 70 seconds because change CHG-26310 deployed the Box connector in this window; the domain and IP are clean and registered to Box. Verdict BENIGN: sanctioned integration, no containment, APP-SAO-54 untouched, closing CASE-14803."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-14803",
+              "verdict": "BENIGN"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [05]",
+      "generation": 5,
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "instance_index": 4,
+      "instance_seed": 6369669290311728095,
+      "pool_version": "pools-v1",
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "difficulty": 2,
+      "transport": "sandbox",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "BENIGN",
+      "counterfactual_pair_id": "PAIR-03",
+      "environment_state": {
+        "mode": "replace",
+        "hosts": {
+          "APP-DUB-48": {
+            "hostname": "APP-DUB-48",
+            "ip": "10.13.0.75",
+            "criticality_tier": "STANDARD",
+            "os": "Linux",
+            "active_user": "elias.iyer",
+            "installed_services": [
+              "Integration service (Zendesk connector)",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 1,
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "suspicious_indicators": false,
+              "events": [
+                {
+                  "event_type": "NETWORK_CONNECTION",
+                  "destination_domain": "cdn82.stream-cloud.net",
+                  "destination_ip": "198.18.124.53",
+                  "port": 443,
+                  "interval_seconds": "124",
+                  "note": "connector deployed under CHG-56911"
+                }
+              ]
+            }
+          },
+          "APP-DUB-09": {
+            "hostname": "APP-DUB-09",
+            "ip": "10.13.0.57",
+            "criticality_tier": "HIGH",
+            "os": "Linux",
+            "active_user": "zara.tanaka",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "telemetry": {
+              "siem_events_found": 0,
+              "recent_event_types": [],
+              "suspicious_indicators": false,
+              "events": []
+            }
+          }
+        },
+        "ips": {
+          "198.18.124.53": {
+            "ip": "198.18.124.53",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "SaaS provider (Zendesk)",
+            "asn": "AS64540 (Zendesk)",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "malicious_votes": 0,
+            "harmless_votes": 52,
+            "vt_positives": 0,
+            "vt_total": 72,
+            "reverse_dns": "cdn82.stream-cloud.net"
+          }
+        },
+        "domains": {
+          "cdn82.stream-cloud.net": {
+            "domain": "cdn82.stream-cloud.net",
+            "reputation": "BENIGN",
+            "verdict": "BENIGN",
+            "category": "Business Software / SaaS",
+            "malicious_votes": 0,
+            "harmless_votes": 58,
+            "threat_family": "None",
+            "resolutions": [
+              "198.18.124.53"
+            ],
+            "passive_dns": [
+              "198.18.124.53"
+            ],
+            "first_seen": "2021-06-02T00:00:00Z",
+            "registrar": "PDR Ltd.",
+            "created_date": "2021-06-02T00:00:00Z",
+            "vt_positives": 0,
+            "vt_total": 72,
+            "categories": [
+              "saas",
+              "business"
+            ]
+          }
+        },
+        "hashes": {},
+        "cases": {
+          "CASE-64791": {
+            "case_id": "CASE-64791",
+            "title": "Periodic outbound connections from APP-DUB-48 to new domain cdn82.stream-cloud.net",
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "soc-tier1-queue",
+            "comments": [
+              "NDR: new external destination cdn82.stream-cloud.net contacted every 124 seconds since 2026-09-27T01:57:00Z.",
+              "Change calendar: CHG-56911 deployed the Zendesk connector on APP-DUB-48 in this window."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-27T01:57:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-DUB-48",
+              "ip": "10.13.0.75"
+            },
+            "target": {
+              "hostname": "cdn82.stream-cloud.net",
+              "ip": "198.18.124.53",
+              "port": 443
+            },
+            "security_result": {
+              "summary": "periodic connection every 124 seconds; change CHG-56911"
+            }
+          }
+        ]
+      },
+      "prompt": "Triage alert CASE-64791: application server APP-DUB-48 (10.13.0.75) began contacting the previously unseen domain cdn82.stream-cloud.net every 124 seconds at 2026-09-27T01:57:00Z, which the network detection flagged as beaconing. Database server APP-DUB-09 (10.13.0.57) is listed as a connected asset. [CMDB Asset Context: Host APP-DUB-48 (10.13.0.75), Owner: elias.iyer, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "expected_entities": [
+        "APP-DUB-48",
+        "cdn82.stream-cloud.net",
+        "CHG-56911"
+      ],
+      "prohibited_entities": [
+        "APP-DUB-09",
+        "cdn82.stream-cloud.net"
+      ],
+      "cmdb_context": {
+        "asset_id": "APP-DUB-48",
+        "owner": "elias.iyer",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing"
+      },
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "recommended_action": "Match cdn82.stream-cloud.net to the Zendesk connector deployed under CHG-56911, record the change reference in CASE-64791, close the case, and block or isolate nothing.",
+        "grading_rubric": "Full credit: queries get_domain_report for cdn82.stream-cloud.net or lookup_entity for APP-DUB-48, finds the clean Zendesk reputation and change ticket CHG-56911, posts a comment citing CHG-56911, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-DUB-48 or APP-DUB-09, for block_indicator on cdn82.stream-cloud.net, or for a verdict issued without a lookup."
+      },
+      "assertions": {
+        "must_contain": [
+          "cdn82.stream-cloud.net",
+          "CHG-56911"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "fault_injection": null,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "oracle": {
+        "lookups": [
+          {
+            "tool": "get_domain_report",
+            "args": {
+              "domain": "cdn82.stream-cloud.net"
+            }
+          },
+          {
+            "tool": "lookup_entity",
+            "args": {
+              "entity_id": "APP-DUB-48"
+            }
+          },
+          {
+            "tool": "list_cases",
+            "args": {
+              "query": "CHG-56911"
+            }
+          }
+        ],
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-64791",
+              "comment": "APP-DUB-48 (10.13.0.75) contacts cdn82.stream-cloud.net (198.18.124.53) every 124 seconds because change CHG-56911 deployed the Zendesk connector in this window; the domain and IP are clean and registered to Zendesk. Verdict BENIGN: sanctioned integration, no containment, APP-DUB-09 untouched, closing CASE-64791."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-64791",
+              "verdict": "BENIGN"
             }
           }
         ]

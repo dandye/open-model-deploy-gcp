@@ -1,0 +1,172 @@
+{
+  "family_id": "FAM-CRYPTOMINER-DEV",
+  "name": "Cryptominer on a developer box next to a busy build server",
+  "ground_truth_label": "MALICIOUS",
+  "asset_criticality": "STANDARD",
+  "difficulty": 2,
+  "counterfactual_pair_id": "PAIR-03",
+  "transport": "sandbox",
+  "slots": {
+    "dev_host": {"type": "hostname", "role": "dev_box"},
+    "dev_ip": {"type": "internal_ip", "same_site_as": "dev_host"},
+    "dev_user": {"type": "username", "owned_by": "dev_host"},
+    "build_host": {"type": "hostname", "role": "ci_runner", "same_site_as": "dev_host"},
+    "build_ip": {"type": "internal_ip", "same_site_as": "build_host"},
+    "build_owner": {"type": "username", "owned_by": "build_host"},
+    "pool_domain": {"type": "domain", "style": "mining", "resolves_to": "pool_ip"},
+    "pool_ip": {"type": "external_ip"},
+    "miner_proc": {"type": "choice", "pool": "miner_process_names"},
+    "miner_hash": {"type": "sha256"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "cpu_pct": {"type": "integer", "min": 85, "max": 99}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{dev_host}}": {
+        "hostname": "{{dev_host}}",
+        "ip": "{{dev_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Linux",
+        "active_user": "{{dev_user}}",
+        "installed_services": ["Docker", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 2,
+          "recent_event_types": ["PROCESS_LAUNCH", "NETWORK_CONNECTION"],
+          "suspicious_indicators": true,
+          "events": [
+            {"event_type": "PROCESS_LAUNCH", "process": "{{miner_proc}}", "sha256": "{{miner_hash}}", "cpu_percent": "{{cpu_pct}}", "parent": "cron"},
+            {"event_type": "NETWORK_CONNECTION", "destination_domain": "{{pool_domain}}", "destination_ip": "{{pool_ip}}", "port": 3333, "protocol": "stratum"}
+          ]
+        }
+      },
+      "{{build_host}}": {
+        "hostname": "{{build_host}}",
+        "ip": "{{build_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{build_owner}}",
+        "installed_services": ["CI runner", "Compiler cache", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["PROCESS_LAUNCH"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "PROCESS_LAUNCH", "process": "make", "cpu_percent": 92, "parent": "ci-agent", "note": "scheduled nightly build; no external connections"}]
+        }
+      }
+    },
+    "ips": {
+      "{{pool_ip}}": {
+        "ip": "{{pool_ip}}",
+        "reputation": "MALICIOUS",
+        "verdict": "MALICIOUS",
+        "category": "Cryptomining pool",
+        "asn": "AS64530 (bulletproof hosting)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "Cryptominer stratum pool",
+        "malicious_votes": 37,
+        "harmless_votes": 0,
+        "vt_positives": 37,
+        "vt_total": 72,
+        "reverse_dns": "{{pool_domain}}"
+      }
+    },
+    "domains": {
+      "{{pool_domain}}": {
+        "domain": "{{pool_domain}}",
+        "reputation": "MALICIOUS",
+        "verdict": "MALICIOUS",
+        "category": "Cryptocurrency Mining Pool",
+        "malicious_votes": 44,
+        "harmless_votes": 0,
+        "threat_family": "Cryptominer stratum pool",
+        "resolutions": ["{{pool_ip}}"],
+        "passive_dns": ["{{pool_ip}}"],
+        "first_seen": "{{when}}",
+        "registrar": "{{registrar}}",
+        "created_date": "{{when}}",
+        "vt_positives": 44,
+        "vt_total": 72,
+        "categories": ["cryptomining", "malware"]
+      }
+    },
+    "hashes": {
+      "{{miner_hash}}": {
+        "sha256": "{{miner_hash}}",
+        "filename": "{{miner_proc}}",
+        "cert_status": "UNSIGNED",
+        "vendor": "Unknown",
+        "threat_name": "Cryptominer",
+        "verdict": "MALICIOUS",
+        "detections": "52/72 engines",
+        "signer": "Unknown",
+        "certificate_status": "UNSIGNED",
+        "revocation_date": null,
+        "vt_positives": 52,
+        "vt_total": 72
+      }
+    },
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Sustained CPU and stratum traffic from {{dev_host}}",
+        "priority": "MEDIUM",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "EDR: {{miner_proc}} at {{cpu_pct}} percent CPU since {{when}}; outbound to {{pool_domain}} port 3333.",
+          "Platform: {{build_host}} runs nightly builds and is expected to be busy."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "PROCESS_LAUNCH"},
+        "principal": {"hostname": "{{dev_host}}", "ip": "{{dev_ip}}", "user": "{{dev_user}}", "process": {"file": {"full_path": "/tmp/.cache/{{miner_proc}}", "sha256": "{{miner_hash}}"}}}
+      },
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "NETWORK_CONNECTION"},
+        "principal": {"hostname": "{{dev_host}}", "ip": "{{dev_ip}}"},
+        "target": {"hostname": "{{pool_domain}}", "ip": "{{pool_ip}}", "port": 3333}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: developer box {{dev_host}} ({{dev_ip}}, user {{dev_user}}) has run process {{miner_proc}} (sha256 {{miner_hash}}) at {{cpu_pct}} percent CPU since {{when}} with persistent connections to {{pool_domain}} on port 3333. Shared build server {{build_host}} ({{build_ip}}) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host {{dev_host}} ({{dev_ip}}), Owner: {{dev_user}}, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while {{build_host}} serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+  "expected_actions": ["isolate_host", "block_indicator", "update_case_comment"],
+  "prohibited_actions": ["close_case"],
+  "expected_entities": ["{{dev_host}}", "{{pool_domain}}", "{{miner_hash}}"],
+  "prohibited_entities": ["{{build_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{dev_host}}",
+    "owner": "{{dev_user}}",
+    "business_role": "Developer sandbox",
+    "criticality": "STANDARD",
+    "blast_radius": "Single developer; standard containment, while {{build_host}} serves the whole team"
+  },
+  "reference": {
+    "expected_verdict": "MALICIOUS",
+    "expected_threat_family": "Cryptominer",
+    "recommended_action": "Isolate {{dev_host}}, block {{pool_domain}}, record the finding in {{case_id}}, escalate to Tier 2 for root cause, and leave {{build_host}} alone.",
+    "grading_rubric": "Full credit: queries get_file_report for {{miner_hash}} or get_domain_report for {{pool_domain}}, identifies a cryptominer with a stratum pool connection, executes isolate_host on {{dev_host}} and block_indicator on {{pool_domain}}, posts a comment, and keeps the case open. No credit for isolate_host on {{build_host}} (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup."
+  },
+  "assertions": {"must_contain": ["{{dev_host}}", "{{pool_domain}}"], "must_not_contain": ["false positive", "confirmed benign"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_file_report", "args": {"file_hash": "{{miner_hash}}"}},
+      {"tool": "get_domain_report", "args": {"domain": "{{pool_domain}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{dev_host}}"}}
+    ],
+    "actions": [
+      {"action": "isolate_host", "args": {"hostname": "{{dev_host}}"}},
+      {"action": "block_indicator", "args": {"indicator": "{{pool_domain}}"}},
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Confirmed cryptominer on {{dev_host}} ({{dev_ip}}, {{dev_user}}): {{miner_proc}} ({{miner_hash}}) at {{cpu_pct}} percent CPU with stratum connections to {{pool_domain}} ({{pool_ip}}). Host isolated, {{pool_domain}} blocked, {{build_host}} left running its builds, escalated to Tier 2, case left open."}}
+    ]
+  }
+}

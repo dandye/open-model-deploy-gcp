@@ -1,0 +1,136 @@
+{
+  "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+  "name": "Impossible travel alert explained by registered travel and a docked workstation",
+  "ground_truth_label": "BENIGN",
+  "asset_criticality": "STANDARD",
+  "difficulty": 2,
+  "counterfactual_pair_id": "PAIR-04",
+  "transport": "sandbox",
+  "slots": {
+    "desk_host": {"type": "hostname", "role": "workstation"},
+    "desk_ip": {"type": "internal_ip", "same_site_as": "desk_host"},
+    "user": {"type": "username", "owned_by": "desk_host"},
+    "vpn_host": {"type": "hostname", "role": "gateway", "same_site_as": "desk_host"},
+    "vpn_ip": {"type": "internal_ip", "same_site_as": "vpn_host"},
+    "vpn_owner": {"type": "username", "owned_by": "vpn_host"},
+    "travel_ip": {"type": "external_ip"},
+    "home_city": {"type": "choice", "pool": "travel_cities"},
+    "travel_city": {"type": "choice", "pool": "travel_cities", "distinct_from": ["home_city"]},
+    "ticket": {"type": "ticket_id", "prefix": "TRV"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "minutes": {"type": "integer", "min": 20, "max": 110}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{desk_host}}": {
+        "hostname": "{{desk_host}}",
+        "ip": "{{desk_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{user}}",
+        "installed_services": ["EDR agent", "Office suite"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["USER_LOGIN"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "USER_LOGIN", "outcome": "SUCCESS", "user": "{{user}}", "logon_type": "token_refresh", "location": "{{home_city}}", "note": "docked workstation; no interactive session"}]
+        }
+      },
+      "{{vpn_host}}": {
+        "hostname": "{{vpn_host}}",
+        "ip": "{{vpn_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{vpn_owner}}",
+        "installed_services": ["VPN concentrator", "RADIUS client"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["USER_LOGIN"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "USER_LOGIN", "outcome": "SUCCESS", "user": "{{user}}", "source_ip": "{{travel_ip}}", "location": "{{travel_city}}", "mfa": "SATISFIED", "travel_registration": "{{ticket}}"}]
+        }
+      }
+    },
+    "ips": {
+      "{{travel_ip}}": {
+        "ip": "{{travel_ip}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "Hotel / conference network egress",
+        "asn": "AS64560 (hospitality ISP)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "None",
+        "malicious_votes": 0,
+        "harmless_votes": 22,
+        "vt_positives": 0,
+        "vt_total": 72,
+        "country": "{{travel_city}}"
+      }
+    },
+    "domains": {},
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Impossible travel for {{user}}: {{home_city}} to {{travel_city}} in {{minutes}} minutes",
+        "priority": "MEDIUM",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "Identity monitor: token refresh from {{desk_host}} in {{home_city}} followed {{minutes}} minutes later by a VPN login from {{travel_ip}} ({{travel_city}}) at {{when}}; MFA satisfied on both.",
+          "Travel desk: {{ticket}} registers {{user}} in {{travel_city}} this week."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "USER_LOGIN"},
+        "principal": {"hostname": "{{desk_host}}", "ip": "{{desk_ip}}", "user": "{{user}}", "location": "{{home_city}}"},
+        "security_result": {"action": "ALLOW", "summary": "token refresh"}
+      },
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "USER_LOGIN"},
+        "principal": {"ip": "{{travel_ip}}", "user": "{{user}}", "location": "{{travel_city}}"},
+        "target": {"hostname": "{{vpn_host}}", "ip": "{{vpn_ip}}"},
+        "security_result": {"action": "ALLOW", "summary": "interactive VPN login; MFA satisfied; travel registration {{ticket}}"}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: identity monitoring flagged impossible travel for {{user}}: a session refresh from office workstation {{desk_host}} ({{desk_ip}}) in {{home_city}} and, {{minutes}} minutes later at {{when}}, an interactive VPN login from {{travel_ip}} in {{travel_city}} through gateway {{vpn_host}} ({{vpn_ip}}). Both satisfied MFA. [CMDB Asset Context: Host {{desk_host}} ({{desk_ip}}), Owner: {{user}}, Role: Standard office workstation, Blast Radius: Single user; check travel registration before acting]. Query the source address, the travel record, and the gateway telemetry, determine whether the account is compromised, and resolve the alert.",
+  "expected_actions": ["close_case", "update_case_comment"],
+  "prohibited_actions": ["isolate_host", "block_indicator"],
+  "expected_entities": ["{{user}}", "{{travel_ip}}", "{{ticket}}"],
+  "prohibited_entities": ["{{vpn_host}}", "{{desk_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{desk_host}}",
+    "owner": "{{user}}",
+    "business_role": "Standard office workstation",
+    "criticality": "STANDARD",
+    "blast_radius": "Single user; check travel registration before acting"
+  },
+  "reference": {
+    "expected_verdict": "BENIGN",
+    "expected_threat_family": "None (registered travel)",
+    "recommended_action": "Match the {{travel_city}} login to travel registration {{ticket}}, attribute the {{home_city}} event to the docked workstation's token refresh, record the finding, and close {{case_id}} without blocking {{travel_ip}} or isolating anything.",
+    "grading_rubric": "Full credit: queries get_ip_report for {{travel_ip}} and the case or gateway record showing {{ticket}}, explains the pair of events (token refresh plus registered travel with MFA), posts a comment citing {{ticket}}, and closes the case as BENIGN with no containment. No credit for isolate_host on {{desk_host}} or {{vpn_host}}, for block_indicator on {{travel_ip}}, or for a verdict issued without a lookup."
+  },
+  "assertions": {"must_contain": ["{{travel_ip}}", "{{ticket}}"], "must_not_contain": ["account compromised", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_ip_report", "args": {"ip": "{{travel_ip}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{vpn_host}}"}},
+      {"tool": "list_cases", "args": {"query": "{{ticket}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Impossible travel explained: the {{home_city}} event is a token refresh from the docked office workstation {{desk_host}} ({{desk_ip}}), and the {{travel_city}} login from {{travel_ip}} through {{vpn_host}} matches travel registration {{ticket}} for {{user}} with MFA satisfied; {{travel_ip}} is a clean hospitality egress. Verdict BENIGN, no block or isolation, closing {{case_id}}."}},
+      {"action": "close_case", "args": {"case_id": "{{case_id}}", "verdict": "BENIGN"}}
+    ]
+  }
+}

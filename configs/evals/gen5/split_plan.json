@@ -15,6 +15,12 @@
     "FAM-LATERAL-PSEXEC": {"role": "seen", "instances": 6},
     "FAM-SUPPLYCHAIN-REVOKED-CERT": {"role": "seen", "instances": 6},
     "FAM-TOOL-OUTAGE-503": {"role": "seen", "instances": 6},
-    "FAM-AUTHORIZED-SCANNER": {"role": "seen", "instances": 6}
+    "FAM-AUTHORIZED-SCANNER": {"role": "seen", "instances": 6},
+    "FAM-CRYPTOMINER-DEV": {"role": "validation_ood", "instances": 5},
+    "FAM-SAAS-BEACON-BENIGN": {"role": "validation_ood", "instances": 5},
+    "FAM-PASSWORD-SPRAY": {"role": "final_test_ood", "instances": 5},
+    "FAM-CLOUD-KEY-EXFIL": {"role": "final_test_ood", "instances": 5},
+    "FAM-INSIDER-EXFIL": {"role": "final_test_ood", "instances": 5},
+    "FAM-IMPOSSIBLE-TRAVEL-APPROVED": {"role": "final_test_ood", "instances": 5}
   }
 }

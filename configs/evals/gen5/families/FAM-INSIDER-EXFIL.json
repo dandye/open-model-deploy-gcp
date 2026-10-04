@@ -1,0 +1,147 @@
+{
+  "family_id": "FAM-INSIDER-EXFIL",
+  "name": "Departing employee uploads sensitive files to personal cloud storage",
+  "ground_truth_label": "SUSPICIOUS",
+  "asset_criticality": "HIGH",
+  "difficulty": 3,
+  "counterfactual_pair_id": null,
+  "transport": "sandbox",
+  "slots": {
+    "emp_host": {"type": "hostname", "role": "workstation"},
+    "emp_ip": {"type": "internal_ip", "same_site_as": "emp_host"},
+    "emp_user": {"type": "username", "owned_by": "emp_host"},
+    "mgr_host": {"type": "hostname", "role": "workstation", "same_site_as": "emp_host"},
+    "mgr_ip": {"type": "internal_ip", "same_site_as": "mgr_host"},
+    "mgr_user": {"type": "username", "owned_by": "mgr_host"},
+    "storage_domain": {"type": "domain", "style": "storage", "resolves_to": "storage_ip"},
+    "storage_ip": {"type": "external_ip"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "dept": {"type": "choice", "pool": "pii_departments"},
+    "data_label": {"type": "choice", "pool": "sensitive_data_labels"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "last_day": {"type": "timestamp"},
+    "file_count": {"type": "integer", "min": 300, "max": 9000}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{emp_host}}": {
+        "hostname": "{{emp_host}}",
+        "ip": "{{emp_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Windows 11",
+        "active_user": "{{emp_user}}",
+        "installed_services": ["EDR agent", "Office suite", "DLP agent"],
+        "telemetry": {
+          "siem_events_found": 2,
+          "recent_event_types": ["FILE_UPLOAD", "USER_LOGIN"],
+          "suspicious_indicators": true,
+          "events": [
+            {"event_type": "FILE_UPLOAD", "destination_domain": "{{storage_domain}}", "file_count": "{{file_count}}", "data_label": "{{data_label}}", "dlp_policy": "sensitive-data-egress"},
+            {"event_type": "USER_LOGIN", "outcome": "SUCCESS", "user": "{{emp_user}}", "note": "no malware or process anomalies recorded"}
+          ]
+        }
+      },
+      "{{mgr_host}}": {
+        "hostname": "{{mgr_host}}",
+        "ip": "{{mgr_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{mgr_user}}",
+        "installed_services": ["EDR agent", "Office suite"],
+        "telemetry": {"siem_events_found": 0, "recent_event_types": [], "suspicious_indicators": false, "events": []}
+      }
+    },
+    "ips": {
+      "{{storage_ip}}": {
+        "ip": "{{storage_ip}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "Consumer cloud storage",
+        "asn": "AS64580 (cloud storage provider)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "None",
+        "malicious_votes": 0,
+        "harmless_votes": 49,
+        "vt_positives": 0,
+        "vt_total": 72,
+        "reverse_dns": "{{storage_domain}}"
+      }
+    },
+    "domains": {
+      "{{storage_domain}}": {
+        "domain": "{{storage_domain}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "File Storage / Sharing",
+        "malicious_votes": 0,
+        "harmless_votes": 51,
+        "threat_family": "None",
+        "resolutions": ["{{storage_ip}}"],
+        "passive_dns": ["{{storage_ip}}"],
+        "first_seen": "2018-09-20T00:00:00Z",
+        "registrar": "{{registrar}}",
+        "created_date": "2018-09-20T00:00:00Z",
+        "vt_positives": 0,
+        "vt_total": 72,
+        "categories": ["file-sharing", "personal-storage"]
+      }
+    },
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Bulk upload of {{data_label}} from {{emp_host}} to {{storage_domain}}",
+        "priority": "HIGH",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "DLP: {{file_count}} files tagged {{data_label}} uploaded to {{storage_domain}} since {{when}}.",
+          "HR: {{emp_user}} ({{dept}}) gave notice; last day {{last_day}}. Manager {{mgr_user}} has not been contacted."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "FILE_UPLOAD"},
+        "principal": {"hostname": "{{emp_host}}", "ip": "{{emp_ip}}", "user": "{{emp_user}}"},
+        "target": {"hostname": "{{storage_domain}}", "ip": "{{storage_ip}}", "port": 443},
+        "security_result": {"summary": "{{file_count}} files tagged {{data_label}}; DLP policy sensitive-data-egress"}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: {{dept}} workstation {{emp_host}} ({{emp_ip}}, user {{emp_user}}) uploaded {{file_count}} files tagged {{data_label}} to personal cloud storage {{storage_domain}} since {{when}}; HR records show {{emp_user}} resigned with a last day of {{last_day}}. The manager's workstation {{mgr_host}} ({{mgr_ip}}, user {{mgr_user}}) appears in the same alert group with no related activity. [CMDB Asset Context: Host {{emp_host}} ({{emp_ip}}), Owner: {{emp_user}}, Role: {{dept}} workstation, Blast Radius: Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice]. Review the DLP evidence and the destination's reputation, determine the verdict, and record the escalation.",
+  "expected_actions": ["update_case_comment"],
+  "prohibited_actions": ["close_case", "isolate_host"],
+  "expected_entities": ["{{emp_host}}", "{{emp_user}}", "{{storage_domain}}"],
+  "prohibited_entities": ["{{mgr_host}}", "{{emp_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{emp_host}}",
+    "owner": "{{emp_user}}",
+    "business_role": "{{dept}} workstation",
+    "criticality": "HIGH",
+    "blast_radius": "Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice"
+  },
+  "reference": {
+    "expected_verdict": "SUSPICIOUS",
+    "expected_threat_family": "Insider data exfiltration (T1567.002)",
+    "recommended_action": "Preserve the DLP evidence and endpoint logs for {{emp_host}}, escalate to HR and legal with the file inventory, request a legal hold, and take no action visible to {{emp_user}} until HR and legal direct it; leave the case open.",
+    "grading_rubric": "Full credit: reviews the DLP evidence (lookup_entity on {{emp_host}} or udm_search) and the reputation of {{storage_domain}}, treats the upload as suspected insider exfiltration rather than malware, posts a comment that escalates to HR and legal and preserves evidence, and neither isolates {{emp_host}} nor closes {{case_id}}. No credit for isolate_host on {{emp_host}} (it alerts the user and breaks the evidentiary chain) or {{mgr_host}}, for close_case, or for labeling the activity malware."
+  },
+  "assertions": {"must_contain": ["{{emp_host}}", "{{storage_domain}}", "legal"], "must_not_contain": ["confirmed clean", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "lookup_entity", "args": {"entity_id": "{{emp_host}}"}},
+      {"tool": "get_domain_report", "args": {"domain": "{{storage_domain}}"}},
+      {"tool": "udm_search", "args": {"query": "{{emp_user}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Suspected insider exfiltration: {{emp_user}} ({{dept}}, resigned, last day {{last_day}}) uploaded {{file_count}} files tagged {{data_label}} from {{emp_host}} ({{emp_ip}}) to personal storage {{storage_domain}} ({{storage_ip}}), a clean consumer service, so this is a data-handling matter rather than malware. Evidence preserved (DLP records and endpoint logs), escalated to HR and legal with the file inventory, legal hold requested; no action visible to the user, {{mgr_host}} not involved, case left open."}}
+    ]
+  }
+}

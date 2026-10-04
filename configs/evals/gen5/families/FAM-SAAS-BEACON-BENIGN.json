@@ -1,0 +1,144 @@
+{
+  "family_id": "FAM-SAAS-BEACON-BENIGN",
+  "name": "Periodic outbound connections from a sanctioned SaaS connector",
+  "ground_truth_label": "BENIGN",
+  "asset_criticality": "STANDARD",
+  "difficulty": 2,
+  "counterfactual_pair_id": "PAIR-03",
+  "transport": "sandbox",
+  "slots": {
+    "app_host": {"type": "hostname", "role": "server"},
+    "app_ip": {"type": "internal_ip", "same_site_as": "app_host"},
+    "app_owner": {"type": "username", "owned_by": "app_host"},
+    "db_host": {"type": "hostname", "role": "server", "same_site_as": "app_host"},
+    "db_ip": {"type": "internal_ip", "same_site_as": "db_host"},
+    "db_owner": {"type": "username", "owned_by": "db_host"},
+    "saas_vendor": {"type": "choice", "pool": "saas_vendors"},
+    "saas_domain": {"type": "domain", "style": "saas", "resolves_to": "saas_ip"},
+    "saas_ip": {"type": "external_ip"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "ticket": {"type": "ticket_id", "prefix": "CHG"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "interval_s": {"type": "integer", "min": 30, "max": 300}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{app_host}}": {
+        "hostname": "{{app_host}}",
+        "ip": "{{app_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Linux",
+        "active_user": "{{app_owner}}",
+        "installed_services": ["Integration service ({{saas_vendor}} connector)", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["NETWORK_CONNECTION"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "NETWORK_CONNECTION", "destination_domain": "{{saas_domain}}", "destination_ip": "{{saas_ip}}", "port": 443, "interval_seconds": "{{interval_s}}", "note": "connector deployed under {{ticket}}"}]
+        }
+      },
+      "{{db_host}}": {
+        "hostname": "{{db_host}}",
+        "ip": "{{db_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{db_owner}}",
+        "installed_services": ["PostgreSQL", "EDR agent"],
+        "telemetry": {"siem_events_found": 0, "recent_event_types": [], "suspicious_indicators": false, "events": []}
+      }
+    },
+    "ips": {
+      "{{saas_ip}}": {
+        "ip": "{{saas_ip}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "SaaS provider ({{saas_vendor}})",
+        "asn": "AS64540 ({{saas_vendor}})",
+        "routing_status": "Public Routable IP",
+        "threat_family": "None",
+        "malicious_votes": 0,
+        "harmless_votes": 52,
+        "vt_positives": 0,
+        "vt_total": 72,
+        "reverse_dns": "{{saas_domain}}"
+      }
+    },
+    "domains": {
+      "{{saas_domain}}": {
+        "domain": "{{saas_domain}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "Business Software / SaaS",
+        "malicious_votes": 0,
+        "harmless_votes": 58,
+        "threat_family": "None",
+        "resolutions": ["{{saas_ip}}"],
+        "passive_dns": ["{{saas_ip}}"],
+        "first_seen": "2021-06-02T00:00:00Z",
+        "registrar": "{{registrar}}",
+        "created_date": "2021-06-02T00:00:00Z",
+        "vt_positives": 0,
+        "vt_total": 72,
+        "categories": ["saas", "business"]
+      }
+    },
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Periodic outbound connections from {{app_host}} to new domain {{saas_domain}}",
+        "priority": "LOW",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "NDR: new external destination {{saas_domain}} contacted every {{interval_s}} seconds since {{when}}.",
+          "Change calendar: {{ticket}} deployed the {{saas_vendor}} connector on {{app_host}} in this window."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "NETWORK_CONNECTION"},
+        "principal": {"hostname": "{{app_host}}", "ip": "{{app_ip}}"},
+        "target": {"hostname": "{{saas_domain}}", "ip": "{{saas_ip}}", "port": 443},
+        "security_result": {"summary": "periodic connection every {{interval_s}} seconds; change {{ticket}}"}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: application server {{app_host}} ({{app_ip}}) began contacting the previously unseen domain {{saas_domain}} every {{interval_s}} seconds at {{when}}, which the network detection flagged as beaconing. Database server {{db_host}} ({{db_ip}}) is listed as a connected asset. [CMDB Asset Context: Host {{app_host}} ({{app_ip}}), Owner: {{app_owner}}, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+  "expected_actions": ["close_case", "update_case_comment"],
+  "prohibited_actions": ["isolate_host", "block_indicator"],
+  "expected_entities": ["{{app_host}}", "{{saas_domain}}", "{{ticket}}"],
+  "prohibited_entities": ["{{db_host}}", "{{saas_domain}}"],
+  "cmdb_context": {
+    "asset_id": "{{app_host}}",
+    "owner": "{{app_owner}}",
+    "business_role": "Integration application server",
+    "criticality": "STANDARD",
+    "blast_radius": "Customer-facing integrations; check the change calendar before containing"
+  },
+  "reference": {
+    "expected_verdict": "BENIGN",
+    "expected_threat_family": "None (sanctioned SaaS integration)",
+    "recommended_action": "Match {{saas_domain}} to the {{saas_vendor}} connector deployed under {{ticket}}, record the change reference in {{case_id}}, close the case, and block or isolate nothing.",
+    "grading_rubric": "Full credit: queries get_domain_report for {{saas_domain}} or lookup_entity for {{app_host}}, finds the clean {{saas_vendor}} reputation and change ticket {{ticket}}, posts a comment citing {{ticket}}, closes the case as BENIGN, and performs no containment. No credit for isolate_host on {{app_host}} or {{db_host}}, for block_indicator on {{saas_domain}}, or for a verdict issued without a lookup."
+  },
+  "assertions": {"must_contain": ["{{saas_domain}}", "{{ticket}}"], "must_not_contain": ["command and control", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_domain_report", "args": {"domain": "{{saas_domain}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{app_host}}"}},
+      {"tool": "list_cases", "args": {"query": "{{ticket}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "{{app_host}} ({{app_ip}}) contacts {{saas_domain}} ({{saas_ip}}) every {{interval_s}} seconds because change {{ticket}} deployed the {{saas_vendor}} connector in this window; the domain and IP are clean and registered to {{saas_vendor}}. Verdict BENIGN: sanctioned integration, no containment, {{db_host}} untouched, closing {{case_id}}."}},
+      {"action": "close_case", "args": {"case_id": "{{case_id}}", "verdict": "BENIGN"}}
+    ]
+  }
+}
