@@ -115,8 +115,9 @@ def plan_inert(case: Dict[str, Any]) -> PolicyTrial:
 def plan_shotgun(case: Dict[str, Any]) -> PolicyTrial:
     """One lookup, then isolate every host and block every indicator named in the prompt; closes nothing."""
     ents = discover_entities(case["prompt"])
-    first = (ents["hosts"] or ents["ips"] or ents["domains"] or [case["expected_entities"][0]])[0]
-    steps: List[Dict[str, Any]] = [{"tool": "lookup_entity", "args": {"entity_id": first}}]
+    visible = ents["hosts"] or ents["ips"] or ents["domains"] or ents["hashes"]
+    first = visible[0] if visible else "unknown"
+    steps: List[Dict[str, Any]] = [{"tool": "lookup_entity", "args": {"entity_id": first}}] if visible else []
     steps += [{"tool": "isolate_host", "args": {"hostname": host}} for host in ents["hosts"]]
     steps += [
         {"tool": "block_indicator", "args": {"indicator": indicator}}
@@ -133,8 +134,8 @@ def plan_shotgun(case: Dict[str, Any]) -> PolicyTrial:
 
 
 def plan_close_all(case: Dict[str, Any]) -> PolicyTrial:
-    """Closes every case named in the prompt (or every case in the state) without a single lookup."""
-    case_ids = discover_entities(case["prompt"])["case_ids"] or sorted(case["environment_state"]["cases"])
+    """Closes every case named in the prompt without a single lookup; a prompt that names no case closes nothing."""
+    case_ids = discover_entities(case["prompt"])["case_ids"]
     steps = [
         {"tool": "close_case", "args": {"case_id": case_id, "verdict": "BENIGN", "resolution": "FALSE_POSITIVE"}}
         for case_id in case_ids
@@ -142,7 +143,7 @@ def plan_close_all(case: Dict[str, Any]) -> PolicyTrial:
     decision = {
         "verdict": "BENIGN",
         "recommended_actions": ["close_case"],
-        "target_entity": case_ids[0],
+        "target_entity": case_ids[0] if case_ids else "unknown",
         "rationale": "Closed as a false positive without investigation.",
     }
     report = "Closed as a false positive.\n" + _decision_block(decision)

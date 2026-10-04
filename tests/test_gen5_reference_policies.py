@@ -179,3 +179,21 @@ def test_cli_calibrate_on_one_split_writes_reports(tmp_path: Path, capsys) -> No
     assert rc == 0, out
     assert md_path.exists() and json_path.exists()
     assert "all gates passed" in out
+
+
+def test_prompt_only_policies_never_read_the_oracle_or_the_state() -> None:
+    case = {
+        "prompt": "Nothing to see here.",
+        "expected_entities": ["SRV-SECRET-01"],
+        "environment_state": {"cases": {"CASE-SECRET-1": {}}},
+        "ground_truth_label": "MALICIOUS",
+        "family_id": "FAM-TEST",
+    }
+    for policy in ("shotgun", "close_all"):
+        trial = rp.plan_policy(case, policy)
+        assert trial.steps == []
+        assert trial.decision["target_entity"] == "unknown"
+        payload = json.dumps(trial.steps) + trial.report_text + json.dumps(trial.decision)
+        assert "SRV-SECRET-01" not in payload
+        assert "CASE-SECRET-1" not in payload
+
