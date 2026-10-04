@@ -2,7 +2,7 @@
   "evalset_id": "soc_tier1_interactive",
   "generation": 3,
   "name": "Gemma SOC Tier 1 Interactive Evaluation Suite (Gen 3)",
-  "description": "Evaluates self-hosted Gemma and agentic models on interactive multi-step SOC Tier 1 alert triage, state-machine investigations, epistemic search efficiency, fault-injection resilience, counterfactual consistency, and cost-weighted operational action decisions.",
+  "description": "Evaluates self-hosted Gemma and agentic models on interactive multi-step SOC Tier 1 alert triage, state-machine investigations, epistemic search efficiency, fault-injection resilience, counterfactual consistency, and cost-weighted operational action decisions. FROZEN (frozen: true, 2026-10-04): this Gen 3 suite is kept for reproducing Campaigns 1 to 5 and the Gen 3 Harbor tree; it is not extended. New work uses the Gen 5 family-instanced suite under configs/evals/gen5 (docs/evals_gen5.md).",
   "eval_cases": [
     {
       "eval_id": "CASE-GEN3-01-LOKIBOT-C2",

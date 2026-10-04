@@ -158,3 +158,19 @@ def test_empty_filters_match_nothing(ledger: Path) -> None:
         ex.load_split("train", purpose="t", model="m", families=[], record=False)
     assert not ledger.exists()
 
+
+def test_committed_preregistration_is_unapproved_and_pinned_to_the_bundles() -> None:
+    """The campaign file exists before unsealing, but approval fields stay null until the owner signs."""
+    path = ROOT_DIR / "configs" / "experiments" / "gen5_campaign1.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["acceptance"]["approved_by"] is None and data["acceptance"]["approved_at"] is None
+    assert len(data["gen5"]["hypotheses"]) >= 2
+    assert data["gen5"]["repetitions"] >= 2
+    with pytest.raises(ex.FinalTestSealedError, match="not approved"):
+        ex.check_preregistration(path)
+    for split in ex.SPLITS:
+        entry = data["datasets"][split]
+        assert entry["path"] == f"configs/evals/gen5/{split}.json"
+        assert entry["sha256"] == ex.sha256_file(ex.bundle_path(split)), split
+    assert data["holdout_attestation"]["dataset_sha256"] == data["datasets"]["final_test"]["sha256"]
+

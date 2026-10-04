@@ -237,6 +237,17 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("generate_harbor_soc_tasks.py --gen3", content, "harbor-soc-generate must keep the Gen 3 tree behind --gen3")
         self.assertIn("generate_harbor_soc_tasks.py --check", content, "gen5-check must run the Harbor --check")
 
+    def test_justfile_contains_gen5_runner_and_lock_recipes(self):
+        """eval-gen5, gen5-noise, gen5-gradient, harness-approve, harness-verify exist and are in the help menu."""
+        content = (ROOT_DIR / "Justfile").read_text(encoding="utf-8")
+        for recipe in ("eval-gen5", "gen5-noise", "gen5-gradient", "harness-approve", "harness-verify"):
+            self.assertTrue(f"\n{recipe} " in content or f"\n{recipe}:" in content, f"Recipe '{recipe}' not defined in Justfile")
+            self.assertIn(f"just {recipe}", content, f"Help menu missing 'just {recipe}'")
+        self.assertIn("--gen 5 --split", content, "eval-gen5 must select a Gen 5 split")
+        self.assertIn("--noise-only --noise-runs", content, "gen5-noise must call the optimizer in noise-only mode")
+        self.assertIn("harness_lock.py approve", content)
+        self.assertIn("harness_lock.py verify", content)
+
 
 if __name__ == "__main__":
     unittest.main()

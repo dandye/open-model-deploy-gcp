@@ -1,8 +1,11 @@
-"""Tests for scripts/harness_lock.py: approve and verify without importing any model code."""
-
+import json
 from pathlib import Path
+import subprocess
+import sys
 
 from scripts import harness_lock
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 def _root(tmp_path: Path) -> Path:
@@ -46,3 +49,24 @@ def test_default_paths_are_the_harness_defaults() -> None:
     parser = harness_lock.build_parser()
     args = parser.parse_args(["verify"])
     assert harness_lock.resolve_paths(args) == list(DEFAULT_PROTECTED_HARNESS_PATHS)
+
+
+def test_committed_lock_verifies_at_head() -> None:
+    """Every protected path matches .eval_harness_lock.json. After an intended change: just harness-approve."""
+    result = subprocess.run(
+        [sys.executable, str(ROOT_DIR / "scripts" / "harness_lock.py"), "verify"],
+        capture_output=True, text=True, check=False, cwd=ROOT_DIR,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_committed_lock_covers_the_gen5_inputs() -> None:
+    lock = json.loads((ROOT_DIR / ".eval_harness_lock.json").read_text(encoding="utf-8"))
+    locked = set(lock["files"]) if isinstance(lock.get("files"), dict) else {entry["path"] for entry in lock["files"]}
+    for rel in (
+        "configs/evals/gen5/manifest.json", "configs/evals/gen5/train.json", "configs/evals/gen5/validation.json",
+        "configs/evals/gen5/final_test.json", "scripts/gen5_instancer.py", "scripts/verify_harbor_soc.py",
+        "configs/evals/gen3/soc_tier1_interactive.json",
+    ):
+        assert rel in locked, rel
+    assert any(path.startswith("configs/evals/gen5/families/") for path in locked)
