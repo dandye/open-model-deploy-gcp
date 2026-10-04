@@ -155,7 +155,7 @@ if seed_candidate and filename in seed_candidate:
 
 Capping character growth at 1.35x forces `gemini-2.5-pro` to consolidate and generalize its instructions instead of tacking on endless `IF/ELSE` patches.
 
-Once blocked from memorizing IPs or bloating the prompt, `gemini-2.5-pro` evolved `configs/runbooks/gepa_evolved/basic_ioc_enrichment.md` into a four-stage epistemic verification sequence:
+Once blocked from memorizing IPs or bloating the prompt, `gemini-2.5-pro` evolved `configs/runbooks/gepa_evolved/basic_ioc_enrichment.md` into a four-stage epistemic verification sequence. The version quoted below is the one committed at `b4fd8d2`. A later run wrote the seed back over that file, which I cover in the run results section, so if you want to read the evolved text use `git show b4fd8d2:configs/runbooks/gepa_evolved/basic_ioc_enrichment.md`.
 
 1. **Stage A: Asset Identity and CMDB Context.** Execute `secops-mcp.lookup_entity` with `entity_name=${ASSET_IDENTIFIER}` and store the business role, owner, and criticality in `${ASSET_CONTEXT}` and `${ASSET_CRITICALITY}`.
 2. **Stage B: Network Routing and Scope Verification.** Execute `gti-mcp.get_ip_address_report` or `get_domain_report` to classify whether the indicator resolves to public, private (RFC-1918), or reserved documentation space, storing the classification in `${IOC_ROUTING_TYPE}`.
@@ -385,6 +385,102 @@ uv run python agent/gepa_runbook_optimizer.py \
 
 ---
 
+## What the 2026-10-02 run actually produced
+
+I ran that command on 2026-10-02 with `--max-metric-calls 20` and `--seed 42`, `gemini-2.5-flash-lite` as the policy and `gemini-2.5-pro` as the reflection teacher. The harness lock was approved at 02:43:51 UTC, the ledger was written at 03:11:31 UTC, and the commit (`26c4a8e`) landed at 03:16:04 UTC. Everything below is read from the committed artifacts in `configs/runbooks/gepa_evolved/`. The full evidence review, with SHA-256 digests for every file cited, is in `docs/soc_eval_results/DISCIPLINED_HILLCLIMBER_RUN_ANALYSIS.md`.
+
+The headline is that the guards accepted nothing. I think that is the correct outcome, and I want to show the work.
+
+### The noise floor was carried by the floor
+
+Step 0 evaluated the seed runbooks twice on the four validation cases and got means of 0.65025 and 0.65050. Aggregate drift of 0.00025 gave $\tau_{\text{accept}} = \max(0.015, 1.5 \cdot 0.00025) = 0.015$. Then GEPA evaluated the same seed on the same four cases as candidate 0 and scored it 0.6194.
+
+So three evaluations of identical runbooks produced 0.650, 0.651, and 0.619. The spread is 0.031, twice the acceptance threshold. The per-case drift between the two noise runs was 0.142 on average; the aggregates agreed because cases cancelled each other. The $\delta_{\min} = 0.015$ default did the work. It happened to be the right order of magnitude, but $K = 2$ did not earn it. The fix is a sample count rather than a redesign: at least three seed evaluations, counting GEPA's own baseline pass as one of them, and a threshold derived from the per-case band instead of the aggregate.
+
+### The ledger
+
+| Candidate | Validation score | Delta vs seed | Regressed cases | Decision |
+| ---: | ---: | ---: | --- | --- |
+| 0 (seed) | 0.6194 | | | `KEPT` (baseline) |
+| 1 | 0.6322 | +0.0128 | none | `REVERTED_NOISE` |
+| 2 | 0.6230 | +0.0036 | none | `REVERTED_NOISE` |
+
+Twenty metric calls bought the seed's validation pass and two proposals. The commit message says "20 generations". It was 20 evaluations and two mutations. Both proposals passed the anti-memorization validator, neither regressed a passing case, and both deltas sit inside the 0.031 band the seed produced on its own. The gate rejected them, and it would have rejected them under any sane estimate of the noise.
+
+### The staircase walked the seed
+
+Because no candidate cleared the gate, `run_cost_staircase_walk()` evaluated the unmodified seed runbooks:
+
+| Rung | Mean score | `min_loss_penalty` | Within tolerance |
+| --- | ---: | ---: | --- |
+| `gemini-2.5-flash` (ceiling) | 0.730 | 1.0 | yes |
+| `gemma-4-31b-it` | 0.325 | 1.0 | no |
+| `gemma-4-e4b-it` | 0.336 | 1.0 | no |
+| `gemma-3-4b-it` | 0.336 | 1.0 | no |
+| `gemma-3-1b-it` | 0.311 | 1.0 | no |
+
+I do not trust the Gemma rows yet, and I would rather say why than quietly drop them. Four models from 1B to 31B parameters landed within 0.025 of each other, all with a perfect loss penalty, and all twenty staircase rollouts finished in under four and a half minutes. `calculate_loss_penalty()` returns `exp(0) = 1.0` for an agent that calls no tools and emits no verdict, so `passed_safety: true` is exactly what an inert rollout produces. The report records neither the resolved endpoints nor the trajectories, so I cannot tell from the artifacts whether those models ran the runbooks badly or did not run at all. Until the staircase report carries per-rung trajectory summaries and the safety gate requires at least one epistemic step per case, its Gemma numbers are not evidence of anything. Yang et al.'s "Better Harnesses, Smaller Models" is the published framing closest to the question the staircase is asking, and I should have read it before designing the walk.
+
+### The seed overwrote the evolved runbooks
+
+This is the finding I least enjoyed. `save_runbooks()` writes the selected candidate into `configs/runbooks/gepa_evolved/`, and the selected candidate was the seed. The four files in that directory are now byte-identical to `third_party/ai-runbooks/.clinerules/run_books/`. The four-stage runbook I quoted earlier in this post, Stage A through D with `${IOC_ROUTING_TYPE}` and Rules 1 to 3, no longer exists at the branch head. It survives at commit `b4fd8d2`:
+
+```bash
+COMMIT="b4fd8d2"
+RUNBOOK="configs/runbooks/gepa_evolved/basic_ioc_enrichment.md"
+
+git show "$COMMIT:$RUNBOOK"
+```
+
+The metadata compounds it. `selection_reason` reads `highest_valid_validation_score`, because the seed sits at index 0 and is logged `KEPT` before any gating applies; the `seed_fallback_no_valid_candidates` label only fires when nothing at all is valid. Someone reading the metadata alone would conclude a candidate won.
+
+A run whose honest result is "no change" must not be able to destroy the previous run's output. The fixes are small: per-run output directories, no runbook writes when the seed is selected, and a `selection_reason` that says so.
+
+### Out of distribution: the Harbor sandbox
+
+The September evolved runbooks had one more test coming. On the `harbor_soc_evals_v0001` branch, which forked from `b4fd8d2` and still carries them, I embedded the same runbooks in Harbor tasks and ran 90 trials across three models in the `soc-cli` container harness (Campaign 5; artifacts at `docs/eval_results/harbor_soc/gepa_evolved_sweep/`, commit `3d0e2a3`). The arms were no skills, the human-written `secops-triage` skill, and the GEPA-evolved runbooks:
+
+| Model | `no_skills` | `clean_skills` | `gepa_evolved_skills` | GEPA minus clean |
+| --- | ---: | ---: | ---: | ---: |
+| `gemini-3.5-flash-lite` | 0.7704 | 0.8413 | 0.7459 | -0.0954 |
+| `gemini-2.5-flash` | 0.8109 | 0.8555 | 0.7033 | -0.1522 |
+| `gemini-2.5-flash-lite` | 0.6731 | 0.6551 | 0.4361 | -0.2190 |
+
+Those are mean continuous rewards from the 60/20/20 verifier. On `gemini-2.5-flash-lite` the pass rate went from 50% with the clean skill to 10% with the evolved runbooks. On `gemini-3.5-flash-lite` the evolved arm also took longer per case (12.29 s against 7.36 s) and made more tool calls (37 against 35) while scoring lower. The sweep report attributes the collapse to template placeholders (`${IOC_VALUE}`, `${CASE_ID}`), pseudo-code `IF/ELSE` blocks, and Mermaid diagrams that the text-only `SocEnvironment` adapter tolerated and that caused tool paralysis and zero-tool runs once the model had to drive a shell CLI.
+
+The in-distribution result from September (simulated loss from \$250,051.11 to \$100.82) did not transfer. The runbooks were fitted to the harness they were evolved in, and when I changed one component of that harness, the tool transport, the fit came apart. The human-written skill, which never saw either harness during authoring, transferred fine.
+
+---
+
+## How the five guards map to RRSI and Harness-Delta Attribution
+
+While I was building this, Xia et al. at Google Cloud AI Research published RRSI, "Regularized Recursive Self-Improvement of Agent Harnesses" (arXiv:2609.24972). Lilian Weng's and Joel Niklaus's essays from earlier in the year had already argued for the harness as the unit of improvement when weights are frozen. RRSI is the paper that says which constraints make that loop converge instead of overfit. It names the problem I had been circling: a harness evolution loop is a statistical estimation procedure, and without regularization on both the proposer and the selector it overfits the evolve set, inflates cost, and loses out of distribution.
+
+Their ablation is the cleanest statement of it. Removing acceptance constraints moved their evolve-set score from 90.5 to 91.5 and their out-of-distribution average from 43.6 to 41.0 while spending about 50% more tokens. Removing everything gave evolve-set 92.8, OOD 40.3, and 3.80M tokens per trial against 2.42M. That is my September-versus-Campaign-5 story with proper controls.
+
+Here is how the five guards line up against their mechanisms:
+
+| RRSI mechanism | Disciplined Hillclimber | Status |
+| --- | --- | --- |
+| Leakage screening (an LLM critic reads the diff before evaluation) | `validate_runbook_candidate()` regex over IPs, hostnames, case IDs, short-circuits | Literal only; cannot catch a paraphrase |
+| Stability-aware acceptance (noise band from re-evaluating the base) | `estimate_noise_floor()` and `REVERTED_NOISE` | Implemented; under-sampled at $K=2$ |
+| Complexity-aware acceptance (cost may grow only in proportion to score) | `max_growth_ratio = 1.35` on characters | Static cap; knows nothing about tokens or latency |
+| Structural pruning (delete components with no gain over a window) | nothing | Missing, and it is the mechanism aimed at the Campaign 5 failure |
+| Domain non-compensatory guards | `REVERTED_REGRESSION`, prohibited-action penalty, `min_loss_penalty >= 0.999` | Implemented; the loss penalty is vacuous for an inert agent |
+| Annealed edit budget on the proposer | nothing (GEPA rewrites whole files) | Missing |
+| Evidence-aware credit assignment (the proposer reads the ledger) | `HillclimbLedger` exists; the reflection model never sees it | Write-only |
+| Frozen evaluation (assumed) | `HarnessIntegrityGuard` SHA-256 lock | Implemented, and stronger than assumed |
+
+Ding et al.'s Harness-Delta Attribution gives me the vocabulary for the results. Any measured gain decomposes into a genuine delta, a test-time compute delta, and an artifact delta. The September runbooks lowered tokens and latency, so the gain was not compute. Campaign 5 says it did not generalize, so most of it was artifact. The 2026-10-02 run accepted nothing, so all three deltas are zero. Zhang and Khattab's "harnesses are compositional generalizers" is the same lesson from the other side: change one component and the evolved text stops composing with the rest.
+
+There is also a holdout problem that neither paper lets me ignore. Every acceptance decision in this loop is made against the same four validation cases, and the seed alone was evaluated on them three times before any candidate was. Dwork et al. (2015) is the standard reference for why a holdout stops being one after enough adaptive queries, and RRSI cites it for keeping the evolve set and the held-out set apart. Four cases is a small holdout to begin with. The Harbor sandbox is my real held-out split, and the process change I am making is that nothing gets written to `configs/runbooks/gepa_evolved/` until it has survived a Campaign-5-style run there.
+
+Two things in this design that RRSI does not emphasize came out of failures their benchmarks would not produce. The non-generative Jev inner-loop judge exists because `verbose_lore.md` showed that a generative judge rewards length; RRSI's benchmarks have deterministic or sandboxed verifiers and did not need to solve that. And the cost staircase asks a deployment question RRSI touches only in its cross-backbone results (harnesses evolved on Opus 4.8 raised Gemini 3.5 Flash on Terminal-Bench 2.1 from 64.6 to 78.7). Oved et al.'s "optimize cheap, deploy strong" recipe runs in the opposite direction from my staircase, and I think both directions need testing.
+
+The mechanism-by-mechanism version, with a prioritized gap list, is in `docs/hillclimber_rrsi_crosswalk.md`. The top of that list is structural pruning plus a cost-aware acceptance rule, followed by making the sandbox run a required step before any evolved runbook is written to disk.
+
+---
+
 ## What I learned from breaking the optimizer first
 
 Automated prompt and skill evolution works, but only after you treat the optimizer like an untrusted adversary that will exploit every gap in your measurement rig.
@@ -397,3 +493,32 @@ Fixing those three problems gave us a hillclimber we can actually trust:
 - Enforce deterministic anti-memorization and anti-bloat filters (`validate_runbook_candidate()` with `max_growth_ratio = 1.35`) so the teacher model has to write variable-driven verification stages instead of lookup tables.
 - Lock the evaluation harness with SHA-256 checksums (`HarnessIntegrityGuard`), measure the Step 0 noise floor ($\tau_{\text{accept}}$) before accepting mutations, and score inner-loop rollouts with calibrated single-pass logprobs (`JevSocJudgeEvaluator`) instead of slow generative essays.
 - Walk the evolved skills down the model cost staircase (`run_cost_staircase_walk`) so you can prove, with an append-only JSONL ledger, exactly how small a model you can deploy on a single L4 GPU without sacrificing containment safety.
+- Treat "nothing accepted" as a result. The 2026-10-02 run rejected both candidates as noise, and the September runbooks that looked like a \$249,950 win in the text-only adapter lost to a human-written skill on all three models once they had to drive a shell in a container. An in-distribution gain is a hypothesis until it survives a different harness, and the loop must not be able to overwrite yesterday's artifact while finding that out.
+
+---
+
+## References
+
+1. Xia, P., Han, R., Wang, Z., Chen, Y., Zhuang, Y., Lee, Y., Huang, C., Yu, H., CuiZhu, Z., Ming, Y., Yao, H., Gokturk, B., Pfister, T., Lee, C.-Y. (2026). RRSI: Regularized Recursive Self-Improvement of Agent Harnesses. arXiv:2609.24972. https://arxiv.org/abs/2609.24972
+2. Ding, W., Lu, Q., Yu, C., Li, S., Jin, S., Liu, X., Durrett, G. (2026). Harness-Delta Attribution: What Evolves When We Talk About Harness Evolution? https://wenwen-d.github.io/blog/harness-delta-attribution/
+3. Zhang, A. L., Khattab, O. (2026). Language Model Harnesses Are Compositional Generalizers. https://alexzhang13.github.io/blog/2026/harness/
+4. Agrawal, L. A., et al. (2025). GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning. arXiv:2507.19457. https://arxiv.org/abs/2507.19457
+5. Oved, T., Pony, R., Naparstek, O., Barzelay, U., Agrawal, L. A. (2026). Optimize Cheap, Deploy Strong: A Recipe for Cost-Efficient GEPA. https://gepa-ai.github.io/gepa/blog/2026/09/29/optimize-cheap-deploy-strong/
+6. Dwork, C., Feldman, V., Hardt, M., Pitassi, T., Reingold, O., Roth, A. (2015). Generalization in Adaptive Data Analysis and Holdout Reuse. Advances in Neural Information Processing Systems 28. arXiv:1506.02629
+7. Anthropic (2026). Hill-Climbing on an Eval: Iteratively Improving Claude Applications. https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/evals/eval-hillclimb.md
+8. Anthropic (2026). Building an Eval for a Claude-Powered Application. https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/evals/build-eval.md
+9. Martin, L. (2026). Automating eval design and hillclimbing with Claude. https://claude.dev/blog/automating-eval-design-and-hillclimbing/
+10. Bennett, J. (2026). Claude's hillclimb loop, with your traces underneath. https://www.linkedin.com/pulse/claudes-hillclimb-loop-your-traces-underneath-jim-bennett-434gc/
+11. Kolesnikov, V. (2026). Your Agent Is Only as Good as the Sandbox You Measured It In. https://medium.com/@vladkol_eqwu/your-agent-is-only-as-good-as-the-sandbox-you-measured-it-in-f391b908418c
+12. Li, X., Liu, Y., Chen, W., et al. (2026). SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks. arXiv:2602.12670. https://arxiv.org/abs/2602.12670
+13. Weng, L. (2026). Harness Engineering for Self-Improvement. https://lilianweng.github.io/posts/2026-07-04-harness/
+14. Niklaus, J. (2026). Don't Train the Model, Evolve the Harness. https://huggingface.co/spaces/joelniklaus/harness-optimization
+15. Yang, C., Zhao, X., Wu, T., et al. (2026). Better Harnesses, Smaller Models: Building 90% Cheaper Agents via Automated Harness Adaptation. arXiv:2607.08938. https://arxiv.org/abs/2607.08938
+
+Companion documents in the repository:
+
+- `docs/soc_eval_results/DISCIPLINED_HILLCLIMBER_RUN_ANALYSIS.md`: the 2026-10-02 run artifacts, with SHA-256 digests and the list of fixes.
+- `docs/hillclimber_rrsi_crosswalk.md`: mechanism-by-mechanism comparison with RRSI and the prioritized gap list.
+- `docs/references_agent_harness_literature.md`: annotated bibliography with knowledge-base pointers.
+- `docs/soc_eval_results/GEPA_EVIDENCE_RECONCILIATION.md`: the September reconciliation audit.
+- Branch `harbor_soc_evals_v0001`, `docs/eval_results/harbor_soc/gepa_evolved_sweep/`: Campaign 5 scorecard, master report, and 90 trial records.
