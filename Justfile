@@ -380,9 +380,9 @@ gen5-check:
     @.venv/bin/python scripts/gen5_instancer.py check
     @.venv/bin/python -m pytest tests/test_gen5_schema.py tests/test_gen5_suite.py -q
 
-# Run the four reference policies over all 90 cases and write docs/soc_eval_results/GEN5_CALIBRATION.{md,json}
+# Run the four Gen 5 reference policies in both transports and apply the spec 8.1 gates (Usage: just gen5-calibrate [trials])
 gen5-calibrate TRIALS="3":
-    @.venv/bin/python scripts/gen5_reference_policies.py calibrate --trials {{TRIALS}}
+    @.venv/bin/python scripts/gen5_reference_policies.py calibrate --trials {{TRIALS}} --transport both
 
 
 

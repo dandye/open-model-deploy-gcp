@@ -32,12 +32,15 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from agent.soc_environment import SocEnvironment
-from scripts.soc_sandbox_cli import EPISTEMIC_TOOLS
+from scripts.soc_sandbox_cli import EPISTEMIC_TOOLS, run_soc_cli
 from scripts.verify_harbor_soc import evaluate_harbor_soc_trial
 
 GEN5_ROOT = ROOT_DIR / "configs" / "evals" / "gen5"
 SPLITS = ("train", "validation", "final_test")
 POLICIES = ("oracle", "inert", "shotgun", "close_all")
+TRANSPORTS = ("python", "soc-cli", "both")
+PARITY_POLICIES = ("oracle", "shotgun")
+PARITY_TOLERANCE = 0.01
 DEFAULT_TRIALS = 3
 DEFAULT_REPORT_MD = ROOT_DIR / "docs" / "soc_eval_results" / "GEN5_CALIBRATION.md"
 DEFAULT_REPORT_JSON = ROOT_DIR / "docs" / "soc_eval_results" / "GEN5_CALIBRATION.json"
@@ -176,6 +179,52 @@ def execute_python(case: Dict[str, Any], trial: PolicyTrial) -> List[Dict[str, A
     return records
 
 
+def write_case_bundle(case: Dict[str, Any], path: Path) -> Path:
+    """A one-case Gen 5 bundle: what the container's tests/case.json looks like."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    bundle = {"evalset_id": "soc_tier1_families", "generation": 5, "split": case.get("split"), "eval_cases": [case]}
+    path.write_text(json.dumps(bundle, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def execute_soc_cli(case: Dict[str, Any], trial: PolicyTrial, workdir: Path) -> List[Dict[str, Any]]:
+    """Runs the trial's steps through soc-cli in-process, the way solve.sh does in the container.
+
+    Each step is one `run_soc_cli([tool, "--json", args])` call against a state
+    file that persists between calls; the records come back from the trajectory
+    JSONL soc-cli writes, so what is scored is what the CLI logged.
+    """
+    workdir = Path(workdir)
+    workdir.mkdir(parents=True, exist_ok=True)
+    bundle = write_case_bundle(case, workdir / "case_bundle.json")
+    state_path = workdir / "state.json"
+    traj_path = workdir / "cli_trajectory.jsonl"
+    env = {
+        "SOC_CASE_ID": case["eval_id"],
+        "SOC_STATE_FILE": str(state_path),
+        "SOC_TRAJECTORY_FILE": str(traj_path),
+        "SOC_EVALSET_FILE": str(bundle),
+    }
+    rc, payload = run_soc_cli(["reset"], env=env)
+    if rc != 0:
+        raise RuntimeError(f"soc-cli reset failed for {case['eval_id']}: {payload}")
+    for step in trial.steps:
+        rc, payload = run_soc_cli([step["tool"], "--json", json.dumps(step["args"])], env=env)
+        if rc != 0:
+            raise RuntimeError(f"soc-cli {step['tool']} failed for {case['eval_id']}: {payload}")
+    records = [json.loads(line) for line in traj_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [{"tool": r["tool"], "args": r["args"], "observation": r["observation"]} for r in records]
+
+
+def execute_trial(case: Dict[str, Any], trial: PolicyTrial, transport: str, workdir: Path) -> List[Dict[str, Any]]:
+    if transport == "python":
+        return execute_python(case, trial)
+    if transport == "soc-cli":
+        return execute_soc_cli(case, trial, workdir)
+    raise ValueError(f"unknown transport {transport!r}; expected python or soc-cli")
+
+
 def score_records(
     case: Dict[str, Any],
     trial: PolicyTrial,
@@ -215,19 +264,22 @@ def run_policy_on_case(
     workdir: Path,
     split: Optional[str] = None,
     manifest_path: Optional[Path] = None,
+    transport: str = "python",
 ) -> Dict[str, Any]:
     """Runs one policy on one case for `trials` independent executions and summarizes the scores."""
     trial = plan_policy(case, policy)
     scorecards: List[Dict[str, Any]] = []
     for index in range(max(1, int(trials))):
-        records = execute_python(case, trial)
-        scorecards.append(score_records(case, trial, records, Path(workdir) / f"trial_{index}", split, manifest_path))
+        trial_dir = Path(workdir) / f"trial_{index}"
+        records = execute_trial(case, trial, transport, trial_dir)
+        scorecards.append(score_records(case, trial, records, trial_dir, split, manifest_path))
     scores = [float(card["reward"]) for card in scorecards]
     return {
         "eval_id": case["eval_id"],
         "family_id": case["family_id"],
         "split": split,
         "policy": policy,
+        "transport": transport,
         "scores": scores,
         "mean": round(statistics.fmean(scores), 4),
         "min": min(scores),
@@ -236,6 +288,26 @@ def run_policy_on_case(
         "safety_gate_triggered": [bool(card["safety_gate_triggered"]) for card in scorecards],
         "decision_outcome": [card["decision_outcome"] for card in scorecards],
         "notes": list(scorecards[-1]["trajectory_verification"]["notes"]),
+    }
+
+
+def evaluate_transport_parity(results_python: Dict[str, List[Dict[str, Any]]], results_cli: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Oracle and Shotgun per-case means must agree within PARITY_TOLERANCE across transports (spec 8.1)."""
+    failing: List[str] = []
+    max_delta = 0.0
+    for policy in PARITY_POLICIES:
+        cli_by_id = {row["eval_id"]: row for row in results_cli.get(policy, [])}
+        for row in results_python.get(policy, []):
+            other = cli_by_id.get(row["eval_id"])
+            delta = abs(float(row["mean"]) - float(other["mean"])) if other is not None else 1.0
+            max_delta = max(max_delta, delta)
+            if other is None or delta > PARITY_TOLERANCE:
+                failing.append(f"{policy}:{row['eval_id']}")
+    return {
+        "rule": f"oracle and shotgun per-case means agree within {PARITY_TOLERANCE} between python and soc-cli",
+        "passed": not failing,
+        "failing_cases": failing,
+        "max_delta": round(max_delta, 4),
     }
 
 
@@ -330,6 +402,13 @@ def render_markdown(results: Dict[str, List[Dict[str, Any]]], gates: Dict[str, A
         lines.append(
             f"| {policy} | {gate['rule']} | {gate['mean']:.4f} | {'PASS' if gate['passed'] else 'FAIL'} | {failing or '-'} |"
         )
+    if gates.get("transport_parity"):
+        parity = gates["transport_parity"]
+        lines += [
+            "",
+            f"Transport parity ({parity['rule']}): **{'PASS' if parity['passed'] else 'FAIL'}**, "
+            f"max delta {parity['max_delta']:.4f}, failing: {', '.join(parity['failing_cases'][:8]) or '-'}.",
+        ]
     lines += [
         "",
         f"Overall: **{'all gates passed' if gates['all_passed'] else 'GATE FAILURE'}**. "
@@ -366,6 +445,7 @@ def write_reports(
     meta: Dict[str, Any],
     md_path: Path,
     json_path: Path,
+    extra: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Writes the Markdown and JSON calibration reports."""
     md_path = Path(md_path)
@@ -373,8 +453,11 @@ def write_reports(
     md_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.parent.mkdir(parents=True, exist_ok=True)
     md_path.write_text(render_markdown(results, gates, meta), encoding="utf-8")
+    payload = {"meta": meta, "gates": gates, "results": results}
+    if extra:
+        payload.update(extra)
     json_path.write_text(
-        json.dumps({"meta": meta, "gates": gates, "results": results}, indent=2, sort_keys=True) + "\n",
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 
@@ -411,7 +494,9 @@ def command_run(args: argparse.Namespace) -> int:
     rows = []
     with tempfile.TemporaryDirectory(prefix="gen5_policy_") as tmp:
         for split, case in selected:
-            row = run_policy_on_case(case, args.policy, args.trials, Path(tmp) / case["eval_id"], split=split)
+            row = run_policy_on_case(
+                case, args.policy, args.trials, Path(tmp) / case["eval_id"], split=split, transport=args.transport
+            )
             rows.append(row)
             flags = []
             if any(row["inert"]):
@@ -429,34 +514,47 @@ def command_calibrate(args: argparse.Namespace) -> int:
     root = Path(args.root)
     selected = _select_cases(root, list(args.splits), None, None)
     manifest_path = root / "manifest.json"
-    results: Dict[str, List[Dict[str, Any]]] = {policy: [] for policy in POLICIES}
+    transports_to_run = ["python", "soc-cli"] if args.transport == "both" else [args.transport]
+    results_by_transport: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
     with tempfile.TemporaryDirectory(prefix="gen5_calibration_") as tmp:
-        for policy in POLICIES:
-            for split, case in selected:
-                results[policy].append(
-                    run_policy_on_case(
-                        case,
-                        policy,
-                        args.trials,
-                        Path(tmp) / policy / case["eval_id"],
-                        split=split,
-                        manifest_path=manifest_path if manifest_path.exists() else None,
+        for trans in transports_to_run:
+            results_by_transport[trans] = {policy: [] for policy in POLICIES}
+            for policy in POLICIES:
+                for split, case in selected:
+                    results_by_transport[trans][policy].append(
+                        run_policy_on_case(
+                            case,
+                            policy,
+                            args.trials,
+                            Path(tmp) / trans / policy / case["eval_id"],
+                            split=split,
+                            manifest_path=manifest_path if manifest_path.exists() else None,
+                            transport=trans,
+                        )
                     )
-                )
-            print(f"{policy}: mean {statistics.fmean(r['mean'] for r in results[policy]):.4f} over {len(results[policy])} cases")
+                prefix = f"[{trans}] " if len(transports_to_run) > 1 else ""
+                print(f"{prefix}{policy}: mean {statistics.fmean(r['mean'] for r in results_by_transport[trans][policy]):.4f} over {len(results_by_transport[trans][policy])} cases")
+    results = results_by_transport.get("python") or results_by_transport["soc-cli"]
     gates = evaluate_gates(results)
+    if "python" in results_by_transport and "soc-cli" in results_by_transport:
+        gates["transport_parity"] = evaluate_transport_parity(results_by_transport["python"], results_by_transport["soc-cli"])
+        gates["all_passed"] = gates["all_passed"] and gates["transport_parity"]["passed"]
     meta = {
         "generated_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "git_sha": _git_sha(),
         "trials": int(args.trials),
         "splits": list(args.splits),
-        "transport": "python",
+        "transport": args.transport,
         "cases": len(selected),
     }
-    write_reports(results, gates, meta, Path(args.report), Path(args.json))
+    extra = {"results_by_transport": results_by_transport}
+    write_reports(results, gates, meta, Path(args.report), Path(args.json), extra=extra)
     for policy in POLICIES:
         gate = gates[policy]
         print(f"gate {policy:<9} {'PASS' if gate['passed'] else 'FAIL'}  mean={gate['mean']:.4f}  failing={len(gate['failing_cases'])}")
+    if gates.get("transport_parity"):
+        parity = gates["transport_parity"]
+        print(f"gate parity    {'PASS' if parity['passed'] else 'FAIL'}  max_delta={parity['max_delta']:.4f}  failing={len(parity['failing_cases'])}")
     print(f"wrote {args.report} and {args.json}")
     print("all gates passed" if gates["all_passed"] else "GATE FAILURE")
     return 0 if gates["all_passed"] else 1
@@ -473,12 +571,14 @@ def main(argv: Optional[List[str]] = None) -> int:
     run.add_argument("--eval-id", action="append", default=None)
     run.add_argument("--limit", type=int, default=None)
     run.add_argument("--trials", type=int, default=1)
+    run.add_argument("--transport", choices=("python", "soc-cli"), default="python")
     run.add_argument("--json", default=None)
     run.set_defaults(func=command_run)
 
     calibrate = sub.add_parser("calibrate", help="run all four policies over the selected splits and apply the gates")
     calibrate.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     calibrate.add_argument("--splits", nargs="+", choices=SPLITS, default=list(SPLITS))
+    calibrate.add_argument("--transport", choices=TRANSPORTS, default="both")
     calibrate.add_argument("--report", default=str(DEFAULT_REPORT_MD))
     calibrate.add_argument("--json", default=str(DEFAULT_REPORT_JSON))
     calibrate.set_defaults(func=command_calibrate)

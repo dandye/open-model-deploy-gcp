@@ -15,9 +15,18 @@ if str(ROOT_DIR) not in sys.path:
 
 from agent.soc_environment import EnvironmentAction, SocEnvironment
 
+GEN5_CONTAINER_STATE_BUNDLE = Path("/app/configs/evals/gen5/state_bundle.json")
+GEN5_EVALSET_PATHS = [
+    GEN5_CONTAINER_STATE_BUNDLE,
+    ROOT_DIR / "configs" / "evals" / "gen5" / "validation.json",
+    ROOT_DIR / "configs" / "evals" / "gen5" / "final_test.json",
+    ROOT_DIR / "configs" / "evals" / "gen5" / "train.json",
+]
+
 DEFAULT_EVALSET_PATHS = [
     Path("/app/soc_tier1_interactive.json"),
     ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json",
+    *GEN5_EVALSET_PATHS,
 ]
 
 EPISTEMIC_TOOLS = {
@@ -80,15 +89,26 @@ PRIMARY_ARG_MAP = {
 }
 
 
-def load_eval_case(case_id: str, evalset_path: Optional[Path] = None) -> Dict[str, Any]:
-    """Loads a specific case dictionary by eval_id from soc_tier1_interactive.json."""
-    candidate_paths = [evalset_path] if evalset_path else DEFAULT_EVALSET_PATHS
+def load_eval_case(case_id: str, evalset_path: Optional[Path] = None, strict: Optional[bool] = None) -> Dict[str, Any]:
+    """Loads a case dict by eval_id from the explicit evalset or the default search list.
+
+    Gen 3 callers keep the stub fallback (`{"eval_id": case_id}`) so an unknown
+    id still builds the overlay environment. Gen 5 ids (`CASE-GEN5-...`) are
+    strict by default: a miss raises LookupError, because silently building a
+    Gen 3 overlay for a Gen 5 case would score the wrong world.
+    """
+    if strict is None:
+        strict = case_id.upper().startswith("CASE-GEN5-")
+    candidate_paths = [Path(evalset_path)] if evalset_path else DEFAULT_EVALSET_PATHS
     for path in candidate_paths:
         if path and path.exists():
             data = json.loads(path.read_text(encoding="utf-8"))
             for case in data.get("eval_cases", []):
                 if case.get("eval_id") == case_id:
                     return dict(case)
+    if strict:
+        searched = ", ".join(str(p) for p in candidate_paths)
+        raise LookupError(f"case {case_id} not found in any evalset ({searched})")
     return {"eval_id": case_id}
 
 
@@ -230,6 +250,10 @@ def _parse_tool_args(command: str, raw_args: List[str]) -> Dict[str, Any]:
     return parsed
 
 
+def _error_payload(err: Exception, case_id: str) -> Tuple[int, Dict[str, Any]]:
+    return 1, {"status": "ERROR", "error": str(err), "case_id": case_id}
+
+
 def run_soc_cli(
     argv: List[str],
     env: Optional[Dict[str, str]] = None,
@@ -243,6 +267,8 @@ def run_soc_cli(
     case_id = runtime_env.get("SOC_CASE_ID", "CASE-GEN3-01-LOKIBOT-C2")
     state_path = Path(runtime_env.get("SOC_STATE_FILE", "/var/lib/soc/state.json"))
     traj_path = Path(runtime_env.get("SOC_TRAJECTORY_FILE", "/logs/artifacts/trajectory.jsonl"))
+    if evalset_path is None and runtime_env.get("SOC_EVALSET_FILE"):
+        evalset_path = Path(runtime_env["SOC_EVALSET_FILE"])
 
     if not argv or argv[0] in ("-h", "--help", "help"):
         help_payload = {
@@ -257,21 +283,30 @@ def run_soc_cli(
     rest = argv[1:]
 
     if command == "reset":
-        case_dict = load_eval_case(case_id, evalset_path=evalset_path)
-        env_obj = SocEnvironment.from_eval_case(case_dict)
-        _save_environment(env_obj, state_path)
-        if traj_path.exists():
-            traj_path.unlink()
-        traj_path.parent.mkdir(parents=True, exist_ok=True)
-        traj_path.write_text("", encoding="utf-8")
-        return 0, {"status": "RESET", "case_id": case_id, "state_file": str(state_path)}
+        try:
+            case_dict = load_eval_case(case_id, evalset_path=evalset_path)
+            env_obj = SocEnvironment.from_eval_case(case_dict)
+            _save_environment(env_obj, state_path)
+            if traj_path.exists():
+                traj_path.unlink()
+            traj_path.parent.mkdir(parents=True, exist_ok=True)
+            traj_path.write_text("", encoding="utf-8")
+            return 0, {"status": "RESET", "case_id": case_id, "state_file": str(state_path)}
+        except LookupError as err:
+            return _error_payload(err, case_id)
 
     if command == "status":
-        env_obj = _restore_environment(state_path, case_id, evalset_path=evalset_path)
-        snapshot = _save_environment(env_obj, state_path)
-        return 0, snapshot
+        try:
+            env_obj = _restore_environment(state_path, case_id, evalset_path=evalset_path)
+            snapshot = _save_environment(env_obj, state_path)
+            return 0, snapshot
+        except LookupError as err:
+            return _error_payload(err, case_id)
 
-    env_obj = _restore_environment(state_path, case_id, evalset_path=evalset_path)
+    try:
+        env_obj = _restore_environment(state_path, case_id, evalset_path=evalset_path)
+    except LookupError as err:
+        return _error_payload(err, case_id)
     tool_args = _parse_tool_args(command, rest)
 
     if command in EPISTEMIC_TOOLS:

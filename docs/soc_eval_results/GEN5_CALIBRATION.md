@@ -1,6 +1,6 @@
 # Gen 5 calibration report
 
-Generated 2026-10-04T21:20:25Z at git `43be40b0d4e50eb78a22b7b0533dda03497fdfc5`, transport `python`, 3 trial(s) per case, 90 cases.
+Generated 2026-10-04T22:45:42Z at git `929d61643fe626b0428693c43746616fb4174837`, transport `both`, 3 trial(s) per case, 90 cases.
 
 Reference policies from spec section 8.1. Oracle executes each case's `oracle` block. Inert, Shotgun, and Close-all read only the prompt. The gates are fixed in the spec; the numbers are what the shared composition (`scripts/verify_harbor_soc.py`) produces for them.
 
@@ -12,6 +12,8 @@ Reference policies from spec section 8.1. Oracle executes each case's `oracle` b
 | inert | exactly 0.0 on every case | 0.0000 | PASS | - |
 | shotgun | mean <= 0.35 and below Oracle on every case | 0.2000 | PASS | - |
 | close_all | mean <= 0.35 and below Oracle on every case | 0.0622 | PASS | - |
+
+Transport parity (oracle and shotgun per-case means agree within 0.01 between python and soc-cli): **PASS**, max delta 0.0000, failing: -.
 
 Overall: **all gates passed**. Oracle classes: {'Stable': 90}.
 
