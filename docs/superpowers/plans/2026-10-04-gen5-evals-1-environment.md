@@ -668,7 +668,7 @@ def test_from_eval_case_rejects_non_object_environment_state():
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest tests/test_gen5_soc_environment.py -q -k from_eval_case`
-Expected: 3 failed (replace-mode assertions and the two `ValueError` cases), 1 passed (`keeps_gen3_overlay_behavior`).
+Expected: 4 failed (the two replace-mode assertions and the two `ValueError` cases), 1 passed (`keeps_gen3_overlay_behavior`).
 
 - [ ] **Step 3: Implement**
 
@@ -771,12 +771,21 @@ def test_strict_ip_report_for_unknown_rfc1918_is_internal_unknown():
 
 def test_strict_ip_report_for_unknown_external_is_no_data_not_suspicious():
     env = SocEnvironment(initial_state=replace_state())
-    for ip in ("198.18.9.9", "8.8.8.8", "198.51.100.42"):
+    for ip in ("198.18.9.9", "8.8.8.8", "1.1.1.1"):
         report = env.query_tool("get_ip_address_report", {"ip": ip})
         assert report["reputation"] == "NO_DATA", ip
         assert report["verdict"] == "UNKNOWN", ip
         assert report["malicious_votes"] == 0, ip
         assert "threat_family" not in report, ip
+
+
+def test_strict_ip_report_does_not_carry_the_gen3_lokibot_special_case():
+    env = SocEnvironment(initial_state=replace_state())
+    report = env.query_tool("get_ip_address_report", {"ip": "198.51.100.42"})
+    assert report["reputation"] != "MALICIOUS"
+    assert report["malicious_votes"] == 0
+    assert "threat_family" not in report
+    assert report["routing_status"] == "RFC-5737 TEST-NET-2 (Non-Routable Documentation Subnet)"
 
 
 def test_overlay_ip_report_keeps_legacy_fallbacks():
@@ -786,7 +795,7 @@ def test_overlay_ip_report_keeps_legacy_fallbacks():
     assert env.query_tool("get_ip_address_report", {"ip": "10.0.99.50"})["service"] == "Qualys Vulnerability Scanner"
 ```
 
-Note that `198.51.100.42` is `NO_DATA` in replace mode: the Gen 3 special case lives in the overlay inventory only, which is the point of the refactor.
+Note that `198.51.100.42` loses its Lokibot profile in replace mode: the Gen 3 special case lives in the overlay inventory only, which is the point of the refactor. Because that address sits in RFC 5737 TEST-NET-2, the strict fallback renders the documentation record for it rather than `NO_DATA`.
 
 - [ ] **Step 2: Run the tests to verify they fail**
 
@@ -1502,8 +1511,8 @@ Expected: all passed. Record the pass count in the commit body. Known environmen
 
 - [ ] **Step 5: Confirm no file outside the allowed set changed**
 
-Run: `git diff --stat 0ac24cd -- . ':!agent/soc_environment.py' ':!tests/test_gen5_soc_environment.py' ':!tests/test_gen3_soc_environment_parity.py' ':!tests/golden/gen3_soc_environment_golden.json'`
-Expected: empty output.
+Run: `git diff --stat cf0dacd -- . ':!agent/soc_environment.py' ':!tests/test_gen5_soc_environment.py' ':!tests/test_gen3_soc_environment_parity.py' ':!tests/golden/gen3_soc_environment_golden.json' ':!docs/superpowers/plans/'`
+Expected: empty output (`cf0dacd` is the last commit before Plan 1 work began; plan files under `docs/superpowers/plans/` are excluded because the controller may annotate them during execution).
 
 - [ ] **Step 6: Commit**
 
