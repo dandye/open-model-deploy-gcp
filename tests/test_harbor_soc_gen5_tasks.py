@@ -320,3 +320,42 @@ def test_cli_rejects_a_bad_split_and_keeps_gen3_behind_a_flag(tmp_path) -> None:
         capture_output=True, text=True, check=False, cwd=ROOT_DIR,
     ).stdout
     assert "--gen3" in help_text and "--check" in help_text and "--split" in help_text
+
+
+def test_generate_gen5_suite_leaves_existing_tree_intact_when_the_build_fails(tmp_path, monkeypatch) -> None:
+    out = tmp_path / "tree"
+    out.mkdir()
+    sentinel_path = out / "manifest.json"
+    sentinel_bytes = b'{"sentinel": true}\n'
+    sentinel_path.write_bytes(sentinel_bytes)
+    before_files = sorted(out.rglob("*"))
+
+    def _failing_write(target_dir, **kwargs):
+        target_dir.mkdir(parents=True, exist_ok=True)
+        (target_dir / "partial.txt").write_text("broken", encoding="utf-8")
+        raise RuntimeError("injected")
+
+    monkeypatch.setattr(gen, "write_gen5_tree", _failing_write)
+    with pytest.raises(RuntimeError, match="injected"):
+        gen.generate_harbor_soc_gen5_suite(output_root=out)
+
+    assert sentinel_path.read_bytes() == sentinel_bytes
+    assert sorted(out.rglob("*")) == before_files
+    assert sorted(tmp_path.iterdir()) == [out]
+
+
+def test_generate_gen5_suite_replaces_a_stale_tree_atomically(tmp_path) -> None:
+    out = tmp_path / "tree"
+    out.mkdir()
+    stale_file = out / "stale.txt"
+    stale_file.write_text("stale", encoding="utf-8")
+
+    summary = gen.generate_harbor_soc_gen5_suite(
+        output_root=out, splits=("validation",), arms=("clean_skills",)
+    )
+    assert not stale_file.exists()
+    assert (out / "manifest.json").exists()
+    manifest_data = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest_data["total_tasks"] == 20
+    assert summary["output_root"] == str(out)
+    assert sorted(tmp_path.iterdir()) == [out]

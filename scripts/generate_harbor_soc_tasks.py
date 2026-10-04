@@ -952,11 +952,25 @@ def generate_harbor_soc_gen5_suite(
     arms: Tuple[str, ...] = DEFAULT_GEN5_ARMS,
     gepa_runbooks_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Replaces output_root with a freshly generated Gen 5 tree."""
+    """Builds the Gen 5 tree in a sibling temp dir and swaps it into output_root only on success; a failed build leaves output_root untouched."""
     output_root = Path(output_root)
-    if output_root.exists():
-        shutil.rmtree(output_root)
-    return write_gen5_tree(output_root, evalset_root=evalset_root, splits=splits, arms=arms, gepa_runbooks_dir=gepa_runbooks_dir)
+    output_root.parent.mkdir(parents=True, exist_ok=True)
+    build_root = Path(tempfile.mkdtemp(prefix=".harbor_soc_gen5_build_", dir=output_root.parent)) / "tree"
+    try:
+        summary = write_gen5_tree(
+            build_root,
+            evalset_root=evalset_root,
+            splits=splits,
+            arms=arms,
+            gepa_runbooks_dir=gepa_runbooks_dir,
+        )
+        if output_root.exists():
+            shutil.rmtree(output_root)
+        os.replace(build_root, output_root)
+        summary["output_root"] = str(output_root)
+        return summary
+    finally:
+        shutil.rmtree(build_root.parent, ignore_errors=True)
 
 
 def _tree_files(root: Path) -> Dict[str, Path]:
