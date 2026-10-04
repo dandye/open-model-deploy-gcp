@@ -1,3 +1,5 @@
+"""Tests for scripts/harness_lock.py: approve and verify without importing any model code."""
+
 import json
 from pathlib import Path
 import subprocess
