@@ -60,6 +60,10 @@ default:
     @printf "  \033[1;32mjust gke-ray-sweep [models] [dry_run]\033[0m  \033[2mRun full or filtered benchmark sweep on GKE\033[0m\n"
     @printf "  \033[1;32mjust gke-ray-status [namespace]\033[0m        \033[2mQuery active RayClusters, Jobs & LocalQueues\033[0m\n"
     @printf "  \033[1;32mjust gke-ray-cleanup [namespace]\033[0m       \033[2mDelete Ray workloads to release GPU node pools\033[0m\n\n"
+    @printf "\033[1;33mGEN 5 FAMILY-INSTANCED SOC EVALS (configs/evals/gen5):\033[0m\n"
+    @printf "  \033[1;32mjust gen5-build\033[0m                        \033[2mBuild bundles and manifest from the family templates\033[0m\n"
+    @printf "  \033[1;32mjust gen5-check\033[0m                        \033[2mLockfile check plus schema and suite tests\033[0m\n"
+    @printf "  \033[1;32mjust gen5-calibrate [trials]\033[0m           \033[2mFour reference policies, gates, GEN5_CALIBRATION.md\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -362,6 +366,24 @@ harbor-soc-generate:
 # Verify all 30 Harbor SOC tasks, SHA-256 environment deduplication, and 100% oracle calibration
 harbor-soc-test:
     @.venv/bin/pytest tests/test_harbor_soc_skills.py tests/test_soc_sandbox_cli.py tests/test_verify_harbor_soc.py tests/test_harbor_soc_tasks.py -v
+
+# ------------------------------------------------------------------------------
+# Gen 5 Family-Instanced SOC Evaluation Suite (configs/evals/gen5)
+# ------------------------------------------------------------------------------
+
+# Build the Gen 5 bundles and manifest from the family templates (no-op when up to date)
+gen5-build:
+    @.venv/bin/python scripts/gen5_instancer.py build
+
+# Verify the committed bundles match the templates, then run the schema and suite tests
+gen5-check:
+    @.venv/bin/python scripts/gen5_instancer.py check
+    @.venv/bin/python -m pytest tests/test_gen5_schema.py tests/test_gen5_suite.py -q
+
+# Run the four reference policies over all 90 cases and write docs/soc_eval_results/GEN5_CALIBRATION.{md,json}
+gen5-calibrate TRIALS="3":
+    @.venv/bin/python scripts/gen5_reference_policies.py calibrate --trials {{TRIALS}}
+
 
 
 
