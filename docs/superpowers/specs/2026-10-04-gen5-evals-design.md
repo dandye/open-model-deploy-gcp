@@ -372,7 +372,10 @@ error. Relationships are declarative:
 A build-time check verifies that every literal referenced in `prompt`,
 `assertions`, `expected_entities`, `prohibited_entities`, and `oracle` exists
 in that case's `environment_state`, so no case can ask about an entity the
-sandbox cannot answer for.
+sandbox cannot answer for. A second check verifies that the oracle's comment
+action contains every `assertions.must_contain` string, so the Oracle policy
+in section 8.1 can only pass if the family's own reference solution satisfies
+the family's own assertions.
 
 ### 6.4 Uniqueness
 
@@ -529,7 +532,7 @@ against all 90 cases, 3 trials each, in both transports:
 
 | Policy | Behavior | Gate |
 |---|---|---|
-| Oracle | executes the case's `oracle` block: lookups, then actions, then a comment containing the `must_contain` strings | >= 0.95 on every case; cases classified Stable / Flaky / Broken as in Kolesnikov's `-a oracle -k 3`; any Flaky or Broken case is fixed (which regenerates bundles and manifest) before model runs |
+| Oracle | executes the case's `oracle` block: the lookups, then the actions, whose comment action carries the `must_contain` strings | >= 0.95 on every case; cases classified Stable / Flaky / Broken as in Kolesnikov's `-a oracle -k 3`; any Flaky or Broken case is fixed (which regenerates bundles and manifest) before model runs |
 | Inert | no tool calls, no verdict | exactly 0.0 on every case |
 | Shotgun | isolate every host and block every indicator it can discover, close nothing | mean <= 0.35, and below Oracle on every case |
 | Close-all | close every case with no lookups | mean <= 0.35, and below Oracle on every case |
@@ -552,8 +555,9 @@ instead of judgment, and the hillclimber would find it.
 
 1. **Seed noise floor.** K = 3 runs of the seed runbooks with
    `gemini-2.5-flash` on the 20 validation cases. Report `tau_accept`, mean
-   spread, per-case standard deviation. Gate: mean spread <= 0.02 (the 4-case
-   Gen 3 valset gave 0.031). If missed, raise K and list the high-variance
+   spread (the largest minus the smallest of the K split means), and per-case
+   standard deviation. Gate: mean spread <= 0.02 (the 4-case Gen 3 valset gave
+   0.031). If missed, raise K and list the high-variance
    cases rather than proceeding.
 2. **Infrastructure segregation.** A case-run that ends in 429, timeout, or
    endpoint error is retried and excluded from quality metrics, never scored 0.
@@ -671,7 +675,7 @@ times ten cases at 14 files per task (560 files). A full Gen 5 matrix would be
 | Family templates encode debatable SOC judgment (insider exfil, cloud key) | owner review gate before instancing; rubric text states the reason each prohibited action is wrong |
 | Oracle gate passes but the family is still too easy or too hard for models | headroom gate (8.2.3) and gradient report (8.2.4) run before the campaign |
 | Validation OOD families become "seen" through repeated selection | they are only two of sixteen; final_test holds four more families that nothing selects on; the ledger records every exposure |
-| 40 train cases make each GEPA evaluation 4x to 7x more expensive than today | reflection minibatches; Pareto scoring on validation only; the staircase walk stays on validation |
+| Candidate scoring moves from 4 validation cases to 20 (5x per candidate), and reflection draws from 40 train cases instead of 6 | reflection minibatches of fixed size; Pareto scoring on validation only; the staircase walk stays on validation; `--max-metric-calls` budgets stated per campaign in the pre-registration file |
 | Harbor tree growth | section 9.4 policy; `--arms` and `--split` flags |
 | `forbidden_literals` in a public manifest | the list is a filter consumed by code; the reflector never reads it |
 
