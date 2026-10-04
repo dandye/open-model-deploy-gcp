@@ -3,6 +3,7 @@
 import json
 import math
 from pathlib import Path
+from typing import Optional
 import pytest
 
 from agent.gepa_runbook_optimizer import (
@@ -11,7 +12,10 @@ from agent.gepa_runbook_optimizer import (
     save_runbooks,
     calculate_loss_penalty,
     calculate_case_fitness,
+    is_gen5_evalset,
 )
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 def test_core_runbooks_list():
@@ -611,7 +615,7 @@ def optimizer_cli(tmp_path, monkeypatch):
     monkeypatch.setattr(optimizer.gepa, "optimize", optimize)
     output_dir = tmp_path / "evolved"
 
-    def run(candidates, scores, *, case_count=8, split=False, gen5=False, extra=()):
+    def run(candidates, scores, *, case_count=8, split=False, gen5=False, legacy_evalset: Optional[Path] = None, extra=()):
         optimize.return_value = GEPAResult(
             candidates=candidates,
             parents=[[] for _ in candidates],
@@ -620,7 +624,15 @@ def optimizer_cli(tmp_path, monkeypatch):
             per_val_instance_best_candidates={},
             discovery_eval_counts=[0 for _ in candidates],
         )
-        if gen5:
+        if legacy_evalset is not None:
+            monkeypatch.setenv("GEN5_EXPOSURE_LEDGER", str(tmp_path / "exposure.jsonl"))
+            args = [
+                "--evalset", str(legacy_evalset),
+                "--output-dir", str(output_dir),
+                "--lock-file", str(tmp_path / "lock.json"),
+                *extra,
+            ]
+        elif gen5:
             monkeypatch.setenv("GEN5_EXPOSURE_LEDGER", str(tmp_path / "exposure.jsonl"))
             args = [
                 "--output-dir", str(output_dir),
@@ -1000,6 +1012,28 @@ def test_gen5_never_optimizes_on_final_test(optimizer_cli, capsys):
     optimize.assert_not_called()
     entries = [json.loads(line) for line in ledger.read_text().splitlines()] if ledger.exists() else []
     assert [e["split"] for e in entries] in ([], ["train"])  # train may be recorded first; final_test never is
+
+
+@pytest.mark.parametrize("bundle", ["train.json", "validation.json", "final_test.json"])
+def test_legacy_evalset_refuses_gen5_bundles(optimizer_cli, capsys, bundle):
+    """--evalset never bypasses the ledger or the seal: every Gen 5 bundle is refused before any model object exists."""
+    run, output_dir, seed, optimize, adapter, reflection, ledger = optimizer_cli
+    rc = run([seed], [0.0], legacy_evalset=ROOT_DIR / "configs" / "evals" / "gen5" / bundle)
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "Gen 5 bundle" in err and "--train-split" in err
+    optimize.assert_not_called()
+    adapter.assert_not_called()
+    reflection.assert_not_called()
+    assert not ledger.exists()
+    assert not output_dir.exists()
+
+
+def test_is_gen5_evalset_detection():
+    """is_gen5_evalset detects top-level generation >= 5 or case-level generation >= 5."""
+    assert not is_gen5_evalset({}, [{"eval_id": "case-1"}])
+    assert is_gen5_evalset({"generation": 5}, [])
+    assert is_gen5_evalset({}, [{"generation": 5}])
 
 
 def test_cli_noise_only_writes_the_noise_floor_and_skips_optimization(optimizer_cli):

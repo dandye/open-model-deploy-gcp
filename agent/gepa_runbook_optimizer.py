@@ -325,6 +325,13 @@ def load_forbidden_literals(manifest_path: Path) -> List[str]:
     return [str(x) for x in literals]
 
 
+def is_gen5_evalset(eval_data: Dict[str, Any], eval_cases: List[Dict[str, Any]]) -> bool:
+    """True when a loaded evalset is a Gen 5 bundle (top-level generation >= 5 or any case with generation >= 5)."""
+    if int(eval_data.get("generation") or 0) >= 5:
+        return True
+    return any(int(case.get("generation") or 0) >= 5 for case in eval_cases)
+
+
 def validate_runbook_candidate(
     candidate: Dict[str, str],
     forbidden_hostnames: Optional[List[str]] = None,
@@ -854,7 +861,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--evalset",
         type=str,
         default=None,
-        help="Explicit evalset JSON (legacy). When omitted, the Gen 5 --train-split and --val-split bundles are loaded through the exposure ledger.",
+        help="Explicit evalset JSON (legacy; Gen 5 bundles are refused on this path).",
     )
     parser.add_argument(
         "--train-split",
@@ -994,6 +1001,15 @@ def main(args: Optional[List[str]] = None) -> int:
         eval_cases = eval_data.get("eval_cases", [])
         if not eval_cases:
             print(f"No evaluation cases found in: {evalset_path}", file=sys.stderr)
+            return 1
+
+        if is_gen5_evalset(eval_data, eval_cases):
+            print(
+                f"{evalset_path} is a Gen 5 bundle; --evalset bypasses the exposure ledger and the final_test seal. "
+                "Drop --evalset and use --train-split/--val-split (default: train/validation) so every load goes "
+                "through gen5_exposure.load_split.",
+                file=sys.stderr,
+            )
             return 1
 
         if parsed_args.split_train_val:

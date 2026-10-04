@@ -100,6 +100,23 @@ def test_final_test_is_refused_before_any_agent_setup(ledger) -> None:
     assert not ledger.exists()
 
 
+def test_cli_exits_2_when_final_test_is_sealed(ledger, capsys) -> None:
+    """The CLI maps FinalTestSealedError to exit code 2 with a one-line diagnostic, before any client or agent exists."""
+    with patch("scripts.eval_soc_agent.genai.Client") as client, patch.object(runner.SocTier1Agent, "set_up") as set_up:
+        with pytest.raises(SystemExit) as exc:
+            runner.main([
+                "--gen", "5", "--split", "final_test", "--flavor", "m",
+                "--judge-backend", "mock", "--jev-backend", "mock", "--purpose", "peek",
+            ])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "FinalTestSealedError" in err
+    assert "Traceback" not in err
+    set_up.assert_not_called()
+    client.assert_not_called()
+    assert not ledger.exists()
+
+
 def test_gen5_rejects_the_legacy_judge(ledger) -> None:
     with pytest.raises(ValueError, match="jev or mock"):
         runner.run_evaluation(
