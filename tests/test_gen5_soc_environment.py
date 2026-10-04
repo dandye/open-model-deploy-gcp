@@ -400,3 +400,24 @@ def test_overlay_udm_search_keeps_fixed_events():
 
 
 
+def test_strict_block_indicator_flags_unknown_indicators():
+    env = SocEnvironment(initial_state=replace_state())
+    known_domain = env.execute_action("block_indicator", {"indicator": "cdn-sync-metrics41.com"})
+    assert known_domain["status"] == "SUCCESS"
+    assert known_domain["unknown_indicator"] is False
+    known_ip = env.execute_action("block_ip", {"ip": "198.18.4.20"})
+    assert known_ip["unknown_indicator"] is False
+    host_ip = env.execute_action("block_ip", {"ip": "10.7.0.17"})
+    assert host_ip["unknown_indicator"] is False
+    unknown = env.execute_action("block_domain", {"domain": "totally-unrelated.example"})
+    assert unknown["status"] == "SUCCESS"
+    assert unknown["unknown_indicator"] is True
+    assert "totally-unrelated.example" in env.blocked_indicators
+    assert env.action_history[-1].result["unknown_indicator"] is True
+
+
+def test_overlay_block_indicator_result_has_no_unknown_flag():
+    env = SocEnvironment()
+    result = env.execute_action("block_indicator", {"indicator": "whatever.example"})
+    assert result["status"] == "SUCCESS"
+    assert "unknown_indicator" not in result

@@ -1253,6 +1253,14 @@ class SocEnvironment:
                     "indicator": indicator,
                     "message": f"Indicator '{indicator}' added to firewall and EDR blocklist.",
                 }
+                if self.strict:
+                    known = (
+                        indicator in self.ips
+                        or indicator.lower() in self.domains
+                        or indicator in self.hashes
+                        or self._find_host(indicator) is not None
+                    )
+                    result["unknown_indicator"] = not known
             else:
                 result = {
                     "status": "ERROR",
