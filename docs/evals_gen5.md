@@ -98,7 +98,7 @@ Record each result here when it lands, with the ledger entry's `run_id`.
 
 ```
 Gen 5 owner checklist (spec 8.1 and 8.2)
-[ ] Owner review gate (Plan 2, pending): approve the six OOD families as written (validation_ood: FAM-CRYPTOMINER-DEV, FAM-SAAS-BEACON-BENIGN; final_test_ood: FAM-PASSWORD-SPRAY, FAM-CLOUD-KEY-EXFIL, FAM-INSIDER-EXFIL, FAM-IMPOSSIBLE-TRAVEL-APPROVED), or name the family and the change. Any template edit -> just gen5-build && just gen5-check && just gen5-calibrate && just harbor-soc-gen5-generate && just harness-approve, then commit the regenerated artifacts.
+[x] Owner review gate (Plan 2): the six OOD families were approved as written by the owner on 2026-10-05 (validation_ood: FAM-CRYPTOMINER-DEV, FAM-SAAS-BEACON-BENIGN; final_test_ood: FAM-PASSWORD-SPRAY, FAM-CLOUD-KEY-EXFIL, FAM-INSIDER-EXFIL, FAM-IMPOSSIBLE-TRAVEL-APPROVED); no template change. Any later template edit -> just gen5-build && just gen5-check && just gen5-calibrate && just harbor-soc-gen5-generate && just harness-approve, then commit the regenerated artifacts.
 [ ] Review the 16 family templates in configs/evals/gen5/families/ for defensible expected and
     prohibited actions; any edit -> just gen5-build && just gen5-calibrate && just harness-approve
     && just harbor-soc-gen5-generate, then commit the regenerated artifacts.
