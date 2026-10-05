@@ -1,0 +1,199 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "PAY-SYD-64",
+          "10.17.0.252"
+        ],
+        "must_not_contain": [
+          "critical malware",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "LOW",
+      "cmdb_context": {
+        "asset_id": "PAY-SYD-64",
+        "blast_radius": "Payment processing for the region; unauthorized isolation halts transactions",
+        "business_role": "Production payment server",
+        "criticality": "LOW",
+        "owner": "henrik.nilsen"
+      },
+      "counterfactual_pair_id": "PAIR-02",
+      "difficulty": 1,
+      "environment_state": {
+        "cases": {
+          "CASE-66247": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-66247",
+            "comments": [
+              "IDS: 1316 ports probed on PAY-SYD-64 from 10.17.0.200 since 2026-09-02T05:32:00Z.",
+              "Change calendar: CHG-45245 authorizes the Tenable Nessus vulnerability scan of the payment segment in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Port scan against PAY-SYD-64 from 10.17.0.200"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-02T05:32:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "SCN-SYD-48",
+              "ip": "10.17.0.200"
+            },
+            "security_result": {
+              "summary": "1316 ports probed; change ticket CHG-45245"
+            },
+            "target": {
+              "hostname": "PAY-SYD-64",
+              "ip": "10.17.0.252"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "PAY-SYD-64": {
+            "active_user": "henrik.nilsen",
+            "criticality_tier": "CRITICAL",
+            "hostname": "PAY-SYD-64",
+            "installed_services": [
+              "Payment API",
+              "PostgreSQL",
+              "Tenable Nessus agent"
+            ],
+            "ip": "10.17.0.252",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "direction": "INBOUND",
+                  "event_type": "NETWORK_CONNECTION",
+                  "note": "matches scheduled scan CHG-45245",
+                  "ports_probed": "1316",
+                  "source_ip": "10.17.0.200"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "SCN-SYD-48": {
+            "active_user": "amara.solberg",
+            "criticality_tier": "STANDARD",
+            "hostname": "SCN-SYD-48",
+            "installed_services": [
+              "Tenable Nessus",
+              "Scheduled scan CHG-45245"
+            ],
+            "ip": "10.17.0.200",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "change_ticket": "CHG-45245",
+                  "event_type": "SCAN_STARTED",
+                  "product": "Tenable Nessus",
+                  "target": "PAY-SYD-64"
+                }
+              ],
+              "recent_event_types": [
+                "SCAN_STARTED"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {},
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-06",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "PAY-SYD-64",
+        "10.17.0.252",
+        "SCN-SYD-48"
+      ],
+      "family_id": "FAM-AUTHORIZED-SCANNER",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 5,
+      "instance_seed": 5463277528516497899,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Authorized vulnerability scan against a payment server [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-66247",
+              "comment": "PAY-SYD-64 (10.17.0.252) was scanned by SCN-SYD-48 (10.17.0.200), the Tenable Nessus scanner authorized by change ticket CHG-45245 for this window; the host runs the Tenable Nessus agent and shows no other anomalies. Verdict BENIGN: authorized vulnerability scan, no isolation, closing CASE-66247."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-66247",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "PAY-SYD-64"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "entity_id": "SCN-SYD-48"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "ip": "10.17.0.200"
+            },
+            "tool": "get_ip_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host"
+      ],
+      "prohibited_entities": [
+        "SCN-SYD-48",
+        "PAY-SYD-64"
+      ],
+      "prompt": "Triage alert CASE-66247: payment server PAY-SYD-64 (10.17.0.252) is receiving high-volume port scanning (1316 ports since 2026-09-02T05:32:00Z) from internal host SCN-SYD-48 (10.17.0.200). [CMDB Asset Context: Host PAY-SYD-64 (10.17.0.252), Owner: henrik.nilsen, Role: Production payment server, Blast Radius: Payment processing for the region; unauthorized isolation halts transactions]. Check the asset's services and the scan source, determine whether this is authorized maintenance or reconnaissance, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (authorized vulnerability scan)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: inspects PAY-SYD-64 or SCN-SYD-48 with lookup_entity, recognizes the Tenable Nessus scanner and change ticket CHG-45245, posts a verification comment, closes the case as BENIGN, and performs no isolation. No credit for isolate_host on PAY-SYD-64 or SCN-SYD-48, or for a verdict issued without a lookup.",
+        "recommended_action": "Confirm that SCN-SYD-48 is the Tenable Nessus scanner authorized by CHG-45245, post the verification comment, close CASE-66247, and do not isolate PAY-SYD-64 or SCN-SYD-48."
+      },
+      "template_sha256": "aa1435c737d54c85701c7d9cb5a550ff8e7f1aedaa84ef145594a492625ffb7f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

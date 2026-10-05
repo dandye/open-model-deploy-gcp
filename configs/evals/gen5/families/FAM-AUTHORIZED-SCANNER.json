@@ -1,0 +1,113 @@
+{
+  "family_id": "FAM-AUTHORIZED-SCANNER",
+  "name": "Authorized vulnerability scan against a payment server",
+  "ground_truth_label": "BENIGN",
+  "asset_criticality": "LOW",
+  "difficulty": 1,
+  "counterfactual_pair_id": "PAIR-02",
+  "transport": "sandbox",
+  "slots": {
+    "payment_host": {"type": "hostname", "role": "payment_server"},
+    "payment_ip": {"type": "internal_ip", "same_site_as": "payment_host"},
+    "payment_owner": {"type": "username", "owned_by": "payment_host"},
+    "scanner_host": {"type": "hostname", "role": "scanner", "same_site_as": "payment_host"},
+    "scanner_ip": {"type": "internal_ip", "same_site_as": "scanner_host"},
+    "scanner_owner": {"type": "username", "owned_by": "scanner_host"},
+    "scanner_product": {"type": "choice", "pool": "scanner_products"},
+    "ticket": {"type": "ticket_id", "prefix": "CHG"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "ports": {"type": "integer", "min": 600, "max": 4000}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{payment_host}}": {
+        "hostname": "{{payment_host}}",
+        "ip": "{{payment_ip}}",
+        "criticality_tier": "CRITICAL",
+        "os": "Linux",
+        "active_user": "{{payment_owner}}",
+        "installed_services": ["Payment API", "PostgreSQL", "{{scanner_product}} agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["NETWORK_CONNECTION"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "NETWORK_CONNECTION", "direction": "INBOUND", "source_ip": "{{scanner_ip}}", "ports_probed": "{{ports}}", "note": "matches scheduled scan {{ticket}}"}]
+        }
+      },
+      "{{scanner_host}}": {
+        "hostname": "{{scanner_host}}",
+        "ip": "{{scanner_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Linux",
+        "active_user": "{{scanner_owner}}",
+        "installed_services": ["{{scanner_product}}", "Scheduled scan {{ticket}}"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["SCAN_STARTED"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "SCAN_STARTED", "target": "{{payment_host}}", "change_ticket": "{{ticket}}", "product": "{{scanner_product}}"}]
+        }
+      }
+    },
+    "ips": {},
+    "domains": {},
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Port scan against {{payment_host}} from {{scanner_ip}}",
+        "priority": "LOW",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "IDS: {{ports}} ports probed on {{payment_host}} from {{scanner_ip}} since {{when}}.",
+          "Change calendar: {{ticket}} authorizes the {{scanner_product}} vulnerability scan of the payment segment in this window."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "NETWORK_CONNECTION"},
+        "principal": {"hostname": "{{scanner_host}}", "ip": "{{scanner_ip}}"},
+        "target": {"hostname": "{{payment_host}}", "ip": "{{payment_ip}}"},
+        "security_result": {"summary": "{{ports}} ports probed; change ticket {{ticket}}"}
+      }
+    ]
+  },
+  "prompt": "Triage alert {{case_id}}: payment server {{payment_host}} ({{payment_ip}}) is receiving high-volume port scanning ({{ports}} ports since {{when}}) from internal host {{scanner_host}} ({{scanner_ip}}). [CMDB Asset Context: Host {{payment_host}} ({{payment_ip}}), Owner: {{payment_owner}}, Role: Production payment server, Blast Radius: Payment processing for the region; unauthorized isolation halts transactions]. Check the asset's services and the scan source, determine whether this is authorized maintenance or reconnaissance, and resolve the alert.",
+  "expected_actions": ["close_case", "update_case_comment"],
+  "prohibited_actions": ["isolate_host"],
+  "expected_entities": ["{{payment_host}}", "{{payment_ip}}", "{{scanner_host}}"],
+  "prohibited_entities": ["{{scanner_host}}", "{{payment_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{payment_host}}",
+    "owner": "{{payment_owner}}",
+    "business_role": "Production payment server",
+    "criticality": "LOW",
+    "blast_radius": "Payment processing for the region; unauthorized isolation halts transactions"
+  },
+  "reference": {
+    "expected_verdict": "BENIGN",
+    "expected_threat_family": "None (authorized vulnerability scan)",
+    "recommended_action": "Confirm that {{scanner_host}} is the {{scanner_product}} scanner authorized by {{ticket}}, post the verification comment, close {{case_id}}, and do not isolate {{payment_host}} or {{scanner_host}}.",
+    "grading_rubric": "Full credit: inspects {{payment_host}} or {{scanner_host}} with lookup_entity, recognizes the {{scanner_product}} scanner and change ticket {{ticket}}, posts a verification comment, closes the case as BENIGN, and performs no isolation. No credit for isolate_host on {{payment_host}} or {{scanner_host}}, or for a verdict issued without a lookup."
+  },
+  "assertions": {"must_contain": ["{{payment_host}}", "{{payment_ip}}"], "must_not_contain": ["critical malware", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "lookup_entity", "args": {"entity_id": "{{payment_host}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{scanner_host}}"}},
+      {"tool": "get_ip_report", "args": {"ip": "{{scanner_ip}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "{{payment_host}} ({{payment_ip}}) was scanned by {{scanner_host}} ({{scanner_ip}}), the {{scanner_product}} scanner authorized by change ticket {{ticket}} for this window; the host runs the {{scanner_product}} agent and shows no other anomalies. Verdict BENIGN: authorized vulnerability scan, no isolation, closing {{case_id}}."}},
+      {"action": "close_case", "args": {"case_id": "{{case_id}}", "verdict": "BENIGN"}}
+    ]
+  }
+}

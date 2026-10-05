@@ -1,0 +1,236 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.19.214.177",
+          "TRV-56791"
+        ],
+        "must_not_contain": [
+          "account compromised",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "PC-SIN-78",
+        "blast_radius": "Single user; check travel registration before acting",
+        "business_role": "Standard office workstation",
+        "criticality": "STANDARD",
+        "owner": "yara.volkov"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-66847": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-66847",
+            "comments": [
+              "Identity monitor: token refresh from PC-SIN-78 in Sydney, AU followed 78 minutes later by a VPN login from 198.19.214.177 (Austin, US) at 2026-09-24T03:45:00Z; MFA satisfied on both.",
+              "Travel desk: TRV-56791 registers yara.volkov in Austin, US this week."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Impossible travel for yara.volkov: Sydney, AU to Austin, US in 78 minutes"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-24T03:45:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "PC-SIN-78",
+              "ip": "10.12.0.187",
+              "location": "Sydney, AU",
+              "user": "yara.volkov"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "token refresh"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-24T03:45:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.19.214.177",
+              "location": "Austin, US",
+              "user": "yara.volkov"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "interactive VPN login; MFA satisfied; travel registration TRV-56791"
+            },
+            "target": {
+              "hostname": "GW-SIN-86",
+              "ip": "10.12.0.254"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "GW-SIN-86": {
+            "active_user": "tobias.lindqvist",
+            "criticality_tier": "HIGH",
+            "hostname": "GW-SIN-86",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.12.0.254",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Austin, US",
+                  "mfa": "SATISFIED",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.19.214.177",
+                  "travel_registration": "TRV-56791",
+                  "user": "yara.volkov"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "PC-SIN-78": {
+            "active_user": "yara.volkov",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-SIN-78",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.12.0.187",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Sydney, AU",
+                  "logon_type": "token_refresh",
+                  "note": "docked workstation; no interactive session",
+                  "outcome": "SUCCESS",
+                  "user": "yara.volkov"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.214.177": {
+            "asn": "AS64560 (hospitality ISP)",
+            "category": "Hotel / conference network egress",
+            "country": "Austin, US",
+            "harmless_votes": 22,
+            "ip": "198.19.214.177",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-01",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "yara.volkov",
+        "198.19.214.177",
+        "TRV-56791"
+      ],
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 0,
+      "instance_seed": 11696094684620350524,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Impossible travel alert explained by registered travel and a docked workstation [01]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-66847",
+              "comment": "Impossible travel explained: the Sydney, AU event is a token refresh from the docked office workstation PC-SIN-78 (10.12.0.187), and the Austin, US login from 198.19.214.177 through GW-SIN-86 matches travel registration TRV-56791 for yara.volkov with MFA satisfied; 198.19.214.177 is a clean hospitality egress. Verdict BENIGN, no block or isolation, closing CASE-66847."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-66847",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.19.214.177"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "GW-SIN-86"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "TRV-56791"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "GW-SIN-86",
+        "PC-SIN-78"
+      ],
+      "prompt": "Triage alert CASE-66847: identity monitoring flagged impossible travel for yara.volkov: a session refresh from office workstation PC-SIN-78 (10.12.0.187) in Sydney, AU and, 78 minutes later at 2026-09-24T03:45:00Z, an interactive VPN login from 198.19.214.177 in Austin, US through gateway GW-SIN-86 (10.12.0.254). Both satisfied MFA. [CMDB Asset Context: Host PC-SIN-78 (10.12.0.187), Owner: yara.volkov, Role: Standard office workstation, Blast Radius: Single user; check travel registration before acting]. Query the source address, the travel record, and the gateway telemetry, determine whether the account is compromised, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (registered travel)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.19.214.177 and the case or gateway record showing TRV-56791, explains the pair of events (token refresh plus registered travel with MFA), posts a comment citing TRV-56791, and closes the case as BENIGN with no containment. No credit for isolate_host on PC-SIN-78 or GW-SIN-86, for block_indicator on 198.19.214.177, or for a verdict issued without a lookup.",
+        "recommended_action": "Match the Austin, US login to travel registration TRV-56791, attribute the Sydney, AU event to the docked workstation's token refresh, record the finding, and close CASE-66847 without blocking 198.19.214.177 or isolating anything."
+      },
+      "template_sha256": "7728f1ed9a1c7989df182a74b20e16eca038b2d04bb652d77be7503c6c2803a8",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

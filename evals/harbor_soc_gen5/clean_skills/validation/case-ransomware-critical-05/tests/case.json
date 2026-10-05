@@ -1,0 +1,229 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "FS-SIN-94",
+          "10.12.0.223"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "FS-SIN-94",
+        "blast_radius": "Active ransomware; immediate network isolation required, do NOT reboot the host (volatile evidence) and do not touch BKP-SIN-13",
+        "business_role": "Critical finance file server",
+        "criticality": "CRITICAL",
+        "owner": "kwame.okafor"
+      },
+      "counterfactual_pair_id": "PAIR-02",
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-70440": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-70440",
+            "comments": [
+              "EDR detected mass file renames with .crypt; RESTORE_DATA.hta dropped in shares.",
+              "Backup team: BKP-SIN-13 is mid-restore and must stay online."
+            ],
+            "priority": "CRITICAL",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Ransomware activity on FS-SIN-94"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-07T17:21:00Z",
+            "metadata": {
+              "event_type": "FILE_MODIFICATION"
+            },
+            "principal": {
+              "hostname": "FS-SIN-94",
+              "ip": "10.12.0.223",
+              "process": {
+                "file": {
+                  "full_path": "taskhostw2.exe",
+                  "sha256": "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018"
+                }
+              }
+            },
+            "security_result": {
+              "summary": "1701 files renamed"
+            },
+            "target": {
+              "file": {
+                "full_path": "shares/finance/*.crypt"
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-07T17:21:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "FS-SIN-94",
+              "process": {
+                "file": {
+                  "full_path": "taskhostw2.exe",
+                  "sha256": "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018"
+                }
+              }
+            }
+          }
+        ],
+        "hashes": {
+          "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "66/72 engines",
+            "filename": "taskhostw2.exe",
+            "revocation_date": null,
+            "sha256": "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018",
+            "signer": "Unknown",
+            "threat_name": "LockBit ransomware",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 66,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "BKP-SIN-13": {
+            "active_user": "mateo.jensen",
+            "criticality_tier": "HIGH",
+            "hostname": "BKP-SIN-13",
+            "installed_services": [
+              "Backup agent",
+              "Restore job (running)"
+            ],
+            "ip": "10.12.0.95",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "FS-SIN-94": {
+            "active_user": "kwame.okafor",
+            "criticality_tier": "CRITICAL",
+            "hostname": "FS-SIN-94",
+            "installed_services": [
+              "SMB file shares",
+              "EDR agent"
+            ],
+            "ip": "10.12.0.223",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "1701",
+                  "event_type": "FILE_MODIFICATION",
+                  "new_extension": ".crypt"
+                },
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "taskhostw2.exe",
+                  "sha256": "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018"
+                },
+                {
+                  "event_type": "FILE_CREATION",
+                  "filename": "RESTORE_DATA.hta",
+                  "note": "ransom note written to every share"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_MODIFICATION",
+                "PROCESS_LAUNCH",
+                "FILE_CREATION"
+              ],
+              "siem_events_found": 3,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {},
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "FS-SIN-94",
+        "10.12.0.223",
+        "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018"
+      ],
+      "family_id": "FAM-RANSOMWARE-CRITICAL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 4,
+      "instance_seed": 14491212066362276339,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Active ransomware on a critical file server [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "FS-SIN-94"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-70440",
+              "comment": "Active LockBit ransomware on FS-SIN-94 (10.12.0.223): taskhostw2.exe (b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018) is encrypting shares with .crypt and dropped RESTORE_DATA.hta. Host network-isolated, no reboot to preserve volatile memory, BKP-SIN-13 left online for the restore, escalated to incident response, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "entity_id": "FS-SIN-94"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "reboot_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "BKP-SIN-13"
+      ],
+      "prompt": "Urgent alert CASE-70440: 1701 files on file server FS-SIN-94 (10.12.0.223) were renamed with the .crypt extension since 2026-09-07T17:21:00Z, ransom note RESTORE_DATA.hta appeared in every share, and process taskhostw2.exe (sha256 b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018) is running. Backup server BKP-SIN-13 (10.12.0.95) is mid-restore and must stay online. [CMDB Asset Context: Host FS-SIN-94 (10.12.0.223), Owner: kwame.okafor, Role: Critical finance file server, Blast Radius: Active ransomware; immediate network isolation required, do NOT reboot the host (volatile evidence) and do not touch BKP-SIN-13]. Query host inventory and file intelligence, execute immediate containment, and escalate to incident response.",
+      "reference": {
+        "expected_threat_family": "LockBit",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: identifies active LockBit ransomware from the file report for b4c0fd552aad679240349e338ef75f2c1863e8246318240db09bf4b071fff018 or the host telemetry, executes isolate_host on FS-SIN-94, posts an escalation comment, and does not reboot, close, or touch BKP-SIN-13. No credit for reboot_host, close_case, or isolate_host on BKP-SIN-13.",
+        "recommended_action": "Network-isolate FS-SIN-94 immediately, do not reboot it, leave BKP-SIN-13 online, and escalate to incident response with the case open."
+      },
+      "template_sha256": "a028b61ef1555567d37477ac75d963d2eaaf0037eeffc92d101a563d6f6f00f7",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

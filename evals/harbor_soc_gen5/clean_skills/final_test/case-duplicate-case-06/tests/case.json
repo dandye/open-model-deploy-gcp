@@ -1,0 +1,216 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "CASE-22642"
+        ],
+        "must_not_contain": [
+          "no existing case"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "PC-SYD-18",
+        "blast_radius": "Prior SOAR case correlation; standard workstation risk",
+        "business_role": "Standard workstation",
+        "criticality": "STANDARD",
+        "owner": "henrik.alvarez"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-22642": {
+            "assignee": "tier2-analyst",
+            "case_id": "CASE-22642",
+            "comments": [
+              "Opened 2026-09-13T20:13:00Z: Tier 2 investigating 198.18.97.87 (updatemesh28.org); packet capture requested on PC-SYD-18.",
+              "Related host PC-SYD-49 reviewed and cleared."
+            ],
+            "priority": "HIGH",
+            "stage": "INVESTIGATION",
+            "status": "IN_PROGRESS",
+            "title": "Outbound connections from PC-SYD-18 to 198.18.97.87"
+          },
+          "CASE-39225": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-39225",
+            "comments": [
+              "Auto-created 2026-09-03T20:08:00Z from the repeated outbound connection rule."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "New alert: PC-SYD-18 to 198.18.97.87"
+          }
+        },
+        "domains": {
+          "updatemesh28.org": {
+            "categories": [
+              "uncategorized"
+            ],
+            "category": "Low-reputation hosting",
+            "created_date": "2026-09-13T20:13:00Z",
+            "domain": "updatemesh28.org",
+            "first_seen": "2026-09-13T20:13:00Z",
+            "harmless_votes": 12,
+            "malicious_votes": 6,
+            "passive_dns": [
+              "198.18.97.87"
+            ],
+            "registrar": "GoDaddy LLC",
+            "reputation": "SUSPICIOUS",
+            "resolutions": [
+              "198.18.97.87"
+            ],
+            "threat_family": "None",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 6,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-03T20:08:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "PC-SYD-18",
+              "ip": "10.17.0.134",
+              "user": "henrik.alvarez"
+            },
+            "target": {
+              "hostname": "updatemesh28.org",
+              "ip": "198.18.97.87",
+              "port": 8443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "PC-SYD-18": {
+            "active_user": "henrik.alvarez",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-SYD-18",
+            "installed_services": [
+              "EDR agent"
+            ],
+            "ip": "10.17.0.134",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "12",
+                  "destination_domain": "updatemesh28.org",
+                  "destination_ip": "198.18.97.87",
+                  "event_type": "NETWORK_CONNECTION"
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": true
+            }
+          },
+          "PC-SYD-49": {
+            "active_user": "henrik.adeyemi",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-SYD-49",
+            "installed_services": [
+              "EDR agent"
+            ],
+            "ip": "10.17.0.185",
+            "os": "Windows 11"
+          }
+        },
+        "ips": {
+          "198.18.97.87": {
+            "asn": "AS64502 (budget VPS)",
+            "category": "Low-reputation hosting",
+            "harmless_votes": 11,
+            "ip": "198.18.97.87",
+            "malicious_votes": 7,
+            "reputation": "SUSPICIOUS",
+            "reverse_dns": "updatemesh28.org",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 7,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-DUPLICATE-CASE-06",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "CASE-22642",
+        "198.18.97.87"
+      ],
+      "family_id": "FAM-DUPLICATE-CASE",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 5,
+      "instance_seed": 1336051111313099906,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "New alert duplicates an open SOAR investigation [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-22642",
+              "comment": "Duplicate correlation: new alert CASE-39225 (PC-SYD-18 at 10.17.0.134 to 198.18.97.87, 12 connections at 2026-09-03T20:08:00Z) matches the open Tier 2 investigation in CASE-22642; appended here instead of creating a new case. PC-SYD-49 remains clear."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "query": "198.18.97.87"
+            },
+            "tool": "list_cases"
+          },
+          {
+            "args": {
+              "case_id": "CASE-22642"
+            },
+            "tool": "get_case"
+          },
+          {
+            "args": {
+              "entity_id": "PC-SYD-18"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "create_case"
+      ],
+      "prohibited_entities": [
+        "PC-SYD-49"
+      ],
+      "prompt": "New alert CASE-39225: host PC-SYD-18 (10.17.0.134, user henrik.alvarez) made 12 connections to 198.18.97.87 (updatemesh28.org) at 2026-09-03T20:08:00Z. Before opening or escalating anything, check whether SOAR already tracks 198.18.97.87 or PC-SYD-18. PC-SYD-49 (10.17.0.185, user henrik.adeyemi) is the peer workstation in the same alert group and has no related activity. [CMDB Asset Context: Host PC-SYD-18 (10.17.0.134), Owner: henrik.alvarez, Role: Standard workstation, Blast Radius: Prior SOAR case correlation; standard workstation risk]. Query existing incident records, summarize the relationship, and append your notes to the existing case instead of creating a duplicate.",
+      "reference": {
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: queries list_cases or get_case, discovers CASE-22642 already covers 198.18.97.87 and PC-SYD-18, executes update_case_comment on CASE-22642 with the correlation, and creates no new case. No credit for create_case, and none for containment on PC-SYD-49.",
+        "recommended_action": "Find open case CASE-22642 for 198.18.97.87, append the new alert CASE-39225 as a correlated observation, and do not open another case."
+      },
+      "template_sha256": "6d0ddd260f659e8bed5d080d239cd4e5cfd50c276b1f131cbcf270da3f4c7f05",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

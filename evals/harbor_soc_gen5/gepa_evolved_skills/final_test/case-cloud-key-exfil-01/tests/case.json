@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "CKEY-C5E517155EC19535",
+          "rotat"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "ledger-prod",
+        "blast_radius": "Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-FRA-57 or CI-FRA-95 stops neither the download nor the attacker",
+        "business_role": "Production data store for ledger-prod",
+        "criticality": "CRITICAL",
+        "owner": "freya.iyer"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-22750": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-22750",
+            "comments": [
+              "Cloud audit: CKEY-C5E517155EC19535 (project ledger-prod) authenticated from 198.18.54.77 and downloaded 626 GB tagged contract archive since 2026-09-17T07:37:00Z.",
+              "Platform: the key's expected callers are CI-FRA-95 and BAS-FRA-57 only; it was issued on 2026-09-09T03:47:00Z by freya.iyer."
+            ],
+            "priority": "CRITICAL",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Service account key CKEY-C5E517155EC19535 used from external address 198.18.54.77"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-17T07:37:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "ip": "198.18.54.77",
+              "user": "CKEY-C5E517155EC19535"
+            },
+            "security_result": {
+              "summary": "626 GB downloaded; data label contract archive"
+            },
+            "target": {
+              "application": "storage.objects.get",
+              "resource": "projects/ledger-prod/buckets/exports"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-17T07:37:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "hostname": "CI-FRA-95",
+              "ip": "10.11.0.86",
+              "user": "CKEY-C5E517155EC19535"
+            },
+            "security_result": {
+              "summary": "expected deploy traffic"
+            },
+            "target": {
+              "application": "storage.objects.create",
+              "resource": "projects/ledger-prod/buckets/artifacts"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "BAS-FRA-57": {
+            "active_user": "freya.iyer",
+            "criticality_tier": "HIGH",
+            "hostname": "BAS-FRA-57",
+            "installed_services": [
+              "SSH bastion",
+              "Cloud CLI",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.90",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "created_at": "2026-09-09T03:47:00Z",
+                  "created_by": "freya.iyer",
+                  "event_type": "CLOUD_KEY_CREATED",
+                  "key_id": "CKEY-C5E517155EC19535",
+                  "project": "ledger-prod"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_KEY_CREATED"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "CI-FRA-95": {
+            "active_user": "caleb.farouk",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-FRA-95",
+            "installed_services": [
+              "CI runner",
+              "Deploy agent",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.86",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "CLOUD_API_CALL",
+                  "key_id": "CKEY-C5E517155EC19535",
+                  "method": "storage.objects.create",
+                  "note": "expected caller; deploy artifacts only",
+                  "source_ip": "10.11.0.86"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_API_CALL"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.54.77": {
+            "asn": "AS64570 (anonymizing VPN provider)",
+            "category": "Anonymizing VPN exit / abuse reports",
+            "country": "Unknown",
+            "harmless_votes": 1,
+            "ip": "198.18.54.77",
+            "malicious_votes": 24,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Credential abuse infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 24,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-01",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "CKEY-C5E517155EC19535",
+        "198.18.54.77"
+      ],
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 0,
+      "instance_seed": 747445358617259746,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Leaked cloud service account key used for bulk download from outside [01]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.18.54.77"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-22750",
+              "comment": "Compromised credential: service account key CKEY-C5E517155EC19535 (project ledger-prod) was used from 198.18.54.77, an anonymizing exit with a malicious reputation, to download 626 GB tagged contract archive; its only expected callers are CI-FRA-95 and BAS-FRA-57. 198.18.54.77 blocked, immediate rotation and revocation of CKEY-C5E517155EC19535 requested from the cloud platform team, audit log preserved, escalated to incident response and privacy; BAS-FRA-57 and CI-FRA-95 left online, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.18.54.77"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "query": "CKEY-C5E517155EC19535"
+            },
+            "tool": "udm_search"
+          },
+          {
+            "args": {
+              "entity_id": "CI-FRA-95"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "BAS-FRA-57",
+        "CI-FRA-95"
+      ],
+      "prompt": "Urgent alert CASE-22750: service account key CKEY-C5E517155EC19535 for cloud project ledger-prod authenticated from external address 198.18.54.77 and downloaded 626 GB of objects tagged contract archive since 2026-09-17T07:37:00Z. The key was issued on bastion BAS-FRA-57 (10.11.0.90) by freya.iyer and is normally used only by deploy runner CI-FRA-95 (10.11.0.86). [CMDB Asset Context: Asset ledger-prod storage, Owner: freya.iyer, Role: Production data store, Blast Radius: Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-FRA-57 or CI-FRA-95 stops neither the download nor the attacker]. Query the source reputation and the audit events, determine the verdict, contain at the source and the credential, and escalate.",
+      "reference": {
+        "expected_threat_family": "Credential theft and cloud data exfiltration (T1552, T1530)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.18.54.77 and the audit events for CKEY-C5E517155EC19535, recognizes a compromised service account key used from outside its expected callers, executes block_indicator on 198.18.54.77, posts a comment that names rotation of CKEY-C5E517155EC19535 and the escalation, and keeps the case open. No credit for isolate_host on BAS-FRA-57 or CI-FRA-95, which does not stop an attacker holding the key, or for close_case.",
+        "recommended_action": "Block 198.18.54.77, request immediate rotation and revocation of CKEY-C5E517155EC19535 from the cloud platform team, preserve the audit log, escalate to incident response and privacy, and leave BAS-FRA-57 and CI-FRA-95 online."
+      },
+      "template_sha256": "ddaa282204594701a2f8c41406b4e9845988ae94147e6ed6ab0ffe0f99e593b9",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

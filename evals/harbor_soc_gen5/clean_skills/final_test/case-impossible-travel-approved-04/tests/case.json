@@ -1,0 +1,236 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.19.43.249",
+          "TRV-23389"
+        ],
+        "must_not_contain": [
+          "account compromised",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "LT-DEN-79",
+        "blast_radius": "Single user; check travel registration before acting",
+        "business_role": "Standard office workstation",
+        "criticality": "STANDARD",
+        "owner": "freya.kowalski"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-43309": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-43309",
+            "comments": [
+              "Identity monitor: token refresh from LT-DEN-79 in Austin, US followed 105 minutes later by a VPN login from 198.19.43.249 (Sao Paulo, BR) at 2026-09-14T17:49:00Z; MFA satisfied on both.",
+              "Travel desk: TRV-23389 registers freya.kowalski in Sao Paulo, BR this week."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Impossible travel for freya.kowalski: Austin, US to Sao Paulo, BR in 105 minutes"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-14T17:49:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "LT-DEN-79",
+              "ip": "10.19.0.128",
+              "location": "Austin, US",
+              "user": "freya.kowalski"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "token refresh"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-14T17:49:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.19.43.249",
+              "location": "Sao Paulo, BR",
+              "user": "freya.kowalski"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "interactive VPN login; MFA satisfied; travel registration TRV-23389"
+            },
+            "target": {
+              "hostname": "VPN-DEN-74",
+              "ip": "10.19.0.163"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-DEN-79": {
+            "active_user": "freya.kowalski",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-DEN-79",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.19.0.128",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Austin, US",
+                  "logon_type": "token_refresh",
+                  "note": "docked workstation; no interactive session",
+                  "outcome": "SUCCESS",
+                  "user": "freya.kowalski"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "VPN-DEN-74": {
+            "active_user": "lucia.becker",
+            "criticality_tier": "HIGH",
+            "hostname": "VPN-DEN-74",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.19.0.163",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Sao Paulo, BR",
+                  "mfa": "SATISFIED",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.19.43.249",
+                  "travel_registration": "TRV-23389",
+                  "user": "freya.kowalski"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.43.249": {
+            "asn": "AS64560 (hospitality ISP)",
+            "category": "Hotel / conference network egress",
+            "country": "Sao Paulo, BR",
+            "harmless_votes": 22,
+            "ip": "198.19.43.249",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-04",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "freya.kowalski",
+        "198.19.43.249",
+        "TRV-23389"
+      ],
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 3,
+      "instance_seed": 6537121452987521958,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Impossible travel alert explained by registered travel and a docked workstation [04]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-43309",
+              "comment": "Impossible travel explained: the Austin, US event is a token refresh from the docked office workstation LT-DEN-79 (10.19.0.128), and the Sao Paulo, BR login from 198.19.43.249 through VPN-DEN-74 matches travel registration TRV-23389 for freya.kowalski with MFA satisfied; 198.19.43.249 is a clean hospitality egress. Verdict BENIGN, no block or isolation, closing CASE-43309."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-43309",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.19.43.249"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "VPN-DEN-74"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "TRV-23389"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "VPN-DEN-74",
+        "LT-DEN-79"
+      ],
+      "prompt": "Triage alert CASE-43309: identity monitoring flagged impossible travel for freya.kowalski: a session refresh from office workstation LT-DEN-79 (10.19.0.128) in Austin, US and, 105 minutes later at 2026-09-14T17:49:00Z, an interactive VPN login from 198.19.43.249 in Sao Paulo, BR through gateway VPN-DEN-74 (10.19.0.163). Both satisfied MFA. [CMDB Asset Context: Host LT-DEN-79 (10.19.0.128), Owner: freya.kowalski, Role: Standard office workstation, Blast Radius: Single user; check travel registration before acting]. Query the source address, the travel record, and the gateway telemetry, determine whether the account is compromised, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (registered travel)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.19.43.249 and the case or gateway record showing TRV-23389, explains the pair of events (token refresh plus registered travel with MFA), posts a comment citing TRV-23389, and closes the case as BENIGN with no containment. No credit for isolate_host on LT-DEN-79 or VPN-DEN-74, for block_indicator on 198.19.43.249, or for a verdict issued without a lookup.",
+        "recommended_action": "Match the Sao Paulo, BR login to travel registration TRV-23389, attribute the Austin, US event to the docked workstation's token refresh, record the finding, and close CASE-43309 without blocking 198.19.43.249 or isolating anything."
+      },
+      "template_sha256": "7728f1ed9a1c7989df182a74b20e16eca038b2d04bb652d77be7503c6c2803a8",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

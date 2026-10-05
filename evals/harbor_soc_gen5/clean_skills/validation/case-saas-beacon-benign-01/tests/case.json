@@ -1,0 +1,232 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "cache21.cdn-cloud.org",
+          "CHG-44190"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "APP-FRA-14",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "owner": "imani.moreira"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-28364": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-28364",
+            "comments": [
+              "NDR: new external destination cache21.cdn-cloud.org contacted every 109 seconds since 2026-09-27T11:50:00Z.",
+              "Change calendar: CHG-44190 deployed the Box connector on APP-FRA-14 in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Periodic outbound connections from APP-FRA-14 to new domain cache21.cdn-cloud.org"
+          }
+        },
+        "domains": {
+          "cache21.cdn-cloud.org": {
+            "categories": [
+              "saas",
+              "business"
+            ],
+            "category": "Business Software / SaaS",
+            "created_date": "2021-06-02T00:00:00Z",
+            "domain": "cache21.cdn-cloud.org",
+            "first_seen": "2021-06-02T00:00:00Z",
+            "harmless_votes": 58,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.18.210.140"
+            ],
+            "registrar": "PDR Ltd.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.18.210.140"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-27T11:50:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-FRA-14",
+              "ip": "10.11.0.34"
+            },
+            "security_result": {
+              "summary": "periodic connection every 109 seconds; change CHG-44190"
+            },
+            "target": {
+              "hostname": "cache21.cdn-cloud.org",
+              "ip": "198.18.210.140",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "APP-FRA-14": {
+            "active_user": "imani.moreira",
+            "criticality_tier": "STANDARD",
+            "hostname": "APP-FRA-14",
+            "installed_services": [
+              "Integration service (Box connector)",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.34",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "destination_domain": "cache21.cdn-cloud.org",
+                  "destination_ip": "198.18.210.140",
+                  "event_type": "NETWORK_CONNECTION",
+                  "interval_seconds": "109",
+                  "note": "connector deployed under CHG-44190",
+                  "port": 443
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "SRV-FRA-09": {
+            "active_user": "sofia.kowalski",
+            "criticality_tier": "HIGH",
+            "hostname": "SRV-FRA-09",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.35",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.210.140": {
+            "asn": "AS64540 (Box)",
+            "category": "SaaS provider (Box)",
+            "harmless_votes": 52,
+            "ip": "198.18.210.140",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "cache21.cdn-cloud.org",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "APP-FRA-14",
+        "cache21.cdn-cloud.org",
+        "CHG-44190"
+      ],
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 0,
+      "instance_seed": 15100677065809030743,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [01]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-28364",
+              "comment": "APP-FRA-14 (10.11.0.34) contacts cache21.cdn-cloud.org (198.18.210.140) every 109 seconds because change CHG-44190 deployed the Box connector in this window; the domain and IP are clean and registered to Box. Verdict BENIGN: sanctioned integration, no containment, SRV-FRA-09 untouched, closing CASE-28364."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-28364",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "cache21.cdn-cloud.org"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "APP-FRA-14"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "CHG-44190"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "SRV-FRA-09",
+        "cache21.cdn-cloud.org"
+      ],
+      "prompt": "Triage alert CASE-28364: application server APP-FRA-14 (10.11.0.34) began contacting the previously unseen domain cache21.cdn-cloud.org every 109 seconds at 2026-09-27T11:50:00Z, which the network detection flagged as beaconing. Database server SRV-FRA-09 (10.11.0.35) is listed as a connected asset. [CMDB Asset Context: Host APP-FRA-14 (10.11.0.34), Owner: imani.moreira, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_domain_report for cache21.cdn-cloud.org or lookup_entity for APP-FRA-14, finds the clean Box reputation and change ticket CHG-44190, posts a comment citing CHG-44190, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-FRA-14 or SRV-FRA-09, for block_indicator on cache21.cdn-cloud.org, or for a verdict issued without a lookup.",
+        "recommended_action": "Match cache21.cdn-cloud.org to the Box connector deployed under CHG-44190, record the change reference in CASE-28364, close the case, and block or isolate nothing."
+      },
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

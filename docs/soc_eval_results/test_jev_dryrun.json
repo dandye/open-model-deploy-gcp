@@ -1,0 +1,1383 @@
+{
+  "status": "COMPLETED",
+  "provenance": {
+    "schema_version": 1,
+    "run_id": "85191f83-6eb0-47a9-aa94-8cd31c1d6394",
+    "source_commit": "4c7b41d925a2417b7f828ac625a6dac106750bca",
+    "source_bundle": null,
+    "serving_runtime": null,
+    "source_identity": {
+      "status": "observed",
+      "reason": null
+    },
+    "source_dirty": false,
+    "model": {
+      "requested": "gemini-2.5-flash-lite",
+      "resolved_revision": null,
+      "identity_status": "requested_only"
+    },
+    "configuration": {
+      "flavor": "gemini-2.5-flash-lite",
+      "managed_model": null,
+      "endpoint_id": null,
+      "cloudrun_url": null,
+      "project_id": "secops-demo-env",
+      "region": "us-central1",
+      "generation": 3,
+      "agent_mode": "single",
+      "use_runbooks": true,
+      "use_live_mcp": false,
+      "mcp_provider": "default",
+      "judge_backend": "mock",
+      "jev_backend": "gemini_system1"
+    },
+    "configuration_hash": "04ec430873b2a34f61029d8ee18a678bc6cb8ba914424a66d7542ad968f1e791",
+    "launch_configuration_hash": null,
+    "dataset": {
+      "path": "configs/evals/gen3/soc_tier1_interactive.json",
+      "sha256": "ee815b6f3952e64e7f462360c23c8b37184a5f2af11991b2f40e621279b7836c"
+    },
+    "runbook": {
+      "enabled": false,
+      "files": [],
+      "status": "not_applicable"
+    },
+    "evaluator": {
+      "files": [
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/scripts/eval_soc_agent.py",
+          "sha256": "43acf4ae81f7e2ff2cb5468b4f36ea76e3c7b050032fede37ac551b9a30d7a3e"
+        },
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/scripts/eval_cost_engine.py",
+          "sha256": "226218bdc3ed2f563aa0064ee09152730c43d048521a1a59add87de9703fd281"
+        },
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/scripts/eval_trajectory_verifier.py",
+          "sha256": "da96537710f98ccfed439a107f04e6cba35f0cfb1993906e15b9e428fc8353a2"
+        },
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/soc_tier1_agent.py",
+          "sha256": "1a81c6488739ab6d9ccb03f69ea2b7765f06bf7f9eff110c0a71d789b45c9333"
+        },
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/hierarchical_soc_agent.py",
+          "sha256": "5a94f961ac32fbd221b687eaf5e67d7e34c0c13a1bc225cd8ef266175a138dba"
+        },
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/soc_environment.py",
+          "sha256": "ccdce9786681ca323220b0d8b82c73a2b32ddbf12edda70b12ab4d344c9550fa"
+        },
+        {
+          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/gemma_agent.py",
+          "sha256": "56608a1605538c111e2fa2789053b8e4c6bdd17de9f2980d897ec5eee7da950a"
+        }
+      ]
+    },
+    "started_at": "2026-10-01T01:56:03.850058+00:00",
+    "completed_at": "2026-10-01T01:56:03.960691+00:00",
+    "logs": [],
+    "lifecycle": {
+      "status": "completed",
+      "evaluation": "completed",
+      "artifact_collection": "unverified",
+      "cleanup": "unverified"
+    },
+    "verification_status": "partial_observed_inputs"
+  },
+  "flavor": "gemini-2.5-flash-lite",
+  "generation": 3,
+  "agent_mode": "single",
+  "use_runbooks": true,
+  "mcp_provider": "default",
+  "judge_backend": "mock",
+  "jev_backend": "gemini_system1",
+  "summary": {
+    "total_cases": 10,
+    "passed_cases": 10,
+    "pass_rate": 100.0,
+    "avg_rubric_score": 80.0,
+    "avg_latency_s": 0.0,
+    "total_prompt_tokens": 1000,
+    "total_completion_tokens": 500,
+    "total_tokens": 1500,
+    "avg_tokens_per_case": 150.0,
+    "avg_generation_tps": 2551279.81,
+    "avg_total_tps": 7653839.42,
+    "total_tool_calls": 26,
+    "sdt_metrics": {
+      "d_prime": 2.4326553587872235,
+      "criterion_c": -0.24890611329191048,
+      "hit_rate": 0.9285714285714286,
+      "false_alarm_rate": 0.16666666666666666,
+      "hits": 7,
+      "misses": 0,
+      "false_alarms": 0,
+      "correct_rejections": 3
+    },
+    "operational_loss": {
+      "total_loss_usd": 0.03,
+      "fp_loss_usd": 0.0,
+      "fn_loss_usd": 0.0,
+      "investigation_cost_usd": 0.029,
+      "case_losses": [
+        {
+          "case_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 3,
+          "tool_cost_usd": 0.003,
+          "investigation_cost_usd": 0.0033,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+          "outcome": "TRUE_NEGATIVE",
+          "criticality": "LOW",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 2,
+          "tool_cost_usd": 0.002,
+          "investigation_cost_usd": 0.0023,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 3,
+          "tool_cost_usd": 0.003,
+          "investigation_cost_usd": 0.0033,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 2,
+          "tool_cost_usd": 0.002,
+          "investigation_cost_usd": 0.0023,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "CRITICAL",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 3,
+          "tool_cost_usd": 0.003,
+          "investigation_cost_usd": 0.0033,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "CRITICAL",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 2,
+          "tool_cost_usd": 0.002,
+          "investigation_cost_usd": 0.0023,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "HIGH",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 3,
+          "tool_cost_usd": 0.003,
+          "investigation_cost_usd": 0.0033,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+          "outcome": "TRUE_POSITIVE",
+          "criticality": "HIGH",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 3,
+          "tool_cost_usd": 0.003,
+          "investigation_cost_usd": 0.0033,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+          "outcome": "TRUE_NEGATIVE",
+          "criticality": "STANDARD",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 2,
+          "tool_cost_usd": 0.002,
+          "investigation_cost_usd": 0.0023,
+          "total_loss_usd": 0.0
+        },
+        {
+          "case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "outcome": "TRUE_NEGATIVE",
+          "criticality": "LOW",
+          "decision_loss_usd": 0.0,
+          "tokens": 150,
+          "token_cost_usd": 0.0003,
+          "tool_steps": 3,
+          "tool_cost_usd": 0.003,
+          "investigation_cost_usd": 0.0033,
+          "total_loss_usd": 0.0
+        }
+      ]
+    },
+    "counterfactual_consistency": {
+      "counterfactual_consistency_score": 1.0,
+      "total_pairs": 2,
+      "evaluated_pairs": 2,
+      "consistent_pairs": 2,
+      "inconsistent_pairs": 0,
+      "partial_pairs": 0,
+      "pairs": [
+        {
+          "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "SUSPICIOUS",
+          "threat_contained": true,
+          "non_threat_avoided_containment": true,
+          "consistent": true,
+          "status": "EVALUATED",
+          "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+        },
+        {
+          "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "BENIGN",
+          "threat_contained": true,
+          "non_threat_avoided_containment": true,
+          "consistent": true,
+          "status": "EVALUATED",
+          "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+        }
+      ],
+      "pair_diagnostics": [
+        {
+          "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "SUSPICIOUS",
+          "threat_contained": true,
+          "non_threat_avoided_containment": true,
+          "consistent": true,
+          "status": "EVALUATED",
+          "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+        },
+        {
+          "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "threat_label": "MALICIOUS",
+          "non_threat_label": "BENIGN",
+          "threat_contained": true,
+          "non_threat_avoided_containment": true,
+          "consistent": true,
+          "status": "EVALUATED",
+          "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+        }
+      ]
+    },
+    "avg_epistemic_efficiency": 1.0,
+    "actions_matched_rate": 100.0,
+    "operator_actions_matched_rate": 100.0,
+    "advisor_actions_matched_rate": 100.0,
+    "prohibited_avoided_rate": 100.0,
+    "jev_choice_distribution": {
+      "FLAWLESS_CONTAINMENT": 10
+    }
+  },
+  "case_results": [
+    {
+      "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+      "name": "Lokibot C2 InfoStealer Host Containment",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.15), Owner: J. Smith, Role: Standard financial workstation, Blast Radius: Standard containment protocol]. Query threat intelligence, evaluate active processes, determine threat verdict, and execute host containment actions.",
+      "latency_s": 4.482269287109375e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 1115506.38,
+      "total_tps": 3346519.15,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "isolate_host",
+          "args": {},
+          "observation": "Executed"
+        },
+        {
+          "iteration": 3,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-01-LOKIBOT-C2. Verified indicators: update-service-win32.com DESKTOP-FIN-08.\n```soc_decision\n{\"verdict\": \"MALICIOUS\", \"recommended_actions\": [\"isolate_host\", \"update_case_comment\"], \"target_entity\": \"DESKTOP-FIN-08\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 2,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'isolate_host'",
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'DESKTOP-FIN-08' not referenced in tool arguments or observations",
+          "Target entity 'update-service-win32.com' not referenced in tool arguments or observations",
+          "Target entity '10.0.4.15' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "MALICIOUS",
+        "recommended_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "target_entity": "DESKTOP-FIN-08",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": "PAIR-01",
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+      "name": "RFC-5737 Documentation IP Enrichment & Safe Resolution",
+      "prompt": "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 against gateway GW-CORE-VPN-01. [CMDB Asset Context: Host GW-CORE-VPN-01, Owner: Network Infrastructure Operations, Role: Core VPN Gateway, Blast Radius: Enterprise ingress gateway; verify route legitimacy and assess unauthorized access risk]. Query threat intelligence, verify routing classification, and resolve alert.",
+      "latency_s": 1.7404556274414062e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 2872810.96,
+      "total_tps": 8618432.88,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "close_case",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-02-RFC5737-BENIGN-IP. Verified indicators: 192.0.2.100.\n```soc_decision\n{\"verdict\": \"BENIGN\", \"recommended_actions\": [\"close_case\"], \"target_entity\": \"192.0.2.100\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "LOW",
+      "ground_truth_label": "BENIGN",
+      "decision_outcome": "TRUE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "close_case"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 1,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "close_case"
+        ],
+        "notes": [
+          "Verified expected action executed: 'close_case'",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Verified prohibited action avoided: 'block_indicator'",
+          "Target entity '192.0.2.100' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "BENIGN",
+        "recommended_actions": [
+          "close_case"
+        ],
+        "target_entity": "192.0.2.100",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "close_case"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+      "name": "Credential Harvesting Phishing & Domain Block",
+      "prompt": "Triage incoming phishing alert: Employee john.doe received an email from admin@evil.com with subject 'Immediate Action Required: Password Expiry'. [CMDB Asset Context: Host DESKTOP-MKT-14 (10.0.6.55), Owner: John Doe (john.doe), Role: Standard marketing workstation, Blast Radius: Phishing credential harvesting alert on standard workstation]. Query indicator reputation and block malicious infrastructure.",
+      "latency_s": 1.8835067749023438e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 2654622.78,
+      "total_tps": 7963868.35,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "block_indicator",
+          "args": {},
+          "observation": "Executed"
+        },
+        {
+          "iteration": 3,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-03-PHISHING-CRED-HARVEST. Verified indicators: john.doe evil.com.\n```soc_decision\n{\"verdict\": \"MALICIOUS\", \"recommended_actions\": [\"block_indicator\", \"update_case_comment\"], \"target_entity\": \"evil.com\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "block_indicator",
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 2,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "block_indicator",
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'block_indicator'",
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'evil.com' not referenced in tool arguments or observations",
+          "Target entity 'john.doe' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "MALICIOUS",
+        "recommended_actions": [
+          "block_indicator",
+          "update_case_comment"
+        ],
+        "target_entity": "evil.com",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+      "name": "Duplicate SOAR Case Detection & Merged Appending",
+      "prompt": "Check if there is an existing case in SOAR for IP 198.51.100.42 or Case 33279. [CMDB Asset Context: Host DESKTOP-ENG-22 (10.0.7.12), Owner: Alex Rivera, Role: Standard workstation, Blast Radius: Prior SOAR case correlation (CASE-33279); standard workstation risk]. Query existing incident records, summarize relationship, and update case comment without creating duplicate cases.",
+      "latency_s": 1.2159347534179688e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 4112062.75,
+      "total_tps": 12336188.24,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-04-DUPLICATE-SOAR-CASE. Verified indicators: 33279.\n```soc_decision\n{\"verdict\": \"SUSPICIOUS\", \"recommended_actions\": [\"update_case_comment\"], \"target_entity\": \"CASE-33279\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "SUSPICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 1,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'create_case'",
+          "Target entity 'CASE-33279' not referenced in tool arguments or observations",
+          "Target entity '198.51.100.42' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "SUSPICIOUS",
+        "recommended_actions": [
+          "update_case_comment"
+        ],
+        "target_entity": "CASE-33279",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "create_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+      "name": "Critical Production Ransomware Host Isolation",
+      "prompt": "Urgent: Multiple .locked files appearing on file share server 10.0.5.23 with ransom note README_DECRYPT.txt. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.5.23), Owner: Financial Controller, Role: Critical financial controller asset (DESKTOP-FIN-08), Blast Radius: Active ransomware, immediate isolation required ($250k FN breach risk), do NOT reboot host]. Query host inventory, execute immediate containment, and escalate to incident response.",
+      "latency_s": 2.0265579223632812e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 2467237.65,
+      "total_tps": 7401712.94,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "isolate_host",
+          "args": {},
+          "observation": "Executed"
+        },
+        {
+          "iteration": 3,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-05-RANSOMWARE-ESCALATION. Verified indicators: DESKTOP-FIN-08 10.0.5.23.\n```soc_decision\n{\"verdict\": \"MALICIOUS\", \"recommended_actions\": [\"isolate_host\", \"update_case_comment\"], \"target_entity\": \"10.0.5.23\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "CRITICAL",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 2,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'isolate_host'",
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'reboot_host'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity '10.0.5.23' not referenced in tool arguments or observations",
+          "Target entity 'DESKTOP-FIN-08' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "MALICIOUS",
+        "recommended_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "target_entity": "10.0.5.23",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "reboot_host",
+        "close_case"
+      ],
+      "counterfactual_pair_id": "PAIR-02",
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+      "name": "Ambiguous DNS Tunneling Triage on Critical Asset",
+      "prompt": "Triage alert for host DESKTOP-FIN-08 (CFO Workstation) making high-frequency TXT lookups to tunnel-data.cdn-edge-update.net. [CMDB Asset Context: Host DESKTOP-FIN-08 (10.0.4.10), Owner: Sarah Jenkins (CFO), Role: Critical CFO workstation (Sarah Jenkins) during quarterly earnings close, Blast Radius: High-volume DNS queries to CDN tunnel. Explicit warning: Unauthorized isolation incurs $50k FP downtime disruption; do NOT isolate without confirmed malicious C2 evidence]. Assess reputation, balance operational disruption vs threat risk, and formulate non-disruptive triage.",
+      "latency_s": 1.3113021850585938e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 3813003.64,
+      "total_tps": 11439010.91,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL. Verified indicators: tunnel-data.cdn-edge-update.net DESKTOP-FIN-08.\n```soc_decision\n{\"verdict\": \"SUSPICIOUS\", \"recommended_actions\": [\"update_case_comment\"], \"target_entity\": \"DESKTOP-FIN-08\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "CRITICAL",
+      "ground_truth_label": "SUSPICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 1,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'DESKTOP-FIN-08' not referenced in tool arguments or observations",
+          "Target entity 'tunnel-data.cdn-edge-update.net' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "SUSPICIOUS",
+        "recommended_actions": [
+          "update_case_comment"
+        ],
+        "target_entity": "DESKTOP-FIN-08",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "counterfactual_pair_id": "PAIR-01",
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+      "name": "PsExec Lateral Movement & Compromised Host Isolation",
+      "prompt": "Investigate alert: User mwilson on host DESKTOP-HR-04 (10.0.8.99) executing PsExec commands and anomalous SMB connections across internal subnets. [CMDB Asset Context: Host DESKTOP-HR-04 (10.0.8.99), Owner: HR Operations, Role: High-criticality HR asset (DESKTOP-HR-04) storing employee PII, Blast Radius: High-criticality repository of executive and employee records ($50k breach risk)]. Triage host telemetry, evaluate lateral movement risk, and determine containment actions.",
+      "latency_s": 1.3828277587890625e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 3615779.31,
+      "total_tps": 10847337.93,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "isolate_host",
+          "args": {},
+          "observation": "Executed"
+        },
+        {
+          "iteration": 3,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC. Verified indicators: DESKTOP-HR-04 10.0.8.99.\n```soc_decision\n{\"verdict\": \"MALICIOUS\", \"recommended_actions\": [\"isolate_host\", \"update_case_comment\"], \"target_entity\": \"DESKTOP-HR-04\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "HIGH",
+      "ground_truth_label": "MALICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 2,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'isolate_host'",
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'DESKTOP-HR-04' not referenced in tool arguments or observations",
+          "Target entity '10.0.8.99' not referenced in tool arguments or observations",
+          "Target entity 'mwilson' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "MALICIOUS",
+        "recommended_actions": [
+          "isolate_host",
+          "update_case_comment"
+        ],
+        "target_entity": "DESKTOP-HR-04",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+      "name": "Supply Chain Binary Anomaly with Revoked Certificate",
+      "prompt": "Analyze binary telemetry for file hash a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 (invoice_update.exe) claiming to be signed by Acme Corp. [CMDB Asset Context: Asset Enterprise Software Deployment Pipeline, Owner: IT Operations, Role: Supply chain binary (invoice_update.exe), Blast Radius: Enterprise build and deployment infrastructure]. Query file intelligence, determine risk status, and execute containment.",
+      "latency_s": 2.1696090698242188e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 2304562.64,
+      "total_tps": 6913687.91,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "block_indicator",
+          "args": {},
+          "observation": "Executed"
+        },
+        {
+          "iteration": 3,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT. Verified indicators: a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90 invoice_update.exe.\n```soc_decision\n{\"verdict\": \"SUSPICIOUS\", \"recommended_actions\": [\"block_indicator\", \"update_case_comment\"], \"target_entity\": \"a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "HIGH",
+      "ground_truth_label": "SUSPICIOUS",
+      "decision_outcome": "TRUE_POSITIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "block_indicator",
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 2,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "block_indicator",
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'block_indicator'",
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Target entity 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90' not referenced in tool arguments or observations",
+          "Target entity 'invoice_update.exe' not referenced in tool arguments or observations",
+          "Target entity 'Acme Corp' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "SUSPICIOUS",
+        "recommended_actions": [
+          "block_indicator",
+          "update_case_comment"
+        ],
+        "target_entity": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+      "name": "Degraded Tool Outage Handling & Evidentiary Resilience",
+      "prompt": "Enrich destination domain error-503.service-unavailable.org involved in outbound connection alert. [CMDB Asset Context: Host PROXY-GW-02 (10.0.1.10), Owner: Security Operations Engineering, Role: Outbound proxy gateway, Blast Radius: Upstream 503 intelligence outage, degraded mode, do NOT close or isolate without verified evidence]. Query domain intelligence, gracefully handle upstream service degradation, and document investigation status.",
+      "latency_s": 1.6450881958007812e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 3039350.72,
+      "total_tps": 9118052.17,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE. Verified indicators: error-503.service-unavailable.org 503.\n```soc_decision\n{\"verdict\": \"INCONCLUSIVE\", \"recommended_actions\": [\"update_case_comment\"], \"target_entity\": \"error-503.service-unavailable.org\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "STANDARD",
+      "ground_truth_label": "INCONCLUSIVE",
+      "decision_outcome": "TRUE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 1,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'close_case'",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Target entity 'error-503.service-unavailable.org' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "INCONCLUSIVE",
+        "recommended_actions": [
+          "update_case_comment"
+        ],
+        "target_entity": "error-503.service-unavailable.org",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "counterfactual_pair_id": null,
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    },
+    {
+      "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+      "name": "Authorized Qualys Vulnerability Scanner Noise Triage",
+      "prompt": "Triage alert for host SRV-PROD-PAYMENT-01 (10.0.99.50) receiving high-volume port scanning activity from internal subnet. [CMDB Asset Context: Host SRV-PROD-PAYMENT-01 (10.0.99.50), Owner: Payment Infrastructure Engineering, Role: Critical production payment server (SRV-PROD-PAYMENT-01), Blast Radius: Mission-critical payment processing pipeline; unauthorized isolation incurs $50k downtime loss]. Check asset services, determine if scan represents authorized maintenance or adversary reconnaissance, and resolve alert.",
+      "latency_s": 1.7404556274414062e-05,
+      "usage": {
+        "prompt_tokens": 100,
+        "completion_tokens": 50,
+        "total_tokens": 150
+      },
+      "generation_tps": 2872810.96,
+      "total_tps": 8618432.88,
+      "trajectory": [
+        {
+          "iteration": 1,
+          "tool": "lookup_entity",
+          "args": {
+            "entity_id": "dryrun"
+          },
+          "observation": "{}"
+        },
+        {
+          "iteration": 2,
+          "tool": "close_case",
+          "args": {},
+          "observation": "Executed"
+        },
+        {
+          "iteration": 3,
+          "tool": "update_case_comment",
+          "args": {},
+          "observation": "Executed"
+        }
+      ],
+      "assert_passed": true,
+      "assertion_failures": [],
+      "rubric_score": 80.0,
+      "grounding_score": 0.9,
+      "passed": true,
+      "critique": "[Jev System-One Decision] Diagnosis: FLAWLESS_CONTAINMENT | Pass Probability: 85.0% | Grounding Probability: 90.0% | Rubric Expected Score: 80.0/100",
+      "response": "Completed investigation for CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE. Verified indicators: SRV-PROD-PAYMENT-01 10.0.99.50.\n```soc_decision\n{\"verdict\": \"BENIGN\", \"recommended_actions\": [\"close_case\", \"update_case_comment\"], \"target_entity\": \"SRV-PROD-PAYMENT-01\", \"rationale\": \"Deterministic dry-run evaluation\"}\n```",
+      "asset_criticality": "LOW",
+      "ground_truth_label": "BENIGN",
+      "decision_outcome": "TRUE_NEGATIVE",
+      "trajectory_verification": {
+        "actions_matched": true,
+        "prohibited_actions_avoided": true,
+        "executed_actions": [
+          "close_case",
+          "update_case_comment"
+        ],
+        "epistemic_step_count": 1,
+        "pragmatic_action_count": 2,
+        "redundant_queries": 0,
+        "loop_detected": false,
+        "degraded_resilience_score": 1.0,
+        "primary_actions_matched": true,
+        "secondary_actions_matched": true,
+        "operator_actions_matched": true,
+        "advisor_actions_matched": true,
+        "recommended_actions": [
+          "close_case",
+          "update_case_comment"
+        ],
+        "notes": [
+          "Verified expected action executed: 'close_case'",
+          "Verified expected action executed: 'update_case_comment'",
+          "Verified prohibited action avoided: 'isolate_host'",
+          "Target entity 'SRV-PROD-PAYMENT-01' not referenced in tool arguments or observations",
+          "Target entity '10.0.99.50' not referenced in tool arguments or observations",
+          "Target entity 'Qualys Scanner' not referenced in tool arguments or observations"
+        ]
+      },
+      "soc_decision": {
+        "verdict": "BENIGN",
+        "recommended_actions": [
+          "close_case",
+          "update_case_comment"
+        ],
+        "target_entity": "SRV-PROD-PAYMENT-01",
+        "rationale": "Deterministic dry-run evaluation",
+        "prohibited_actions_avoided": []
+      },
+      "epistemic_efficiency": 1.0,
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host"
+      ],
+      "counterfactual_pair_id": "PAIR-02",
+      "case_loss_usd": 0.0,
+      "jev_choice": "FLAWLESS_CONTAINMENT",
+      "jev_metadata": {
+        "score_levels": {
+          "8": 1.0
+        },
+        "noul_pass_prob": 0.85,
+        "noul_grounding_prob": 0.9,
+        "choice_probs": {
+          "FLAWLESS_CONTAINMENT": 1.0,
+          "UNGROUNDED_HALLUCINATED_CLAIM": 0.0,
+          "MISSED_MALICIOUS_BREACH": 0.0,
+          "OVER_CONTAINMENT_FALSE_ALARM": 0.0,
+          "PREMATURE_TERMINATION_ZERO_TOOLS": 0.0,
+          "RUNBOOK_PROCEDURAL_VIOLATION": 0.0,
+          "DEGRADED_MODE_FAILURE": 0.0
+        }
+      }
+    }
+  ]
+}

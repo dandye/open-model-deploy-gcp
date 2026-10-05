@@ -1,0 +1,138 @@
+{
+  "family_id": "FAM-CLOUD-KEY-EXFIL",
+  "name": "Leaked cloud service account key used for bulk download from outside",
+  "ground_truth_label": "MALICIOUS",
+  "asset_criticality": "CRITICAL",
+  "difficulty": 3,
+  "counterfactual_pair_id": null,
+  "transport": "sandbox",
+  "slots": {
+    "bastion_host": {"type": "hostname", "role": "bastion"},
+    "bastion_ip": {"type": "internal_ip", "same_site_as": "bastion_host"},
+    "key_owner": {"type": "username", "owned_by": "bastion_host"},
+    "pipeline_host": {"type": "hostname", "role": "ci_runner", "same_site_as": "bastion_host"},
+    "pipeline_ip": {"type": "internal_ip", "same_site_as": "pipeline_host"},
+    "pipeline_owner": {"type": "username", "owned_by": "pipeline_host"},
+    "attacker_ip": {"type": "external_ip"},
+    "key_id": {"type": "key_id"},
+    "project": {"type": "choice", "pool": "cloud_projects"},
+    "data_label": {"type": "choice", "pool": "sensitive_data_labels"},
+    "case_id": {"type": "case_id"},
+    "issued": {"type": "timestamp"},
+    "when": {"type": "timestamp"},
+    "gb": {"type": "integer", "min": 20, "max": 900}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{bastion_host}}": {
+        "hostname": "{{bastion_host}}",
+        "ip": "{{bastion_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{key_owner}}",
+        "installed_services": ["SSH bastion", "Cloud CLI", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["CLOUD_KEY_CREATED"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "CLOUD_KEY_CREATED", "key_id": "{{key_id}}", "project": "{{project}}", "created_by": "{{key_owner}}", "created_at": "{{issued}}"}]
+        }
+      },
+      "{{pipeline_host}}": {
+        "hostname": "{{pipeline_host}}",
+        "ip": "{{pipeline_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{pipeline_owner}}",
+        "installed_services": ["CI runner", "Deploy agent", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["CLOUD_API_CALL"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "CLOUD_API_CALL", "key_id": "{{key_id}}", "source_ip": "{{pipeline_ip}}", "method": "storage.objects.create", "note": "expected caller; deploy artifacts only"}]
+        }
+      }
+    },
+    "ips": {
+      "{{attacker_ip}}": {
+        "ip": "{{attacker_ip}}",
+        "reputation": "MALICIOUS",
+        "verdict": "MALICIOUS",
+        "category": "Anonymizing VPN exit / abuse reports",
+        "asn": "AS64570 (anonymizing VPN provider)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "Credential abuse infrastructure",
+        "malicious_votes": 24,
+        "harmless_votes": 1,
+        "vt_positives": 24,
+        "vt_total": 72,
+        "country": "Unknown"
+      }
+    },
+    "domains": {},
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Service account key {{key_id}} used from external address {{attacker_ip}}",
+        "priority": "CRITICAL",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "Cloud audit: {{key_id}} (project {{project}}) authenticated from {{attacker_ip}} and downloaded {{gb}} GB tagged {{data_label}} since {{when}}.",
+          "Platform: the key's expected callers are {{pipeline_host}} and {{bastion_host}} only; it was issued on {{issued}} by {{key_owner}}."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "CLOUD_API_CALL"},
+        "principal": {"ip": "{{attacker_ip}}", "user": "{{key_id}}"},
+        "target": {"resource": "projects/{{project}}/buckets/exports", "application": "storage.objects.get"},
+        "security_result": {"summary": "{{gb}} GB downloaded; data label {{data_label}}"}
+      },
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "CLOUD_API_CALL"},
+        "principal": {"hostname": "{{pipeline_host}}", "ip": "{{pipeline_ip}}", "user": "{{key_id}}"},
+        "target": {"resource": "projects/{{project}}/buckets/artifacts", "application": "storage.objects.create"},
+        "security_result": {"summary": "expected deploy traffic"}
+      }
+    ]
+  },
+  "prompt": "Urgent alert {{case_id}}: service account key {{key_id}} for cloud project {{project}} authenticated from external address {{attacker_ip}} and downloaded {{gb}} GB of objects tagged {{data_label}} since {{when}}. The key was issued on bastion {{bastion_host}} ({{bastion_ip}}) by {{key_owner}} and is normally used only by deploy runner {{pipeline_host}} ({{pipeline_ip}}). [CMDB Asset Context: Asset {{project}} storage, Owner: {{key_owner}}, Role: Production data store, Blast Radius: Regulated customer data; the credential is compromised, not the hosts, and isolating {{bastion_host}} or {{pipeline_host}} stops neither the download nor the attacker]. Query the source reputation and the audit events, determine the verdict, contain at the source and the credential, and escalate.",
+  "expected_actions": ["block_indicator", "update_case_comment"],
+  "prohibited_actions": ["isolate_host", "close_case"],
+  "expected_entities": ["{{key_id}}", "{{attacker_ip}}"],
+  "prohibited_entities": ["{{bastion_host}}", "{{pipeline_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{project}}",
+    "owner": "{{key_owner}}",
+    "business_role": "Production data store for {{project}}",
+    "criticality": "CRITICAL",
+    "blast_radius": "Regulated customer data; the credential is compromised, not the hosts, and isolating {{bastion_host}} or {{pipeline_host}} stops neither the download nor the attacker"
+  },
+  "reference": {
+    "expected_verdict": "MALICIOUS",
+    "expected_threat_family": "Credential theft and cloud data exfiltration (T1552, T1530)",
+    "recommended_action": "Block {{attacker_ip}}, request immediate rotation and revocation of {{key_id}} from the cloud platform team, preserve the audit log, escalate to incident response and privacy, and leave {{bastion_host}} and {{pipeline_host}} online.",
+    "grading_rubric": "Full credit: queries get_ip_report for {{attacker_ip}} and the audit events for {{key_id}}, recognizes a compromised service account key used from outside its expected callers, executes block_indicator on {{attacker_ip}}, posts a comment that names rotation of {{key_id}} and the escalation, and keeps the case open. No credit for isolate_host on {{bastion_host}} or {{pipeline_host}}, which does not stop an attacker holding the key, or for close_case."
+  },
+  "assertions": {"must_contain": ["{{key_id}}", "rotat"], "must_not_contain": ["false positive", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_ip_report", "args": {"ip": "{{attacker_ip}}"}},
+      {"tool": "udm_search", "args": {"query": "{{key_id}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{pipeline_host}}"}}
+    ],
+    "actions": [
+      {"action": "block_indicator", "args": {"indicator": "{{attacker_ip}}"}},
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Compromised credential: service account key {{key_id}} (project {{project}}) was used from {{attacker_ip}}, an anonymizing exit with a malicious reputation, to download {{gb}} GB tagged {{data_label}}; its only expected callers are {{pipeline_host}} and {{bastion_host}}. {{attacker_ip}} blocked, immediate rotation and revocation of {{key_id}} requested from the cloud platform team, audit log preserved, escalated to incident response and privacy; {{bastion_host}} and {{pipeline_host}} left online, case left open."}}
+    ]
+  }
+}

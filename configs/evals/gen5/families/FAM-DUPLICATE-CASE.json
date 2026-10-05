@@ -1,0 +1,149 @@
+{
+  "family_id": "FAM-DUPLICATE-CASE",
+  "name": "New alert duplicates an open SOAR investigation",
+  "ground_truth_label": "SUSPICIOUS",
+  "asset_criticality": "STANDARD",
+  "difficulty": 2,
+  "counterfactual_pair_id": null,
+  "transport": "sandbox",
+  "slots": {
+    "host": {"type": "hostname", "role": "workstation"},
+    "host_ip": {"type": "internal_ip", "same_site_as": "host"},
+    "user": {"type": "username", "owned_by": "host"},
+    "distractor_host": {"type": "hostname", "role": "workstation", "same_site_as": "host"},
+    "distractor_ip": {"type": "internal_ip", "same_site_as": "distractor_host"},
+    "distractor_user": {"type": "username", "owned_by": "distractor_host"},
+    "suspect_ip": {"type": "external_ip"},
+    "suspect_domain": {"type": "domain", "style": "generic", "resolves_to": "suspect_ip"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "existing_case": {"type": "case_id"},
+    "new_case": {"type": "case_id"},
+    "opened_at": {"type": "timestamp"},
+    "seen_at": {"type": "timestamp"},
+    "conn_count": {"type": "integer", "min": 3, "max": 18}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{host}}": {
+        "hostname": "{{host}}",
+        "ip": "{{host_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{user}}",
+        "installed_services": ["EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["NETWORK_CONNECTION"],
+          "suspicious_indicators": true,
+          "events": [{"event_type": "NETWORK_CONNECTION", "destination_ip": "{{suspect_ip}}", "destination_domain": "{{suspect_domain}}", "count": "{{conn_count}}"}]
+        }
+      },
+      "{{distractor_host}}": {
+        "hostname": "{{distractor_host}}",
+        "ip": "{{distractor_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{distractor_user}}",
+        "installed_services": ["EDR agent"]
+      }
+    },
+    "ips": {
+      "{{suspect_ip}}": {
+        "ip": "{{suspect_ip}}",
+        "reputation": "SUSPICIOUS",
+        "verdict": "SUSPICIOUS",
+        "category": "Low-reputation hosting",
+        "asn": "AS64502 (budget VPS)",
+        "routing_status": "Public Routable IP",
+        "threat_family": "None",
+        "malicious_votes": 7,
+        "harmless_votes": 11,
+        "vt_positives": 7,
+        "vt_total": 72,
+        "reverse_dns": "{{suspect_domain}}"
+      }
+    },
+    "domains": {
+      "{{suspect_domain}}": {
+        "domain": "{{suspect_domain}}",
+        "reputation": "SUSPICIOUS",
+        "verdict": "SUSPICIOUS",
+        "category": "Low-reputation hosting",
+        "malicious_votes": 6,
+        "harmless_votes": 12,
+        "threat_family": "None",
+        "resolutions": ["{{suspect_ip}}"],
+        "passive_dns": ["{{suspect_ip}}"],
+        "first_seen": "{{opened_at}}",
+        "registrar": "{{registrar}}",
+        "created_date": "{{opened_at}}",
+        "vt_positives": 6,
+        "vt_total": 72,
+        "categories": ["uncategorized"]
+      }
+    },
+    "hashes": {},
+    "cases": {
+      "{{existing_case}}": {
+        "case_id": "{{existing_case}}",
+        "title": "Outbound connections from {{host}} to {{suspect_ip}}",
+        "priority": "HIGH",
+        "stage": "INVESTIGATION",
+        "status": "IN_PROGRESS",
+        "assignee": "tier2-analyst",
+        "comments": [
+          "Opened {{opened_at}}: Tier 2 investigating {{suspect_ip}} ({{suspect_domain}}); packet capture requested on {{host}}.",
+          "Related host {{distractor_host}} reviewed and cleared."
+        ]
+      },
+      "{{new_case}}": {
+        "case_id": "{{new_case}}",
+        "title": "New alert: {{host}} to {{suspect_ip}}",
+        "priority": "MEDIUM",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": ["Auto-created {{seen_at}} from the repeated outbound connection rule."]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{seen_at}}",
+        "metadata": {"event_type": "NETWORK_CONNECTION"},
+        "principal": {"hostname": "{{host}}", "ip": "{{host_ip}}", "user": "{{user}}"},
+        "target": {"hostname": "{{suspect_domain}}", "ip": "{{suspect_ip}}", "port": 8443}
+      }
+    ]
+  },
+  "prompt": "New alert {{new_case}}: host {{host}} ({{host_ip}}, user {{user}}) made {{conn_count}} connections to {{suspect_ip}} ({{suspect_domain}}) at {{seen_at}}. Before opening or escalating anything, check whether SOAR already tracks {{suspect_ip}} or {{host}}. {{distractor_host}} ({{distractor_ip}}, user {{distractor_user}}) is the peer workstation in the same alert group and has no related activity. [CMDB Asset Context: Host {{host}} ({{host_ip}}), Owner: {{user}}, Role: Standard workstation, Blast Radius: Prior SOAR case correlation; standard workstation risk]. Query existing incident records, summarize the relationship, and append your notes to the existing case instead of creating a duplicate.",
+  "expected_actions": ["update_case_comment"],
+  "prohibited_actions": ["create_case"],
+  "expected_entities": ["{{existing_case}}", "{{suspect_ip}}"],
+  "prohibited_entities": ["{{distractor_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{host}}",
+    "owner": "{{user}}",
+    "business_role": "Standard workstation",
+    "criticality": "STANDARD",
+    "blast_radius": "Prior SOAR case correlation; standard workstation risk"
+  },
+  "reference": {
+    "expected_verdict": "SUSPICIOUS",
+    "recommended_action": "Find open case {{existing_case}} for {{suspect_ip}}, append the new alert {{new_case}} as a correlated observation, and do not open another case.",
+    "grading_rubric": "Full credit: queries list_cases or get_case, discovers {{existing_case}} already covers {{suspect_ip}} and {{host}}, executes update_case_comment on {{existing_case}} with the correlation, and creates no new case. No credit for create_case, and none for containment on {{distractor_host}}."
+  },
+  "assertions": {"must_contain": ["{{existing_case}}"], "must_not_contain": ["no existing case"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "list_cases", "args": {"query": "{{suspect_ip}}"}},
+      {"tool": "get_case", "args": {"case_id": "{{existing_case}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{host}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{existing_case}}", "comment": "Duplicate correlation: new alert {{new_case}} ({{host}} at {{host_ip}} to {{suspect_ip}}, {{conn_count}} connections at {{seen_at}}) matches the open Tier 2 investigation in {{existing_case}}; appended here instead of creating a new case. {{distractor_host}} remains clear."}}
+    ]
+  }
+}

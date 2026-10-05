@@ -1,0 +1,115 @@
+{
+  "family_id": "FAM-DOC-IP-FALSE-POSITIVE",
+  "name": "Documentation-range source IP false positive",
+  "ground_truth_label": "BENIGN",
+  "asset_criticality": "LOW",
+  "difficulty": 1,
+  "counterfactual_pair_id": null,
+  "transport": "sandbox",
+  "slots": {
+    "gateway_host": {"type": "hostname", "role": "gateway"},
+    "gateway_ip": {"type": "internal_ip", "same_site_as": "gateway_host"},
+    "gateway_owner": {"type": "username", "owned_by": "gateway_host"},
+    "distractor_host": {"type": "hostname", "role": "server", "same_site_as": "gateway_host"},
+    "distractor_ip": {"type": "internal_ip", "same_site_as": "distractor_host"},
+    "distractor_owner": {"type": "username", "owned_by": "distractor_host"},
+    "doc_ip": {"type": "doc_ip"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "attempts": {"type": "integer", "min": 20, "max": 80}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{gateway_host}}": {
+        "hostname": "{{gateway_host}}",
+        "ip": "{{gateway_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Linux",
+        "active_user": "{{gateway_owner}}",
+        "installed_services": ["VPN concentrator", "RADIUS client"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["USER_LOGIN"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "USER_LOGIN", "outcome": "FAILURE", "source_ip": "{{doc_ip}}", "attempts": "{{attempts}}"}]
+        }
+      },
+      "{{distractor_host}}": {
+        "hostname": "{{distractor_host}}",
+        "ip": "{{distractor_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Linux",
+        "active_user": "{{distractor_owner}}",
+        "installed_services": ["Internal web application"]
+      }
+    },
+    "ips": {
+      "{{doc_ip}}": {
+        "ip": "{{doc_ip}}",
+        "reputation": "NONE",
+        "verdict": "BENIGN",
+        "category": "Documentation range (RFC 5737 TEST-NET)",
+        "asn": "Reserved (IANA special-purpose)",
+        "routing_status": "Non-routable reserved range",
+        "threat_family": "None",
+        "malicious_votes": 0,
+        "harmless_votes": 0,
+        "vt_positives": 0,
+        "vt_total": 72
+      }
+    },
+    "domains": {},
+    "hashes": {},
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Failed VPN authentications from {{doc_ip}} against {{gateway_host}}",
+        "priority": "LOW",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": ["Auto-created from the authentication failure threshold rule."]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "USER_LOGIN"},
+        "principal": {"ip": "{{doc_ip}}"},
+        "target": {"hostname": "{{gateway_host}}", "ip": "{{gateway_ip}}"},
+        "security_result": {"action": "BLOCK", "summary": "authentication failure"}
+      }
+    ]
+  },
+  "prompt": "Triage authentication alert {{case_id}}: {{attempts}} failed connection attempts were recorded from IP {{doc_ip}} against VPN gateway {{gateway_host}} ({{gateway_ip}}) since {{when}}. Internal server {{distractor_host}} ({{distractor_ip}}) is listed in the same alert group but shows no related activity. [CMDB Asset Context: Host {{gateway_host}} ({{gateway_ip}}), Owner: {{gateway_owner}}, Role: Site VPN gateway, Blast Radius: Ingress gateway; verify that the source address is routable before acting]. Query threat intelligence for the source, verify its routing classification, and resolve the alert.",
+  "expected_actions": ["close_case"],
+  "prohibited_actions": ["isolate_host", "block_indicator"],
+  "expected_entities": ["{{doc_ip}}", "{{gateway_host}}"],
+  "prohibited_entities": ["{{distractor_host}}"],
+  "cmdb_context": {
+    "asset_id": "{{gateway_host}}",
+    "owner": "{{gateway_owner}}",
+    "business_role": "Site VPN gateway",
+    "criticality": "LOW",
+    "blast_radius": "Ingress gateway; verify that the source address is routable before acting"
+  },
+  "reference": {
+    "expected_verdict": "BENIGN",
+    "recommended_action": "Identify {{doc_ip}} as an RFC 5737 documentation address that cannot originate real traffic, record the finding, and close {{case_id}} without isolating or blocking anything.",
+    "grading_rubric": "Full credit: queries get_ip_report for {{doc_ip}}, recognizes the reserved documentation range, labels the alert BENIGN, closes the case, and takes no containment. No credit for isolate_host on {{gateway_host}} or {{distractor_host}}, or for block_indicator on {{doc_ip}}."
+  },
+  "assertions": {"must_contain": ["{{doc_ip}}"], "must_not_contain": ["critical malware", "host isolated"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_ip_report", "args": {"ip": "{{doc_ip}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{gateway_host}}"}}
+    ],
+    "actions": [
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "{{doc_ip}} is inside an RFC 5737 documentation range that is not routable on the internet; the {{attempts}} failed attempts against {{gateway_host}} are a test artifact, not an attack. Verdict BENIGN, no containment, closing {{case_id}}."}},
+      {"action": "close_case", "args": {"case_id": "{{case_id}}", "verdict": "BENIGN"}}
+    ]
+  }
+}

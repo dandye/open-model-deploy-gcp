@@ -1,0 +1,264 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "PC-TOR-76",
+          "10.14.0.70"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "PC-TOR-76",
+        "blast_radius": "Credential theft and lateral movement risk; DC-TOR-69 is the site domain controller and must stay online",
+        "business_role": "Legal workstation with access to employee records",
+        "criticality": "HIGH",
+        "owner": "theo.haddad"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-78439": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-78439",
+            "comments": [
+              "EDR: smbexec.py launched by theo.haddad on PC-TOR-76; 95 SMB admin-share connections to DC-TOR-69 since 2026-09-25T21:38:00Z.",
+              "Identity team: theo.haddad holds no administrative role in Legal."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Lateral movement from PC-TOR-76 to DC-TOR-69"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-25T21:38:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "PC-TOR-76",
+              "ip": "10.14.0.70",
+              "process": {
+                "command_line": "smbexec.py \\\\DC-TOR-69 -s cmd.exe",
+                "file": {
+                  "full_path": "smbexec.py",
+                  "sha256": "76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7"
+                }
+              },
+              "user": "theo.haddad"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-25T21:38:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "PC-TOR-76",
+              "ip": "10.14.0.70",
+              "user": "theo.haddad"
+            },
+            "security_result": {
+              "summary": "95 ADMIN$ connections"
+            },
+            "target": {
+              "hostname": "DC-TOR-69",
+              "ip": "10.14.0.220",
+              "port": 445
+            }
+          },
+          {
+            "event_timestamp": "2026-09-25T21:38:00Z",
+            "metadata": {
+              "event_type": "SERVICE_CREATION"
+            },
+            "principal": {
+              "ip": "10.14.0.70"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "remote service start blocked by EDR"
+            },
+            "target": {
+              "hostname": "DC-TOR-69",
+              "ip": "10.14.0.220",
+              "process": {
+                "file": {
+                  "full_path": "PSEXESVC.exe"
+                }
+              }
+            }
+          }
+        ],
+        "hashes": {
+          "76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "19/72 engines",
+            "filename": "smbexec.py",
+            "revocation_date": null,
+            "sha256": "76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7",
+            "signer": "Unknown",
+            "threat_name": "Remote execution tool (dual-use)",
+            "vendor": "Unknown",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 19,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "DC-TOR-69": {
+            "active_user": "ravi.lindqvist",
+            "criticality_tier": "CRITICAL",
+            "hostname": "DC-TOR-69",
+            "installed_services": [
+              "Active Directory Domain Services",
+              "DNS",
+              "EDR agent"
+            ],
+            "ip": "10.14.0.220",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "SERVICE_CREATION",
+                  "note": "remote service start blocked by EDR; no execution on this host",
+                  "outcome": "BLOCKED",
+                  "service": "PSEXESVC",
+                  "source_ip": "10.14.0.70"
+                }
+              ],
+              "recent_event_types": [
+                "SERVICE_CREATION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": true
+            }
+          },
+          "PC-TOR-76": {
+            "active_user": "theo.haddad",
+            "criticality_tier": "HIGH",
+            "hostname": "PC-TOR-76",
+            "installed_services": [
+              "EDR agent",
+              "Legal records client"
+            ],
+            "ip": "10.14.0.70",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "command_line": "smbexec.py \\\\DC-TOR-69 -s cmd.exe",
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "smbexec.py",
+                  "sha256": "76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7",
+                  "user": "theo.haddad"
+                },
+                {
+                  "count": "95",
+                  "destination_host": "DC-TOR-69",
+                  "destination_ip": "10.14.0.220",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 445,
+                  "share": "ADMIN$"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {},
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-LATERAL-PSEXEC-05",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "PC-TOR-76",
+        "10.14.0.70",
+        "theo.haddad"
+      ],
+      "family_id": "FAM-LATERAL-PSEXEC",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 4,
+      "instance_seed": 8940974961492318538,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Remote service execution from a workstation against a domain controller [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "PC-TOR-76"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-78439",
+              "comment": "Lateral movement confirmed: theo.haddad on PC-TOR-76 (10.14.0.70) ran smbexec.py (76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7) and opened 95 admin-share connections to DC-TOR-69, where EDR blocked the service start. PC-TOR-76 isolated, credential revocation requested for theo.haddad, DC-TOR-69 left online, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "PC-TOR-76"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "file_hash": "76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "entity_id": "DC-TOR-69"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "DC-TOR-69"
+      ],
+      "prompt": "Investigate alert CASE-78439: user theo.haddad on Legal workstation PC-TOR-76 (10.14.0.70) launched smbexec.py (sha256 76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7) and opened 95 SMB admin-share connections to domain controller DC-TOR-69 (10.14.0.220) since 2026-09-25T21:38:00Z; the DC's EDR blocked the remote service start. [CMDB Asset Context: Host PC-TOR-76 (10.14.0.70), Owner: theo.haddad, Role: Legal workstation with access to employee records, Blast Radius: Credential theft and lateral movement risk; DC-TOR-69 is the site domain controller and must stay online]. Review host telemetry and file intelligence, evaluate the lateral movement, and contain the source host.",
+      "reference": {
+        "expected_threat_family": "Lateral movement (T1021.002)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries lookup_entity for PC-TOR-76 or get_file_report for 76994261523c0724f3dd7ef5e4f344409cbc7a8de8f0f710770f1834d527bcd7, recognizes remote service execution against a domain controller as lateral movement (MITRE T1021.002), executes isolate_host on PC-TOR-76, posts a comment naming theo.haddad for credential revocation, and leaves the case open. No credit for isolate_host on DC-TOR-69, for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate PC-TOR-76, request credential revocation for theo.haddad, escalate to Tier 2 for the lateral movement investigation, and leave DC-TOR-69 online."
+      },
+      "template_sha256": "7964a6131ee6a296fde28c00c0658c256f354d577b881967f813e842ceb261e7",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

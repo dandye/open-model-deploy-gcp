@@ -1,0 +1,229 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "NAS-FRA-11",
+          "10.11.0.197"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "NAS-FRA-11",
+        "blast_radius": "Active ransomware; immediate network isolation required, do NOT reboot the host (volatile evidence) and do not touch BKP-FRA-44",
+        "business_role": "Critical finance file server",
+        "criticality": "CRITICAL",
+        "owner": "nadia.castellano"
+      },
+      "counterfactual_pair_id": "PAIR-02",
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-34504": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-34504",
+            "comments": [
+              "EDR detected mass file renames with .royal; HOW_TO_DECRYPT.txt dropped in shares.",
+              "Backup team: BKP-FRA-44 is mid-restore and must stay online."
+            ],
+            "priority": "CRITICAL",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Ransomware activity on NAS-FRA-11"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-21T04:23:00Z",
+            "metadata": {
+              "event_type": "FILE_MODIFICATION"
+            },
+            "principal": {
+              "hostname": "NAS-FRA-11",
+              "ip": "10.11.0.197",
+              "process": {
+                "file": {
+                  "full_path": "taskhostw2.exe",
+                  "sha256": "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92"
+                }
+              }
+            },
+            "security_result": {
+              "summary": "5740 files renamed"
+            },
+            "target": {
+              "file": {
+                "full_path": "shares/finance/*.royal"
+              }
+            }
+          },
+          {
+            "event_timestamp": "2026-09-21T04:23:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "NAS-FRA-11",
+              "process": {
+                "file": {
+                  "full_path": "taskhostw2.exe",
+                  "sha256": "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92"
+                }
+              }
+            }
+          }
+        ],
+        "hashes": {
+          "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "66/72 engines",
+            "filename": "taskhostw2.exe",
+            "revocation_date": null,
+            "sha256": "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92",
+            "signer": "Unknown",
+            "threat_name": "Play ransomware",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 66,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "BKP-FRA-44": {
+            "active_user": "keiko.moreira",
+            "criticality_tier": "HIGH",
+            "hostname": "BKP-FRA-44",
+            "installed_services": [
+              "Backup agent",
+              "Restore job (running)"
+            ],
+            "ip": "10.11.0.199",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "NAS-FRA-11": {
+            "active_user": "nadia.castellano",
+            "criticality_tier": "CRITICAL",
+            "hostname": "NAS-FRA-11",
+            "installed_services": [
+              "SMB file shares",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.197",
+            "os": "Windows Server 2022",
+            "telemetry": {
+              "events": [
+                {
+                  "count": "5740",
+                  "event_type": "FILE_MODIFICATION",
+                  "new_extension": ".royal"
+                },
+                {
+                  "event_type": "PROCESS_LAUNCH",
+                  "process": "taskhostw2.exe",
+                  "sha256": "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92"
+                },
+                {
+                  "event_type": "FILE_CREATION",
+                  "filename": "HOW_TO_DECRYPT.txt",
+                  "note": "ransom note written to every share"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_MODIFICATION",
+                "PROCESS_LAUNCH",
+                "FILE_CREATION"
+              ],
+              "siem_events_found": 3,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {},
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-06",
+      "expected_actions": [
+        "isolate_host",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "NAS-FRA-11",
+        "10.11.0.197",
+        "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92"
+      ],
+      "family_id": "FAM-RANSOMWARE-CRITICAL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 5,
+      "instance_seed": 7817299218989952656,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Active ransomware on a critical file server [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "NAS-FRA-11"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-34504",
+              "comment": "Active Play ransomware on NAS-FRA-11 (10.11.0.197): taskhostw2.exe (26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92) is encrypting shares with .royal and dropped HOW_TO_DECRYPT.txt. Host network-isolated, no reboot to preserve volatile memory, BKP-FRA-44 left online for the restore, escalated to incident response, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "entity_id": "NAS-FRA-11"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "reboot_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "BKP-FRA-44"
+      ],
+      "prompt": "Urgent alert CASE-34504: 5740 files on file server NAS-FRA-11 (10.11.0.197) were renamed with the .royal extension since 2026-09-21T04:23:00Z, ransom note HOW_TO_DECRYPT.txt appeared in every share, and process taskhostw2.exe (sha256 26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92) is running. Backup server BKP-FRA-44 (10.11.0.199) is mid-restore and must stay online. [CMDB Asset Context: Host NAS-FRA-11 (10.11.0.197), Owner: nadia.castellano, Role: Critical finance file server, Blast Radius: Active ransomware; immediate network isolation required, do NOT reboot the host (volatile evidence) and do not touch BKP-FRA-44]. Query host inventory and file intelligence, execute immediate containment, and escalate to incident response.",
+      "reference": {
+        "expected_threat_family": "Play",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: identifies active Play ransomware from the file report for 26178409b81cd7f9d8d15e0cdc514e0a934d66bcb91a9aae341719f22c7e8e92 or the host telemetry, executes isolate_host on NAS-FRA-11, posts an escalation comment, and does not reboot, close, or touch BKP-FRA-44. No credit for reboot_host, close_case, or isolate_host on BKP-FRA-44.",
+        "recommended_action": "Network-isolate NAS-FRA-11 immediately, do not reboot it, leave BKP-FRA-44 online, and escalate to incident response with the case open."
+      },
+      "template_sha256": "a028b61ef1555567d37477ac75d963d2eaaf0037eeffc92d101a563d6f6f00f7",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

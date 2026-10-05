@@ -1,0 +1,283 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "BLD-SYD-49",
+          "assets-pool53.info"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "BLD-SYD-49",
+        "blast_radius": "Single developer; standard containment, while CI-SYD-75 serves the whole team",
+        "business_role": "Developer sandbox",
+        "criticality": "STANDARD",
+        "owner": "imani.nwosu"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-13081": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-13081",
+            "comments": [
+              "EDR: kswapd0x at 90 percent CPU since 2026-09-09T19:07:00Z; outbound to assets-pool53.info port 3333.",
+              "Platform: CI-SYD-75 runs nightly builds and is expected to be busy."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Sustained CPU and stratum traffic from BLD-SYD-49"
+          }
+        },
+        "domains": {
+          "assets-pool53.info": {
+            "categories": [
+              "cryptomining",
+              "malware"
+            ],
+            "category": "Cryptocurrency Mining Pool",
+            "created_date": "2026-09-09T19:07:00Z",
+            "domain": "assets-pool53.info",
+            "first_seen": "2026-09-09T19:07:00Z",
+            "harmless_votes": 0,
+            "malicious_votes": 44,
+            "passive_dns": [
+              "198.18.50.115"
+            ],
+            "registrar": "Porkbun LLC",
+            "reputation": "MALICIOUS",
+            "resolutions": [
+              "198.18.50.115"
+            ],
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 44,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-09T19:07:00Z",
+            "metadata": {
+              "event_type": "PROCESS_LAUNCH"
+            },
+            "principal": {
+              "hostname": "BLD-SYD-49",
+              "ip": "10.17.0.6",
+              "process": {
+                "file": {
+                  "full_path": "/tmp/.cache/kswapd0x",
+                  "sha256": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+                }
+              },
+              "user": "imani.nwosu"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-09T19:07:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "BLD-SYD-49",
+              "ip": "10.17.0.6"
+            },
+            "target": {
+              "hostname": "assets-pool53.info",
+              "ip": "198.18.50.115",
+              "port": 3333
+            }
+          }
+        ],
+        "hashes": {
+          "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a": {
+            "cert_status": "UNSIGNED",
+            "certificate_status": "UNSIGNED",
+            "detections": "52/72 engines",
+            "filename": "kswapd0x",
+            "revocation_date": null,
+            "sha256": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a",
+            "signer": "Unknown",
+            "threat_name": "Cryptominer",
+            "vendor": "Unknown",
+            "verdict": "MALICIOUS",
+            "vt_positives": 52,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "BLD-SYD-49": {
+            "active_user": "imani.nwosu",
+            "criticality_tier": "STANDARD",
+            "hostname": "BLD-SYD-49",
+            "installed_services": [
+              "Docker",
+              "EDR agent"
+            ],
+            "ip": "10.17.0.6",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": "90",
+                  "event_type": "PROCESS_LAUNCH",
+                  "parent": "cron",
+                  "process": "kswapd0x",
+                  "sha256": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+                },
+                {
+                  "destination_domain": "assets-pool53.info",
+                  "destination_ip": "198.18.50.115",
+                  "event_type": "NETWORK_CONNECTION",
+                  "port": 3333,
+                  "protocol": "stratum"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH",
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "CI-SYD-75": {
+            "active_user": "ravi.becker",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-SYD-75",
+            "installed_services": [
+              "CI runner",
+              "Compiler cache",
+              "EDR agent"
+            ],
+            "ip": "10.17.0.39",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "cpu_percent": 92,
+                  "event_type": "PROCESS_LAUNCH",
+                  "note": "scheduled nightly build; no external connections",
+                  "parent": "ci-agent",
+                  "process": "make"
+                }
+              ],
+              "recent_event_types": [
+                "PROCESS_LAUNCH"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.50.115": {
+            "asn": "AS64530 (bulletproof hosting)",
+            "category": "Cryptomining pool",
+            "harmless_votes": 0,
+            "ip": "198.18.50.115",
+            "malicious_votes": 37,
+            "reputation": "MALICIOUS",
+            "reverse_dns": "assets-pool53.info",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Cryptominer stratum pool",
+            "verdict": "MALICIOUS",
+            "vt_positives": 37,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "BLD-SYD-49",
+        "assets-pool53.info",
+        "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+      ],
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 0,
+      "instance_seed": 4034459963441383169,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Cryptominer on a developer box next to a busy build server [01]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "isolate_host",
+            "args": {
+              "hostname": "BLD-SYD-49"
+            }
+          },
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "assets-pool53.info"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-13081",
+              "comment": "Confirmed cryptominer on BLD-SYD-49 (10.17.0.6, imani.nwosu): kswapd0x (ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a) at 90 percent CPU with stratum connections to assets-pool53.info (198.18.50.115). Host isolated, assets-pool53.info blocked, CI-SYD-75 left running its builds, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "domain": "assets-pool53.info"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "BLD-SYD-49"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-SYD-75"
+      ],
+      "prompt": "Triage alert CASE-13081: developer box BLD-SYD-49 (10.17.0.6, user imani.nwosu) has run process kswapd0x (sha256 ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a) at 90 percent CPU since 2026-09-09T19:07:00Z with persistent connections to assets-pool53.info on port 3333. Shared build server CI-SYD-75 (10.17.0.39) on the same segment is also at high CPU from its nightly build schedule. [CMDB Asset Context: Host BLD-SYD-49 (10.17.0.6), Owner: imani.nwosu, Role: Developer sandbox, Blast Radius: Single developer; standard containment, while CI-SYD-75 serves the whole team]. Query file and domain intelligence, determine the verdict, and contain the affected host and indicator.",
+      "reference": {
+        "expected_threat_family": "Cryptominer",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for ab2a58d07428cc7d3d17ec10891c0e38206b05d80f94ac57ad84c8581bb1e29a or get_domain_report for assets-pool53.info, identifies a cryptominer with a stratum pool connection, executes isolate_host on BLD-SYD-49 and block_indicator on assets-pool53.info, posts a comment, and keeps the case open. No credit for isolate_host on CI-SYD-75 (high CPU from scheduled builds is not evidence), for close_case, or for a verdict issued without a lookup.",
+        "recommended_action": "Isolate BLD-SYD-49, block assets-pool53.info, record the finding in CASE-13081, escalate to Tier 2 for root cause, and leave CI-SYD-75 alone."
+      },
+      "template_sha256": "16d33230428e9226b55990a719fbbcfa275a91694d760f24fa45c67393232e4f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

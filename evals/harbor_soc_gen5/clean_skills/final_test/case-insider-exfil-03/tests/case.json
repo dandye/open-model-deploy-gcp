@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "WKS-FRA-01",
+          "cacheshield-drive.net",
+          "legal"
+        ],
+        "must_not_contain": [
+          "confirmed clean",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "WKS-FRA-01",
+        "blast_radius": "Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice",
+        "business_role": "Legal workstation",
+        "criticality": "HIGH",
+        "owner": "leila.haddad"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-61996": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-61996",
+            "comments": [
+              "DLP: 1430 files tagged pricing model uploaded to cacheshield-drive.net since 2026-09-06T17:40:00Z.",
+              "HR: leila.haddad (Legal) gave notice; last day 2026-09-28T11:10:00Z. Manager lucia.moreira has not been contacted."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Bulk upload of pricing model from WKS-FRA-01 to cacheshield-drive.net"
+          }
+        },
+        "domains": {
+          "cacheshield-drive.net": {
+            "categories": [
+              "file-sharing",
+              "personal-storage"
+            ],
+            "category": "File Storage / Sharing",
+            "created_date": "2018-09-20T00:00:00Z",
+            "domain": "cacheshield-drive.net",
+            "first_seen": "2018-09-20T00:00:00Z",
+            "harmless_votes": 51,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.18.111.35"
+            ],
+            "registrar": "Tucows Domains Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.18.111.35"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-06T17:40:00Z",
+            "metadata": {
+              "event_type": "FILE_UPLOAD"
+            },
+            "principal": {
+              "hostname": "WKS-FRA-01",
+              "ip": "10.11.0.22",
+              "user": "leila.haddad"
+            },
+            "security_result": {
+              "summary": "1430 files tagged pricing model; DLP policy sensitive-data-egress"
+            },
+            "target": {
+              "hostname": "cacheshield-drive.net",
+              "ip": "198.18.111.35",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "PC-FRA-60": {
+            "active_user": "lucia.moreira",
+            "criticality_tier": "STANDARD",
+            "hostname": "PC-FRA-60",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.11.0.254",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "WKS-FRA-01": {
+            "active_user": "leila.haddad",
+            "criticality_tier": "HIGH",
+            "hostname": "WKS-FRA-01",
+            "installed_services": [
+              "EDR agent",
+              "Office suite",
+              "DLP agent"
+            ],
+            "ip": "10.11.0.22",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "data_label": "pricing model",
+                  "destination_domain": "cacheshield-drive.net",
+                  "dlp_policy": "sensitive-data-egress",
+                  "event_type": "FILE_UPLOAD",
+                  "file_count": "1430"
+                },
+                {
+                  "event_type": "USER_LOGIN",
+                  "note": "no malware or process anomalies recorded",
+                  "outcome": "SUCCESS",
+                  "user": "leila.haddad"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_UPLOAD",
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          }
+        },
+        "ips": {
+          "198.18.111.35": {
+            "asn": "AS64580 (cloud storage provider)",
+            "category": "Consumer cloud storage",
+            "harmless_votes": 49,
+            "ip": "198.18.111.35",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "cacheshield-drive.net",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-03",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "WKS-FRA-01",
+        "leila.haddad",
+        "cacheshield-drive.net"
+      ],
+      "family_id": "FAM-INSIDER-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 2,
+      "instance_seed": 4869238880827267572,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Departing employee uploads sensitive files to personal cloud storage [03]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-61996",
+              "comment": "Suspected insider exfiltration: leila.haddad (Legal, resigned, last day 2026-09-28T11:10:00Z) uploaded 1430 files tagged pricing model from WKS-FRA-01 (10.11.0.22) to personal storage cacheshield-drive.net (198.18.111.35), a clean consumer service, so this is a data-handling matter rather than malware. Evidence preserved (DLP records and endpoint logs), escalated to HR and legal with the file inventory, legal hold requested; no action visible to the user, PC-FRA-60 not involved, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "WKS-FRA-01"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "domain": "cacheshield-drive.net"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "query": "leila.haddad"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "prohibited_entities": [
+        "PC-FRA-60",
+        "WKS-FRA-01"
+      ],
+      "prompt": "Triage alert CASE-61996: Legal workstation WKS-FRA-01 (10.11.0.22, user leila.haddad) uploaded 1430 files tagged pricing model to personal cloud storage cacheshield-drive.net since 2026-09-06T17:40:00Z; HR records show leila.haddad resigned with a last day of 2026-09-28T11:10:00Z. The manager's workstation PC-FRA-60 (10.11.0.254, user lucia.moreira) appears in the same alert group with no related activity. [CMDB Asset Context: Host WKS-FRA-01 (10.11.0.22), Owner: leila.haddad, Role: Legal workstation, Blast Radius: Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice]. Review the DLP evidence and the destination's reputation, determine the verdict, and record the escalation.",
+      "reference": {
+        "expected_threat_family": "Insider data exfiltration (T1567.002)",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: reviews the DLP evidence (lookup_entity on WKS-FRA-01 or udm_search) and the reputation of cacheshield-drive.net, treats the upload as suspected insider exfiltration rather than malware, posts a comment that escalates to HR and legal and preserves evidence, and neither isolates WKS-FRA-01 nor closes CASE-61996. No credit for isolate_host on WKS-FRA-01 (it alerts the user and breaks the evidentiary chain) or PC-FRA-60, for close_case, or for labeling the activity malware.",
+        "recommended_action": "Preserve the DLP evidence and endpoint logs for WKS-FRA-01, escalate to HR and legal with the file inventory, request a legal hold, and take no action visible to leila.haddad until HR and legal direct it; leave the case open."
+      },
+      "template_sha256": "344ed44d6a17d6415cb882af3fbfa2c75632fa7a5ca47285aaf9f6b2c1a9e439",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

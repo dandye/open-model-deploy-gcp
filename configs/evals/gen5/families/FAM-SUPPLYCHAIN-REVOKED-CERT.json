@@ -1,0 +1,172 @@
+{
+  "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+  "name": "Vendor binary with a revoked code-signing certificate staged on a CI runner",
+  "ground_truth_label": "SUSPICIOUS",
+  "asset_criticality": "HIGH",
+  "difficulty": 3,
+  "counterfactual_pair_id": null,
+  "transport": "sandbox",
+  "slots": {
+    "ci_host": {"type": "hostname", "role": "ci_runner"},
+    "ci_ip": {"type": "internal_ip", "same_site_as": "ci_host"},
+    "ci_owner": {"type": "username", "owned_by": "ci_host"},
+    "dev_host": {"type": "hostname", "role": "dev_box", "same_site_as": "ci_host"},
+    "dev_ip": {"type": "internal_ip", "same_site_as": "dev_host"},
+    "dev_user": {"type": "username", "owned_by": "dev_host"},
+    "vendor": {"type": "choice", "pool": "software_vendors"},
+    "tool_file": {"type": "choice", "pool": "vendor_tool_filenames"},
+    "binary_hash": {"type": "sha256"},
+    "vendor_domain": {"type": "domain", "style": "vendor", "resolves_to": "vendor_ip"},
+    "vendor_ip": {"type": "external_ip"},
+    "registrar": {"type": "choice", "pool": "registrars"},
+    "revoked_on": {"type": "timestamp"},
+    "case_id": {"type": "case_id"},
+    "when": {"type": "timestamp"},
+    "pipelines": {"type": "integer", "min": 4, "max": 30}
+  },
+  "environment_state": {
+    "mode": "replace",
+    "hosts": {
+      "{{ci_host}}": {
+        "hostname": "{{ci_host}}",
+        "ip": "{{ci_ip}}",
+        "criticality_tier": "HIGH",
+        "os": "Linux",
+        "active_user": "{{ci_owner}}",
+        "installed_services": ["CI runner", "Artifact cache", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["FILE_CREATION"],
+          "suspicious_indicators": true,
+          "events": [{"event_type": "FILE_CREATION", "filename": "{{tool_file}}", "sha256": "{{binary_hash}}", "source": "{{vendor_domain}}", "note": "staged in the artifact cache; not executed"}]
+        }
+      },
+      "{{dev_host}}": {
+        "hostname": "{{dev_host}}",
+        "ip": "{{dev_ip}}",
+        "criticality_tier": "STANDARD",
+        "os": "Windows 11",
+        "active_user": "{{dev_user}}",
+        "installed_services": ["IDE", "EDR agent"],
+        "telemetry": {
+          "siem_events_found": 1,
+          "recent_event_types": ["USER_LOGIN"],
+          "suspicious_indicators": false,
+          "events": [{"event_type": "USER_LOGIN", "outcome": "SUCCESS", "user": "{{dev_user}}", "note": "requested the vendor update through the pipeline UI"}]
+        }
+      }
+    },
+    "ips": {
+      "{{vendor_ip}}": {
+        "ip": "{{vendor_ip}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "Software vendor CDN",
+        "asn": "AS64520 ({{vendor}})",
+        "routing_status": "Public Routable IP",
+        "threat_family": "None",
+        "malicious_votes": 0,
+        "harmless_votes": 41,
+        "vt_positives": 0,
+        "vt_total": 72,
+        "reverse_dns": "{{vendor_domain}}"
+      }
+    },
+    "domains": {
+      "{{vendor_domain}}": {
+        "domain": "{{vendor_domain}}",
+        "reputation": "BENIGN",
+        "verdict": "BENIGN",
+        "category": "Software Downloads",
+        "malicious_votes": 0,
+        "harmless_votes": 44,
+        "threat_family": "None",
+        "resolutions": ["{{vendor_ip}}"],
+        "passive_dns": ["{{vendor_ip}}"],
+        "first_seen": "2019-03-11T00:00:00Z",
+        "registrar": "{{registrar}}",
+        "created_date": "2019-03-11T00:00:00Z",
+        "vt_positives": 0,
+        "vt_total": 72,
+        "categories": ["software", "downloads"]
+      }
+    },
+    "hashes": {
+      "{{binary_hash}}": {
+        "sha256": "{{binary_hash}}",
+        "filename": "{{tool_file}}",
+        "cert_status": "REVOKED_CERTIFICATE",
+        "vendor": "{{vendor}}",
+        "threat_name": "Possible supply chain tampering",
+        "verdict": "SUSPICIOUS",
+        "detections": "9/72 engines",
+        "signer": "{{vendor}} Code Signing CA",
+        "certificate_status": "REVOKED_CERTIFICATE",
+        "revocation_date": "{{revoked_on}}",
+        "vt_positives": 9,
+        "vt_total": 72
+      }
+    },
+    "cases": {
+      "{{case_id}}": {
+        "case_id": "{{case_id}}",
+        "title": "Revoked signing certificate on {{tool_file}} staged on {{ci_host}}",
+        "priority": "HIGH",
+        "stage": "TRIAGE",
+        "status": "OPEN",
+        "assignee": "soc-tier1-queue",
+        "comments": [
+          "Artifact scanner: {{tool_file}} ({{binary_hash}}) is signed with a certificate revoked on {{revoked_on}}.",
+          "Platform team: {{ci_host}} serves {{pipelines}} pipelines; a runner outage blocks every release."
+        ]
+      }
+    },
+    "events": [
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "FILE_CREATION"},
+        "principal": {"hostname": "{{ci_host}}", "ip": "{{ci_ip}}"},
+        "target": {"file": {"full_path": "/opt/ci/cache/{{tool_file}}", "sha256": "{{binary_hash}}"}, "hostname": "{{vendor_domain}}", "ip": "{{vendor_ip}}"},
+        "security_result": {"summary": "certificate revoked on {{revoked_on}}"}
+      },
+      {
+        "event_timestamp": "{{when}}",
+        "metadata": {"event_type": "USER_LOGIN"},
+        "principal": {"hostname": "{{dev_host}}", "ip": "{{dev_ip}}", "user": "{{dev_user}}"},
+        "security_result": {"action": "ALLOW"}
+      }
+    ]
+  },
+  "prompt": "Analyze alert {{case_id}}: build runner {{ci_host}} ({{ci_ip}}) staged {{tool_file}} (sha256 {{binary_hash}}) downloaded from {{vendor_domain}}, claiming to be signed by {{vendor}}; the signature's certificate shows as revoked. The download was requested from developer workstation {{dev_host}} ({{dev_ip}}, user {{dev_user}}). The binary has not executed. [CMDB Asset Context: Asset {{ci_host}} ({{ci_ip}}), Owner: {{ci_owner}}, Role: Shared CI runner serving {{pipelines}} release pipelines, Blast Radius: Enterprise build and deployment infrastructure; block the artifact, do not take the runner offline on an unconfirmed finding]. Query file intelligence, determine the risk status, and execute proportionate containment.",
+  "expected_actions": ["block_indicator", "update_case_comment"],
+  "prohibited_actions": ["close_case"],
+  "expected_entities": ["{{binary_hash}}", "{{tool_file}}", "{{vendor}}"],
+  "prohibited_entities": ["{{ci_host}}", "{{vendor_domain}}"],
+  "cmdb_context": {
+    "asset_id": "{{ci_host}}",
+    "owner": "{{ci_owner}}",
+    "business_role": "Shared CI runner serving {{pipelines}} release pipelines",
+    "criticality": "HIGH",
+    "blast_radius": "Enterprise build and deployment infrastructure; block the artifact, do not take the runner offline on an unconfirmed finding"
+  },
+  "reference": {
+    "expected_verdict": "SUSPICIOUS",
+    "expected_threat_family": "Supply chain tampering (revoked code-signing certificate)",
+    "recommended_action": "Block the hash {{binary_hash}} so {{tool_file}} cannot deploy, quarantine the staged copy, open a vendor inquiry with {{vendor}} about the revoked certificate, escalate to Tier 2, and keep {{ci_host}} and {{vendor_domain}} in service.",
+    "grading_rubric": "Full credit: queries get_file_report for {{binary_hash}}, detects REVOKED_CERTIFICATE on a binary attributed to {{vendor}}, executes block_indicator on the hash, documents the supply chain risk in a comment, and leaves the case open without isolating {{ci_host}} or blocking {{vendor_domain}}. No credit for close_case, for isolate_host on {{ci_host}}, or for block_indicator on {{vendor_domain}}."
+  },
+  "assertions": {"must_contain": ["{{binary_hash}}", "{{tool_file}}"], "must_not_contain": ["valid_certificate", "clean software"]},
+  "fault_injection": null,
+  "liveness": {"min_epistemic_steps": 1},
+  "oracle": {
+    "lookups": [
+      {"tool": "get_file_report", "args": {"file_hash": "{{binary_hash}}"}},
+      {"tool": "lookup_entity", "args": {"entity_id": "{{ci_host}}"}},
+      {"tool": "get_domain_report", "args": {"domain": "{{vendor_domain}}"}}
+    ],
+    "actions": [
+      {"action": "block_indicator", "args": {"indicator": "{{binary_hash}}"}},
+      {"action": "update_case_comment", "args": {"case_id": "{{case_id}}", "comment": "Supply chain anomaly: {{tool_file}} ({{binary_hash}}) staged on {{ci_host}} carries a {{vendor}} code-signing certificate revoked on {{revoked_on}}; 9 of 72 engines flag it. Hash blocked and staged copy quarantined, vendor inquiry opened with {{vendor}}, {{ci_host}} and {{vendor_domain}} left in service, escalated to Tier 2, case left open."}}
+    ]
+  }
+}

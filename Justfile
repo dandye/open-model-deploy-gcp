@@ -60,6 +60,18 @@ default:
     @printf "  \033[1;32mjust gke-ray-sweep [models] [dry_run]\033[0m  \033[2mRun full or filtered benchmark sweep on GKE\033[0m\n"
     @printf "  \033[1;32mjust gke-ray-status [namespace]\033[0m        \033[2mQuery active RayClusters, Jobs & LocalQueues\033[0m\n"
     @printf "  \033[1;32mjust gke-ray-cleanup [namespace]\033[0m       \033[2mDelete Ray workloads to release GPU node pools\033[0m\n\n"
+    @printf "\033[1;33mGEN 5 FAMILY-INSTANCED SOC EVALS (configs/evals/gen5):\033[0m\n"
+    @printf "  \033[1;32mjust gen5-build\033[0m                        \033[2mBuild bundles and manifest from the family templates\033[0m\n"
+    @printf "  \033[1;32mjust gen5-check\033[0m                        \033[2mLockfile check plus schema and suite tests\033[0m\n"
+    @printf "  \033[1;32mjust gen5-calibrate [trials]\033[0m           \033[2mFour reference policies, gates, GEN5_CALIBRATION.md\033[0m\n"
+    @printf "  \033[1;32mjust harbor-soc-gen5-generate [arms]\033[0m  \033[2mGenerate the Gen 5 Harbor tree (validation + final_test)\033[0m\n"
+    @printf "  \033[1;32mjust harbor-soc-gen5-check\033[0m           \033[2mFail on drift between the generator and evals/harbor_soc_gen5\033[0m\n"
+    @printf "  \033[1;32mjust harbor-soc-gen5-test\033[0m            \033[2mGen 5 Harbor layout, isolation, and container oracle tests\033[0m\n"
+    @printf "  \033[1;32mjust eval-gen5 [flavor] [split]\033[0m        \033[2mRun the Gen 5 suite on a split through the exposure ledger\033[0m\n"
+    @printf "  \033[1;32mjust gen5-noise [k] [task_lm]\033[0m          \033[2mMeasurement gate 1: K-run seed noise floor on validation\033[0m\n"
+    @printf "  \033[1;32mjust gen5-gradient [flavor] [endpoint]\033[0m \033[2mMeasurement gate 4: one capability rung on validation\033[0m\n"
+    @printf "  \033[1;32mjust harness-approve\033[0m                   \033[2mRe-approve .eval_harness_lock.json after intended changes\033[0m\n"
+    @printf "  \033[1;32mjust harness-verify\033[0m                    \033[2mVerify protected scoring and Gen 5 inputs against the lock\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -228,13 +240,21 @@ eval-compare-gepa FLAVOR="gemini-2.5-flash": auth-check
 agent-soc-deploy LIVE_MCP="true":
     @USE_LIVE_MCP="{{LIVE_MCP}}" uv run python3 -m agent.deploy_soc_tier1
 
-# Evolve SOC incident response runbooks using GEPA Pareto optimization
+# Evolve SOC runbooks with GEPA on the Gen 5 splits (train for reflection, validation for selection) through the exposure ledger
 gepa-evolve MAX_CALLS="15" TASK_LM="gemini-2.5-flash-lite" REFLECTION_LM="gemini-2.5-pro":
-    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --output-dir configs/runbooks/gepa_evolved --split-train-val
+    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --output-dir configs/runbooks/gepa_evolved
 
 # Compare and evaluate SOC agent against evalset using evolved runbooks
 gepa-compare TASK_LM="gemini-2.5-flash-lite":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{TASK_LM}}" --managed-model "{{TASK_LM}}" --gen 3 --agent-mode hierarchical --use-runbooks --runbooks-dir configs/runbooks/gepa_evolved --evalset configs/evals/gen3/soc_tier1_interactive.json --output-report "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.md" --output-json "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.json"
+
+# Run SOC Agent evaluation with Jev System-One judge
+eval-soc-jev flavor="gemini-2.5-flash-lite" gen="3":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{flavor}}" --gen {{gen}} --judge-backend jev --output-report "docs/soc_eval_results/gen{{gen}}_jev_{{flavor}}_report.md"
+
+# Run SOC Agent evaluation with Side-by-Side (SxS) Jev vs Gemini 2.5 Pro judges
+eval-soc-sxs-judge flavor="gemini-2.5-flash-lite" gen="3":
+    @uv run python3 -m scripts.eval_soc_agent --flavor "{{flavor}}" --gen {{gen}} --judge-backend jev --sxs-judge --output-report "docs/soc_eval_results/gen{{gen}}_sxs_{{flavor}}_report.md"
 
 # ------------------------------------------------------------------------------
 # Master Overnight Evaluation & Benchmark Sweep
@@ -342,6 +362,70 @@ gke-ray-status NAMESPACE="gemma-benchmarks":
 gke-ray-cleanup NAMESPACE="gemma-benchmarks":
     @echo "Cleaning up GKE Ray workloads in namespace '{{NAMESPACE}}'..."
     @kubectl delete rayclusters,jobs --all -n "{{NAMESPACE}}" --ignore-not-found=true
+
+# ------------------------------------------------------------------------------
+# Harbor Framework SOC Tier 1 Skills Evaluation Suite (harbor-gke-ext v1.3)
+# ------------------------------------------------------------------------------
+
+# Generate the frozen Gen 3 Harbor tree (evals/harbor_soc): 4 arms x 10 cases, plus evals.json
+harbor-soc-generate:
+    @.venv/bin/python3 scripts/generate_harbor_soc_tasks.py --gen3
+
+# Verify all 40 Gen 3 Harbor SOC tasks, SHA-256 environment deduplication, and 100% oracle calibration
+harbor-soc-test:
+    @.venv/bin/pytest tests/test_harbor_soc_skills.py tests/test_soc_sandbox_cli.py tests/test_verify_harbor_soc.py tests/test_harbor_soc_tasks.py -v
+
+# Generate the Gen 5 Harbor tree (evals/harbor_soc_gen5): default arms clean_skills and gepa_evolved_skills x validation and final_test (Usage: just harbor-soc-gen5-generate ["clean_skills gepa_evolved_skills"])
+harbor-soc-gen5-generate ARMS="clean_skills gepa_evolved_skills":
+    @.venv/bin/python scripts/generate_harbor_soc_tasks.py --arms {{ARMS}}
+
+# Regenerate the Gen 5 Harbor tree into a temp dir and fail on any byte-level drift from the committed tree
+harbor-soc-gen5-check:
+    @.venv/bin/python scripts/generate_harbor_soc_tasks.py --check
+
+# Gen 5 Harbor layout, answer-key isolation, one environment hash, container oracle, --check
+harbor-soc-gen5-test:
+    @.venv/bin/python -m pytest tests/test_harbor_soc_gen5_tasks.py tests/test_gen5_transport_parity.py -q
+
+# ------------------------------------------------------------------------------
+# Gen 5 Family-Instanced SOC Evaluation Suite (configs/evals/gen5)
+# ------------------------------------------------------------------------------
+
+# Build the Gen 5 bundles and manifest from the family templates (no-op when up to date)
+gen5-build:
+    @.venv/bin/python scripts/gen5_instancer.py build
+
+# Verify the committed bundles and the Harbor tree match their generators, then run the schema and suite tests
+gen5-check:
+    @.venv/bin/python scripts/gen5_instancer.py check
+    @.venv/bin/python scripts/generate_harbor_soc_tasks.py --check
+    @.venv/bin/python -m pytest tests/test_gen5_schema.py tests/test_gen5_suite.py -q
+
+# Run the four Gen 5 reference policies in both transports and apply the spec 8.1 gates (Usage: just gen5-calibrate [trials])
+gen5-calibrate TRIALS="3":
+    @.venv/bin/python scripts/gen5_reference_policies.py calibrate --trials {{TRIALS}} --transport both
+
+# Run the Gen 5 suite on one split through the exposure ledger (Usage: just eval-gen5 [flavor] [split] [endpoint] [purpose])
+eval-gen5 FLAVOR="gemini-2.5-flash" SPLIT="validation" ENDPOINT="" PURPOSE="gen5 eval run":
+    @.venv/bin/python -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 5 --split {{SPLIT}} --purpose "{{PURPOSE}}" --agent-mode hierarchical {{ if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "--managed-model " + FLAVOR } }} --output-report "docs/soc_eval_results/gen5_{{SPLIT}}_{{FLAVOR}}_report.md" --output-json "docs/soc_eval_results/gen5_{{SPLIT}}_{{FLAVOR}}_report.json"
+
+# Measurement gate 1: K seed passes on the validation split, writes noise_floor.json and exits (Usage: just gen5-noise [k] [task_lm])
+gen5-noise K="3" TASK_LM="gemini-2.5-flash":
+    @.venv/bin/python agent/gepa_runbook_optimizer.py --noise-only --noise-runs {{K}} --task-lm "{{TASK_LM}}" --val-split validation --purpose "measurement gate 1: seed noise floor (K={{K}})" --output-dir "docs/soc_eval_results/gen5_noise_{{TASK_LM}}"
+
+# Measurement gate 4 (report): one capability rung on validation with the seed runbooks (Usage: just gen5-gradient [flavor] [endpoint])
+gen5-gradient FLAVOR="gemini-2.5-flash" ENDPOINT="":
+    @.venv/bin/python -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 5 --split validation --purpose "measurement gate 4: capability gradient ({{FLAVOR}})" --agent-mode hierarchical {{ if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "--managed-model " + FLAVOR } }} --output-report "docs/soc_eval_results/gen5_gradient/{{FLAVOR}}.md" --output-json "docs/soc_eval_results/gen5_gradient/{{FLAVOR}}.json"
+
+# Re-approve the harness lock after an intended change to a protected scoring or Gen 5 input file
+harness-approve:
+    @.venv/bin/python scripts/harness_lock.py approve
+
+# Verify every protected path against .eval_harness_lock.json (exit 1 on drift)
+harness-verify:
+    @.venv/bin/python scripts/harness_lock.py verify
+
+
 
 
 

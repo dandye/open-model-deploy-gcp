@@ -1,0 +1,236 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "198.18.125.172",
+          "TRV-34038"
+        ],
+        "must_not_contain": [
+          "account compromised",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "LT-FRA-70",
+        "blast_radius": "Single user; check travel registration before acting",
+        "business_role": "Standard office workstation",
+        "criticality": "STANDARD",
+        "owner": "kwame.hartmann"
+      },
+      "counterfactual_pair_id": "PAIR-04",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-93329": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-93329",
+            "comments": [
+              "Identity monitor: token refresh from LT-FRA-70 in Dublin, IE followed 61 minutes later by a VPN login from 198.18.125.172 (Denver, US) at 2026-09-22T21:24:00Z; MFA satisfied on both.",
+              "Travel desk: TRV-34038 registers kwame.hartmann in Denver, US this week."
+            ],
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Impossible travel for kwame.hartmann: Dublin, IE to Denver, US in 61 minutes"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-22T21:24:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "LT-FRA-70",
+              "ip": "10.11.0.17",
+              "location": "Dublin, IE",
+              "user": "kwame.hartmann"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "token refresh"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-22T21:24:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "198.18.125.172",
+              "location": "Denver, US",
+              "user": "kwame.hartmann"
+            },
+            "security_result": {
+              "action": "ALLOW",
+              "summary": "interactive VPN login; MFA satisfied; travel registration TRV-34038"
+            },
+            "target": {
+              "hostname": "VPN-FRA-54",
+              "ip": "10.11.0.74"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-FRA-70": {
+            "active_user": "kwame.hartmann",
+            "criticality_tier": "STANDARD",
+            "hostname": "LT-FRA-70",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.11.0.17",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Dublin, IE",
+                  "logon_type": "token_refresh",
+                  "note": "docked workstation; no interactive session",
+                  "outcome": "SUCCESS",
+                  "user": "kwame.hartmann"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "VPN-FRA-54": {
+            "active_user": "imani.qureshi",
+            "criticality_tier": "HIGH",
+            "hostname": "VPN-FRA-54",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.11.0.74",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "location": "Denver, US",
+                  "mfa": "SATISFIED",
+                  "outcome": "SUCCESS",
+                  "source_ip": "198.18.125.172",
+                  "travel_registration": "TRV-34038",
+                  "user": "kwame.hartmann"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.125.172": {
+            "asn": "AS64560 (hospitality ISP)",
+            "category": "Hotel / conference network egress",
+            "country": "Denver, US",
+            "harmless_votes": 22,
+            "ip": "198.18.125.172",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-03",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "kwame.hartmann",
+        "198.18.125.172",
+        "TRV-34038"
+      ],
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 2,
+      "instance_seed": 11766971591920986796,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Impossible travel alert explained by registered travel and a docked workstation [03]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-93329",
+              "comment": "Impossible travel explained: the Dublin, IE event is a token refresh from the docked office workstation LT-FRA-70 (10.11.0.17), and the Denver, US login from 198.18.125.172 through VPN-FRA-54 matches travel registration TRV-34038 for kwame.hartmann with MFA satisfied; 198.18.125.172 is a clean hospitality egress. Verdict BENIGN, no block or isolation, closing CASE-93329."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-93329",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.18.125.172"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "VPN-FRA-54"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "TRV-34038"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "VPN-FRA-54",
+        "LT-FRA-70"
+      ],
+      "prompt": "Triage alert CASE-93329: identity monitoring flagged impossible travel for kwame.hartmann: a session refresh from office workstation LT-FRA-70 (10.11.0.17) in Dublin, IE and, 61 minutes later at 2026-09-22T21:24:00Z, an interactive VPN login from 198.18.125.172 in Denver, US through gateway VPN-FRA-54 (10.11.0.74). Both satisfied MFA. [CMDB Asset Context: Host LT-FRA-70 (10.11.0.17), Owner: kwame.hartmann, Role: Standard office workstation, Blast Radius: Single user; check travel registration before acting]. Query the source address, the travel record, and the gateway telemetry, determine whether the account is compromised, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (registered travel)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.18.125.172 and the case or gateway record showing TRV-34038, explains the pair of events (token refresh plus registered travel with MFA), posts a comment citing TRV-34038, and closes the case as BENIGN with no containment. No credit for isolate_host on LT-FRA-70 or VPN-FRA-54, for block_indicator on 198.18.125.172, or for a verdict issued without a lookup.",
+        "recommended_action": "Match the Denver, US login to travel registration TRV-34038, attribute the Dublin, IE event to the docked workstation's token refresh, record the finding, and close CASE-93329 without blocking 198.18.125.172 or isolating anything."
+      },
+      "template_sha256": "7728f1ed9a1c7989df182a74b20e16eca038b2d04bb652d77be7503c6c2803a8",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

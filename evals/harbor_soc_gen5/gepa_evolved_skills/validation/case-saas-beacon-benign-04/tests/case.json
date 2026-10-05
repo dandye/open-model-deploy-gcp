@@ -1,0 +1,232 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "status64.stream-cloud.xyz",
+          "CHG-26310"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "APP-SAO-64",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "owner": "bruno.romano"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-14803": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-14803",
+            "comments": [
+              "NDR: new external destination status64.stream-cloud.xyz contacted every 70 seconds since 2026-09-11T21:24:00Z.",
+              "Change calendar: CHG-26310 deployed the Box connector on APP-SAO-64 in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Periodic outbound connections from APP-SAO-64 to new domain status64.stream-cloud.xyz"
+          }
+        },
+        "domains": {
+          "status64.stream-cloud.xyz": {
+            "categories": [
+              "saas",
+              "business"
+            ],
+            "category": "Business Software / SaaS",
+            "created_date": "2021-06-02T00:00:00Z",
+            "domain": "status64.stream-cloud.xyz",
+            "first_seen": "2021-06-02T00:00:00Z",
+            "harmless_votes": 58,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.110.67"
+            ],
+            "registrar": "MarkMonitor Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.110.67"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-11T21:24:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-SAO-64",
+              "ip": "10.15.0.133"
+            },
+            "security_result": {
+              "summary": "periodic connection every 70 seconds; change CHG-26310"
+            },
+            "target": {
+              "hostname": "status64.stream-cloud.xyz",
+              "ip": "198.19.110.67",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "APP-SAO-54": {
+            "active_user": "imani.jensen",
+            "criticality_tier": "HIGH",
+            "hostname": "APP-SAO-54",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.32",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          },
+          "APP-SAO-64": {
+            "active_user": "bruno.romano",
+            "criticality_tier": "STANDARD",
+            "hostname": "APP-SAO-64",
+            "installed_services": [
+              "Integration service (Box connector)",
+              "EDR agent"
+            ],
+            "ip": "10.15.0.133",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "destination_domain": "status64.stream-cloud.xyz",
+                  "destination_ip": "198.19.110.67",
+                  "event_type": "NETWORK_CONNECTION",
+                  "interval_seconds": "70",
+                  "note": "connector deployed under CHG-26310",
+                  "port": 443
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.110.67": {
+            "asn": "AS64540 (Box)",
+            "category": "SaaS provider (Box)",
+            "harmless_votes": 52,
+            "ip": "198.19.110.67",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "status64.stream-cloud.xyz",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "APP-SAO-64",
+        "status64.stream-cloud.xyz",
+        "CHG-26310"
+      ],
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 3,
+      "instance_seed": 1463153939319424212,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [04]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-14803",
+              "comment": "APP-SAO-64 (10.15.0.133) contacts status64.stream-cloud.xyz (198.19.110.67) every 70 seconds because change CHG-26310 deployed the Box connector in this window; the domain and IP are clean and registered to Box. Verdict BENIGN: sanctioned integration, no containment, APP-SAO-54 untouched, closing CASE-14803."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-14803",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "status64.stream-cloud.xyz"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "APP-SAO-64"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "CHG-26310"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "APP-SAO-54",
+        "status64.stream-cloud.xyz"
+      ],
+      "prompt": "Triage alert CASE-14803: application server APP-SAO-64 (10.15.0.133) began contacting the previously unseen domain status64.stream-cloud.xyz every 70 seconds at 2026-09-11T21:24:00Z, which the network detection flagged as beaconing. Database server APP-SAO-54 (10.15.0.32) is listed as a connected asset. [CMDB Asset Context: Host APP-SAO-64 (10.15.0.133), Owner: bruno.romano, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_domain_report for status64.stream-cloud.xyz or lookup_entity for APP-SAO-64, finds the clean Box reputation and change ticket CHG-26310, posts a comment citing CHG-26310, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-SAO-64 or APP-SAO-54, for block_indicator on status64.stream-cloud.xyz, or for a verdict issued without a lookup.",
+        "recommended_action": "Match status64.stream-cloud.xyz to the Box connector deployed under CHG-26310, record the change reference in CASE-14803, close the case, and block or isolate nothing."
+      },
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

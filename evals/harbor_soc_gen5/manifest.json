@@ -1,0 +1,922 @@
+{
+  "arms": [
+    "clean_skills",
+    "gepa_evolved_skills"
+  ],
+  "cases_per_split": {
+    "final_test": 30,
+    "validation": 20
+  },
+  "environment_hash": "30f3abd0272a484e6575dc833c939237b1f527403b09e63c444bdfb822c81980",
+  "evalset_id": "soc_tier1_families",
+  "gen5_manifest_sha256": "6c928bc65e3672849de3591831fff515e78f223227ed8c65407aca3dcd6723c2",
+  "generator_version": "harbor-soc-gen5-1",
+  "pool_version": "pools-v1",
+  "splits": [
+    "validation",
+    "final_test"
+  ],
+  "tasks": [
+    {
+      "arm": "clean_skills",
+      "case_sha256": "0b53b4a58f22c8fa11b8133b9a53abf6b1df97b4e82ab97b8548ba697cc51ba2",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-06",
+      "family_id": "FAM-AUTHORIZED-SCANNER",
+      "path": "clean_skills/final_test/case-authorized-scanner-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "bfd76698f5bfc2b6f67b46f000795e642ef910d5b5a61d3b6655334f052ffcc9",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-C2-INFOSTEALER-06",
+      "family_id": "FAM-C2-INFOSTEALER",
+      "path": "clean_skills/final_test/case-c2-infostealer-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "f6c9e23cafbc22cbaf9e34214ec337c1cd9c955539efc6b6b056d0ed35e86403",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-01",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "clean_skills/final_test/case-cloud-key-exfil-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "63bbb7d54b6921d236758cdd58308baec81b2bde229c6319c1af63127febf935",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-02",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "clean_skills/final_test/case-cloud-key-exfil-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "43aba7d68c1903b65f922e437fcccab44ab2647e13bbf8d1d192222f1d4e6fbb",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-03",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "clean_skills/final_test/case-cloud-key-exfil-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "89f076aa98976d33bd7403b8a4d7caf17c1a8bb4c7d74334fdd8290a0d5b0d1c",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-04",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "clean_skills/final_test/case-cloud-key-exfil-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "69892fc70ab90e8db9f39d183a86d9c8a9d928d13ebd70fe37ebc60bc12e0b4f",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-05",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "clean_skills/final_test/case-cloud-key-exfil-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "0c9893f56e5fc9a665bcc75cadbfa6c8119202dc15e37c91166a2dccfcc5b9f8",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-06",
+      "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+      "path": "clean_skills/final_test/case-dns-tunnel-ambiguous-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "7bb5d4940d0747cd6b788d0af38ef768488d93aee254e0df23772a36269cae56",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-06",
+      "family_id": "FAM-DOC-IP-FALSE-POSITIVE",
+      "path": "clean_skills/final_test/case-doc-ip-false-positive-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "3083203532db897bc37a17b0609c0d7e8d11e3f940965b33fd52e73fe1e535bc",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-DUPLICATE-CASE-06",
+      "family_id": "FAM-DUPLICATE-CASE",
+      "path": "clean_skills/final_test/case-duplicate-case-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "8479903a11b1a13c567405dc9436344d352efb8fb41424b5811ad724e1984d48",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-01",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "clean_skills/final_test/case-impossible-travel-approved-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "2e04ff5b2509d8918fafced4259f30c1f65677021c0660202d76c6fb1f2ee12f",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-02",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "clean_skills/final_test/case-impossible-travel-approved-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "4c63efaf2f422cdd471622ca98c8d48df8e8dfd095f854b7ace5fe0d2f8056c5",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-03",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "clean_skills/final_test/case-impossible-travel-approved-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "c2071d9dc79c8dbe6cded96785a1f3a2939d7ef7d20550ea5846215ba8c1b129",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-04",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "clean_skills/final_test/case-impossible-travel-approved-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "7ad7b6ac0f73c6d3cd39e85cdb214a98c3fb9d236a5d9142861a1a0fb4dcb841",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-05",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "clean_skills/final_test/case-impossible-travel-approved-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "c5bcb32ae4ac013748177b993f7e3ab85747bdf8cd2e1fbcb22e0835780321bc",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-01",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "clean_skills/final_test/case-insider-exfil-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "590072153357d69f76126ec73c29f3a52e1ef37bd6bed02669b68f119590c9c0",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-02",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "clean_skills/final_test/case-insider-exfil-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "af7b7da78fc2a600829cf7d5c0c69b2abb7605e2daf04d4108a24642efd2c893",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-03",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "clean_skills/final_test/case-insider-exfil-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "d9484f058ea4a28e3637aacc3aaea95b8ff9829c6fa6f9ff2d43796b8e8cdf05",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-04",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "clean_skills/final_test/case-insider-exfil-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "f4b12fd3455ca081568a2ad196f31c29b01494747a980bf8f21161836e28953e",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-05",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "clean_skills/final_test/case-insider-exfil-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "079b9a5d6f6d28eb664cdd5b821c7c4cf960e9040ca6578f98640880d435c5a9",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-LATERAL-PSEXEC-06",
+      "family_id": "FAM-LATERAL-PSEXEC",
+      "path": "clean_skills/final_test/case-lateral-psexec-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "cb7cc0e0c49ae3f1f149cdf90e237146c94eb17b1121fed9741fef137dc39428",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-01",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "clean_skills/final_test/case-password-spray-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "bc937f6787fbf7385386dce7a9396329e62a958894e7d724de077e852849c561",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-02",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "clean_skills/final_test/case-password-spray-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "5efb0d3f1175bb5e50081126d8dac0cecb841d692241cccab284076c1c2ab9fe",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-03",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "clean_skills/final_test/case-password-spray-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "a4a2e3de8cfafe1a20a7b98b8eab006f1edfbf89ad0dda00703479421f66662d",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-04",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "clean_skills/final_test/case-password-spray-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "ff21b001604b1554e16992f7e35743cdfb6c68a1ae61122ed7df182cb9ebaf77",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-05",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "clean_skills/final_test/case-password-spray-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "a8f5571a49a1cd62b40721f4a08a27f2761f5a1630236e3bb170d69a3f705c8f",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PHISHING-CREDENTIAL-06",
+      "family_id": "FAM-PHISHING-CREDENTIAL",
+      "path": "clean_skills/final_test/case-phishing-credential-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "60ccdd4b8702114a1c912ec0dfa48c08c010f8dd03edafc8198ba67b309a9149",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-06",
+      "family_id": "FAM-RANSOMWARE-CRITICAL",
+      "path": "clean_skills/final_test/case-ransomware-critical-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "45cb5b09a4ea734d0a991e728a79793c6a3f2a3d0ecd14cb19b86e03769b169e",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06",
+      "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+      "path": "clean_skills/final_test/case-supplychain-revoked-cert-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "0a021f13dc5adf03e74670883bfb343dab2e3021708006ce3db25483d0ab6bbb",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-TOOL-OUTAGE-503-06",
+      "family_id": "FAM-TOOL-OUTAGE-503",
+      "path": "clean_skills/final_test/case-tool-outage-503-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "503f00f1a5787e3d2d6fec6d915b60a04dc9bbac16b63cb3c4b6bf70dbe70f4b",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "family_id": "FAM-AUTHORIZED-SCANNER",
+      "path": "clean_skills/validation/case-authorized-scanner-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "ef34a27666098dbfd557aa31a0cc262c33fa81a56a37921c47e4e7675eafb2fb",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-C2-INFOSTEALER-05",
+      "family_id": "FAM-C2-INFOSTEALER",
+      "path": "clean_skills/validation/case-c2-infostealer-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "1603afd077496c231f1c6e6508b0f6b8fd93342a211bf2ee996a5c751bd82bf9",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "clean_skills/validation/case-cryptominer-dev-01",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "bb573747daf4932407c397fcbcd727fc5a204c37f0a335be3e2e92892abaefb3",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "clean_skills/validation/case-cryptominer-dev-02",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "37798ae8500f51d8bd80897b7073970da03b7bfce69454a8b1119514d97532bf",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "clean_skills/validation/case-cryptominer-dev-03",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "da12215d500bb8a1f68eee4471152686926b59a0e26e7d0fd08329ad0dffe5d1",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "clean_skills/validation/case-cryptominer-dev-04",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "1122a15e6e56666615bf525f8514c27438223f7298f8d42d92c40392b5d3cc5c",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "clean_skills/validation/case-cryptominer-dev-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "2b2c4196dab4e55d221a1dbb0b5fb9473e605c7096ff13c77b5915c61613a209",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+      "path": "clean_skills/validation/case-dns-tunnel-ambiguous-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "64eec3456390b3a3cfb4829e76140d30fe5201144de80ede67797a6851a31cb9",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "family_id": "FAM-DOC-IP-FALSE-POSITIVE",
+      "path": "clean_skills/validation/case-doc-ip-false-positive-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "80465db531f3a86f754b997e5620a2c3f5a0a1568b5df7f2655ff1bda8df5d18",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-DUPLICATE-CASE-05",
+      "family_id": "FAM-DUPLICATE-CASE",
+      "path": "clean_skills/validation/case-duplicate-case-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "4d3981568e8bb3ef4ad5d59b4273e9568243e78ff3b3ae74924b078f9435b8e1",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-LATERAL-PSEXEC-05",
+      "family_id": "FAM-LATERAL-PSEXEC",
+      "path": "clean_skills/validation/case-lateral-psexec-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "cfff850fdba35c4e6eec6164ddfb16223326ac666814e6e3bd0747c33a6497e6",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "family_id": "FAM-PHISHING-CREDENTIAL",
+      "path": "clean_skills/validation/case-phishing-credential-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "69b72b06fb16293c22e86995c56d839b529250d681966bfd87a048c51b5f02f9",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "family_id": "FAM-RANSOMWARE-CRITICAL",
+      "path": "clean_skills/validation/case-ransomware-critical-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "d3cf68484156ac86db00c3feeabaed1c6fe4da45f26f4a71de28b38ca10c3cb9",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "clean_skills/validation/case-saas-beacon-benign-01",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "701e5dd48eefd4c2c5e57d04c5f2ab9e530a8e05e3aff69f116500980e7e04e4",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "clean_skills/validation/case-saas-beacon-benign-02",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "bbcbf05fb5b6949130d7f93fcad8d2d27693ee159bbb52336ec1c8701bc4c346",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "clean_skills/validation/case-saas-beacon-benign-03",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "1d9142e239275bb49692f9e165c1a7b0654419ec5ffac4cc6cf58c3992e0f379",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "clean_skills/validation/case-saas-beacon-benign-04",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "fabc6e8bd12785bdb56cf4c69103923566ae5429e3d99b15e89a5b79a60c1855",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "clean_skills/validation/case-saas-beacon-benign-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "1f1b3f4cedc3c91c418f678bc6d35dcf0feaa2d6936e966520b84c8e80f74011",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+      "path": "clean_skills/validation/case-supplychain-revoked-cert-05",
+      "split": "validation"
+    },
+    {
+      "arm": "clean_skills",
+      "case_sha256": "9d70036ff1f0fcca4d92ab47910837a0f978de64f173e3c51b273a293b2627d7",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-TOOL-OUTAGE-503-05",
+      "family_id": "FAM-TOOL-OUTAGE-503",
+      "path": "clean_skills/validation/case-tool-outage-503-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "0b53b4a58f22c8fa11b8133b9a53abf6b1df97b4e82ab97b8548ba697cc51ba2",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-06",
+      "family_id": "FAM-AUTHORIZED-SCANNER",
+      "path": "gepa_evolved_skills/final_test/case-authorized-scanner-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "bfd76698f5bfc2b6f67b46f000795e642ef910d5b5a61d3b6655334f052ffcc9",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-C2-INFOSTEALER-06",
+      "family_id": "FAM-C2-INFOSTEALER",
+      "path": "gepa_evolved_skills/final_test/case-c2-infostealer-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "f6c9e23cafbc22cbaf9e34214ec337c1cd9c955539efc6b6b056d0ed35e86403",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-01",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-cloud-key-exfil-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "63bbb7d54b6921d236758cdd58308baec81b2bde229c6319c1af63127febf935",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-02",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-cloud-key-exfil-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "43aba7d68c1903b65f922e437fcccab44ab2647e13bbf8d1d192222f1d4e6fbb",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-03",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-cloud-key-exfil-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "89f076aa98976d33bd7403b8a4d7caf17c1a8bb4c7d74334fdd8290a0d5b0d1c",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-04",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-cloud-key-exfil-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "69892fc70ab90e8db9f39d183a86d9c8a9d928d13ebd70fe37ebc60bc12e0b4f",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-05",
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-cloud-key-exfil-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "0c9893f56e5fc9a665bcc75cadbfa6c8119202dc15e37c91166a2dccfcc5b9f8",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-06",
+      "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+      "path": "gepa_evolved_skills/final_test/case-dns-tunnel-ambiguous-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "7bb5d4940d0747cd6b788d0af38ef768488d93aee254e0df23772a36269cae56",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-06",
+      "family_id": "FAM-DOC-IP-FALSE-POSITIVE",
+      "path": "gepa_evolved_skills/final_test/case-doc-ip-false-positive-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "3083203532db897bc37a17b0609c0d7e8d11e3f940965b33fd52e73fe1e535bc",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-DUPLICATE-CASE-06",
+      "family_id": "FAM-DUPLICATE-CASE",
+      "path": "gepa_evolved_skills/final_test/case-duplicate-case-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "8479903a11b1a13c567405dc9436344d352efb8fb41424b5811ad724e1984d48",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-01",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "gepa_evolved_skills/final_test/case-impossible-travel-approved-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "2e04ff5b2509d8918fafced4259f30c1f65677021c0660202d76c6fb1f2ee12f",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-02",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "gepa_evolved_skills/final_test/case-impossible-travel-approved-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "4c63efaf2f422cdd471622ca98c8d48df8e8dfd095f854b7ace5fe0d2f8056c5",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-03",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "gepa_evolved_skills/final_test/case-impossible-travel-approved-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "c2071d9dc79c8dbe6cded96785a1f3a2939d7ef7d20550ea5846215ba8c1b129",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-04",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "gepa_evolved_skills/final_test/case-impossible-travel-approved-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "7ad7b6ac0f73c6d3cd39e85cdb214a98c3fb9d236a5d9142861a1a0fb4dcb841",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-IMPOSSIBLE-TRAVEL-APPROVED-05",
+      "family_id": "FAM-IMPOSSIBLE-TRAVEL-APPROVED",
+      "path": "gepa_evolved_skills/final_test/case-impossible-travel-approved-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "c5bcb32ae4ac013748177b993f7e3ab85747bdf8cd2e1fbcb22e0835780321bc",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-01",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-insider-exfil-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "590072153357d69f76126ec73c29f3a52e1ef37bd6bed02669b68f119590c9c0",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-02",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-insider-exfil-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "af7b7da78fc2a600829cf7d5c0c69b2abb7605e2daf04d4108a24642efd2c893",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-03",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-insider-exfil-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "d9484f058ea4a28e3637aacc3aaea95b8ff9829c6fa6f9ff2d43796b8e8cdf05",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-04",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-insider-exfil-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "f4b12fd3455ca081568a2ad196f31c29b01494747a980bf8f21161836e28953e",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-05",
+      "family_id": "FAM-INSIDER-EXFIL",
+      "path": "gepa_evolved_skills/final_test/case-insider-exfil-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "079b9a5d6f6d28eb664cdd5b821c7c4cf960e9040ca6578f98640880d435c5a9",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-LATERAL-PSEXEC-06",
+      "family_id": "FAM-LATERAL-PSEXEC",
+      "path": "gepa_evolved_skills/final_test/case-lateral-psexec-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "cb7cc0e0c49ae3f1f149cdf90e237146c94eb17b1121fed9741fef137dc39428",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-01",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "gepa_evolved_skills/final_test/case-password-spray-01",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "bc937f6787fbf7385386dce7a9396329e62a958894e7d724de077e852849c561",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-02",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "gepa_evolved_skills/final_test/case-password-spray-02",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "5efb0d3f1175bb5e50081126d8dac0cecb841d692241cccab284076c1c2ab9fe",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-03",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "gepa_evolved_skills/final_test/case-password-spray-03",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "a4a2e3de8cfafe1a20a7b98b8eab006f1edfbf89ad0dda00703479421f66662d",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-04",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "gepa_evolved_skills/final_test/case-password-spray-04",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "ff21b001604b1554e16992f7e35743cdfb6c68a1ae61122ed7df182cb9ebaf77",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PASSWORD-SPRAY-05",
+      "family_id": "FAM-PASSWORD-SPRAY",
+      "path": "gepa_evolved_skills/final_test/case-password-spray-05",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "a8f5571a49a1cd62b40721f4a08a27f2761f5a1630236e3bb170d69a3f705c8f",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PHISHING-CREDENTIAL-06",
+      "family_id": "FAM-PHISHING-CREDENTIAL",
+      "path": "gepa_evolved_skills/final_test/case-phishing-credential-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "60ccdd4b8702114a1c912ec0dfa48c08c010f8dd03edafc8198ba67b309a9149",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-06",
+      "family_id": "FAM-RANSOMWARE-CRITICAL",
+      "path": "gepa_evolved_skills/final_test/case-ransomware-critical-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "45cb5b09a4ea734d0a991e728a79793c6a3f2a3d0ecd14cb19b86e03769b169e",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06",
+      "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+      "path": "gepa_evolved_skills/final_test/case-supplychain-revoked-cert-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "0a021f13dc5adf03e74670883bfb343dab2e3021708006ce3db25483d0ab6bbb",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-TOOL-OUTAGE-503-06",
+      "family_id": "FAM-TOOL-OUTAGE-503",
+      "path": "gepa_evolved_skills/final_test/case-tool-outage-503-06",
+      "split": "final_test"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "503f00f1a5787e3d2d6fec6d915b60a04dc9bbac16b63cb3c4b6bf70dbe70f4b",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "family_id": "FAM-AUTHORIZED-SCANNER",
+      "path": "gepa_evolved_skills/validation/case-authorized-scanner-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "ef34a27666098dbfd557aa31a0cc262c33fa81a56a37921c47e4e7675eafb2fb",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-C2-INFOSTEALER-05",
+      "family_id": "FAM-C2-INFOSTEALER",
+      "path": "gepa_evolved_skills/validation/case-c2-infostealer-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "1603afd077496c231f1c6e6508b0f6b8fd93342a211bf2ee996a5c751bd82bf9",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "gepa_evolved_skills/validation/case-cryptominer-dev-01",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "bb573747daf4932407c397fcbcd727fc5a204c37f0a335be3e2e92892abaefb3",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "gepa_evolved_skills/validation/case-cryptominer-dev-02",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "37798ae8500f51d8bd80897b7073970da03b7bfce69454a8b1119514d97532bf",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "gepa_evolved_skills/validation/case-cryptominer-dev-03",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "da12215d500bb8a1f68eee4471152686926b59a0e26e7d0fd08329ad0dffe5d1",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "gepa_evolved_skills/validation/case-cryptominer-dev-04",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "1122a15e6e56666615bf525f8514c27438223f7298f8d42d92c40392b5d3cc5c",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+      "family_id": "FAM-CRYPTOMINER-DEV",
+      "path": "gepa_evolved_skills/validation/case-cryptominer-dev-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "2b2c4196dab4e55d221a1dbb0b5fb9473e605c7096ff13c77b5915c61613a209",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "family_id": "FAM-DNS-TUNNEL-AMBIGUOUS",
+      "path": "gepa_evolved_skills/validation/case-dns-tunnel-ambiguous-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "64eec3456390b3a3cfb4829e76140d30fe5201144de80ede67797a6851a31cb9",
+      "difficulty": 1,
+      "eval_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "family_id": "FAM-DOC-IP-FALSE-POSITIVE",
+      "path": "gepa_evolved_skills/validation/case-doc-ip-false-positive-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "80465db531f3a86f754b997e5620a2c3f5a0a1568b5df7f2655ff1bda8df5d18",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-DUPLICATE-CASE-05",
+      "family_id": "FAM-DUPLICATE-CASE",
+      "path": "gepa_evolved_skills/validation/case-duplicate-case-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "4d3981568e8bb3ef4ad5d59b4273e9568243e78ff3b3ae74924b078f9435b8e1",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-LATERAL-PSEXEC-05",
+      "family_id": "FAM-LATERAL-PSEXEC",
+      "path": "gepa_evolved_skills/validation/case-lateral-psexec-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "cfff850fdba35c4e6eec6164ddfb16223326ac666814e6e3bd0747c33a6497e6",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "family_id": "FAM-PHISHING-CREDENTIAL",
+      "path": "gepa_evolved_skills/validation/case-phishing-credential-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "69b72b06fb16293c22e86995c56d839b529250d681966bfd87a048c51b5f02f9",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "family_id": "FAM-RANSOMWARE-CRITICAL",
+      "path": "gepa_evolved_skills/validation/case-ransomware-critical-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "d3cf68484156ac86db00c3feeabaed1c6fe4da45f26f4a71de28b38ca10c3cb9",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "gepa_evolved_skills/validation/case-saas-beacon-benign-01",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "701e5dd48eefd4c2c5e57d04c5f2ab9e530a8e05e3aff69f116500980e7e04e4",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "gepa_evolved_skills/validation/case-saas-beacon-benign-02",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "bbcbf05fb5b6949130d7f93fcad8d2d27693ee159bbb52336ec1c8701bc4c346",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "gepa_evolved_skills/validation/case-saas-beacon-benign-03",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "1d9142e239275bb49692f9e165c1a7b0654419ec5ffac4cc6cf58c3992e0f379",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "gepa_evolved_skills/validation/case-saas-beacon-benign-04",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "fabc6e8bd12785bdb56cf4c69103923566ae5429e3d99b15e89a5b79a60c1855",
+      "difficulty": 2,
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "path": "gepa_evolved_skills/validation/case-saas-beacon-benign-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "1f1b3f4cedc3c91c418f678bc6d35dcf0feaa2d6936e966520b84c8e80f74011",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+      "path": "gepa_evolved_skills/validation/case-supplychain-revoked-cert-05",
+      "split": "validation"
+    },
+    {
+      "arm": "gepa_evolved_skills",
+      "case_sha256": "9d70036ff1f0fcca4d92ab47910837a0f978de64f173e3c51b273a293b2627d7",
+      "difficulty": 3,
+      "eval_id": "CASE-GEN5-TOOL-OUTAGE-503-05",
+      "family_id": "FAM-TOOL-OUTAGE-503",
+      "path": "gepa_evolved_skills/validation/case-tool-outage-503-05",
+      "split": "validation"
+    }
+  ],
+  "total_tasks": 100
+}

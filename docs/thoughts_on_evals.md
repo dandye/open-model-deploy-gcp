@@ -127,3 +127,5 @@ The LLM judge (Gemini 2.5 Pro) evaluates:
    * Run evaluations against live Chronicle instances to test how raw, high-cardinality SIEM/SOAR data affects tool calling and token efficiency.
 4. **Publish Comparative Study:**
    * Compile the empirical results across all model tiers into a comprehensive benchmark report demonstrating the cost, latency, and capability trade-offs for autonomous SOC agents.
+5. **Measure on held-out, family-instanced cases:**
+   * The Gen 3 suite's 10 cases are all exposed. The Gen 5 suite ([design spec](superpowers/specs/2026-10-04-gen5-evals-design.md), [guide](evals_gen5.md)) instances 16 scenario families into train / validation / final_test splits, so a capability gradient is measured against cases no prompt or runbook was tuned on, with a K-run noise floor under every claimed delta.

@@ -1,0 +1,232 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "metrics31.status-cloud.info",
+          "CHG-99478"
+        ],
+        "must_not_contain": [
+          "command and control",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "STANDARD",
+      "cmdb_context": {
+        "asset_id": "APP-LON-60",
+        "blast_radius": "Customer-facing integrations; check the change calendar before containing",
+        "business_role": "Integration application server",
+        "criticality": "STANDARD",
+        "owner": "nadia.romano"
+      },
+      "counterfactual_pair_id": "PAIR-03",
+      "difficulty": 2,
+      "environment_state": {
+        "cases": {
+          "CASE-17750": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-17750",
+            "comments": [
+              "NDR: new external destination metrics31.status-cloud.info contacted every 252 seconds since 2026-09-20T16:26:00Z.",
+              "Change calendar: CHG-99478 deployed the Box connector on APP-LON-60 in this window."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Periodic outbound connections from APP-LON-60 to new domain metrics31.status-cloud.info"
+          }
+        },
+        "domains": {
+          "metrics31.status-cloud.info": {
+            "categories": [
+              "saas",
+              "business"
+            ],
+            "category": "Business Software / SaaS",
+            "created_date": "2021-06-02T00:00:00Z",
+            "domain": "metrics31.status-cloud.info",
+            "first_seen": "2021-06-02T00:00:00Z",
+            "harmless_votes": 58,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.84.202"
+            ],
+            "registrar": "Porkbun LLC",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.84.202"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-20T16:26:00Z",
+            "metadata": {
+              "event_type": "NETWORK_CONNECTION"
+            },
+            "principal": {
+              "hostname": "APP-LON-60",
+              "ip": "10.16.0.196"
+            },
+            "security_result": {
+              "summary": "periodic connection every 252 seconds; change CHG-99478"
+            },
+            "target": {
+              "hostname": "metrics31.status-cloud.info",
+              "ip": "198.19.84.202",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "APP-LON-60": {
+            "active_user": "nadia.romano",
+            "criticality_tier": "STANDARD",
+            "hostname": "APP-LON-60",
+            "installed_services": [
+              "Integration service (Box connector)",
+              "EDR agent"
+            ],
+            "ip": "10.16.0.196",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "destination_domain": "metrics31.status-cloud.info",
+                  "destination_ip": "198.19.84.202",
+                  "event_type": "NETWORK_CONNECTION",
+                  "interval_seconds": "252",
+                  "note": "connector deployed under CHG-99478",
+                  "port": 443
+                }
+              ],
+              "recent_event_types": [
+                "NETWORK_CONNECTION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "APP-LON-62": {
+            "active_user": "priya.mehta",
+            "criticality_tier": "HIGH",
+            "hostname": "APP-LON-62",
+            "installed_services": [
+              "PostgreSQL",
+              "EDR agent"
+            ],
+            "ip": "10.16.0.248",
+            "os": "Linux",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.84.202": {
+            "asn": "AS64540 (Box)",
+            "category": "SaaS provider (Box)",
+            "harmless_votes": 52,
+            "ip": "198.19.84.202",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "metrics31.status-cloud.info",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "APP-LON-60",
+        "metrics31.status-cloud.info",
+        "CHG-99478"
+      ],
+      "family_id": "FAM-SAAS-BEACON-BENIGN",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 2,
+      "instance_seed": 13335947816716129397,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Periodic outbound connections from a sanctioned SaaS connector [03]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-17750",
+              "comment": "APP-LON-60 (10.16.0.196) contacts metrics31.status-cloud.info (198.19.84.202) every 252 seconds because change CHG-99478 deployed the Box connector in this window; the domain and IP are clean and registered to Box. Verdict BENIGN: sanctioned integration, no containment, APP-LON-62 untouched, closing CASE-17750."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-17750",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "domain": "metrics31.status-cloud.info"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "entity_id": "APP-LON-60"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "query": "CHG-99478"
+            },
+            "tool": "list_cases"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "APP-LON-62",
+        "metrics31.status-cloud.info"
+      ],
+      "prompt": "Triage alert CASE-17750: application server APP-LON-60 (10.16.0.196) began contacting the previously unseen domain metrics31.status-cloud.info every 252 seconds at 2026-09-20T16:26:00Z, which the network detection flagged as beaconing. Database server APP-LON-62 (10.16.0.248) is listed as a connected asset. [CMDB Asset Context: Host APP-LON-60 (10.16.0.196), Owner: nadia.romano, Role: Integration application server, Blast Radius: Customer-facing integrations; check the change calendar before containing]. Query domain intelligence and the change record, determine whether the traffic is sanctioned, and resolve the alert.",
+      "reference": {
+        "expected_threat_family": "None (sanctioned SaaS integration)",
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_domain_report for metrics31.status-cloud.info or lookup_entity for APP-LON-60, finds the clean Box reputation and change ticket CHG-99478, posts a comment citing CHG-99478, closes the case as BENIGN, and performs no containment. No credit for isolate_host on APP-LON-60 or APP-LON-62, for block_indicator on metrics31.status-cloud.info, or for a verdict issued without a lookup.",
+        "recommended_action": "Match metrics31.status-cloud.info to the Box connector deployed under CHG-99478, record the change reference in CASE-17750, close the case, and block or isolate nothing."
+      },
+      "template_sha256": "2a3765480e0e8578c785541fb67158c9dae9d34b78aa6b8eb9bd6c858ec8ab39",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "CKEY-12D47068CA043025",
+          "rotat"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "CRITICAL",
+      "cmdb_context": {
+        "asset_id": "ledger-prod",
+        "blast_radius": "Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-DEN-57 or CI-DEN-33 stops neither the download nor the attacker",
+        "business_role": "Production data store for ledger-prod",
+        "criticality": "CRITICAL",
+        "owner": "dmitri.mehta"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-32478": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-32478",
+            "comments": [
+              "Cloud audit: CKEY-12D47068CA043025 (project ledger-prod) authenticated from 198.19.169.245 and downloaded 874 GB tagged pricing model since 2026-09-24T00:57:00Z.",
+              "Platform: the key's expected callers are CI-DEN-33 and BAS-DEN-57 only; it was issued on 2026-09-24T00:43:00Z by dmitri.mehta."
+            ],
+            "priority": "CRITICAL",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Service account key CKEY-12D47068CA043025 used from external address 198.19.169.245"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-24T00:57:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "ip": "198.19.169.245",
+              "user": "CKEY-12D47068CA043025"
+            },
+            "security_result": {
+              "summary": "874 GB downloaded; data label pricing model"
+            },
+            "target": {
+              "application": "storage.objects.get",
+              "resource": "projects/ledger-prod/buckets/exports"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-24T00:57:00Z",
+            "metadata": {
+              "event_type": "CLOUD_API_CALL"
+            },
+            "principal": {
+              "hostname": "CI-DEN-33",
+              "ip": "10.19.0.122",
+              "user": "CKEY-12D47068CA043025"
+            },
+            "security_result": {
+              "summary": "expected deploy traffic"
+            },
+            "target": {
+              "application": "storage.objects.create",
+              "resource": "projects/ledger-prod/buckets/artifacts"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "BAS-DEN-57": {
+            "active_user": "dmitri.mehta",
+            "criticality_tier": "HIGH",
+            "hostname": "BAS-DEN-57",
+            "installed_services": [
+              "SSH bastion",
+              "Cloud CLI",
+              "EDR agent"
+            ],
+            "ip": "10.19.0.105",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "created_at": "2026-09-24T00:43:00Z",
+                  "created_by": "dmitri.mehta",
+                  "event_type": "CLOUD_KEY_CREATED",
+                  "key_id": "CKEY-12D47068CA043025",
+                  "project": "ledger-prod"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_KEY_CREATED"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          },
+          "CI-DEN-33": {
+            "active_user": "oscar.jensen",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-DEN-33",
+            "installed_services": [
+              "CI runner",
+              "Deploy agent",
+              "EDR agent"
+            ],
+            "ip": "10.19.0.122",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "CLOUD_API_CALL",
+                  "key_id": "CKEY-12D47068CA043025",
+                  "method": "storage.objects.create",
+                  "note": "expected caller; deploy artifacts only",
+                  "source_ip": "10.19.0.122"
+                }
+              ],
+              "recent_event_types": [
+                "CLOUD_API_CALL"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.169.245": {
+            "asn": "AS64570 (anonymizing VPN provider)",
+            "category": "Anonymizing VPN exit / abuse reports",
+            "country": "Unknown",
+            "harmless_votes": 1,
+            "ip": "198.19.169.245",
+            "malicious_votes": 24,
+            "reputation": "MALICIOUS",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Credential abuse infrastructure",
+            "verdict": "MALICIOUS",
+            "vt_positives": 24,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-CLOUD-KEY-EXFIL-02",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "CKEY-12D47068CA043025",
+        "198.19.169.245"
+      ],
+      "family_id": "FAM-CLOUD-KEY-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "instance_index": 1,
+      "instance_seed": 18376188613901374968,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Leaked cloud service account key used for bulk download from outside [02]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "198.19.169.245"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-32478",
+              "comment": "Compromised credential: service account key CKEY-12D47068CA043025 (project ledger-prod) was used from 198.19.169.245, an anonymizing exit with a malicious reputation, to download 874 GB tagged pricing model; its only expected callers are CI-DEN-33 and BAS-DEN-57. 198.19.169.245 blocked, immediate rotation and revocation of CKEY-12D47068CA043025 requested from the cloud platform team, audit log preserved, escalated to incident response and privacy; BAS-DEN-57 and CI-DEN-33 left online, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "198.19.169.245"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "query": "CKEY-12D47068CA043025"
+            },
+            "tool": "udm_search"
+          },
+          {
+            "args": {
+              "entity_id": "CI-DEN-33"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "BAS-DEN-57",
+        "CI-DEN-33"
+      ],
+      "prompt": "Urgent alert CASE-32478: service account key CKEY-12D47068CA043025 for cloud project ledger-prod authenticated from external address 198.19.169.245 and downloaded 874 GB of objects tagged pricing model since 2026-09-24T00:57:00Z. The key was issued on bastion BAS-DEN-57 (10.19.0.105) by dmitri.mehta and is normally used only by deploy runner CI-DEN-33 (10.19.0.122). [CMDB Asset Context: Asset ledger-prod storage, Owner: dmitri.mehta, Role: Production data store, Blast Radius: Regulated customer data; the credential is compromised, not the hosts, and isolating BAS-DEN-57 or CI-DEN-33 stops neither the download nor the attacker]. Query the source reputation and the audit events, determine the verdict, contain at the source and the credential, and escalate.",
+      "reference": {
+        "expected_threat_family": "Credential theft and cloud data exfiltration (T1552, T1530)",
+        "expected_verdict": "MALICIOUS",
+        "grading_rubric": "Full credit: queries get_ip_report for 198.19.169.245 and the audit events for CKEY-12D47068CA043025, recognizes a compromised service account key used from outside its expected callers, executes block_indicator on 198.19.169.245, posts a comment that names rotation of CKEY-12D47068CA043025 and the escalation, and keeps the case open. No credit for isolate_host on BAS-DEN-57 or CI-DEN-33, which does not stop an attacker holding the key, or for close_case.",
+        "recommended_action": "Block 198.19.169.245, request immediate rotation and revocation of CKEY-12D47068CA043025 from the cloud platform team, preserve the audit log, escalate to incident response and privacy, and leave BAS-DEN-57 and CI-DEN-33 online."
+      },
+      "template_sha256": "ddaa282204594701a2f8c41406b4e9845988ae94147e6ed6ab0ffe0f99e593b9",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

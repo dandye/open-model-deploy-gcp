@@ -1,0 +1,57 @@
+version = "1.0"
+schema_version = "1.3"
+
+[task]
+name = "secops/soc-noisy_skills-case-01-lokibot-c2"
+description = "Lokibot C2 InfoStealer Host Containment (noisy_skills arm)"
+categories = ["security", "soc-tier1", "gen3-interactive", "noisy_skills"]
+
+[metadata]
+author_name = "Dan Dye"
+author_email = "dandye@google.com"
+difficulty = "medium"
+category = "security-operations"
+tags = ["secops", "soc-tier1", "harbor", "noisy_skills", "CASE-GEN3-01-LOKIBOT-C2"]
+eval_id = "CASE-GEN3-01-LOKIBOT-C2"
+skill_arm = "noisy_skills"
+asset_criticality = "STANDARD"
+ground_truth_label = "MALICIOUS"
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 300.0
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+allow_internet = false
+
+[environment.env]
+SOC_CASE_ID = "CASE-GEN3-01-LOKIBOT-C2"
+SOC_SKILL_ARM = "noisy_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[agent.env]
+SOC_CASE_ID = "CASE-GEN3-01-LOKIBOT-C2"
+SOC_SKILL_ARM = "noisy_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[verifier.env]
+SOC_CASE_ID = "CASE-GEN3-01-LOKIBOT-C2"
+SOC_SKILL_ARM = "noisy_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+SOC_JEV_BACKEND = "mock"
+
+[solution.env]
+SOC_CASE_ID = "CASE-GEN3-01-LOKIBOT-C2"
+SOC_SKILL_ARM = "noisy_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"

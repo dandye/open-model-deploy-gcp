@@ -1,0 +1,271 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad",
+          "BuildAgentUpdate.exe"
+        ],
+        "must_not_contain": [
+          "valid_certificate",
+          "clean software"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "CI-TOR-27",
+        "blast_radius": "Enterprise build and deployment infrastructure; block the artifact, do not take the runner offline on an unconfirmed finding",
+        "business_role": "Shared CI runner serving 16 release pipelines",
+        "criticality": "HIGH",
+        "owner": "kwame.haddad"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-48832": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-48832",
+            "comments": [
+              "Artifact scanner: BuildAgentUpdate.exe (f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad) is signed with a certificate revoked on 2026-09-16T08:20:00Z.",
+              "Platform team: CI-TOR-27 serves 16 pipelines; a runner outage blocks every release."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Revoked signing certificate on BuildAgentUpdate.exe staged on CI-TOR-27"
+          }
+        },
+        "domains": {
+          "updates.gateway-proxy.io": {
+            "categories": [
+              "software",
+              "downloads"
+            ],
+            "category": "Software Downloads",
+            "created_date": "2019-03-11T00:00:00Z",
+            "domain": "updates.gateway-proxy.io",
+            "first_seen": "2019-03-11T00:00:00Z",
+            "harmless_votes": 44,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.184.146"
+            ],
+            "registrar": "MarkMonitor Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.184.146"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-28T11:15:00Z",
+            "metadata": {
+              "event_type": "FILE_CREATION"
+            },
+            "principal": {
+              "hostname": "CI-TOR-27",
+              "ip": "10.14.0.64"
+            },
+            "security_result": {
+              "summary": "certificate revoked on 2026-09-16T08:20:00Z"
+            },
+            "target": {
+              "file": {
+                "full_path": "/opt/ci/cache/BuildAgentUpdate.exe",
+                "sha256": "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad"
+              },
+              "hostname": "updates.gateway-proxy.io",
+              "ip": "198.19.184.146"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-28T11:15:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "DEV-TOR-01",
+              "ip": "10.14.0.234",
+              "user": "amara.haddad"
+            },
+            "security_result": {
+              "action": "ALLOW"
+            }
+          }
+        ],
+        "hashes": {
+          "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad": {
+            "cert_status": "REVOKED_CERTIFICATE",
+            "certificate_status": "REVOKED_CERTIFICATE",
+            "detections": "9/72 engines",
+            "filename": "BuildAgentUpdate.exe",
+            "revocation_date": "2026-09-16T08:20:00Z",
+            "sha256": "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad",
+            "signer": "Adatum Code Signing CA",
+            "threat_name": "Possible supply chain tampering",
+            "vendor": "Adatum",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 9,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "CI-TOR-27": {
+            "active_user": "kwame.haddad",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-TOR-27",
+            "installed_services": [
+              "CI runner",
+              "Artifact cache",
+              "EDR agent"
+            ],
+            "ip": "10.14.0.64",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "FILE_CREATION",
+                  "filename": "BuildAgentUpdate.exe",
+                  "note": "staged in the artifact cache; not executed",
+                  "sha256": "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad",
+                  "source": "updates.gateway-proxy.io"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_CREATION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": true
+            }
+          },
+          "DEV-TOR-01": {
+            "active_user": "amara.haddad",
+            "criticality_tier": "STANDARD",
+            "hostname": "DEV-TOR-01",
+            "installed_services": [
+              "IDE",
+              "EDR agent"
+            ],
+            "ip": "10.14.0.234",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "note": "requested the vendor update through the pipeline UI",
+                  "outcome": "SUCCESS",
+                  "user": "amara.haddad"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.184.146": {
+            "asn": "AS64520 (Adatum)",
+            "category": "Software vendor CDN",
+            "harmless_votes": 41,
+            "ip": "198.19.184.146",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "updates.gateway-proxy.io",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-06",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad",
+        "BuildAgentUpdate.exe",
+        "Adatum"
+      ],
+      "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 5,
+      "instance_seed": 789421272687752703,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Vendor binary with a revoked code-signing certificate staged on a CI runner [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-48832",
+              "comment": "Supply chain anomaly: BuildAgentUpdate.exe (f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad) staged on CI-TOR-27 carries a Adatum code-signing certificate revoked on 2026-09-16T08:20:00Z; 9 of 72 engines flag it. Hash blocked and staged copy quarantined, vendor inquiry opened with Adatum, CI-TOR-27 and updates.gateway-proxy.io left in service, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "entity_id": "CI-TOR-27"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "domain": "updates.gateway-proxy.io"
+            },
+            "tool": "get_domain_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-TOR-27",
+        "updates.gateway-proxy.io"
+      ],
+      "prompt": "Analyze alert CASE-48832: build runner CI-TOR-27 (10.14.0.64) staged BuildAgentUpdate.exe (sha256 f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad) downloaded from updates.gateway-proxy.io, claiming to be signed by Adatum; the signature's certificate shows as revoked. The download was requested from developer workstation DEV-TOR-01 (10.14.0.234, user amara.haddad). The binary has not executed. [CMDB Asset Context: Asset CI-TOR-27 (10.14.0.64), Owner: kwame.haddad, Role: Shared CI runner serving 16 release pipelines, Blast Radius: Enterprise build and deployment infrastructure; block the artifact, do not take the runner offline on an unconfirmed finding]. Query file intelligence, determine the risk status, and execute proportionate containment.",
+      "reference": {
+        "expected_threat_family": "Supply chain tampering (revoked code-signing certificate)",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad, detects REVOKED_CERTIFICATE on a binary attributed to Adatum, executes block_indicator on the hash, documents the supply chain risk in a comment, and leaves the case open without isolating CI-TOR-27 or blocking updates.gateway-proxy.io. No credit for close_case, for isolate_host on CI-TOR-27, or for block_indicator on updates.gateway-proxy.io.",
+        "recommended_action": "Block the hash f9c8802639ae5bf2b76654cfd32738c30adc46e9f63e29690f8807ce689ca5ad so BuildAgentUpdate.exe cannot deploy, quarantine the staged copy, open a vendor inquiry with Adatum about the revoked certificate, escalate to Tier 2, and keep CI-TOR-27 and updates.gateway-proxy.io in service."
+      },
+      "template_sha256": "3a978d45054c4fa066d47d3c7485683b84fc22008372cb79a0c16fc5773aaf5f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

@@ -39,6 +39,15 @@ not create a holdout. Do not invent a holdout from the existing exposed
 benchmark cases. If an untouched inventory does not exist, the final-test
 result is unavailable and the experiment must stop at protocol preparation.
 
+For the SOC Tier 1 suite these inventories now exist by construction:
+`configs/evals/gen5/{train,validation,final_test}.json`, materialized from scenario
+families by `scripts/gen5_instancer.py` and pinned by `configs/evals/gen5/manifest.json`
+(see [`evals_gen5.md`](evals_gen5.md)). Exposure history is the append-only ledger
+`configs/evals/gen5/exposure.jsonl`, written by every model-facing load; `final_test`
+loads only with `--unseal-final-test --preregistration <file>` against an approved
+pre-registration such as
+[`configs/experiments/gen5_campaign1.json`](../configs/experiments/gen5_campaign1.json).
+
 Use [`scripts/validate_experiment.ts`](../scripts/validate_experiment.ts) for
 offline preflight. It checks the manifest schema, full source commit, pinned
 configuration fields, numeric acceptance fields, repeated runs, dataset

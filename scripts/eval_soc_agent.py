@@ -8,6 +8,7 @@ from pathlib import Path
 import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
+import uuid
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
@@ -55,6 +56,226 @@ from scripts.eval_trajectory_verifier import (
     verify_agent_trajectory,
 )
 from scripts.evaluation_provenance import capture_provenance, utc_now
+from agent.jev_backend_gemini import GeminiSystem1Backend
+from agent.jev_backend_typesafe import TypeSafeJevBackend
+from agent.jev_evaluator import JevSocJudgeEvaluator
+from agent.jev_judge import MockJevBackend
+from scripts import gen5_exposure
+from scripts.verify_harbor_soc import compose_soc_reward
+
+GEN5_PASS_THRESHOLD = 0.80
+GEN5_SPLITS = gen5_exposure.SPLITS
+GEN5_MANIFEST_PATH = gen5_exposure.MANIFEST_PATH
+INFRA_ERROR_MARKERS = (
+    "429", "resource_exhausted", "quota", "rate limit", "too many requests",
+    "timeout", "timed out", "deadline", "500", "502", "503", "504",
+    "unavailable", "overloaded", "connection",
+)
+INFRA_RETRY_BACKOFF_S = 2.0
+
+
+def is_infra_error(exc: BaseException) -> bool:
+    """True when an exception looks like an endpoint, quota, or network failure rather than an agent failure."""
+    if isinstance(exc, (TimeoutError, ConnectionError)):
+        return True
+    text = f"{type(exc).__name__} {exc}".lower()
+    return any(marker in text for marker in INFRA_ERROR_MARKERS)
+
+
+def query_with_infra_retries(agent: Any, prompt: str, retries: int) -> Tuple[Optional[Dict[str, Any]], int, Optional[str]]:
+    """Calls agent.query up to retries + 1 times on infra errors. Returns (result, attempts, last_error)."""
+    attempts = 0
+    last_error: Optional[str] = None
+    while attempts <= max(0, int(retries)):
+        attempts += 1
+        try:
+            return agent.query(prompt=prompt), attempts, None
+        except Exception as exc:  # noqa: BLE001 - classified below
+            if not is_infra_error(exc):
+                raise
+            last_error = f"{type(exc).__name__}: {exc}"
+            if attempts <= retries and INFRA_RETRY_BACKOFF_S > 0:
+                time.sleep(INFRA_RETRY_BACKOFF_S * attempts)
+    return None, attempts, last_error
+
+
+def gen5_metrics(usage: Dict[str, Any], latency_s: float, trajectory: List[Dict[str, Any]], infra_failure: bool = False) -> Dict[str, Any]:
+    return {
+        "tokens_in": int(usage.get("prompt_tokens", 0) or 0),
+        "tokens_out": int(usage.get("completion_tokens", 0) or 0),
+        "latency_ms": int(round(latency_s * 1000)),
+        "tool_calls": len(trajectory),
+        "infra_failure": bool(infra_failure),
+    }
+
+
+def score_gen5_case(
+    case: Dict[str, Any],
+    response_text: str,
+    trajectory: List[Dict[str, Any]],
+    usage: Dict[str, Any],
+    latency_s: float,
+    split: Optional[str],
+    jev_evaluator: Any,
+    jev_backend_name: str,
+    manifest_path: Optional[Path] = GEN5_MANIFEST_PATH,
+) -> Dict[str, Any]:
+    """Scores one Gen 5 case with the shared composition and returns the per-case result record."""
+    soc_dec = extract_soc_decision(response_text)
+    decision_data = soc_dec.to_dict() if soc_dec else {}
+    card = compose_soc_reward(
+        case=case,
+        trajectory=trajectory,
+        report_text=response_text,
+        decision_data=decision_data,
+        jev_backend_name=jev_backend_name,
+        case_id=case["eval_id"],
+        manifest_path=manifest_path if manifest_path and Path(manifest_path).exists() else None,
+        metrics=gen5_metrics(usage, latency_s, trajectory),
+        split=split,
+        jev_evaluator=jev_evaluator,
+    )
+    reward = float(card["reward"])
+    passed = bool(reward >= GEN5_PASS_THRESHOLD and not card["inert"] and not card["safety_gate_triggered"])
+    comp_tok = int(usage.get("completion_tokens", 0) or 0)
+    tot_tok = int(usage.get("total_tokens", 0) or 0)
+    return {
+        "eval_id": case["eval_id"],
+        "name": case.get("name", case["eval_id"]),
+        "prompt": case["prompt"],
+        "latency_s": latency_s,
+        "usage": usage,
+        "generation_tps": round(comp_tok / latency_s, 2) if latency_s > 0 else 0.0,
+        "total_tps": round(tot_tok / latency_s, 2) if latency_s > 0 else 0.0,
+        "trajectory": trajectory,
+        "assert_passed": bool(card["assertions"]["all_passed"]),
+        "assertion_failures": list(card["assertions"].get("missing", [])) + list(card["assertions"].get("forbidden_present", [])),
+        "rubric_score": round(reward * 100.0, 1),
+        "grounding_score": float(card["jev_evaluation"].get("grounding_score", 0.0) or 0.0),
+        "passed": passed,
+        "critique": card["jev_evaluation"].get("critique", ""),
+        "response": response_text,
+        "asset_criticality": case.get("asset_criticality", "STANDARD"),
+        "ground_truth_label": str(case.get("ground_truth_label", "")).upper(),
+        "decision_outcome": card["decision_outcome"],
+        "trajectory_verification": card["trajectory_verification"],
+        "soc_decision": decision_data or None,
+        "epistemic_efficiency": card["epistemic_efficiency"],
+        "expected_actions": case.get("expected_actions", []),
+        "prohibited_actions": case.get("prohibited_actions", []),
+        "counterfactual_pair_id": case.get("counterfactual_pair_id"),
+        "case_loss_usd": card["operational_loss_usd"] if card["operational_loss_usd"] is not None else 0.0,
+        "jev_choice": card["jev_evaluation"].get("primary_choice"),
+        # Gen 5 fields (spec 7.2 and Plan 2 scoring decision 4)
+        "gen5_reward": reward,
+        "gen5_components": card["components"],
+        "gen5_scorecard": card,
+        "generation": card["generation"],
+        "family_id": card["family_id"],
+        "split": card["split"],
+        "difficulty": card["difficulty"],
+        "case_sha256": card["case_sha256"],
+        "manifest_sha256": card["manifest_sha256"],
+        "tokens_in": card["tokens_in"],
+        "tokens_out": card["tokens_out"],
+        "tool_calls": card["tool_calls"],
+        "latency_ms": card["latency_ms"],
+        "infra_failure": False,
+        "infra_attempts": 1,
+        "inert": bool(card["inert"]),
+        "safety_gate_triggered": bool(card["safety_gate_triggered"]),
+        "prohibited_entity_violations": card["prohibited_entity_violations"],
+    }
+
+
+def gen5_infra_record(case: Dict[str, Any], split: Optional[str], error: str, attempts: int, latency_s: float) -> Dict[str, Any]:
+    """The record for a case whose every attempt ended in an infrastructure error. Never scored, never a pass."""
+    return {
+        "eval_id": case["eval_id"],
+        "name": case.get("name", case["eval_id"]),
+        "prompt": case["prompt"],
+        "latency_s": latency_s,
+        "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
+        "generation_tps": 0.0,
+        "total_tps": 0.0,
+        "trajectory": [],
+        "assert_passed": False,
+        "assertion_failures": [],
+        "rubric_score": 0.0,
+        "grounding_score": 0.0,
+        "passed": False,
+        "critique": f"infrastructure failure after {attempts} attempt(s): {error}",
+        "response": "",
+        "asset_criticality": case.get("asset_criticality", "STANDARD"),
+        "ground_truth_label": str(case.get("ground_truth_label", "")).upper(),
+        "decision_outcome": None,
+        "trajectory_verification": None,
+        "soc_decision": None,
+        "epistemic_efficiency": 0.0,
+        "expected_actions": case.get("expected_actions", []),
+        "prohibited_actions": case.get("prohibited_actions", []),
+        "counterfactual_pair_id": case.get("counterfactual_pair_id"),
+        "case_loss_usd": 0.0,
+        "gen5_reward": None,
+        "gen5_components": None,
+        "gen5_scorecard": None,
+        "generation": int(case.get("generation") or 0),
+        "family_id": case.get("family_id"),
+        "split": split,
+        "difficulty": case.get("difficulty"),
+        "case_sha256": None,
+        "manifest_sha256": None,
+        "tokens_in": None,
+        "tokens_out": None,
+        "tool_calls": 0,
+        "latency_ms": int(round(latency_s * 1000)),
+        "infra_failure": True,
+        "infra_attempts": attempts,
+        "infra_error": error,
+        "inert": False,
+        "safety_gate_triggered": False,
+        "prohibited_entity_violations": [],
+    }
+
+
+def summarize_gen5(results: List[Dict[str, Any]], split: Optional[str]) -> Dict[str, Any]:
+    """Gen 5 summary: infra failures excluded from every mean, inert and gated cases counted but scored."""
+    scored = [r for r in results if not r.get("infra_failure")]
+    rewards = [float(r["gen5_reward"]) for r in scored if r.get("gen5_reward") is not None]
+
+    def _bucket(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+        vals = [float(r["gen5_reward"]) for r in rows]
+        return {
+            "cases": len(rows),
+            "mean_reward": round(sum(vals) / len(vals), 4) if vals else None,
+            "passed": sum(1 for r in rows if r.get("passed")),
+        }
+
+    per_family: Dict[str, Any] = {}
+    per_difficulty: Dict[str, Any] = {}
+    for key in sorted({str(r.get("family_id")) for r in scored}):
+        per_family[key] = _bucket([r for r in scored if str(r.get("family_id")) == key])
+    for key in sorted({str(r.get("difficulty")) for r in scored}):
+        per_difficulty[key] = _bucket([r for r in scored if str(r.get("difficulty")) == key])
+    mean = round(sum(rewards) / len(rewards), 4) if rewards else None
+    std = round((sum((x - mean) ** 2 for x in rewards) / len(rewards)) ** 0.5, 4) if rewards and mean is not None else None
+    return {
+        "split": split,
+        "pass_threshold": GEN5_PASS_THRESHOLD,
+        "total_cases": len(results),
+        "scored_cases": len(scored),
+        "infra_failures": len(results) - len(scored),
+        "inert_cases": sum(1 for r in scored if r.get("inert")),
+        "safety_gate_cases": sum(1 for r in scored if r.get("safety_gate_triggered")),
+        "passed_cases": sum(1 for r in scored if r.get("passed")),
+        "pass_rate": round(100.0 * sum(1 for r in scored if r.get("passed")) / len(scored), 1) if scored else 0.0,
+        "mean_reward": mean,
+        "std_reward": std,
+        "per_family": per_family,
+        "per_difficulty": per_difficulty,
+    }
+
+
 
 
 class SemanticJudgeResult(BaseModel):
@@ -214,6 +435,23 @@ def calculate_aggregate_score(results: List[Dict[str, Any]], gen: int = 3) -> Di
         summary["advisor_actions_matched_rate"] = round((matched_advisor / total) * 100.0, 1)
         summary["prohibited_avoided_rate"] = round((avoided_prohibited / total) * 100.0, 1)
 
+    jev_choices = [r.get("jev_choice") for r in results if r.get("jev_choice")]
+    if jev_choices:
+        choice_dist: Dict[str, int] = {}
+        for ch in jev_choices:
+            choice_dist[str(ch)] = choice_dist.get(str(ch), 0) + 1
+        summary["jev_choice_distribution"] = choice_dist
+
+    sxs_items = [r.get("sxs_comparison") for r in results if r.get("sxs_comparison")]
+    if sxs_items:
+        n_sxs = len(sxs_items)
+        summary["sxs_summary"] = {
+            "compared_cases": n_sxs,
+            "avg_score_delta": round(sum(s.get("score_delta", 0.0) for s in sxs_items) / n_sxs, 2),
+            "avg_jev_latency_s": round(sum(s.get("jev_latency_s", 0.0) for s in sxs_items) / n_sxs, 4),
+            "avg_gemini_pro_latency_s": round(sum(s.get("gemini_pro_latency_s", 0.0) for s in sxs_items) / n_sxs, 4),
+        }
+
     return summary
 
 
@@ -293,6 +531,16 @@ def run_evaluation(
     runbooks_dir: Optional[str] = None,
     mcp_provider: str = "default",
     provenance_run_id: Optional[str] = None,
+    judge_backend: str = "gemini-2.5-pro",
+    jev_backend: str = "gemini_system1",
+    sxs_judge: bool = False,
+    split: Optional[str] = None,
+    families: Optional[List[str]] = None,
+    difficulty: Optional[List[int]] = None,
+    unseal_final_test: bool = False,
+    purpose: Optional[str] = None,
+    preregistration: Optional[str] = None,
+    infra_retries: int = 2,
 ) -> Dict[str, Any]:
     """Runs the full evaluation suite against the target Gemma model backend."""
     if agent_mode == "hierarchical" and mcp_provider != "default":
@@ -310,12 +558,37 @@ def run_evaluation(
         evalset = json.load(f)
 
     eval_gen = int(evalset.get("generation", gen))
+    if split is not None and eval_gen < 5:
+        raise ValueError(f"--split is a Gen 5 option; {evalset_path} is generation {eval_gen}")
+    if eval_gen >= 5 and split is None:
+        split = str(evalset.get("split") or "validation")
+
+    gen5_entry: Optional[Dict[str, Any]] = None
+    eval_cases: List[Dict[str, Any]] = list(evalset.get("eval_cases", []))
+    if eval_gen >= 5:
+        if judge_backend not in ("jev", "mock"):
+            raise ValueError("Gen 5 scoring uses the shared composition; --judge-backend must be jev or mock")
+        provenance_run_id = provenance_run_id or gen5_exposure.new_run_id()
+        eval_cases, gen5_entry = gen5_exposure.load_split(
+            split,
+            purpose=purpose or "",
+            model=flavor,
+            root=Path(evalset_path).parent,
+            families=families,
+            difficulty=difficulty,
+            run_id=provenance_run_id,
+            unseal_final_test=unseal_final_test,
+            preregistration=Path(preregistration) if preregistration else None,
+        )
 
     print("==================================================================")
     print(f" Running Gemma SOC Tier 1 Evaluation: {flavor} (Gen {eval_gen})")
+    if eval_gen >= 5:
+        print(f" Split: {split} ({len(eval_cases)} cases)")
     print(f" Agent Mode: {agent_mode.capitalize()} ({'Supervisor-Worker' if agent_mode == 'hierarchical' else 'Single ReAct'})")
     if agent_mode == "hierarchical":
         print(f" Procedural Runbooks: {'Enabled' if use_runbooks else 'Disabled (Generic Control)'}")
+    print(f" Judge Backend: {judge_backend} ({jev_backend if judge_backend == 'jev' else 'direct'})")
     print(f" Live SecOps MCP: {'Enabled' if use_live_mcp else 'Disabled (Local Grounding Dataset)'}")
     print(f" MCP Tool Provider: {mcp_provider.upper()}")
     if use_live_mcp:
@@ -340,19 +613,30 @@ def run_evaluation(
         if region == "us-central1":
             region = "us-east5"
 
+    try_run_id = provenance_run_id
+    if eval_gen >= 5 and provenance_run_id is not None:
+        try:
+            uuid.UUID(provenance_run_id)
+        except (ValueError, AttributeError, TypeError):
+            try_run_id = None
+
     provenance = capture_provenance(
         ROOT_DIR, evalset_path,
         {"flavor": flavor, "managed_model": managed_model, "endpoint_id": endpoint_id,
          "cloudrun_url": cloudrun_url, "project_id": project_id, "region": region,
          "generation": eval_gen, "agent_mode": agent_mode, "use_runbooks": use_runbooks,
-         "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider},
+         "use_live_mcp": use_live_mcp, "mcp_provider": mcp_provider,
+         "judge_backend": judge_backend, "jev_backend": jev_backend,
+         "split": split},
         (Path(runbooks_dir) if runbooks_dir else ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books")
         if agent_mode == "hierarchical" and use_runbooks else None,
-        run_id=provenance_run_id,
+        run_id=try_run_id,
     )
+    if eval_gen >= 5 and provenance_run_id is not None:
+        provenance["run_id"] = provenance_run_id
 
     soc_env: Optional[SocEnvironment] = None
-    if not use_live_mcp and eval_gen == 3:
+    if not use_live_mcp and eval_gen in (3, 5):
         soc_env = SocEnvironment()
 
     if agent_mode == "hierarchical":
@@ -384,16 +668,75 @@ def run_evaluation(
     judge_region = "us-central1"
     judge_client = genai.Client(vertexai=True, project=project_id, location=judge_region)
 
+    jev_evaluator: Optional[JevSocJudgeEvaluator] = None
+    if judge_backend in ("jev", "mock"):
+        if judge_backend == "mock" or jev_backend == "mock":
+            backend = MockJevBackend()
+        elif jev_backend == "typesafe":
+            backend = TypeSafeJevBackend()
+        else:
+            backend = GeminiSystem1Backend(
+                project_id=project_id, location=judge_region, client=judge_client
+            )
+        jev_evaluator = JevSocJudgeEvaluator(backend=backend)
+
     results: List[Dict[str, Any]] = []
-    for case in evalset.get("eval_cases", []):
+    for case in eval_cases:
         print(f"\n[Case: {case['eval_id']}] {case['name']}...")
 
-        # Setup per-case dynamic environment state and fault injection if in Gen 3
-        if not use_live_mcp and eval_gen == 3:
+        # Setup per-case dynamic environment state and fault injection if in Gen 3 or Gen 5
+        if not use_live_mcp and eval_gen in (3, 5):
             agent.environment = SocEnvironment.from_eval_case(case)
 
         start_time = time.time()
-        res = agent.query(prompt=case["prompt"])
+        if judge_backend == "mock" and type(agent).__name__ in ("SocTier1Agent", "HierarchicalSOCTier1Agent"):
+            if eval_gen >= 5:
+                from scripts.gen5_reference_policies import execute_python, plan_oracle  # lazy: keeps the import graph acyclic
+
+                trial = plan_oracle(case)
+                res = {
+                    "response": trial.report_text,
+                    "trajectory": execute_python(case, trial),
+                    "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+                }
+            else:
+                # Hermetic dry-run synthetic execution when --judge-backend mock is used directly on CLI
+                exp_acts = case.get("expected_actions", ["close_case"])
+                gt_v = case.get("ground_truth_label", "BENIGN")
+                must_c = " ".join(case.get("assertions", {}).get("must_contain", []))
+                synth_resp = (
+                    f"Completed investigation for {case['eval_id']}. Verified indicators: {must_c}.\n"
+                    "```soc_decision\n"
+                    + json.dumps({
+                        "verdict": gt_v if gt_v else "BENIGN",
+                        "recommended_actions": exp_acts,
+                        "target_entity": (case.get("expected_entities") or ["entity"])[0],
+                        "rationale": "Deterministic dry-run evaluation",
+                    })
+                    + "\n```"
+                )
+                res = {
+                    "response": synth_resp,
+                    "trajectory": [
+                        {"iteration": 1, "tool": "lookup_entity", "args": {"entity_id": "dryrun"}, "observation": "{}"}
+                    ] + [
+                        {"iteration": idx + 2, "tool": act, "args": {}, "observation": "Executed"}
+                        for idx, act in enumerate(exp_acts)
+                    ],
+                    "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+                }
+            attempts = 1
+        else:
+            if eval_gen >= 5:
+                res, attempts, infra_error = query_with_infra_retries(agent, case["prompt"], infra_retries)
+                if res is None:
+                    latency = time.time() - start_time
+                    print(f"  Result: INFRA  | {infra_error} after {attempts} attempt(s); excluded from quality metrics")
+                    results.append(gen5_infra_record(case, split, infra_error or "unknown", attempts, latency))
+                    continue
+            else:
+                res = agent.query(prompt=case["prompt"])
+                attempts = 1
         latency = time.time() - start_time
         response_text = res.get("response", "")
         trajectory = res.get("trajectory", [])
@@ -403,6 +746,28 @@ def run_evaluation(
         tot_tok = usage.get("total_tokens", 0)
         gen_tps = round(comp_tok / latency, 2) if latency > 0 else 0.0
         tot_tps = round(tot_tok / latency, 2) if latency > 0 else 0.0
+
+        if eval_gen >= 5:
+            is_mock_eval = (judge_backend == "mock" or jev_backend == "mock")
+            case_data = score_gen5_case(
+                case,
+                response_text,
+                trajectory,
+                usage,
+                latency,
+                split,
+                None if is_mock_eval else jev_evaluator,
+                "mock" if is_mock_eval else jev_backend,
+            )
+            case_data["infra_attempts"] = attempts
+            flags = " ".join(flag for flag, on in (("inert", case_data["inert"]), ("gate", case_data["safety_gate_triggered"])) if on)
+            print(
+                f"  Result: {'PASS' if case_data['passed'] else 'FAIL'} | Reward: {case_data['gen5_reward']:.4f} | "
+                f"Outcome: {case_data['decision_outcome'] or 'INERT'} | Latency: {latency:.2f}s | "
+                f"Tokens: {tot_tok} | Tool Calls: {len(trajectory)} {flags}"
+            )
+            results.append(case_data)
+            continue
 
         # Deterministic Assertions
         assertions = case.get("assertions", {})
@@ -448,15 +813,57 @@ def run_evaluation(
             criticality=asset_crit,
         )
 
-        # Semantic Judge
-        judge_res = judge_response_with_llm(
-            judge_client=judge_client,
-            prompt=case["prompt"],
-            response=response_text,
-            rubric=case["reference"]["grading_rubric"],
-            reference=case["reference"],
-            trajectory=trajectory,
-        )
+        # Semantic Judge (Jev System-One or Gemini 2.5 Pro)
+        jev_choice: Optional[str] = None
+        jev_metadata: Optional[Dict[str, Any]] = None
+        sxs_comparison: Optional[Dict[str, Any]] = None
+        if jev_evaluator is not None:
+            t_jev = time.time()
+            jev_out = jev_evaluator.evaluate_case(
+                prompt=case["prompt"],
+                response=response_text,
+                reference=case["reference"],
+                rubric=case["reference"]["grading_rubric"],
+                trajectory=trajectory,
+            )
+            jev_latency_s = round(time.time() - t_jev, 4)
+            judge_res = SemanticJudgeResult(
+                rubric_score=jev_out.rubric_score,
+                passed=jev_out.passed,
+                grounding_score=jev_out.grounding_score,
+                critique=jev_out.critique,
+            )
+            jev_choice = jev_out.primary_choice
+            jev_metadata = jev_out.raw_metadata
+
+            if sxs_judge:
+                t_llm = time.time()
+                llm_res = judge_response_with_llm(
+                    judge_client=judge_client,
+                    prompt=case["prompt"],
+                    response=response_text,
+                    rubric=case["reference"]["grading_rubric"],
+                    reference=case["reference"],
+                    trajectory=trajectory,
+                )
+                llm_latency_s = round(time.time() - t_llm, 4)
+                sxs_comparison = {
+                    "jev_rubric_score": jev_out.rubric_score,
+                    "gemini_pro_rubric_score": llm_res.rubric_score,
+                    "score_delta": round(jev_out.rubric_score - llm_res.rubric_score, 2),
+                    "jev_latency_s": jev_latency_s,
+                    "gemini_pro_latency_s": llm_latency_s,
+                    "jev_choice": jev_out.primary_choice,
+                }
+        else:
+            judge_res = judge_response_with_llm(
+                judge_client=judge_client,
+                prompt=case["prompt"],
+                response=response_text,
+                rubric=case["reference"]["grading_rubric"],
+                reference=case["reference"],
+                trajectory=trajectory,
+            )
 
         # Case pass evaluation
         if eval_gen == 3:
@@ -531,9 +938,19 @@ def run_evaluation(
             "counterfactual_pair_id": case.get("counterfactual_pair_id"),
             "case_loss_usd": case_loss,
         }
+        if jev_choice is not None:
+            case_data["jev_choice"] = jev_choice
+            case_data["jev_metadata"] = jev_metadata
+        if sxs_comparison is not None:
+            case_data["sxs_comparison"] = sxs_comparison
         results.append(case_data)
 
-    summary = calculate_aggregate_score(results, gen=eval_gen)
+    if eval_gen >= 5:
+        scored_results = [r for r in results if not r.get("infra_failure")]
+        summary = calculate_aggregate_score(scored_results, gen=eval_gen)
+        summary["gen5"] = summarize_gen5(results, split)
+    else:
+        summary = calculate_aggregate_score(results, gen=eval_gen)
 
     print("\n==================================================================")
     print(f" Evaluation Summary for {flavor} (Gen {eval_gen})")
@@ -563,12 +980,21 @@ def run_evaluation(
             cf = summary["counterfactual_consistency"]
             print(f" Counterfactual Consistency: {cf['counterfactual_consistency_score']*100:.1f}% ({cf['consistent_pairs']}/{cf['evaluated_pairs']} pairs consistent)")
 
+    if eval_gen >= 5:
+        g5 = summary["gen5"]
+        print("------------------------------------------------------------------")
+        print(f" Gen 5 ({g5['split']}): mean reward {g5['mean_reward']} (std {g5['std_reward']}) | "
+              f"pass rate {g5['pass_rate']}% at >= {g5['pass_threshold']} | scored {g5['scored_cases']} | "
+              f"infra failures {g5['infra_failures']} | inert {g5['inert_cases']} | safety gate {g5['safety_gate_cases']}")
+        for family_id, row in g5["per_family"].items():
+            print(f"   {family_id:<36} cases={row['cases']:<3} mean={row['mean_reward']}  passed={row['passed']}")
+
     print("------------------------------------------------------------------")
     print(f" {'Case ID':<38} | {'Status':<6} | {'Outcome':<14} | {'Rubric':<8} | {'Latency':<7} | {'Loss ($)':<10}")
     print("------------------------------------------------------------------")
     for r in results:
         status_str = "PASS" if r["passed"] else "FAIL"
-        outcome_str = r.get("decision_outcome", "N/A")
+        outcome_str = r.get("decision_outcome") or ("INFRA" if r.get("infra_failure") else "INERT")
         loss_val = r.get("case_loss_usd", 0.0)
         print(
             f" {r['eval_id']:<38} | {status_str:<6} | {outcome_str:<14} | "
@@ -583,9 +1009,13 @@ def run_evaluation(
         "provenance": provenance,
         "flavor": flavor,
         "generation": eval_gen,
+        "split": split,
+        "gen5_exposure": gen5_entry,
         "agent_mode": agent_mode,
         "use_runbooks": use_runbooks,
         "mcp_provider": mcp_provider,
+        "judge_backend": judge_backend,
+        "jev_backend": jev_backend,
         "summary": summary,
         "case_results": results,
     }
@@ -697,6 +1127,23 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
                 status = "CONSISTENT" if p.get("consistent") else "INCONSISTENT"
                 lines.append(f"| {p.get('pair_id')} | {pair_label} | {status} | {p.get('details') or p.get('reason') or 'N/A'} |")
 
+    g5 = summary.get("gen5")
+    if g5:
+        lines += [
+            "\n## Gen 5 reward summary",
+            f"\n**Split:** `{g5['split']}` | **Pass threshold:** {g5['pass_threshold']} | "
+            f"**Mean reward:** {g5['mean_reward']} (std {g5['std_reward']}) | **Pass rate:** {g5['pass_rate']}%",
+            f"\nScored cases: {g5['scored_cases']} | Infra failures (excluded): {g5['infra_failures']} | "
+            f"Inert: {g5['inert_cases']} | Safety gate: {g5['safety_gate_cases']}",
+            "\n| Family | Cases | Mean reward | Passed |",
+            "|---|---|---|---|",
+        ]
+        for family_id, row in g5["per_family"].items():
+            lines.append(f"| {family_id} | {row['cases']} | {row['mean_reward']} | {row['passed']} |")
+        lines += ["\n| Difficulty | Cases | Mean reward | Passed |", "|---|---|---|---|"]
+        for level, row in g5["per_difficulty"].items():
+            lines.append(f"| {level} | {row['cases']} | {row['mean_reward']} | {row['passed']} |")
+
     lines.append("\n---\n\n## 4. Detailed Case Trajectories & Reports\n")
     for c in eval_data.get("case_results", []):
         lines.append(f"### {c['eval_id']}: {c['name']}\n")
@@ -711,17 +1158,26 @@ def format_markdown_report(eval_data: Dict[str, Any], live_mcp: bool = False) ->
 
         if c.get("assertion_failures"):
             lines.append(f"- **Assertion Failures:** `{c['assertion_failures']}`")
+        if c.get("jev_choice"):
+            lines.append(f"- **Jev Diagnostic Choice:** `{c['jev_choice']}`")
+        if c.get("sxs_comparison"):
+            sxs = c["sxs_comparison"]
+            lines.append(
+                f"- **SxS Judge Comparison:** Jev={sxs.get('jev_score')}/100 "
+                f"(Choice: `{sxs.get('jev_choice')}`) vs Legacy={sxs.get('legacy_score')}/100"
+            )
         lines.append(f"- **Judge Critique:** {c['critique']}\n")
 
         # Trajectory
         traj = c.get("trajectory", [])
         lines.append("#### Tool Execution Trajectory:")
         if traj:
-            for step in traj:
-                lines.append(f"**Step {step['iteration']} - `{step['tool']}`**")
-                lines.append(f"- Arguments: `{json.dumps(step['args'])}`")
+            for idx, step in enumerate(traj, 1):
+                iteration = step.get("iteration", idx)
+                lines.append(f"**Step {iteration} - `{step['tool']}`**")
+                lines.append(f"- Arguments: `{json.dumps(step.get('args', {}))}`")
                 lines.append("```json")
-                lines.append(step['observation'])
+                lines.append(str(step.get("observation", "")))
                 lines.append("```")
         else:
             lines.append("*(No tools invoked)*\n")
@@ -807,6 +1263,9 @@ def _initial_cli_provenance(
             "use_runbooks": args.use_runbooks,
             "use_live_mcp": args.live_mcp,
             "mcp_provider": args.mcp_provider,
+            "judge_backend": getattr(args, "judge_backend", "jev"),
+            "jev_backend": getattr(args, "jev_backend", "gemini_system1"),
+            "sxs_judge": getattr(args, "sxs_judge", False),
         },
         runbooks_path,
         run_id=None,
@@ -831,8 +1290,8 @@ def _write_cli_failure_artifacts(
         print(f"Failure report saved to: {report_path}")
 
 
-def main() -> None:
-    """CLI entrypoint for running the SOC evaluation runner."""
+def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+    """Parse CLI arguments for the SOC evaluation runner."""
     parser = argparse.ArgumentParser(description="Evaluate Gemma SOC Agent against Rubrics, SDT, and Loss Matrix.")
     parser.add_argument("--flavor", default="local-gemma", help="Model flavor name")
     parser.add_argument(
@@ -840,10 +1299,17 @@ def main() -> None:
         "--generation",
         dest="gen",
         type=int,
-        choices=[1, 2, 3],
+        choices=[1, 2, 3, 5],
         default=3,
-        help="Evaluation generation version: 1 for Gen 1 (5-case baseline), 2 for Gen 2 (10-case expanded), 3 for Gen 3 (10-case interactive with SDT and loss engine)",
+        help="Evaluation generation version: 1 for Gen 1 (5-case baseline), 2 for Gen 2 (10-case expanded), 3 for Gen 3 (10-case interactive with SDT and loss engine), 5 for Gen 5 (family-instanced splits)",
     )
+    parser.add_argument("--split", choices=list(GEN5_SPLITS), default=None, help="Gen 5 split to load (implies --gen 5)")
+    parser.add_argument("--families", nargs="+", default=None, help="Gen 5: keep only these family ids (FAM-... or the short form)")
+    parser.add_argument("--difficulty", nargs="+", type=int, choices=[1, 2, 3], default=None, help="Gen 5: keep only these difficulty levels")
+    parser.add_argument("--unseal-final-test", action="store_true", default=False, help="Gen 5: allow loading final_test (requires --purpose and --preregistration)")
+    parser.add_argument("--purpose", default=None, help="Gen 5: why this split is being loaded; written to the exposure ledger")
+    parser.add_argument("--preregistration", default=None, help="Gen 5: approved pre-registration file required to unseal final_test")
+    parser.add_argument("--infra-retries", type=int, default=2, help="Gen 5: retries for 429, timeout, and endpoint errors before a case is marked infra_failure")
     parser.add_argument("--evalset", default=None, help="Path to evalset JSON (overrides default for --gen)")
     parser.add_argument("--live-mcp", "--use-live-mcp", dest="live_mcp", action="store_true", default=False, help="Use live Google SecOps Remote MCP tools")
     parser.add_argument("--chronicle-project", default=os.environ.get("CHRONICLE_PROJECT_ID", "secops-demo-env"), help="Google SecOps GCP Project ID")
@@ -879,17 +1345,40 @@ def main() -> None:
         default="default",
         help="MCP tool description source: 'default' (baseline docstrings) or 'gepa' (gusto-mcp-gepa Pareto-optimized descriptions)",
     )
+    parser.add_argument(
+        "--judge-backend",
+        choices=["jev", "gemini-2.5-pro", "mock"],
+        default="jev",
+        help="Evaluation judge backend: 'jev' (System-1 logit scoring), 'gemini-2.5-pro' (legacy CoT), or 'mock'",
+    )
+    parser.add_argument(
+        "--jev-backend",
+        choices=["gemini_system1", "typesafe", "mock"],
+        default="gemini_system1",
+        help="Underlying Jev execution backend: 'gemini_system1', 'typesafe', or 'mock'",
+    )
+    parser.add_argument(
+        "--sxs-judge",
+        action="store_true",
+        default=False,
+        help="Run both Jev System-1 and legacy Gemini 2.5 Pro judges side-by-side for comparison",
+    )
     parser.add_argument("--output-report", default=None, help="Markdown report output path")
     parser.add_argument("--output-json", default=None, help="Raw JSON evaluation output path")
-    args = parser.parse_args()
+    return parser.parse_args(argv)
 
-    # Determine default evalset based on generation and live MCP mode
+
+def resolve_evalset_path(args: argparse.Namespace) -> Path:
+    """Default evalset for the requested generation; --split and --gen 5 resolve to the Gen 5 bundles."""
     if args.evalset:
-        evalset_file = Path(args.evalset)
-    elif args.gen == 1:
+        return Path(args.evalset)
+    if args.split or args.gen == 5:
+        return gen5_exposure.bundle_path(args.split or "validation")
+    if args.gen == 1:
         evalset_file = ROOT_DIR / "configs" / "evals" / "gen1" / "soc_tier1_triage.json"
         if not evalset_file.exists():
             evalset_file = ROOT_DIR / "configs" / "evals" / "soc_tier1_evalset.json"
+        return evalset_file
     elif args.gen == 2:
         if args.live_mcp:
             evalset_file = ROOT_DIR / "configs" / "evals" / "gen2" / "soc_live_mcp.json"
@@ -899,18 +1388,28 @@ def main() -> None:
             evalset_file = ROOT_DIR / "configs" / "evals" / "gen2" / "soc_tier1_triage.json"
             if not evalset_file.exists():
                 evalset_file = ROOT_DIR / "configs" / "evals" / "soc_tier1_triage.json"
+        return evalset_file
     else:
         # Gen 3 default
         if args.live_mcp:
-            evalset_file = ROOT_DIR / "configs" / "evals" / "gen3" / "soc_live_mcp_interactive.json"
+            return ROOT_DIR / "configs" / "evals" / "gen3" / "soc_live_mcp_interactive.json"
         else:
-            evalset_file = ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"
+            return ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"
+
+
+def main(argv: Optional[List[str]] = None) -> None:
+    """CLI entrypoint for running the SOC evaluation runner."""
+    args = parse_args(argv)
+
+    evalset_file = resolve_evalset_path(args)
 
     json_path = Path(args.output_json) if args.output_json else (
         Path(args.output_report).with_suffix(".json") if args.output_report else None
     )
     report_path = Path(args.output_report) if args.output_report else None
     initial_eval_gen = int(args.gen)
+    if args.split:
+        initial_eval_gen = 5
     try:
         with open(evalset_file, "r", encoding="utf-8") as f:
             initial_eval_gen = int(json.load(f).get("generation", initial_eval_gen))
@@ -949,8 +1448,21 @@ def main() -> None:
             runbooks_dir=args.runbooks_dir,
             mcp_provider=args.mcp_provider,
             provenance_run_id=initial_provenance["run_id"],
+            judge_backend=args.judge_backend,
+            jev_backend=args.jev_backend,
+            sxs_judge=args.sxs_judge,
+            split=args.split or ("validation" if args.gen == 5 and not args.evalset else None),
+            families=args.families,
+            difficulty=args.difficulty,
+            unseal_final_test=args.unseal_final_test,
+            purpose=args.purpose,
+            preregistration=args.preregistration,
+            infra_retries=args.infra_retries,
         )
     except Exception as error:
+        if isinstance(error, (gen5_exposure.FinalTestSealedError, gen5_exposure.ExposureError)):
+            print(f"Evaluation failed: {type(error).__name__}: {error}", file=sys.stderr)
+            sys.exit(2)
         initial_provenance["completed_at"] = utc_now()
         initial_provenance["lifecycle"].update({
             "status": "failed",

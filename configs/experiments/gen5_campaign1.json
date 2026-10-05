@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "workflow": "gen5_campaign1: seed versus GEPA-evolved runbooks on the Gen 5 family-instanced SOC Tier 1 suite",
+  "reviewer": null,
+  "source_commit": null,
+  "repetitions": 2,
+  "acceptance": {
+    "approved_by": null,
+    "approved_at": null,
+    "min_task_completion_rate": null,
+    "max_unsafe_action_rate": 0.0,
+    "max_p95_latency_s": null,
+    "max_cost_per_success_usd": null,
+    "max_experiment_cost_usd": null
+  },
+  "configurations": {
+    "open_model": {
+      "model_revision": null,
+      "container_image": null,
+      "hardware": null,
+      "region": null,
+      "parameters": {}
+    },
+    "managed_baseline": {
+      "model_revision": "gemini-2.5-flash",
+      "region": "us-central1",
+      "parameters": {
+        "temperature": 0.0
+      }
+    }
+  },
+  "datasets": {
+    "train": {
+      "path": "configs/evals/gen5/train.json",
+      "sha256": "e92c90c5caa0cf6d371a76be8869bf62e3d74948cee41cef82163ea1965f8418"
+    },
+    "validation": {
+      "path": "configs/evals/gen5/validation.json",
+      "sha256": "fc3284f0c9bff1edc01d95e8fff25f1a8463ed05f33eb7186496e604e627c509"
+    },
+    "final_test": {
+      "path": "configs/evals/gen5/final_test.json",
+      "sha256": "f9f4f8a236690bb6bbfead3479c993121c06495b10aa559b6d16ca6272cf0976"
+    }
+  },
+  "holdout_attestation": {
+    "reviewer": null,
+    "evidence": "configs/evals/gen5/exposure.jsonl carries zero final_test entries at approval time (tests/test_gen5_exposure.py asserts it); final_test instances were materialized by scripts/gen5_instancer.py and never loaded by a model-facing runner.",
+    "never_used_for_optimization": null,
+    "dataset_sha256": "f9f4f8a236690bb6bbfead3479c993121c06495b10aa559b6d16ca6272cf0976"
+  },
+  "gen5": {
+    "hypotheses": [
+      "H1 (in-distribution): on the 10 final_test instances of the seen families, GEPA-evolved runbooks score above the seed runbooks by more than tau_accept from noise_floor.json.",
+      "H2 (out of distribution): on the 20 final_test instances of the four held-out families, the evolved-minus-seed delta is reported; the campaign claims generalization only if it also exceeds tau_accept there.",
+      "H3 (attribution): the in-distribution delta minus the OOD delta is reported as the in-distribution premium; a positive premium with a null OOD delta is read as learned family structure, not improved judgment."
+    ],
+    "comparison": {
+      "baseline": "seed runbooks (the four CORE_RUNBOOKS from third_party/ai-runbooks)",
+      "candidate": "configs/runbooks/gepa_evolved at the commit recorded in its evolution_metadata.json",
+      "model": "gemini-2.5-flash",
+      "in_distribution": "final_test instances whose family_id is in split_plan.json role seen (10 cases)",
+      "out_of_distribution": "final_test instances whose family_id is in split_plan.json role final_test_ood (20 cases)",
+      "scorer": "scripts.verify_harbor_soc.compose_soc_reward, pass at reward >= 0.80, infra failures excluded"
+    },
+    "repetitions": 2,
+    "max_metric_calls": null,
+    "thresholds": {
+      "noise_mean_spread_max": 0.02,
+      "headroom_frontier_seed_max": 0.95,
+      "tau_accept": null
+    },
+    "unseal_command": "just eval-gen5 gemini-2.5-flash final_test '' 'gen5_campaign1 final comparison' -- after acceptance.approved_by and approved_at are set"
+  }
+}

@@ -1,0 +1,271 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820",
+          "DeployHelper.msi"
+        ],
+        "must_not_contain": [
+          "valid_certificate",
+          "clean software"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "CI-FRA-91",
+        "blast_radius": "Enterprise build and deployment infrastructure; block the artifact, do not take the runner offline on an unconfirmed finding",
+        "business_role": "Shared CI runner serving 26 release pipelines",
+        "criticality": "HIGH",
+        "owner": "elias.romano"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-51420": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-51420",
+            "comments": [
+              "Artifact scanner: DeployHelper.msi (bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820) is signed with a certificate revoked on 2026-09-24T11:00:00Z.",
+              "Platform team: CI-FRA-91 serves 26 pipelines; a runner outage blocks every release."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Revoked signing certificate on DeployHelper.msi staged on CI-FRA-91"
+          }
+        },
+        "domains": {
+          "updates.secure-assets.io": {
+            "categories": [
+              "software",
+              "downloads"
+            ],
+            "category": "Software Downloads",
+            "created_date": "2019-03-11T00:00:00Z",
+            "domain": "updates.secure-assets.io",
+            "first_seen": "2019-03-11T00:00:00Z",
+            "harmless_votes": 44,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.19.30.160"
+            ],
+            "registrar": "Tucows Domains Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.19.30.160"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-07T10:00:00Z",
+            "metadata": {
+              "event_type": "FILE_CREATION"
+            },
+            "principal": {
+              "hostname": "CI-FRA-91",
+              "ip": "10.11.0.162"
+            },
+            "security_result": {
+              "summary": "certificate revoked on 2026-09-24T11:00:00Z"
+            },
+            "target": {
+              "file": {
+                "full_path": "/opt/ci/cache/DeployHelper.msi",
+                "sha256": "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820"
+              },
+              "hostname": "updates.secure-assets.io",
+              "ip": "198.19.30.160"
+            }
+          },
+          {
+            "event_timestamp": "2026-09-07T10:00:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "hostname": "DEV-FRA-43",
+              "ip": "10.11.0.187",
+              "user": "leila.raman"
+            },
+            "security_result": {
+              "action": "ALLOW"
+            }
+          }
+        ],
+        "hashes": {
+          "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820": {
+            "cert_status": "REVOKED_CERTIFICATE",
+            "certificate_status": "REVOKED_CERTIFICATE",
+            "detections": "9/72 engines",
+            "filename": "DeployHelper.msi",
+            "revocation_date": "2026-09-24T11:00:00Z",
+            "sha256": "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820",
+            "signer": "Tailspin Labs Code Signing CA",
+            "threat_name": "Possible supply chain tampering",
+            "vendor": "Tailspin Labs",
+            "verdict": "SUSPICIOUS",
+            "vt_positives": 9,
+            "vt_total": 72
+          }
+        },
+        "hosts": {
+          "CI-FRA-91": {
+            "active_user": "elias.romano",
+            "criticality_tier": "HIGH",
+            "hostname": "CI-FRA-91",
+            "installed_services": [
+              "CI runner",
+              "Artifact cache",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.162",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "FILE_CREATION",
+                  "filename": "DeployHelper.msi",
+                  "note": "staged in the artifact cache; not executed",
+                  "sha256": "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820",
+                  "source": "updates.secure-assets.io"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_CREATION"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": true
+            }
+          },
+          "DEV-FRA-43": {
+            "active_user": "leila.raman",
+            "criticality_tier": "STANDARD",
+            "hostname": "DEV-FRA-43",
+            "installed_services": [
+              "IDE",
+              "EDR agent"
+            ],
+            "ip": "10.11.0.187",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "event_type": "USER_LOGIN",
+                  "note": "requested the vendor update through the pipeline UI",
+                  "outcome": "SUCCESS",
+                  "user": "leila.raman"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.19.30.160": {
+            "asn": "AS64520 (Tailspin Labs)",
+            "category": "Software vendor CDN",
+            "harmless_votes": 41,
+            "ip": "198.19.30.160",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "updates.secure-assets.io",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "expected_actions": [
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820",
+        "DeployHelper.msi",
+        "Tailspin Labs"
+      ],
+      "family_id": "FAM-SUPPLYCHAIN-REVOKED-CERT",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 4,
+      "instance_seed": 7363691782777832616,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Vendor binary with a revoked code-signing certificate staged on a CI runner [05]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "block_indicator",
+            "args": {
+              "indicator": "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820"
+            }
+          },
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-51420",
+              "comment": "Supply chain anomaly: DeployHelper.msi (bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820) staged on CI-FRA-91 carries a Tailspin Labs code-signing certificate revoked on 2026-09-24T11:00:00Z; 9 of 72 engines flag it. Hash blocked and staged copy quarantined, vendor inquiry opened with Tailspin Labs, CI-FRA-91 and updates.secure-assets.io left in service, escalated to Tier 2, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "file_hash": "bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820"
+            },
+            "tool": "get_file_report"
+          },
+          {
+            "args": {
+              "entity_id": "CI-FRA-91"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "domain": "updates.secure-assets.io"
+            },
+            "tool": "get_domain_report"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "CI-FRA-91",
+        "updates.secure-assets.io"
+      ],
+      "prompt": "Analyze alert CASE-51420: build runner CI-FRA-91 (10.11.0.162) staged DeployHelper.msi (sha256 bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820) downloaded from updates.secure-assets.io, claiming to be signed by Tailspin Labs; the signature's certificate shows as revoked. The download was requested from developer workstation DEV-FRA-43 (10.11.0.187, user leila.raman). The binary has not executed. [CMDB Asset Context: Asset CI-FRA-91 (10.11.0.162), Owner: elias.romano, Role: Shared CI runner serving 26 release pipelines, Blast Radius: Enterprise build and deployment infrastructure; block the artifact, do not take the runner offline on an unconfirmed finding]. Query file intelligence, determine the risk status, and execute proportionate containment.",
+      "reference": {
+        "expected_threat_family": "Supply chain tampering (revoked code-signing certificate)",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: queries get_file_report for bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820, detects REVOKED_CERTIFICATE on a binary attributed to Tailspin Labs, executes block_indicator on the hash, documents the supply chain risk in a comment, and leaves the case open without isolating CI-FRA-91 or blocking updates.secure-assets.io. No credit for close_case, for isolate_host on CI-FRA-91, or for block_indicator on updates.secure-assets.io.",
+        "recommended_action": "Block the hash bd1098cbeaf1d94bbfb9b0130923cdd9f4486f8c45c61e002a39aebcdc7f1820 so DeployHelper.msi cannot deploy, quarantine the staged copy, open a vendor inquiry with Tailspin Labs about the revoked certificate, escalate to Tier 2, and keep CI-FRA-91 and updates.secure-assets.io in service."
+      },
+      "template_sha256": "3a978d45054c4fa066d47d3c7485683b84fc22008372cb79a0c16fc5773aaf5f",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "validation"
+}

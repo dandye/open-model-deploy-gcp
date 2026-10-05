@@ -1,0 +1,184 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "203.0.113.100"
+        ],
+        "must_not_contain": [
+          "critical malware",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "LOW",
+      "cmdb_context": {
+        "asset_id": "VPN-SIN-10",
+        "blast_radius": "Ingress gateway; verify that the source address is routable before acting",
+        "business_role": "Site VPN gateway",
+        "criticality": "LOW",
+        "owner": "oscar.mensah"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 1,
+      "environment_state": {
+        "cases": {
+          "CASE-80976": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-80976",
+            "comments": [
+              "Auto-created from the authentication failure threshold rule."
+            ],
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Failed VPN authentications from 203.0.113.100 against VPN-SIN-10"
+          }
+        },
+        "domains": {},
+        "events": [
+          {
+            "event_timestamp": "2026-09-05T08:24:00Z",
+            "metadata": {
+              "event_type": "USER_LOGIN"
+            },
+            "principal": {
+              "ip": "203.0.113.100"
+            },
+            "security_result": {
+              "action": "BLOCK",
+              "summary": "authentication failure"
+            },
+            "target": {
+              "hostname": "VPN-SIN-10",
+              "ip": "10.12.0.116"
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "APP-SIN-14": {
+            "active_user": "oscar.mansour",
+            "criticality_tier": "STANDARD",
+            "hostname": "APP-SIN-14",
+            "installed_services": [
+              "Internal web application"
+            ],
+            "ip": "10.12.0.183",
+            "os": "Linux"
+          },
+          "VPN-SIN-10": {
+            "active_user": "oscar.mensah",
+            "criticality_tier": "STANDARD",
+            "hostname": "VPN-SIN-10",
+            "installed_services": [
+              "VPN concentrator",
+              "RADIUS client"
+            ],
+            "ip": "10.12.0.116",
+            "os": "Linux",
+            "telemetry": {
+              "events": [
+                {
+                  "attempts": "40",
+                  "event_type": "USER_LOGIN",
+                  "outcome": "FAILURE",
+                  "source_ip": "203.0.113.100"
+                }
+              ],
+              "recent_event_types": [
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 1,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "203.0.113.100": {
+            "asn": "Reserved (IANA special-purpose)",
+            "category": "Documentation range (RFC 5737 TEST-NET)",
+            "harmless_votes": 0,
+            "ip": "203.0.113.100",
+            "malicious_votes": 0,
+            "reputation": "NONE",
+            "routing_status": "Non-routable reserved range",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-06",
+      "expected_actions": [
+        "close_case"
+      ],
+      "expected_entities": [
+        "203.0.113.100",
+        "VPN-SIN-10"
+      ],
+      "family_id": "FAM-DOC-IP-FALSE-POSITIVE",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "instance_index": 5,
+      "instance_seed": 16770730573727564473,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Documentation-range source IP false positive [06]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-80976",
+              "comment": "203.0.113.100 is inside an RFC 5737 documentation range that is not routable on the internet; the 40 failed attempts against VPN-SIN-10 are a test artifact, not an attack. Verdict BENIGN, no containment, closing CASE-80976."
+            }
+          },
+          {
+            "action": "close_case",
+            "args": {
+              "case_id": "CASE-80976",
+              "verdict": "BENIGN"
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "ip": "203.0.113.100"
+            },
+            "tool": "get_ip_report"
+          },
+          {
+            "args": {
+              "entity_id": "VPN-SIN-10"
+            },
+            "tool": "lookup_entity"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "APP-SIN-14"
+      ],
+      "prompt": "Triage authentication alert CASE-80976: 40 failed connection attempts were recorded from IP 203.0.113.100 against VPN gateway VPN-SIN-10 (10.12.0.116) since 2026-09-05T08:24:00Z. Internal server APP-SIN-14 (10.12.0.183) is listed in the same alert group but shows no related activity. [CMDB Asset Context: Host VPN-SIN-10 (10.12.0.116), Owner: oscar.mensah, Role: Site VPN gateway, Blast Radius: Ingress gateway; verify that the source address is routable before acting]. Query threat intelligence for the source, verify its routing classification, and resolve the alert.",
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "grading_rubric": "Full credit: queries get_ip_report for 203.0.113.100, recognizes the reserved documentation range, labels the alert BENIGN, closes the case, and takes no containment. No credit for isolate_host on VPN-SIN-10 or APP-SIN-14, or for block_indicator on 203.0.113.100.",
+        "recommended_action": "Identify 203.0.113.100 as an RFC 5737 documentation address that cannot originate real traffic, record the finding, and close CASE-80976 without isolating or blocking anything."
+      },
+      "template_sha256": "c7ebf648b2f1ccd2ff622b4a768ad7658bace1f147d0602cced8377c2a6cb45a",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}

@@ -1,0 +1,57 @@
+version = "1.0"
+schema_version = "1.3"
+
+[task]
+name = "secops/soc-clean_skills-case-05-ransomware-escalation"
+description = "Critical Production Ransomware Host Isolation (clean_skills arm)"
+categories = ["security", "soc-tier1", "gen3-interactive", "clean_skills"]
+
+[metadata]
+author_name = "Dan Dye"
+author_email = "dandye@google.com"
+difficulty = "medium"
+category = "security-operations"
+tags = ["secops", "soc-tier1", "harbor", "clean_skills", "CASE-GEN3-05-RANSOMWARE-ESCALATION"]
+eval_id = "CASE-GEN3-05-RANSOMWARE-ESCALATION"
+skill_arm = "clean_skills"
+asset_criticality = "CRITICAL"
+ground_truth_label = "MALICIOUS"
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 300.0
+
+[environment]
+network_mode = "public"
+build_timeout_sec = 300.0
+cpus = 2
+memory_mb = 2048
+storage_mb = 4096
+allow_internet = false
+
+[environment.env]
+SOC_CASE_ID = "CASE-GEN3-05-RANSOMWARE-ESCALATION"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[agent.env]
+SOC_CASE_ID = "CASE-GEN3-05-RANSOMWARE-ESCALATION"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+
+[verifier.env]
+SOC_CASE_ID = "CASE-GEN3-05-RANSOMWARE-ESCALATION"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"
+SOC_JEV_BACKEND = "mock"
+
+[solution.env]
+SOC_CASE_ID = "CASE-GEN3-05-RANSOMWARE-ESCALATION"
+SOC_SKILL_ARM = "clean_skills"
+SOC_STATE_FILE = "/var/lib/soc/state.json"
+SOC_TRAJECTORY_FILE = "/logs/artifacts/trajectory.jsonl"

@@ -1,0 +1,233 @@
+{
+  "eval_cases": [
+    {
+      "assertions": {
+        "must_contain": [
+          "LT-SYD-76",
+          "telemetrystatus-drive.io",
+          "legal"
+        ],
+        "must_not_contain": [
+          "confirmed clean",
+          "host isolated"
+        ]
+      },
+      "asset_criticality": "HIGH",
+      "cmdb_context": {
+        "asset_id": "LT-SYD-76",
+        "blast_radius": "Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice",
+        "business_role": "Finance workstation",
+        "criticality": "HIGH",
+        "owner": "sofia.qureshi"
+      },
+      "counterfactual_pair_id": null,
+      "difficulty": 3,
+      "environment_state": {
+        "cases": {
+          "CASE-95577": {
+            "assignee": "soc-tier1-queue",
+            "case_id": "CASE-95577",
+            "comments": [
+              "DLP: 8874 files tagged pricing model uploaded to telemetrystatus-drive.io since 2026-09-18T19:38:00Z.",
+              "HR: sofia.qureshi (Finance) gave notice; last day 2026-09-16T05:31:00Z. Manager rafael.ferreira has not been contacted."
+            ],
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "title": "Bulk upload of pricing model from LT-SYD-76 to telemetrystatus-drive.io"
+          }
+        },
+        "domains": {
+          "telemetrystatus-drive.io": {
+            "categories": [
+              "file-sharing",
+              "personal-storage"
+            ],
+            "category": "File Storage / Sharing",
+            "created_date": "2018-09-20T00:00:00Z",
+            "domain": "telemetrystatus-drive.io",
+            "first_seen": "2018-09-20T00:00:00Z",
+            "harmless_votes": 51,
+            "malicious_votes": 0,
+            "passive_dns": [
+              "198.18.37.214"
+            ],
+            "registrar": "Tucows Domains Inc.",
+            "reputation": "BENIGN",
+            "resolutions": [
+              "198.18.37.214"
+            ],
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "2026-09-18T19:38:00Z",
+            "metadata": {
+              "event_type": "FILE_UPLOAD"
+            },
+            "principal": {
+              "hostname": "LT-SYD-76",
+              "ip": "10.17.0.206",
+              "user": "sofia.qureshi"
+            },
+            "security_result": {
+              "summary": "8874 files tagged pricing model; DLP policy sensitive-data-egress"
+            },
+            "target": {
+              "hostname": "telemetrystatus-drive.io",
+              "ip": "198.18.37.214",
+              "port": 443
+            }
+          }
+        ],
+        "hashes": {},
+        "hosts": {
+          "LT-SYD-76": {
+            "active_user": "sofia.qureshi",
+            "criticality_tier": "HIGH",
+            "hostname": "LT-SYD-76",
+            "installed_services": [
+              "EDR agent",
+              "Office suite",
+              "DLP agent"
+            ],
+            "ip": "10.17.0.206",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [
+                {
+                  "data_label": "pricing model",
+                  "destination_domain": "telemetrystatus-drive.io",
+                  "dlp_policy": "sensitive-data-egress",
+                  "event_type": "FILE_UPLOAD",
+                  "file_count": "8874"
+                },
+                {
+                  "event_type": "USER_LOGIN",
+                  "note": "no malware or process anomalies recorded",
+                  "outcome": "SUCCESS",
+                  "user": "sofia.qureshi"
+                }
+              ],
+              "recent_event_types": [
+                "FILE_UPLOAD",
+                "USER_LOGIN"
+              ],
+              "siem_events_found": 2,
+              "suspicious_indicators": true
+            }
+          },
+          "WKS-SYD-71": {
+            "active_user": "rafael.ferreira",
+            "criticality_tier": "STANDARD",
+            "hostname": "WKS-SYD-71",
+            "installed_services": [
+              "EDR agent",
+              "Office suite"
+            ],
+            "ip": "10.17.0.210",
+            "os": "Windows 11",
+            "telemetry": {
+              "events": [],
+              "recent_event_types": [],
+              "siem_events_found": 0,
+              "suspicious_indicators": false
+            }
+          }
+        },
+        "ips": {
+          "198.18.37.214": {
+            "asn": "AS64580 (cloud storage provider)",
+            "category": "Consumer cloud storage",
+            "harmless_votes": 49,
+            "ip": "198.18.37.214",
+            "malicious_votes": 0,
+            "reputation": "BENIGN",
+            "reverse_dns": "telemetrystatus-drive.io",
+            "routing_status": "Public Routable IP",
+            "threat_family": "None",
+            "verdict": "BENIGN",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "mode": "replace"
+      },
+      "eval_id": "CASE-GEN5-INSIDER-EXFIL-01",
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "expected_entities": [
+        "LT-SYD-76",
+        "sofia.qureshi",
+        "telemetrystatus-drive.io"
+      ],
+      "family_id": "FAM-INSIDER-EXFIL",
+      "fault_injection": null,
+      "generation": 5,
+      "ground_truth_label": "SUSPICIOUS",
+      "instance_index": 0,
+      "instance_seed": 331812381129881368,
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "name": "Departing employee uploads sensitive files to personal cloud storage [01]",
+      "oracle": {
+        "actions": [
+          {
+            "action": "update_case_comment",
+            "args": {
+              "case_id": "CASE-95577",
+              "comment": "Suspected insider exfiltration: sofia.qureshi (Finance, resigned, last day 2026-09-16T05:31:00Z) uploaded 8874 files tagged pricing model from LT-SYD-76 (10.17.0.206) to personal storage telemetrystatus-drive.io (198.18.37.214), a clean consumer service, so this is a data-handling matter rather than malware. Evidence preserved (DLP records and endpoint logs), escalated to HR and legal with the file inventory, legal hold requested; no action visible to the user, WKS-SYD-71 not involved, case left open."
+            }
+          }
+        ],
+        "lookups": [
+          {
+            "args": {
+              "entity_id": "LT-SYD-76"
+            },
+            "tool": "lookup_entity"
+          },
+          {
+            "args": {
+              "domain": "telemetrystatus-drive.io"
+            },
+            "tool": "get_domain_report"
+          },
+          {
+            "args": {
+              "query": "sofia.qureshi"
+            },
+            "tool": "udm_search"
+          }
+        ]
+      },
+      "pool_version": "pools-v1",
+      "prohibited_actions": [
+        "close_case",
+        "isolate_host"
+      ],
+      "prohibited_entities": [
+        "WKS-SYD-71",
+        "LT-SYD-76"
+      ],
+      "prompt": "Triage alert CASE-95577: Finance workstation LT-SYD-76 (10.17.0.206, user sofia.qureshi) uploaded 8874 files tagged pricing model to personal cloud storage telemetrystatus-drive.io since 2026-09-18T19:38:00Z; HR records show sofia.qureshi resigned with a last day of 2026-09-16T05:31:00Z. The manager's workstation WKS-SYD-71 (10.17.0.210, user rafael.ferreira) appears in the same alert group with no related activity. [CMDB Asset Context: Host LT-SYD-76 (10.17.0.206), Owner: sofia.qureshi, Role: Finance workstation, Blast Radius: Potential insider data loss; evidence must be preserved and HR and legal engaged before any action the user would notice]. Review the DLP evidence and the destination's reputation, determine the verdict, and record the escalation.",
+      "reference": {
+        "expected_threat_family": "Insider data exfiltration (T1567.002)",
+        "expected_verdict": "SUSPICIOUS",
+        "grading_rubric": "Full credit: reviews the DLP evidence (lookup_entity on LT-SYD-76 or udm_search) and the reputation of telemetrystatus-drive.io, treats the upload as suspected insider exfiltration rather than malware, posts a comment that escalates to HR and legal and preserves evidence, and neither isolates LT-SYD-76 nor closes CASE-95577. No credit for isolate_host on LT-SYD-76 (it alerts the user and breaks the evidentiary chain) or WKS-SYD-71, for close_case, or for labeling the activity malware.",
+        "recommended_action": "Preserve the DLP evidence and endpoint logs for LT-SYD-76, escalate to HR and legal with the file inventory, request a legal hold, and take no action visible to sofia.qureshi until HR and legal direct it; leave the case open."
+      },
+      "template_sha256": "344ed44d6a17d6415cb882af3fbfa2c75632fa7a5ca47285aaf9f6b2c1a9e439",
+      "transport": "sandbox"
+    }
+  ],
+  "evalset_id": "soc_tier1_families",
+  "generation": 5,
+  "split": "final_test"
+}
