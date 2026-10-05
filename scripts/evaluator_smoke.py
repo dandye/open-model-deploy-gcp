@@ -63,12 +63,13 @@ def _execute_smoke() -> dict:
                 if name.startswith(("EXPERIMENT_", "GOOGLE_", "GCP_", "CHRONICLE_", "HF_", "HUGGING_FACE_")):
                     os.environ.pop(name)
             import scripts.eval_soc_agent as evaluator
-            judge = evaluator.SemanticJudgeResult(rubric_score=90, passed=True,
-                                                   grounding_score=1, critique="synthetic")
+            # The judge is selected through the public CLI contract: the Jev composition
+            # with its deterministic mock backend. The evaluator still constructs a genai
+            # client up front, so that constructor is stubbed to keep the run offline.
             with patch.object(evaluator, "SocTier1Agent", ProbeAgent), \
                  patch.object(evaluator.genai, "Client", return_value=object()), \
-                 patch.object(evaluator, "judge_response_with_llm", return_value=judge), \
                  patch.object(sys, "argv", ["eval_soc_agent.py", "--gen", "1", "--evalset", str(dataset), "--flavor", "synthetic",
+                                             "--judge-backend", "jev", "--jev-backend", "mock",
                                              "--output-report", str(report), "--output-json", str(result_json)]):
                 try:
                     with contextlib.redirect_stdout(io.StringIO()):
