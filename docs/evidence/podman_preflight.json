@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-07",
+  "engine_version": "5.8.2",
+  "host_platform": "darwin/arm64",
+  "machine_platform": "linux/arm64",
+  "image_platform": "linux/amd64",
+  "execution": "qemu-x86_64 emulation",
+  "build": {
+    "schema_version": 1,
+    "action": "build",
+    "engine": "podman",
+    "attempt_id": "d294659fe39a47b3a6171584e5008ea2",
+    "status": "BUILT_LOCAL",
+    "python_image": "docker.io/library/python@sha256:9c47360a2a0355e2da18516d0b1c2126ec22c195d2185e97347c9d98398c5bef",
+    "local_tag": "evaluator-preflight:local",
+    "image_id": "sha256:9c14f0711fec4198800f69b1c79d36724003ae5c71eab28623cd1b2b9adc53d8",
+    "inputs": {
+      "Dockerfile.evaluator": "17d550466eccf156708d813166fd8ab4a2dbdba67d9516d643c761045d0c0e6b",
+      "requirements-evaluator.lock": "4173c4bceb7b53915882a5643d915d775c54a85ac8d6427697829f89a4104953"
+    },
+    "registry_digest": null
+  },
+  "check": {
+    "schema_version": 1,
+    "action": "check",
+    "engine": "podman",
+    "attempt_id": "c9e472bb9fa542048ace13904f584abd",
+    "status": "PASS",
+    "synthetic": true,
+    "scope": "offline_evaluator_image_preflight",
+    "image_reference": "sha256:9c14f0711fec4198800f69b1c79d36724003ae5c71eab28623cd1b2b9adc53d8",
+    "image_id": "sha256:9c14f0711fec4198800f69b1c79d36724003ae5c71eab28623cd1b2b9adc53d8",
+    "source_commit": "8320b6e4c9abadd40feab4b8718b7185dc1f185f",
+    "source_bundle_sha256": "2d6b7c4940686d53b520bfab24e8e689d1d24543c0e4cc5802832b83e77a8031",
+    "smoke": {
+      "schema_version": 1,
+      "status": "PASS",
+      "synthetic": true,
+      "scope": "offline_evaluator_compatibility",
+      "checks": {
+        "evaluator_completed": true,
+        "total_cases": 1,
+        "case_passed": true,
+        "json_output": true,
+        "markdown_output": true,
+        "provenance_without_launch_claim": true
+      },
+      "python_version": "3.12.14"
+    }
+  },
+  "limits": [
+    "Synthetic evaluator compatibility only; no model or cloud calls.",
+    "Local image only; no registry publication.",
+    "Docker and GCE execution were not tested."
+  ],
+  "negative_check": {
+    "input_image": "sha256:59bf1d95c965f12dfc14afaf5af778fc1dbe5b372bd5c281645fc34d4c75d4e7",
+    "scenario": "Bare pinned Python base without evaluator dependencies; output seeded with prior PASS",
+    "observed_exit_code": 1,
+    "report": {
+      "schema_version": 1,
+      "action": "check",
+      "engine": "podman",
+      "attempt_id": "92b3d07c5695407c8c0eb1a2f6c8f8eb",
+      "status": "FAIL",
+      "error_type": "ValueError"
+    }
+  },
+  "cancellation_check": {
+    "image_id": "sha256:9c14f0711fec4198800f69b1c79d36724003ae5c71eab28623cd1b2b9adc53d8",
+    "checker_script_sha256": "763246317b808a8ce9ceec722fb8a50f8fa40044cf8c530a9c76d086170e209c",
+    "checks": [
+      {
+        "scenario": "SIGTERM during attached sleep container",
+        "observed_exit_code": 1,
+        "owned_container_absent": true,
+        "report": {
+          "schema_version": 1,
+          "action": "check",
+          "engine": "podman",
+          "attempt_id": "ce098f7059bf4c5c9494995f7790dc23",
+          "status": "FAIL",
+          "error_type": "PreflightCancelled"
+        }
+      },
+      {
+        "scenario": "SIGTERM during normal smoke container cleanup",
+        "observed_exit_code": 1,
+        "owned_container_absent": true,
+        "report": {
+          "schema_version": 1,
+          "action": "check",
+          "engine": "podman",
+          "attempt_id": "24114aa2f15e4606bfb04a0d11d85350",
+          "status": "FAIL",
+          "error_type": "PreflightCancelled"
+        }
+      }
+    ]
+  }
+}

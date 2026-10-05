@@ -13,7 +13,7 @@ Copy `configs/experiments/serving_config.template.json` to an ignored local path
 - `boot_image`: a specific `projects/<project>/global/images/<image-name>`, not an image family path.
 - `parameters`: explicit tensor parallelism matching the target, positive maximum context length, and GPU memory utilization strictly between zero and one.
 
-Use a trusted registry and retain the referenced images. The evaluator receives a read-only source mount at `/workspace`, writable output at `/output`, host networking, and explicit launch/source identity variables. Its Python entrypoint overrides the image entrypoint. It uses VM credentials through the metadata service; local credential files are not mounted. The image must permit reading the source and writing outputs as root.
+Use the [evaluator image build and offline check](EVALUATOR_IMAGE.md) to prepare this dependency environment. Use a trusted registry and retain the referenced images. The evaluator receives a read-only source mount at `/workspace`, writable output at `/output`, host networking, and explicit launch/source identity variables. Its Python entrypoint overrides the image entrypoint. It uses VM credentials through the metadata service; local credential files are not mounted. The image must permit reading the source and writing outputs as root.
 
 A configuration covers one exact target. Extra catalog vLLM flags and mutable GCS model caches are rejected in pinned mode. Secondary/speculative models and arbitrary engine flags need a future structured configuration extension with their own pins.
 

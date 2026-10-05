@@ -1,0 +1,11 @@
+# Use scripts/evaluator_image.py build to validate the base digest and isolate context.
+ARG PYTHON_IMAGE
+FROM ${PYTHON_IMAGE}
+ARG PYTHON_IMAGE
+RUN python3 -c 'import re,sys; assert sys.version_info[:2] == (3,12); assert re.fullmatch(r"[^\s@]+@sha256:[0-9a-f]{64}",sys.argv[1])' "${PYTHON_IMAGE}"
+COPY requirements-evaluator.lock /opt/evaluator/requirements.lock
+RUN python3 -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r /opt/evaluator/requirements.lock \
+    && python3 -m pip check
+ENV PYTHONUNBUFFERED=1
+WORKDIR /workspace
+ENTRYPOINT ["python3"]
