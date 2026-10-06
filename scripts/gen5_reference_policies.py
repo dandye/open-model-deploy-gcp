@@ -31,6 +31,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from agent.jev_backends import JEV_BACKEND_CHOICES, build_jev_backend
+from agent.jev_evaluator import JevSocJudgeEvaluator
 from agent.soc_environment import SocEnvironment
 from scripts.soc_sandbox_cli import EPISTEMIC_TOOLS, run_soc_cli
 from scripts.verify_harbor_soc import evaluate_harbor_soc_trial
@@ -232,6 +234,7 @@ def score_records(
     workdir: Path,
     split: Optional[str] = None,
     manifest_path: Optional[Path] = None,
+    jev_evaluator: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """Writes the trial artifacts the way the container does and scores them with the shared composition."""
     workdir = Path(workdir)
@@ -254,7 +257,15 @@ def score_records(
         case=case,
         manifest_path=manifest_path,
         split=split,
+        jev_evaluator=jev_evaluator,
     )
+
+
+def judge_evaluator_for(jev_backend: str) -> Optional[JevSocJudgeEvaluator]:
+    """Host judge for the composition; "mock" keeps the container's rule-calibrated profile (no evaluator)."""
+    if jev_backend == "mock":
+        return None
+    return JevSocJudgeEvaluator(backend=build_jev_backend(jev_backend))
 
 
 def run_policy_on_case(
@@ -265,6 +276,7 @@ def run_policy_on_case(
     split: Optional[str] = None,
     manifest_path: Optional[Path] = None,
     transport: str = "python",
+    jev_evaluator: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """Runs one policy on one case for `trials` independent executions and summarizes the scores."""
     trial = plan_policy(case, policy)
@@ -272,7 +284,7 @@ def run_policy_on_case(
     for index in range(max(1, int(trials))):
         trial_dir = Path(workdir) / f"trial_{index}"
         records = execute_trial(case, trial, transport, trial_dir)
-        scorecards.append(score_records(case, trial, records, trial_dir, split, manifest_path))
+        scorecards.append(score_records(case, trial, records, trial_dir, split, manifest_path, jev_evaluator=jev_evaluator))
     scores = [float(card["reward"]) for card in scorecards]
     return {
         "eval_id": case["eval_id"],
@@ -287,6 +299,14 @@ def run_policy_on_case(
         "inert": [bool(card["inert"]) for card in scorecards],
         "safety_gate_triggered": [bool(card["safety_gate_triggered"]) for card in scorecards],
         "decision_outcome": [card["decision_outcome"] for card in scorecards],
+        "judge": [
+            {
+                "rubric_score": card["jev_evaluation"]["rubric_score"],
+                "grounding_score": card["jev_evaluation"]["grounding_score"],
+                "primary_choice": card["jev_evaluation"]["primary_choice"],
+            }
+            for card in scorecards
+        ],
         "notes": list(scorecards[-1]["trajectory_verification"]["notes"]),
     }
 
@@ -492,10 +512,12 @@ def command_run(args: argparse.Namespace) -> int:
         print("error: no cases selected", file=sys.stderr)
         return 2
     rows = []
+    jev_evaluator = judge_evaluator_for(args.jev_backend)
     with tempfile.TemporaryDirectory(prefix="gen5_policy_") as tmp:
         for split, case in selected:
             row = run_policy_on_case(
-                case, args.policy, args.trials, Path(tmp) / case["eval_id"], split=split, transport=args.transport
+                case, args.policy, args.trials, Path(tmp) / case["eval_id"], split=split, transport=args.transport,
+                jev_evaluator=jev_evaluator,
             )
             rows.append(row)
             flags = []
@@ -516,6 +538,7 @@ def command_calibrate(args: argparse.Namespace) -> int:
     manifest_path = root / "manifest.json"
     transports_to_run = ["python", "soc-cli"] if args.transport == "both" else [args.transport]
     results_by_transport: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+    jev_evaluator = judge_evaluator_for(args.jev_backend)
     with tempfile.TemporaryDirectory(prefix="gen5_calibration_") as tmp:
         for trans in transports_to_run:
             results_by_transport[trans] = {policy: [] for policy in POLICIES}
@@ -530,6 +553,7 @@ def command_calibrate(args: argparse.Namespace) -> int:
                             split=split,
                             manifest_path=manifest_path if manifest_path.exists() else None,
                             transport=trans,
+                            jev_evaluator=jev_evaluator,
                         )
                     )
                 prefix = f"[{trans}] " if len(transports_to_run) > 1 else ""
@@ -545,6 +569,7 @@ def command_calibrate(args: argparse.Namespace) -> int:
         "trials": int(args.trials),
         "splits": list(args.splits),
         "transport": args.transport,
+        "jev_backend": args.jev_backend,
         "cases": len(selected),
     }
     extra = {"results_by_transport": results_by_transport}
@@ -572,6 +597,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     run.add_argument("--limit", type=int, default=None)
     run.add_argument("--trials", type=int, default=1)
     run.add_argument("--transport", choices=("python", "soc-cli"), default="python")
+    run.add_argument("--jev-backend", choices=list(JEV_BACKEND_CHOICES), default="mock", help="judge for the 10% slice; mock keeps the container's rule-calibrated profile")
     run.add_argument("--json", default=None)
     run.set_defaults(func=command_run)
 
@@ -579,6 +605,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     calibrate.add_argument("--trials", type=int, default=DEFAULT_TRIALS)
     calibrate.add_argument("--splits", nargs="+", choices=SPLITS, default=list(SPLITS))
     calibrate.add_argument("--transport", choices=TRANSPORTS, default="both")
+    calibrate.add_argument("--jev-backend", choices=list(JEV_BACKEND_CHOICES), default="mock", help="judge for the 10% slice; mock keeps the container's rule-calibrated profile")
     calibrate.add_argument("--report", default=str(DEFAULT_REPORT_MD))
     calibrate.add_argument("--json", default=str(DEFAULT_REPORT_JSON))
     calibrate.set_defaults(func=command_calibrate)

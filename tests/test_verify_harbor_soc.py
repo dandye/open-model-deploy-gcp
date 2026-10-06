@@ -128,3 +128,44 @@ def test_verifier_penalizes_prohibited_isolation_on_critical_asset(tmp_path: Pat
     assert scorecard["trajectory_verification"]["prohibited_actions_avoided"] is False
     assert scorecard["operational_loss_usd"] == 50000.0
     assert scorecard["components"]["safety_and_loss_score"] == 0.0
+
+
+def test_evaluate_trial_uses_a_host_supplied_judge_evaluator(tmp_path: Path):
+    """A jev_evaluator passed by the host replaces the in-container mock profile in the judge slice."""
+    from agent.jev_evaluator import JevSocJudgeEvaluator
+    from agent.jev_judge import MockJevBackend
+
+    state_file = tmp_path / "state.json"
+    traj_file = tmp_path / "trajectory.jsonl"
+    report_file = tmp_path / "triage_report.md"
+    decision_file = tmp_path / "soc_decision.json"
+    env = {"SOC_CASE_ID": "CASE-GEN3-01-LOKIBOT-C2", "SOC_STATE_FILE": str(state_file), "SOC_TRAJECTORY_FILE": str(traj_file)}
+    run_soc_cli(["reset"], env=env)
+    run_soc_cli(["get_domain_report", "--domain", "update-service-win32.com"], env=env)
+    run_soc_cli(["lookup_entity", "--entity_id", "DESKTOP-FIN-08"], env=env)
+    run_soc_cli(["isolate_host", "--hostname", "DESKTOP-FIN-08"], env=env)
+    run_soc_cli(["update_case_comment", "--case_id", "CASE-33279", "--comment", "Lokibot C2 confirmed on DESKTOP-FIN-08"], env=env)
+    report_file.write_text(
+        "# SOC Triage Report\n- Host: DESKTOP-FIN-08 (10.0.4.15)\n- Indicator: update-service-win32.com\n"
+        "- Verdict: MALICIOUS (Lokibot InfoStealer C2)\n"
+        "- Actions Executed: isolate_host on DESKTOP-FIN-08, update_case_comment on CASE-33279.\n",
+        encoding="utf-8",
+    )
+    decision_file.write_text(
+        json.dumps({"verdict": "MALICIOUS", "executed_actions": ["isolate_host", "update_case_comment"], "recommended_actions": ["isolate_host", "update_case_comment"]}),
+        encoding="utf-8",
+    )
+    half_credit_judge = JevSocJudgeEvaluator(backend=MockJevBackend(score_level=5, noul_grounding_prob=0.5))
+
+    scorecard = evaluate_harbor_soc_trial(
+        case_id="CASE-GEN3-01-LOKIBOT-C2",
+        state_path=state_file,
+        traj_path=traj_file,
+        report_path=report_file,
+        decision_path=decision_file,
+        jev_evaluator=half_credit_judge,
+    )
+
+    assert scorecard["components"]["jev_score"] == 0.05
+    assert scorecard["jev_evaluation"]["rubric_score"] == 50.0
+    assert scorecard["reward"] == 0.95

@@ -1,12 +1,12 @@
 {
-  "approved_at_utc": "2026-10-04T23:30:18.845259+00:00",
-  "composite_sha256": "218d584e7d893320ab4141d45076d15b3bba3afd6c4daaf9de4daf7b34ae7703",
+  "approved_at_utc": "2026-10-05T03:10:13.559004+00:00",
+  "composite_sha256": "038639ae9c6839146f0ecad07b0ecfc6c48ea47b8a49d507c7dab237619218df",
   "files": {
     "agent/soc_environment.py": "04c4503d41ee57e9db6de37ccad6ebe517bb3aa955ae5d9aaf1a99c734c31584",
     "scripts/eval_trajectory_verifier.py": "b2e8040b47fb619319f978877f12ed3e1a9957aec514dd4938b4b2b771f9ce79",
     "scripts/eval_cost_engine.py": "226218bdc3ed2f563aa0064ee09152730c43d048521a1a59add87de9703fd281",
-    "scripts/eval_soc_agent.py": "8b34fca3482980c763648839bc7f0b460d899da529fcc09a7b313b383b226e29",
-    "scripts/verify_harbor_soc.py": "e08371c2bb70352f5deb99ee1e9df8f25c24d4e15426ad749866e5a37a295e55",
+    "scripts/eval_soc_agent.py": "57fdd43aff042132bb64d7a642a2ad768d4cd252203f5a498a64537d43a62f0a",
+    "scripts/verify_harbor_soc.py": "e59e7889c0de5c741bd1ffeb93498bfa51694dd4bd2f1190b712af6a9f6ec8ac",
     "configs/evals/gen5/manifest.json": "6c928bc65e3672849de3591831fff515e78f223227ed8c65407aca3dcd6723c2",
     "configs/evals/gen5/train.json": "e92c90c5caa0cf6d371a76be8869bf62e3d74948cee41cef82163ea1965f8418",
     "configs/evals/gen5/validation.json": "fc3284f0c9bff1edc01d95e8fff25f1a8463ed05f33eb7186496e604e627c509",

@@ -2,7 +2,7 @@
 
 import pytest
 from agent.jev_evaluator import JevSocJudgeEvaluator, build_soc_evaluation_state
-from agent.jev_judge import MockJevBackend
+from agent.jev_judge import JevNoulResult, MockJevBackend
 
 
 def test_build_soc_evaluation_state_contains_trajectory():
@@ -46,3 +46,27 @@ def test_jev_soc_judge_evaluator_evaluates_case():
     assert res.grounding_score == 0.96
     assert "FLAWLESS_CONTAINMENT" in res.primary_choice
     assert "Jev System-One" in res.critique
+
+
+def test_raw_metadata_shape_is_unchanged_for_backends_without_derivations():
+    evaluator = JevSocJudgeEvaluator(backend=MockJevBackend())
+    res = evaluator.evaluate_case(prompt="p", response="r", reference={}, rubric="rb")
+    assert set(res.raw_metadata) == {"score_levels", "noul_pass_prob", "noul_grounding_prob", "choice_probs"}
+
+
+def test_raw_metadata_records_noul_derivations_when_a_backend_reports_them():
+    class DerivingBackend(MockJevBackend):
+        def evaluate_noul(self, state, question):
+            base = super().evaluate_noul(state, question)
+            is_grounding = "ground" in question.lower()
+            return JevNoulResult(
+                probability=base.probability,
+                verdict=base.verdict,
+                details={"formula": "1 - P(UNGROUNDED_HALLUCINATED_CLAIM)" if is_grounding else "P(FLAWLESS_CONTAINMENT)"},
+            )
+
+    res = JevSocJudgeEvaluator(backend=DerivingBackend()).evaluate_case(prompt="p", response="r", reference={}, rubric="rb")
+    assert res.raw_metadata["noul_derivations"] == {
+        "pass": {"formula": "P(FLAWLESS_CONTAINMENT)"},
+        "grounding": {"formula": "1 - P(UNGROUNDED_HALLUCINATED_CLAIM)"},
+    }

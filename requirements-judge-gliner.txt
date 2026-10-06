@@ -1,0 +1,15 @@
+# Host-only dependencies for the GLiNER2.5-Decide judge (`--jev-backend gliner_decide`).
+#
+# These are deliberately kept out of agent/requirements.txt and the hash-locked
+# evaluator image: the Harbor in-container verifier keeps its rule-calibrated mock
+# judge, and nothing else in the repo should pay for torch at import time.
+#
+# Install into the repo venv (CPU wheels; the judge runs on CPU at 8 threads):
+#   UV="/usr/local/google/home/dandye/.local/bin/uv"
+#   $UV pip install --python .venv/bin/python -r requirements-judge-gliner.txt
+#
+# The model weights (fastino/GLiNER2.5-Decide, revision pinned in
+# agent/jev_backend_gliner.py) are fetched into the Hugging Face cache on first use.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+gliner2[local]==2.0.0

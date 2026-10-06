@@ -548,6 +548,33 @@ def test_build_arg_parser_defaults():
     assert args.dry_run is False
 
 
+def test_build_arg_parser_exposes_jev_backend_choices():
+    from agent.gepa_runbook_optimizer import build_arg_parser
+    from agent.jev_backends import JEV_BACKEND_CHOICES
+
+    parser = build_arg_parser()
+    assert parser.parse_args([]).jev_backend == "gemini_system1"
+    assert parser.parse_args(["--judge-backend", "jev", "--jev-backend", "gliner_decide"]).jev_backend == "gliner_decide"
+    for name in JEV_BACKEND_CHOICES:
+        assert parser.parse_args(["--jev-backend", name]).jev_backend == name
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--jev-backend", "not-a-backend"])
+
+
+def test_build_inner_judge_follows_the_judge_and_jev_backend_flags():
+    from agent.gepa_runbook_optimizer import build_arg_parser, build_inner_judge
+    from agent.jev_backend_gliner import GlinerDecideBackend
+    from agent.jev_judge import MockJevBackend
+
+    parser = build_arg_parser()
+    assert build_inner_judge(parser.parse_args(["--judge-backend", "deterministic"])) is None
+    assert isinstance(build_inner_judge(parser.parse_args(["--judge-backend", "mock"])).backend, MockJevBackend)
+    assert isinstance(build_inner_judge(parser.parse_args(["--judge-backend", "jev", "--jev-backend", "mock"])).backend, MockJevBackend)
+    gliner_judge = build_inner_judge(parser.parse_args(["--judge-backend", "jev", "--jev-backend", "gliner_decide"]))
+    assert isinstance(gliner_judge.backend, GlinerDecideBackend)
+    assert gliner_judge.backend._engine is None
+
+
 def test_cli_main_dry_run(tmp_path: Path):
     from unittest.mock import MagicMock, patch
     from agent.gepa_runbook_optimizer import main

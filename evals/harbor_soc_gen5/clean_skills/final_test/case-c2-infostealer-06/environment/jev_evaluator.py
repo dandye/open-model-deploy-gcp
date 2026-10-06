@@ -107,18 +107,25 @@ class JevSocJudgeEvaluator:
             f"Rubric Expected Score: {score_res.expected_score:.1f}/100"
         )
 
+        raw_metadata: Dict[str, Any] = {
+            "score_levels": score_res.level_probs,
+            "noul_pass_prob": noul_pass.probability,
+            "noul_grounding_prob": noul_ground.probability,
+            "choice_probs": choice_res.candidate_probs,
+        }
+        if noul_pass.details or noul_ground.details:
+            raw_metadata["noul_derivations"] = {
+                "pass": dict(noul_pass.details),
+                "grounding": dict(noul_ground.details),
+            }
+
         return JevEvaluationOutput(
             rubric_score=score_res.expected_score,
             passed=noul_pass.verdict and score_res.expected_score >= 70.0,
             grounding_score=round(noul_ground.probability, 3),
             primary_choice=choice_res.selected,
             critique=critique,
-            raw_metadata={
-                "score_levels": score_res.level_probs,
-                "noul_pass_prob": noul_pass.probability,
-                "noul_grounding_prob": noul_ground.probability,
-                "choice_probs": choice_res.candidate_probs,
-            },
+            raw_metadata=raw_metadata,
         )
 
     @staticmethod

@@ -56,10 +56,8 @@ from scripts.eval_trajectory_verifier import (
     verify_agent_trajectory,
 )
 from scripts.evaluation_provenance import capture_provenance, utc_now
-from agent.jev_backend_gemini import GeminiSystem1Backend
-from agent.jev_backend_typesafe import TypeSafeJevBackend
+from agent.jev_backends import JEV_BACKEND_CHOICES, build_jev_backend, describe_jev_backend
 from agent.jev_evaluator import JevSocJudgeEvaluator
-from agent.jev_judge import MockJevBackend
 from scripts import gen5_exposure
 from scripts.verify_harbor_soc import compose_soc_reward
 
@@ -669,16 +667,15 @@ def run_evaluation(
     judge_client = genai.Client(vertexai=True, project=project_id, location=judge_region)
 
     jev_evaluator: Optional[JevSocJudgeEvaluator] = None
+    judge_info: Optional[Dict[str, Any]] = None
     if judge_backend in ("jev", "mock"):
-        if judge_backend == "mock" or jev_backend == "mock":
-            backend = MockJevBackend()
-        elif jev_backend == "typesafe":
-            backend = TypeSafeJevBackend()
-        else:
-            backend = GeminiSystem1Backend(
-                project_id=project_id, location=judge_region, client=judge_client
-            )
+        backend_name = "mock" if judge_backend == "mock" else jev_backend
+        backend = build_jev_backend(
+            backend_name, project_id=project_id, location=judge_region, client=judge_client
+        )
         jev_evaluator = JevSocJudgeEvaluator(backend=backend)
+        judge_info = describe_jev_backend(backend)
+        provenance["judge"] = judge_info
 
     results: List[Dict[str, Any]] = []
     for case in eval_cases:
@@ -1016,6 +1013,7 @@ def run_evaluation(
         "mcp_provider": mcp_provider,
         "judge_backend": judge_backend,
         "jev_backend": jev_backend,
+        "judge": judge_info,
         "summary": summary,
         "case_results": results,
     }
@@ -1353,9 +1351,9 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--jev-backend",
-        choices=["gemini_system1", "typesafe", "mock"],
+        choices=list(JEV_BACKEND_CHOICES),
         default="gemini_system1",
-        help="Underlying Jev execution backend: 'gemini_system1', 'typesafe', or 'mock'",
+        help="Underlying Jev execution backend: 'gemini_system1', 'typesafe', 'mock', or 'gliner_decide' (local GLiNER2.5-Decide, the Gen 5 campaign judge; needs requirements-judge-gliner.txt)",
     )
     parser.add_argument(
         "--sxs-judge",

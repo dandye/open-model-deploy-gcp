@@ -34,7 +34,7 @@ try:
         run_cost_staircase_walk,
         write_noise_floor_json,
     )
-    from agent.jev_backend_gemini import GeminiSystem1Backend
+    from agent.jev_backends import JEV_BACKEND_CHOICES, build_jev_backend
     from agent.jev_evaluator import JevSocJudgeEvaluator
     from agent.jev_judge import MockJevBackend
     from agent.soc_environment import SocEnvironment
@@ -52,7 +52,7 @@ except ModuleNotFoundError:
         run_cost_staircase_walk,
         write_noise_floor_json,
     )
-    from jev_backend_gemini import GeminiSystem1Backend
+    from jev_backends import JEV_BACKEND_CHOICES, build_jev_backend
     from jev_evaluator import JevSocJudgeEvaluator
     from jev_judge import MockJevBackend
     from soc_environment import SocEnvironment
@@ -957,6 +957,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Inner-loop judge backend: 'jev', 'deterministic', or 'mock' (default: deterministic).",
     )
     parser.add_argument(
+        "--jev-backend",
+        choices=list(JEV_BACKEND_CHOICES),
+        default="gemini_system1",
+        help="Jev execution backend when --judge-backend is 'jev': 'gemini_system1', 'typesafe', 'mock', or 'gliner_decide' (the Gen 5 campaign judge).",
+    )
+    parser.add_argument(
         "--cost-staircase",
         action="store_true",
         default=False,
@@ -969,6 +975,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Maximum acceptable fitness drop from ceiling model during cost staircase walk (default: 0.05).",
     )
     return parser
+
+
+def build_inner_judge(parsed_args: argparse.Namespace) -> Optional[JevSocJudgeEvaluator]:
+    """Builds the inner-loop Jev judge from --judge-backend and --jev-backend, or None for the deterministic scorer."""
+    if parsed_args.judge_backend == "mock":
+        return JevSocJudgeEvaluator(backend=MockJevBackend())
+    if parsed_args.judge_backend != "jev":
+        return None
+    backend = build_jev_backend(
+        getattr(parsed_args, "jev_backend", "gemini_system1"),
+        project_id=parsed_args.project_id,
+        location=parsed_args.region,
+    )
+    return JevSocJudgeEvaluator(backend=backend)
 
 
 def main(args: Optional[List[str]] = None) -> int:
@@ -1082,16 +1102,7 @@ def main(args: Optional[List[str]] = None) -> int:
     else:
         harness_guard.verify(auto_initialize=True)
 
-    jev_evaluator: Optional[JevSocJudgeEvaluator] = None
-    if parsed_args.judge_backend == "jev":
-        jev_evaluator = JevSocJudgeEvaluator(
-            backend=GeminiSystem1Backend(
-                project_id=parsed_args.project_id,
-                location=parsed_args.region,
-            )
-        )
-    elif parsed_args.judge_backend == "mock":
-        jev_evaluator = JevSocJudgeEvaluator(backend=MockJevBackend())
+    jev_evaluator = build_inner_judge(parsed_args)
 
     adapter = RunbookGEPAAdapter(
         task_lm=parsed_args.task_lm,

@@ -242,7 +242,7 @@ agent-soc-deploy LIVE_MCP="true":
 
 # Evolve SOC runbooks with GEPA on the Gen 5 splits (train for reflection, validation for selection) through the exposure ledger
 gepa-evolve MAX_CALLS="15" TASK_LM="gemini-2.5-flash-lite" REFLECTION_LM="gemini-2.5-pro":
-    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --output-dir configs/runbooks/gepa_evolved
+    @uv run python3 agent/gepa_runbook_optimizer.py --max-metric-calls {{MAX_CALLS}} --task-lm "{{TASK_LM}}" --reflection-lm "{{REFLECTION_LM}}" --judge-backend jev --jev-backend gliner_decide --output-dir configs/runbooks/gepa_evolved
 
 # Compare and evaluate SOC agent against evalset using evolved runbooks
 gepa-compare TASK_LM="gemini-2.5-flash-lite":
@@ -402,20 +402,20 @@ gen5-check:
     @.venv/bin/python -m pytest tests/test_gen5_schema.py tests/test_gen5_suite.py -q
 
 # Run the four Gen 5 reference policies in both transports and apply the spec 8.1 gates (Usage: just gen5-calibrate [trials])
-gen5-calibrate TRIALS="3":
-    @.venv/bin/python scripts/gen5_reference_policies.py calibrate --trials {{TRIALS}} --transport both
+gen5-calibrate TRIALS="3" JEV_BACKEND="mock":
+    @.venv/bin/python scripts/gen5_reference_policies.py calibrate --trials {{TRIALS}} --transport both --jev-backend {{JEV_BACKEND}}
 
 # Run the Gen 5 suite on one split through the exposure ledger (Usage: just eval-gen5 [flavor] [split] [endpoint] [purpose])
 eval-gen5 FLAVOR="gemini-2.5-flash" SPLIT="validation" ENDPOINT="" PURPOSE="gen5 eval run":
-    @.venv/bin/python -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 5 --split {{SPLIT}} --purpose "{{PURPOSE}}" --agent-mode hierarchical {{ if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "--managed-model " + FLAVOR } }} --output-report "docs/soc_eval_results/gen5_{{SPLIT}}_{{FLAVOR}}_report.md" --output-json "docs/soc_eval_results/gen5_{{SPLIT}}_{{FLAVOR}}_report.json"
+    @.venv/bin/python -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 5 --split {{SPLIT}} --purpose "{{PURPOSE}}" --agent-mode hierarchical --jev-backend gliner_decide {{ if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "--managed-model " + FLAVOR } }} --output-report "docs/soc_eval_results/gen5_{{SPLIT}}_{{FLAVOR}}_report.md" --output-json "docs/soc_eval_results/gen5_{{SPLIT}}_{{FLAVOR}}_report.json"
 
 # Measurement gate 1: K seed passes on the validation split, writes noise_floor.json and exits (Usage: just gen5-noise [k] [task_lm])
 gen5-noise K="3" TASK_LM="gemini-2.5-flash":
-    @.venv/bin/python agent/gepa_runbook_optimizer.py --noise-only --noise-runs {{K}} --task-lm "{{TASK_LM}}" --val-split validation --purpose "measurement gate 1: seed noise floor (K={{K}})" --output-dir "docs/soc_eval_results/gen5_noise_{{TASK_LM}}"
+    @.venv/bin/python agent/gepa_runbook_optimizer.py --noise-only --noise-runs {{K}} --task-lm "{{TASK_LM}}" --val-split validation --judge-backend jev --jev-backend gliner_decide --purpose "measurement gate 1: seed noise floor (K={{K}})" --output-dir "docs/soc_eval_results/gen5_noise_{{TASK_LM}}"
 
 # Measurement gate 4 (report): one capability rung on validation with the seed runbooks (Usage: just gen5-gradient [flavor] [endpoint])
 gen5-gradient FLAVOR="gemini-2.5-flash" ENDPOINT="":
-    @.venv/bin/python -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 5 --split validation --purpose "measurement gate 4: capability gradient ({{FLAVOR}})" --agent-mode hierarchical {{ if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "--managed-model " + FLAVOR } }} --output-report "docs/soc_eval_results/gen5_gradient/{{FLAVOR}}.md" --output-json "docs/soc_eval_results/gen5_gradient/{{FLAVOR}}.json"
+    @.venv/bin/python -m scripts.eval_soc_agent --flavor "{{FLAVOR}}" --gen 5 --split validation --purpose "measurement gate 4: capability gradient ({{FLAVOR}})" --agent-mode hierarchical --jev-backend gliner_decide {{ if ENDPOINT != "" { "--endpoint " + ENDPOINT } else { "--managed-model " + FLAVOR } }} --output-report "docs/soc_eval_results/gen5_gradient/{{FLAVOR}}.md" --output-json "docs/soc_eval_results/gen5_gradient/{{FLAVOR}}.json"
 
 # Re-approve the harness lock after an intended change to a protected scoring or Gen 5 input file
 harness-approve:

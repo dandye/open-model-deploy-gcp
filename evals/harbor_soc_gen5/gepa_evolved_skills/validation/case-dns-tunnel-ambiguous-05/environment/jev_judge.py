@@ -17,10 +17,16 @@ class JevScoreResult:
 
 @dataclass(frozen=True)
 class JevNoulResult:
-    """Output for a Jev Noul primitive (calibrated boolean probability)."""
+    """Output for a Jev Noul primitive (calibrated boolean probability).
+
+    ``details`` is optional backend-specific provenance for how the probability
+    was derived (for example a gate read off another head). Backends that answer
+    the question directly leave it empty.
+    """
 
     probability: float
     verdict: bool
+    details: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

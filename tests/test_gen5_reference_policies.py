@@ -197,3 +197,66 @@ def test_prompt_only_policies_never_read_the_oracle_or_the_state() -> None:
         assert "SRV-SECRET-01" not in payload
         assert "CASE-SECRET-1" not in payload
 
+
+def test_judge_evaluator_for_keeps_the_mock_profile_and_builds_real_backends() -> None:
+    from agent.jev_backend_gliner import GlinerDecideBackend
+    from agent.jev_judge import MockJevBackend
+
+    assert rp.judge_evaluator_for("mock") is None
+    gliner = rp.judge_evaluator_for("gliner_decide")
+    assert isinstance(gliner.backend, GlinerDecideBackend) and gliner.backend._engine is None
+    with pytest.raises(ValueError):
+        rp.judge_evaluator_for("not-a-backend")
+    assert not isinstance(rp.judge_evaluator_for("gliner_decide").backend, MockJevBackend)
+
+
+def test_run_policy_on_case_hands_the_judge_evaluator_to_the_shared_composition(all_cases, split_of, tmp_path: Path, monkeypatch) -> None:
+    seen: List[Dict[str, Any]] = []
+    real = rp.evaluate_harbor_soc_trial
+
+    def spy(**kwargs):
+        seen.append(kwargs)
+        return real(**kwargs)
+
+    monkeypatch.setattr(rp, "evaluate_harbor_soc_trial", spy)
+    sentinel = object()
+    case = all_cases[0]
+    rp.run_policy_on_case(case, "oracle", 1, tmp_path / "with", split=split_of[case["eval_id"]], jev_evaluator=None)
+    assert seen[-1]["jev_evaluator"] is None
+    from agent.jev_evaluator import JevSocJudgeEvaluator
+    from agent.jev_judge import MockJevBackend
+
+    judge = JevSocJudgeEvaluator(backend=MockJevBackend(score_level=5, noul_grounding_prob=0.5))
+    row = rp.run_policy_on_case(case, "oracle", 1, tmp_path / "judge", split=split_of[case["eval_id"]], jev_evaluator=judge)
+    assert seen[-1]["jev_evaluator"] is judge
+    assert row["scores"] == [0.95]
+
+
+def test_run_policy_on_case_rows_carry_the_per_trial_judge_numbers(all_cases, split_of, tmp_path: Path) -> None:
+    from agent.jev_evaluator import JevSocJudgeEvaluator
+    from agent.jev_judge import MockJevBackend
+
+    case = all_cases[0]
+    split = split_of[case["eval_id"]]
+    judge = JevSocJudgeEvaluator(backend=MockJevBackend(score_level=5, noul_grounding_prob=0.5))
+    row = rp.run_policy_on_case(case, "oracle", 2, tmp_path / "oracle", split=split, jev_evaluator=judge)
+    assert len(row["judge"]) == 2
+    for entry in row["judge"]:
+        assert set(entry) == {"rubric_score", "grounding_score", "primary_choice"}
+        assert entry["rubric_score"] == 50
+        assert entry["grounding_score"] == 0.5
+        assert isinstance(entry["primary_choice"], str) and entry["primary_choice"]
+    inert = rp.run_policy_on_case(case, "inert", 1, tmp_path / "inert", split=split, jev_evaluator=judge)
+    assert inert["judge"] == [{"rubric_score": 0, "grounding_score": 0.0, "primary_choice": "INERT"}]
+
+
+def test_cli_run_and_calibrate_accept_jev_backend_and_record_it(tmp_path: Path, capsys) -> None:
+    rc = rp.main(["run", "--policy", "oracle", "--split", "validation", "--limit", "1", "--trials", "1", "--jev-backend", "mock"])
+    assert rc == 0
+    md_path, json_path = tmp_path / "c.md", tmp_path / "c.json"
+    rc = rp.main(["calibrate", "--trials", "1", "--splits", "validation", "--jev-backend", "mock", "--report", str(md_path), "--json", str(json_path)])
+    assert rc == 0, capsys.readouterr().out
+    assert json.loads(json_path.read_text(encoding="utf-8"))["meta"]["jev_backend"] == "mock"
+    with pytest.raises(SystemExit):
+        rp.main(["calibrate", "--jev-backend", "not-a-backend"])
+

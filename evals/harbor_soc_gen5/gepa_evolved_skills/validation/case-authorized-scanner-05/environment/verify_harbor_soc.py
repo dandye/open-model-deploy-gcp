@@ -475,6 +475,7 @@ def evaluate_harbor_soc_trial(
     manifest_path: Optional[Path] = None,
     metrics_path: Optional[Path] = None,
     split: Optional[str] = None,
+    jev_evaluator: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """File-reading wrapper over `compose_soc_reward` used by the container verifier.
 
@@ -482,6 +483,8 @@ def evaluate_harbor_soc_trial(
     and the optional metrics JSON, then scores them. `state_path` is accepted
     for CLI compatibility; the trajectory log is the record of what happened.
     `case` lets a caller that already holds the case dict skip the evalset lookup.
+    `jev_evaluator` lets a host process (the Gen 5 calibration) supply a real
+    judge; the container never sets it and resolves `jev_backend_name` instead.
     """
     if case is None:
         case = load_eval_case(case_id, evalset_path=evalset_path)
@@ -510,6 +513,7 @@ def evaluate_harbor_soc_trial(
         manifest_path=manifest_path,
         metrics=_read_metrics(metrics_path),
         split=split,
+        jev_evaluator=jev_evaluator,
     )
 
 

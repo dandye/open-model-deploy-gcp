@@ -1514,6 +1514,107 @@ def test_run_evaluation_with_jev_mock_backend(tmp_path: Path):
         assert "Jev System-One" in case_res["critique"]
 
 
+def test_eval_soc_agent_parser_accepts_gliner_decide_and_keeps_gemini_default():
+    from agent.jev_backends import JEV_BACKEND_CHOICES
+    from scripts.eval_soc_agent import parse_args
+
+    assert parse_args(["--flavor", "f"]).jev_backend == "gemini_system1"
+    assert parse_args(["--flavor", "f", "--jev-backend", "gliner_decide"]).jev_backend == "gliner_decide"
+    for name in JEV_BACKEND_CHOICES:
+        assert parse_args(["--flavor", "f", "--jev-backend", name]).jev_backend == name
+    with pytest.raises(SystemExit):
+        parse_args(["--flavor", "f", "--jev-backend", "not-a-backend"])
+
+
+def test_run_evaluation_with_gliner_decide_records_the_judge_pin(tmp_path: Path, monkeypatch):
+    """The GLiNER backend is selected through the factory and its model id and revision land in run metadata."""
+    import agent.jev_backend_gliner as gl
+
+    class FakeEngine:
+        def __init__(self, model_id, revision, threads):
+            self.model_id, self.revision, self.threads = model_id, revision, threads
+            self.calls = []
+
+        def classify_heads(self, text):
+            self.calls.append(text)
+            taxonomy = {label: 0.02 for label in gl.FAILURE_MODE_DESCRIPTIONS}
+            taxonomy["FLAWLESS_CONTAINMENT"] = 0.88
+            return {
+                gl.SCORE_HEAD: {str(i): (1.0 if i == 9 else 0.0) for i in range(11)},
+                gl.GROUNDED_HEAD: {"yes": 0.3, "no": 0.7},
+                gl.PASS_HEAD: {"yes": 0.4, "no": 0.6},
+                gl.FAILURE_MODE_HEAD: taxonomy,
+            }
+
+        def count_tokens(self, text):
+            return len(text.split())
+
+    monkeypatch.setattr(gl, "GlinerDecideEngine", FakeEngine)
+
+    evalset_file = tmp_path / "eval_gliner.json"
+    evalset_file.write_text(json.dumps({
+        "evalset_id": "test_gliner_eval",
+        "generation": 3,
+        "eval_cases": [{
+            "eval_id": "CASE-GLINER-01",
+            "name": "GLiNER judge case",
+            "prompt": "Enrich indicator 192.0.2.100 and conclude investigation.",
+            "asset_criticality": "LOW",
+            "ground_truth_label": "BENIGN",
+            "expected_actions": ["close_case"],
+            "prohibited_actions": ["isolate_host"],
+            "reference": {"grading_rubric": "Verify benign RFC-5737 handling. Passing >= 70 pts."},
+            "assertions": {"must_contain": ["192.0.2.100"], "must_not_contain": ["CRITICAL MALWARE"]},
+        }],
+    }), encoding="utf-8")
+    response_text = (
+        "The IP 192.0.2.100 is reserved under RFC-5737 for documentation. Non-routable and benign.\n"
+        "```soc_decision\n{\"verdict\": \"BENIGN\", \"recommended_actions\": [\"close_case\"], "
+        "\"target_entity\": \"192.0.2.100\", \"rationale\": \"Documentation IP is non-routable\"}\n```"
+    )
+    with patch("scripts.eval_soc_agent.SocTier1Agent") as mock_agent_cls, \
+         patch("scripts.eval_soc_agent.genai.Client"):
+        mock_agent = MagicMock()
+        mock_agent.query.return_value = {
+            "response": response_text,
+            "usage": {"prompt_tokens": 80, "completion_tokens": 40, "total_tokens": 120},
+            "trajectory": [{"iteration": 1, "tool": "get_ip_address_report", "args": {"ip": "192.0.2.100"}, "observation": "RFC 5737 test network"}],
+        }
+        mock_agent_cls.return_value = mock_agent
+        res = run_evaluation(evalset_path=evalset_file, flavor="test-model", gen=3, judge_backend="jev", jev_backend="gliner_decide")
+
+    assert res["jev_backend"] == "gliner_decide"
+    assert res["judge"]["backend"] == "gliner_decide"
+    assert res["judge"]["model_id"] == "fastino/GLiNER2.5-Decide"
+    assert res["judge"]["revision"] == "7ee5da4c2415e32259bcdc0b1a7367c32ce8d6f6"
+    assert res["judge"]["gates"] == {"pass": "P(FLAWLESS_CONTAINMENT)", "grounding": "1 - P(UNGROUNDED_HALLUCINATED_CLAIM)"}
+    assert res["provenance"]["judge"] == res["judge"]
+    case_res = res["case_results"][0]
+    assert case_res["rubric_score"] == 90.0
+    assert case_res["grounding_score"] == 0.98
+    assert case_res["jev_choice"] == "FLAWLESS_CONTAINMENT"
+    assert case_res["passed"] is True
+
+
+def test_run_evaluation_records_the_mock_judge_pin_too(tmp_path: Path):
+    evalset_file = tmp_path / "eval_mock.json"
+    evalset_file.write_text(json.dumps({
+        "evalset_id": "t", "generation": 3,
+        "eval_cases": [{
+            "eval_id": "CASE-M-01", "name": "m", "prompt": "Enrich 192.0.2.100.", "asset_criticality": "LOW",
+            "ground_truth_label": "BENIGN", "expected_actions": ["close_case"], "prohibited_actions": [],
+            "reference": {"grading_rubric": "r"}, "assertions": {"must_contain": [], "must_not_contain": []},
+        }],
+    }), encoding="utf-8")
+    with patch("scripts.eval_soc_agent.SocTier1Agent") as mock_agent_cls, patch("scripts.eval_soc_agent.genai.Client"):
+        mock_agent = MagicMock()
+        mock_agent.query.return_value = {"response": "benign", "usage": {}, "trajectory": []}
+        mock_agent_cls.return_value = mock_agent
+        res = run_evaluation(evalset_path=evalset_file, flavor="test-model", gen=3, judge_backend="jev", jev_backend="mock")
+    assert res["judge"] == {"backend": "mock"}
+    assert res["provenance"]["judge"] == {"backend": "mock"}
+
+
 def test_no_emojis_in_eval_soc_agent_and_test():
     """Verify zero unicode emojis exist in scripts/eval_soc_agent.py and tests/test_eval_soc_agent.py."""
     files_to_check = [

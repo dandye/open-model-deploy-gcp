@@ -61,7 +61,23 @@
       "model": "gemini-2.5-flash",
       "in_distribution": "final_test instances whose family_id is in split_plan.json role seen (10 cases)",
       "out_of_distribution": "final_test instances whose family_id is in split_plan.json role final_test_ood (20 cases)",
-      "scorer": "scripts.verify_harbor_soc.compose_soc_reward, pass at reward >= 0.80, infra failures excluded"
+      "scorer": "scripts.verify_harbor_soc.compose_soc_reward, pass at reward >= 0.80, infra failures excluded; the 10% judge slice uses the gliner_decide Jev backend pinned in gen5.judge"
+    },
+    "judge": {
+      "judge_backend": "jev",
+      "jev_backend": "gliner_decide",
+      "model_id": "fastino/GLiNER2.5-Decide",
+      "revision": "7ee5da4c2415e32259bcdc0b1a7367c32ce8d6f6",
+      "token_budget": 2048,
+      "threads": 8,
+      "pass_threshold": 0.5,
+      "grounding_threshold": 0.7,
+      "gates": {
+        "pass": "P(FLAWLESS_CONTAINMENT)",
+        "grounding": "1 - P(UNGROUNDED_HALLUCINATED_CLAIM)"
+      },
+      "deterministic": true,
+      "rationale": "One local, bit-reproducible judge for the noise floor, the hillclimber, and the final comparison. Gates derive from the failure-taxonomy head because the model's yes/no heads were compressed and inverted on the reference policies (docs/evals_gen5.md, judge section). Gemini System-1 stays selectable with --jev-backend gemini_system1 for side-by-side only; the Harbor in-container verifier keeps its rule-calibrated mock."
     },
     "repetitions": 2,
     "max_metric_calls": null,

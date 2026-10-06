@@ -25,7 +25,7 @@ harness lock (`.eval_harness_lock.json`, `just harness-verify`). Every model-fac
 |---|---|
 | `just gen5-build` | materialize bundles and manifest from the templates (no-op when current) |
 | `just gen5-check` | instancer `check`, Harbor `--check`, schema and suite tests |
-| `just gen5-calibrate` | the four reference policies in both transports; writes `soc_eval_results/GEN5_CALIBRATION.md` |
+| `just gen5-calibrate [trials] [jev_backend]` | the four reference policies in both transports; writes `soc_eval_results/GEN5_CALIBRATION.md` (default judge `mock`, pass `gliner_decide` to check the real judge) |
 | `just eval-gen5 [flavor] [split]` | run the suite on `train` or `validation` through the ledger |
 | `just gepa-evolve ...` | the hillclimber, now on `--train-split train --val-split validation` by default |
 | `just gen5-noise [k]` | measurement gate 1 |
@@ -52,6 +52,61 @@ Build gates (spec 8.1), from the committed calibration:
 | close_all | mean <= 0.35 and below Oracle on every case | 0.0622 | PASS | - |
 
 Transport parity (oracle and shotgun per-case means agree within 0.01 between python and soc-cli): **PASS**, max delta 0.0000, failing: -.
+
+## Judge
+
+The 10% judge slice of `compose_soc_reward` (`0.5 * rubric/100 + 0.5 * grounding`) comes from a Jev
+backend. The Gen 5 campaign pins one: `--judge-backend jev --jev-backend gliner_decide`, the local
+`fastino/GLiNER2.5-Decide` encoder (`agent/jev_backend_gliner.py`, HF revision `7ee5da4c`), on CPU
+at 8 threads. `just eval-gen5`, `just gen5-gradient`, `just gen5-noise`, and `just gepa-evolve` all
+pass it, and `configs/experiments/gen5_campaign1.json` records the pin under `gen5.judge`, so the
+runner, the hillclimber, the noise floor, and the final comparison share one metric. The CLI default
+stays `gemini_system1` so Gen 3 runs are unchanged; `--jev-backend gemini_system1` remains available
+for side-by-side. The Harbor in-container verifier keeps its rule-calibrated mock and never loads
+this model. The Harbor tree carries copies of `jev_judge.py`, `jev_evaluator.py`, and
+`verify_harbor_soc.py` under each task's `environment/`, so any edit to those modules needs
+`just harbor-soc-gen5-generate` (the `--check` test fails the suite until the copies match).
+
+Install once into the repo venv (torch and gliner2 are kept out of `agent/requirements.txt` and the
+evaluator image on purpose):
+
+    UV="/usr/local/google/home/dandye/.local/bin/uv"
+    $UV pip install --python .venv/bin/python -r requirements-judge-gliner.txt
+
+How it scores. One multi-head classification per evaluation state (cached by state hash) answers
+all four Jev calls: an 11-level ordinal head gives the rubric expected score, and the seven-label
+failure-taxonomy head gives the choice. The two Noul gates are derived from the taxonomy head:
+
+    pass      = P(FLAWLESS_CONTAINMENT)              verdict at >= 0.50
+    grounding = 1 - P(UNGROUNDED_HALLUCINATED_CLAIM)  verdict at >= 0.70
+
+Why derived: on 240 reference-policy states (train + validation x oracle, shotgun, close_all,
+inert) the model's own yes/no heads sat in 0.25-0.50 and ran inverted (shotgun beat the oracle on
+"grounded" 46/60), while the taxonomy head put oracle above shotgun and close_all on 60/60 cases
+(oracle FLAWLESS 55/60, close_all MISSED 60/60, benign shotgun OVER_CONTAINMENT 20/20). The raw
+yes/no probabilities are still recorded under `raw_metadata.noul_derivations` for diagnostics.
+
+Window. The encoder is trained to 2,048 subword tokens; a few Gen 5 states run longer (5 of 240 in
+the spike, max 2,128). The backend trims trajectory steps from the middle outward until the state
+fits, keeping the first and last steps and a marker line, so the rubric (last in the state) is never
+cut. `fit_stats` on the backend counts judged, trimmed, and still-over-budget states.
+
+Known limits, all covered by other components of the reward:
+
+- The judge does not read absence: an inert trajectory ties the oracle on the taxonomy head. The
+  liveness rule in `compose_soc_reward` scores inert trajectories 0 without invoking the judge.
+- Scope errors on threat cases (shotgun isolating everything) read as FLAWLESS 36/40; the safety
+  gate and loss components zero those rewards before the judge slice matters.
+- About 6 s per state at 8 threads on this cloudtop (12 s at the window limit); 12 or 24 threads
+  are 3-5x slower, and parallel processes add no throughput. Budget 4-5 minutes of judge time per
+  40-case metric call.
+- Bit-identical re-scores, so the noise floor measures the policy model's own sampling noise.
+
+Checking the real judge against the reference policies: `just gen5-calibrate 1 gliner_decide`
+scores the four policies through the composition with the real backend. Only the oracle's reward
+moves with the judge (shotgun, close_all, and inert are fixed by the safety, liveness, and
+epistemic gates), so the oracle gate (`>= 0.95`) reads as the oracle keeping its judge slice; the
+per-case judge numbers for the other policies are in the calibration JSON under `judge`.
 
 ## Exposure ledger and the seal
 
@@ -102,6 +157,10 @@ Gen 5 owner checklist (spec 8.1 and 8.2)
 [ ] Review the 16 family templates in configs/evals/gen5/families/ for defensible expected and
     prohibited actions; any edit -> just gen5-build && just gen5-calibrate && just harness-approve
     && just harbor-soc-gen5-generate, then commit the regenerated artifacts.
+[ ] Install the campaign judge once per venv: uv pip install --python .venv/bin/python
+    -r requirements-judge-gliner.txt (CPU torch plus gliner2[local]); then
+    RUN_GLINER_JUDGE_TESTS=1 .venv/bin/python -m pytest tests/test_jev_backend_gliner_integration.py
+    and just gen5-calibrate 1 gliner_decide to confirm the oracle keeps its judge slice.
 [ ] just gen5-noise 3            -> noise_floor.json; gate: mean_spread <= 0.02. If missed, raise K
                                     and list the high-variance cases; do not proceed to the campaign.
 [ ] just eval-gen5 gemini-2.5-flash validation   -> headroom: seed mean < 0.95.
