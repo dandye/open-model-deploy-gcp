@@ -1279,11 +1279,11 @@ def main(args: Optional[List[str]] = None) -> int:
     
     if len(val_subscores) > 0 and isinstance(val_subscores[0], dict) and val_subscores[0]:
         baseline_subscores = val_subscores[0]
-        if 'first_noise_batch' in locals() and first_noise_batch is not None and getattr(first_noise_batch, "trajectories", None):
+        if first_noise_batch is not None and getattr(first_noise_batch, "trajectories", None):
             baseline_telemetry = {t["case_id"]: t for t in first_noise_batch.trajectories}
             seed_aqua_report = cluster_trace_diagnoses(first_noise_batch.trajectories, all_runbooks=list(seed_candidate.keys()), forbidden_literals=forbidden_literals)
             seed_frozen_runbooks = set(seed_aqua_report.frozen_runbooks)
-    elif 'first_noise_batch' in locals() and first_noise_batch is not None and getattr(first_noise_batch, "scores", None) and len(first_noise_batch.scores) == len(valset):
+    elif first_noise_batch is not None and getattr(first_noise_batch, "scores", None) and len(first_noise_batch.scores) == len(valset):
         baseline_subscores = {str(c.get("eval_id", f"case-{i}")): float(sc) for i, (c, sc) in enumerate(zip(valset, getattr(first_noise_batch, "scores", [])))}
         if getattr(first_noise_batch, "trajectories", None):
             baseline_telemetry = {t["case_id"]: t for t in first_noise_batch.trajectories}
@@ -1479,14 +1479,12 @@ def main(args: Optional[List[str]] = None) -> int:
         print(f"Saving evolved runbooks to {output_dir}...")
         save_runbooks(candidate=best_candidate, output_dir=output_dir, metadata=metadata)
         if seed_aqua_report:
-            with open(output_dir / "aqua_diagnostic_report.json", "w") as f:
-                json.dump(seed_aqua_report.to_dict(), f, indent=2)
+            (output_dir / "aqua_diagnostic_report.json").write_text(json.dumps(seed_aqua_report.to_dict(), indent=2), encoding="utf-8")
     else:
         print(f"Seed retained ({reason}); runbooks in {output_dir} are left untouched.")
         write_evolution_metadata(output_dir, metadata)
         if seed_aqua_report:
-            with open(output_dir / "aqua_diagnostic_report.json", "w") as f:
-                json.dump(seed_aqua_report.to_dict(), f, indent=2)
+            (output_dir / "aqua_diagnostic_report.json").write_text(json.dumps(seed_aqua_report.to_dict(), indent=2), encoding="utf-8")
     print("Runbook evolution complete.")
     return 0
 

@@ -1226,3 +1226,86 @@ def test_enforce_frozen_runbooks():
     res = enforce_frozen_runbooks(candidate, seed, {"A.md"})
     assert res["A.md"] == "seed A"
     assert res["B.md"] == "new B"
+
+
+def test_cli_always_on_validation_rejects_zero_tool_hesitation(optimizer_cli):
+    run, output_dir, seed, optimize, adapter_class, _, _ = optimizer_cli
+    
+    import gepa
+    
+    # We want candidates = [seed, cand1]
+    # GEPA aggregate scores: [0.5, 0.9] -> Cand1 has higher aggregate score.
+    # We mock adapter_instance.evaluate to return per-case scores and trajectories.
+    # For cand1, one of the trajectories will have zero_tool_hesitation = True.
+    # evaluate_candidate_acceptance should reject cand1 due to REVERTED_CATEGORICAL_ZERO_TOOLS.
+    
+    def mock_evaluate(batch, candidate, capture_traces=False):
+        if candidate == seed:
+            # Seed baseline: perfect pass, no zero-tool hesitation
+            trajectories = [
+                {
+                    "case_id": f"case-{i}",
+                    "alert_type": "basic_ioc_enrichment.md",
+                    "score": 0.5,
+                    "zero_tool_hesitation": False,
+                    "implicated_runbook": "basic_ioc_enrichment.md",
+                    "inert": False,
+                    "assert_passed": True,
+                    "loss_penalty": 1.0,
+                }
+                for i in range(len(batch))
+            ]
+            return gepa.EvaluationBatch(
+                outputs=["" for _ in batch],
+                scores=[0.5 for _ in batch],
+                trajectories=trajectories
+            )
+        else:
+            # cand1: high score but has zero_tool_hesitation on case-0
+            trajectories = [
+                {
+                    "case_id": f"case-{i}",
+                    "alert_type": "basic_ioc_enrichment.md",
+                    "score": 0.9,
+                    "zero_tool_hesitation": (i == 0),
+                    "implicated_runbook": "basic_ioc_enrichment.md",
+                    "inert": False,
+                    "assert_passed": True,
+                    "loss_penalty": 1.0,
+                }
+                for i in range(len(batch))
+            ]
+            return gepa.EvaluationBatch(
+                outputs=["" for _ in batch],
+                scores=[0.9 for _ in batch],
+                trajectories=trajectories
+            )
+            
+    adapter_instance = adapter_class.return_value
+    adapter_instance.evaluate.side_effect = mock_evaluate
+    
+    cand1 = {name: f"# Cand1\n{seed[name]}" for name in CORE_RUNBOOKS}
+    candidates = [seed, cand1]
+    scores = [0.5, 0.9]
+    
+    exit_code = run(candidates, scores, gen5=True)
+    assert exit_code == 0
+    
+    # Cand1 should be rejected despite higher score, meaning seed is retained
+    metadata_path = output_dir / "evolution_metadata.json"
+    import json
+    metadata = json.loads(metadata_path.read_text())
+    assert metadata["selected_candidate_index"] == 0
+    
+    # Read hillclimb ledger
+    ledger_text = (output_dir / "hillclimb_ledger.jsonl").read_text()
+    entries = [json.loads(line) for line in ledger_text.splitlines() if line.strip()]
+    assert len(entries) >= 2
+    assert entries[1]["iteration"] == 1
+    assert "ZERO_TOOLS" in entries[1]["decision"]
+    
+    # Check that aqua_diagnostic_report.json was written
+    report_path = output_dir / "aqua_diagnostic_report.json"
+    assert report_path.exists()
+    assert "aqua_diagnostics_summary" in metadata
+
