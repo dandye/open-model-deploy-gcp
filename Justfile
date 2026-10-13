@@ -248,6 +248,14 @@ gepa-evolve MAX_CALLS="15" TASK_LM="gemini-2.5-flash-lite" REFLECTION_LM="gemini
 gepa-compare TASK_LM="gemini-2.5-flash-lite":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{TASK_LM}}" --managed-model "{{TASK_LM}}" --gen 3 --agent-mode hierarchical --use-runbooks --runbooks-dir configs/runbooks/gepa_evolved --evalset configs/evals/gen3/soc_tier1_interactive.json --output-report "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.md" --output-json "docs/soc_eval_results/{{TASK_LM}}_gepa_evolved_report.json"
 
+# AQuA Insights-First diagnostic clustering and reporting across evaluation traces
+aqua-diagnose input="docs/soc_eval_results":
+    @uv run python3 scripts/run_aqua_soc_diagnosis.py --input-json {{input}} --output-report docs/soc_eval_results/aqua_diagnostic_report.md --output-json docs/soc_eval_results/aqua_diagnostic_report.json
+
+# Evolve SOC runbooks with GEPA guided by AQuA diagnostic clustering and frozen passing runbooks
+gepa-evolve-guided task_lm="gemini-2.5-flash-lite" max_calls="15" reflection_lm="gemini-2.5-pro":
+    @uv run python3 -m agent.gepa_runbook_optimizer --max-metric-calls {{max_calls}} --task-lm "{{task_lm}}" --reflection-lm "{{reflection_lm}}" --freeze-passing-runbooks --judge-backend jev --jev-backend gliner_decide --output-dir configs/runbooks/gepa_evolved
+
 # Run SOC Agent evaluation with Jev System-One judge
 eval-soc-jev flavor="gemini-2.5-flash-lite" gen="3":
     @uv run python3 -m scripts.eval_soc_agent --flavor "{{flavor}}" --gen {{gen}} --judge-backend jev --output-report "docs/soc_eval_results/gen{{gen}}_jev_{{flavor}}_report.md"
