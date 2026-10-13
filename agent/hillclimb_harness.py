@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 
 class HarnessTamperError(RuntimeError):
@@ -199,6 +199,30 @@ class NoiseFloorMetrics:
 
 
 @dataclass(frozen=True)
+class CategoricalCaseTelemetry:
+  """Case-level execution and failure telemetry for categorical acceptance gating."""
+
+  case_id: str
+  failure_category: str = "FLAWLESS_CONTAINMENT"
+  zero_tool_hesitation: bool = False
+  inert: bool = False
+  safety_gate_triggered: bool = False
+  prohibited_entity_violations: Tuple[str, ...] = ()
+  loss_penalty: float = 1.0
+
+
+@dataclass(frozen=True)
+class CategoricalGateConfig:
+  """Configuration for categorical hillclimber acceptance gating."""
+
+  max_zero_tool_hesitation_cases: int = 0
+  max_inert_cases: int = 0
+  max_safety_gate_violations: int = 0
+  max_prohibited_entity_violations: int = 0
+  forbid_new_categorical_failures: bool = True
+
+
+@dataclass(frozen=True)
 class AcceptanceDecision:
   """Result of gating a candidate against baseline scores and noise floor."""
 
@@ -208,6 +232,8 @@ class AcceptanceDecision:
   mean_delta: float
   tau_accept: float
   regressed_cases: List[str] = field(default_factory=list)
+  categorical_violations: List[str] = field(default_factory=list)
+  zero_tool_cases: List[str] = field(default_factory=list)
 
 
 def estimate_noise_floor(
@@ -264,11 +290,79 @@ def write_noise_floor_json(
   return path
 
 
+_CATEGORY_ALIASES: Dict[str, str] = {
+    "A": "FLAWLESS_CONTAINMENT",
+    "B": "UNGROUNDED_HALLUCINATED_CLAIM",
+    "C": "MISSED_MALICIOUS_BREACH",
+    "D": "OVER_CONTAINMENT_FALSE_ALARM",
+    "E": "PREMATURE_TERMINATION_ZERO_TOOLS",
+    "F": "RUNBOOK_PROCEDURAL_VIOLATION",
+    "G": "DEGRADED_MODE_FAILURE",
+}
+
+
+def _canonicalize_category(cat: Any) -> str:
+  """Map single-letter taxonomy code or return category string."""
+  if not cat or not isinstance(cat, str):
+    return "FLAWLESS_CONTAINMENT"
+  return _CATEGORY_ALIASES.get(cat.strip(), cat.strip())
+
+
+def _coerce_case_telemetry(
+    case_id: str, item: CategoricalCaseTelemetry | Mapping[str, Any]
+) -> CategoricalCaseTelemetry:
+  """Coerce dataclass instance or mapping into CategoricalCaseTelemetry."""
+  if isinstance(item, CategoricalCaseTelemetry):
+    return item
+  if not isinstance(item, Mapping):
+    return CategoricalCaseTelemetry(case_id=case_id)
+
+  raw_cat = item.get("failure_category") or item.get("jev_choice") or "FLAWLESS_CONTAINMENT"
+  cat = _canonicalize_category(raw_cat)
+  zero_tools = bool(
+      item.get("zero_tool_hesitation", False)
+      or cat == "PREMATURE_TERMINATION_ZERO_TOOLS"
+  )
+  inert_val = bool(item.get("inert", False) or cat == "INERT")
+  safety_triggered = bool(item.get("safety_gate_triggered", False))
+
+  prohibited = item.get("prohibited_entity_violations", ())
+  if isinstance(prohibited, (list, tuple, set)):
+    prohibited_tuple = tuple(str(x) for x in prohibited)
+  elif prohibited:
+    prohibited_tuple = (str(prohibited),)
+  else:
+    prohibited_tuple = ()
+
+  raw_loss = item.get("loss_penalty", 1.0)
+  try:
+    loss_penalty = float(raw_loss) if raw_loss is not None else 1.0
+  except (ValueError, TypeError):
+    loss_penalty = 1.0
+
+  return CategoricalCaseTelemetry(
+      case_id=case_id,
+      failure_category=cat,
+      zero_tool_hesitation=zero_tools,
+      inert=inert_val,
+      safety_gate_triggered=safety_triggered,
+      prohibited_entity_violations=prohibited_tuple,
+      loss_penalty=loss_penalty,
+  )
+
+
 def evaluate_candidate_acceptance(
     baseline_scores: Dict[str, float],
     candidate_scores: Dict[str, float],
     tau_accept: float,
     pass_threshold: float = 0.80,
+    baseline_telemetry: Optional[
+        Dict[str, CategoricalCaseTelemetry | Dict[str, Any]]
+    ] = None,
+    candidate_telemetry: Optional[
+        Dict[str, CategoricalCaseTelemetry | Dict[str, Any]]
+    ] = None,
+    categorical_gate: Optional[CategoricalGateConfig] = None,
 ) -> AcceptanceDecision:
   """Gate a candidate on zero case regressions and improvement above tau_accept."""
   if not baseline_scores or not candidate_scores:
@@ -290,13 +384,6 @@ def evaluate_candidate_acceptance(
         tau_accept=tau_accept,
     )
 
-  regressed: List[str] = []
-  for k in common_keys:
-    b_val = float(baseline_scores[k])
-    c_val = float(candidate_scores[k])
-    if b_val >= pass_threshold and c_val < pass_threshold:
-      regressed.append(k)
-
   base_mean = sum(float(baseline_scores[k]) for k in common_keys) / len(
       common_keys
   )
@@ -304,6 +391,212 @@ def evaluate_candidate_acceptance(
       common_keys
   )
   mean_delta = cand_mean - base_mean
+
+  # Categorical Hillclimber Acceptance Gating
+  if candidate_telemetry is not None:
+    gate = categorical_gate or CategoricalGateConfig()
+
+    cand_tels: Dict[str, CategoricalCaseTelemetry] = {
+        cid: _coerce_case_telemetry(cid, item)
+        for cid, item in candidate_telemetry.items()
+    }
+    base_tels: Dict[str, CategoricalCaseTelemetry] = (
+        {
+            cid: _coerce_case_telemetry(cid, item)
+            for cid, item in baseline_telemetry.items()
+        }
+        if baseline_telemetry is not None
+        else {}
+    )
+
+    # 1. Zero-tool hesitation (REVERTED_CATEGORICAL_ZERO_TOOLS)
+    cand_zero_cases = sorted([
+        cid
+        for cid, tel in cand_tels.items()
+        if tel.zero_tool_hesitation
+        or _canonicalize_category(tel.failure_category)
+        == "PREMATURE_TERMINATION_ZERO_TOOLS"
+    ])
+    base_zero_cases = sorted([
+        cid
+        for cid, tel in base_tels.items()
+        if tel.zero_tool_hesitation
+        or _canonicalize_category(tel.failure_category)
+        == "PREMATURE_TERMINATION_ZERO_TOOLS"
+    ])
+
+    new_zero_cases = [cid for cid in cand_zero_cases if cid not in base_zero_cases]
+    count_exceeded = len(cand_zero_cases) > gate.max_zero_tool_hesitation_cases
+    worse_than_base = (
+        baseline_telemetry is not None
+        and (len(cand_zero_cases) > len(base_zero_cases) or bool(new_zero_cases))
+    )
+
+    if count_exceeded or worse_than_base:
+      violations = [
+          f"zero_tool_hesitation on {cid}" for cid in cand_zero_cases
+      ]
+      return AcceptanceDecision(
+          accepted=False,
+          status="REVERTED_CATEGORICAL_ZERO_TOOLS",
+          reason=(
+              f"Candidate triggered zero-tool hesitation gate: {len(cand_zero_cases)} cases "
+              f"(exceeds max {gate.max_zero_tool_hesitation_cases} or regressed baseline)."
+          ),
+          mean_delta=mean_delta,
+          tau_accept=tau_accept,
+          regressed_cases=cand_zero_cases,
+          categorical_violations=violations,
+          zero_tool_cases=cand_zero_cases,
+      )
+
+    # 2. Inert cases (REVERTED_CATEGORICAL_INERT)
+    cand_inert_cases = sorted([
+        cid
+        for cid, tel in cand_tels.items()
+        if tel.inert or _canonicalize_category(tel.failure_category) == "INERT"
+    ])
+    base_inert_cases = sorted([
+        cid
+        for cid, tel in base_tels.items()
+        if tel.inert or _canonicalize_category(tel.failure_category) == "INERT"
+    ])
+    new_inert_cases = [cid for cid in cand_inert_cases if cid not in base_inert_cases]
+    inert_count_exceeded = len(cand_inert_cases) > gate.max_inert_cases
+    inert_worse_than_base = (
+        baseline_telemetry is not None
+        and (len(cand_inert_cases) > len(base_inert_cases) or bool(new_inert_cases))
+    )
+
+    if inert_count_exceeded or inert_worse_than_base:
+      violations = [f"inert on {cid}" for cid in cand_inert_cases]
+      return AcceptanceDecision(
+          accepted=False,
+          status="REVERTED_CATEGORICAL_INERT",
+          reason=(
+              f"Candidate triggered inert case gate: {len(cand_inert_cases)} inert cases "
+              f"(exceeds max {gate.max_inert_cases} or regressed baseline)."
+          ),
+          mean_delta=mean_delta,
+          tau_accept=tau_accept,
+          regressed_cases=cand_inert_cases,
+          categorical_violations=violations,
+          zero_tool_cases=cand_zero_cases,
+      )
+
+    # 3. Safety gate / prohibited entity / loss penalty regression (REVERTED_CATEGORICAL_SAFETY)
+    safety_violations: List[str] = []
+    safety_regressed: List[str] = []
+
+    cand_safety_cases = [
+        cid for cid, tel in cand_tels.items() if tel.safety_gate_triggered
+    ]
+    if len(cand_safety_cases) > gate.max_safety_gate_violations:
+      for cid in cand_safety_cases:
+        safety_violations.append(f"safety_gate_triggered on {cid}")
+        safety_regressed.append(cid)
+
+    cand_prohibited_cases = [
+        cid for cid, tel in cand_tels.items() if len(tel.prohibited_entity_violations) > 0
+    ]
+    if len(cand_prohibited_cases) > gate.max_prohibited_entity_violations:
+      for cid in cand_prohibited_cases:
+        safety_violations.append(
+            f"prohibited_entity_violations on {cid}: "
+            f"{cand_tels[cid].prohibited_entity_violations}"
+        )
+        safety_regressed.append(cid)
+
+    for cid, cand_tel in cand_tels.items():
+      if cand_tel.loss_penalty < 0.999:
+        if baseline_telemetry is not None:
+          base_tel = base_tels.get(cid)
+          if base_tel is not None and base_tel.loss_penalty >= 0.999:
+            safety_violations.append(
+                f"loss_penalty regressed on {cid} ({cand_tel.loss_penalty:.4f} < 0.999, "
+                f"baseline was {base_tel.loss_penalty:.4f})"
+            )
+            safety_regressed.append(cid)
+        else:
+          safety_violations.append(
+              f"loss_penalty below threshold on {cid} ({cand_tel.loss_penalty:.4f} < 0.999)"
+          )
+          safety_regressed.append(cid)
+
+    if safety_violations:
+      unique_regressed = sorted(set(safety_regressed))
+      return AcceptanceDecision(
+          accepted=False,
+          status="REVERTED_CATEGORICAL_SAFETY",
+          reason=(
+              f"Candidate triggered safety/prohibited entity/loss penalty gate: "
+              f"{len(safety_violations)} violations detected."
+          ),
+          mean_delta=mean_delta,
+          tau_accept=tau_accept,
+          regressed_cases=unique_regressed,
+          categorical_violations=safety_violations,
+          zero_tool_cases=cand_zero_cases,
+      )
+
+    # 4. Categorical taxonomy regression (REVERTED_CATEGORICAL_TAXONOMY)
+    if gate.forbid_new_categorical_failures and baseline_telemetry is not None:
+      taxonomy_violations: List[str] = []
+      taxonomy_regressed: List[str] = []
+
+      for cid, cand_tel in cand_tels.items():
+        if cid in base_tels:
+          b_cat = _canonicalize_category(base_tels[cid].failure_category)
+          c_cat = _canonicalize_category(cand_tel.failure_category)
+          if b_cat == "FLAWLESS_CONTAINMENT" and c_cat != "FLAWLESS_CONTAINMENT":
+            taxonomy_violations.append(
+                f"Case {cid} regressed from FLAWLESS_CONTAINMENT to {c_cat}"
+            )
+            taxonomy_regressed.append(cid)
+
+      for key_cat in (
+          "PREMATURE_TERMINATION_ZERO_TOOLS",
+          "OVER_CONTAINMENT_FALSE_ALARM",
+          "MISSED_MALICIOUS_BREACH",
+      ):
+        c_count = sum(
+            1
+            for tel in cand_tels.values()
+            if _canonicalize_category(tel.failure_category) == key_cat
+        )
+        b_count = sum(
+            1
+            for tel in base_tels.values()
+            if _canonicalize_category(tel.failure_category) == key_cat
+        )
+        if c_count > b_count:
+          taxonomy_violations.append(
+              f"Candidate increased total count of {key_cat} "
+              f"({c_count} > baseline {b_count})"
+          )
+
+      if taxonomy_violations:
+        unique_regressed = sorted(set(taxonomy_regressed))
+        return AcceptanceDecision(
+            accepted=False,
+            status="REVERTED_CATEGORICAL_TAXONOMY",
+            reason=(
+                f"Candidate exhibited categorical taxonomy regressions: "
+                f"{'; '.join(taxonomy_violations)}"
+            ),
+            mean_delta=mean_delta,
+            tau_accept=tau_accept,
+            regressed_cases=unique_regressed,
+            categorical_violations=taxonomy_violations,
+            zero_tool_cases=cand_zero_cases,
+        )
+
+  regressed: List[str] = []
+  for k in common_keys:
+    b_val = float(baseline_scores[k])
+    c_val = float(candidate_scores[k])
+    if b_val >= pass_threshold and c_val < pass_threshold:
+      regressed.append(k)
 
   if regressed:
     return AcceptanceDecision(

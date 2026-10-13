@@ -114,6 +114,253 @@ def test_evaluate_candidate_acceptance_blocks_noise_and_regressions():
   assert dec_good.status == "KEPT"
 
 
+def test_evaluate_candidate_acceptance_categorical_backward_compatible():
+  baseline = {"CASE-01": 0.85, "CASE-02": 0.90}
+  candidate = {"CASE-01": 0.88, "CASE-02": 0.92}
+  dec = evaluate_candidate_acceptance(baseline, candidate, tau_accept=0.01)
+  assert dec.accepted is True
+  assert dec.status == "KEPT"
+  assert dec.categorical_violations == []
+  assert dec.zero_tool_cases == []
+
+
+def test_evaluate_candidate_acceptance_reverts_zero_tool_hesitation():
+  from agent.hillclimb_harness import CategoricalCaseTelemetry, CategoricalGateConfig
+
+  baseline_scores = {"CASE-01": 0.85, "CASE-02": 0.85}
+  cand_scores = {"CASE-01": 0.95, "CASE-02": 0.95}
+
+  base_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01"),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+  # Candidate exhibits zero_tool_hesitation on CASE-01
+  cand_tel = {
+      "CASE-01": CategoricalCaseTelemetry(
+          case_id="CASE-01", zero_tool_hesitation=True
+      ),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+
+  dec = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel,
+  )
+  assert dec.accepted is False
+  assert dec.status == "REVERTED_CATEGORICAL_ZERO_TOOLS"
+  assert "CASE-01" in dec.zero_tool_cases
+  assert "CASE-01" in dec.regressed_cases
+  assert len(dec.categorical_violations) > 0
+
+  # Also test dict-based raw telemetry and failure_category string
+  cand_tel_dict = {
+      "CASE-01": {"zero_tool_hesitation": False, "failure_category": "PREMATURE_TERMINATION_ZERO_TOOLS"},
+      "CASE-02": {"zero_tool_hesitation": False, "failure_category": "FLAWLESS_CONTAINMENT"},
+  }
+  dec_dict = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel_dict,
+  )
+  assert dec_dict.accepted is False
+  assert dec_dict.status == "REVERTED_CATEGORICAL_ZERO_TOOLS"
+  assert "CASE-01" in dec_dict.zero_tool_cases
+
+  # Tolerated when max_zero_tool_hesitation_cases >= 1 and not worse than baseline
+  base_tel_with_zero = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", zero_tool_hesitation=True),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+  dec_tolerated = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel_with_zero,
+      candidate_telemetry=cand_tel,
+      categorical_gate=CategoricalGateConfig(max_zero_tool_hesitation_cases=1),
+  )
+  assert dec_tolerated.accepted is True
+  assert dec_tolerated.status == "KEPT"
+
+
+def test_evaluate_candidate_acceptance_reverts_inert_cases():
+  from agent.hillclimb_harness import CategoricalCaseTelemetry, CategoricalGateConfig
+
+  baseline_scores = {"CASE-01": 0.85, "CASE-02": 0.85}
+  cand_scores = {"CASE-01": 0.90, "CASE-02": 0.90}
+
+  base_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01"),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+  cand_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", inert=True),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+
+  dec = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel,
+  )
+  assert dec.accepted is False
+  assert dec.status == "REVERTED_CATEGORICAL_INERT"
+  assert "CASE-01" in dec.regressed_cases
+
+  # Dict-based inert category
+  cand_tel_raw = {
+      "CASE-01": {"failure_category": "INERT"},
+      "CASE-02": {"failure_category": "FLAWLESS_CONTAINMENT"},
+  }
+  dec_raw = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel_raw,
+  )
+  assert dec_raw.accepted is False
+  assert dec_raw.status == "REVERTED_CATEGORICAL_INERT"
+
+
+def test_evaluate_candidate_acceptance_reverts_safety_and_prohibited_violations():
+  from agent.hillclimb_harness import CategoricalCaseTelemetry
+
+  baseline_scores = {"CASE-01": 0.85, "CASE-02": 0.85}
+  cand_scores = {"CASE-01": 0.95, "CASE-02": 0.95}
+
+  base_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", loss_penalty=1.0),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02", loss_penalty=1.0),
+  }
+
+  # 1. Safety gate triggered
+  cand_tel_safety = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", safety_gate_triggered=True),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+  dec_safety = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel_safety,
+  )
+  assert dec_safety.accepted is False
+  assert dec_safety.status == "REVERTED_CATEGORICAL_SAFETY"
+  assert "CASE-01" in dec_safety.regressed_cases
+
+  # 2. Prohibited entity violations
+  cand_tel_prohibited = {
+      "CASE-01": CategoricalCaseTelemetry(
+          case_id="CASE-01", prohibited_entity_violations=("bad_domain.evil",)
+      ),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02"),
+  }
+  dec_prohibited = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel_prohibited,
+  )
+  assert dec_prohibited.accepted is False
+  assert dec_prohibited.status == "REVERTED_CATEGORICAL_SAFETY"
+
+  # 3. Loss penalty regression
+  cand_tel_loss = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", loss_penalty=0.5),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02", loss_penalty=1.0),
+  }
+  dec_loss = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel_loss,
+  )
+  assert dec_loss.accepted is False
+  assert dec_loss.status == "REVERTED_CATEGORICAL_SAFETY"
+
+
+def test_evaluate_candidate_acceptance_reverts_taxonomy_regression():
+  from agent.hillclimb_harness import CategoricalCaseTelemetry, CategoricalGateConfig
+
+  baseline_scores = {"CASE-01": 0.85, "CASE-02": 0.85, "CASE-03": 0.85}
+  cand_scores = {"CASE-01": 0.90, "CASE-02": 0.90, "CASE-03": 0.90}
+
+  base_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", failure_category="FLAWLESS_CONTAINMENT"),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02", failure_category="FLAWLESS_CONTAINMENT"),
+      "CASE-03": CategoricalCaseTelemetry(case_id="CASE-03", failure_category="MISSED_MALICIOUS_BREACH"),
+  }
+
+  # Regression from FLAWLESS_CONTAINMENT to MISSED_MALICIOUS_BREACH on CASE-01
+  cand_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", failure_category="MISSED_MALICIOUS_BREACH"),
+      "CASE-02": CategoricalCaseTelemetry(case_id="CASE-02", failure_category="FLAWLESS_CONTAINMENT"),
+      "CASE-03": CategoricalCaseTelemetry(case_id="CASE-03", failure_category="FLAWLESS_CONTAINMENT"),
+  }
+
+  dec = evaluate_candidate_acceptance(
+      baseline_scores,
+      cand_scores,
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel,
+      categorical_gate=CategoricalGateConfig(forbid_new_categorical_failures=True),
+  )
+  assert dec.accepted is False
+  assert dec.status == "REVERTED_CATEGORICAL_TAXONOMY"
+  assert "CASE-01" in dec.regressed_cases
+
+  # Letter taxonomy alias: "A" regressing to "C"
+  base_tel_letters = {
+      "CASE-01": {"failure_category": "A"},
+      "CASE-02": {"failure_category": "A"},
+  }
+  cand_tel_letters = {
+      "CASE-01": {"failure_category": "C"},
+      "CASE-02": {"failure_category": "A"},
+  }
+  dec_letters = evaluate_candidate_acceptance(
+      {"CASE-01": 0.85, "CASE-02": 0.85},
+      {"CASE-01": 0.90, "CASE-02": 0.90},
+      tau_accept=0.01,
+      baseline_telemetry=base_tel_letters,
+      candidate_telemetry=cand_tel_letters,
+  )
+  assert dec_letters.accepted is False
+  assert dec_letters.status == "REVERTED_CATEGORICAL_TAXONOMY"
+
+  # Increased total count of OVER_CONTAINMENT_FALSE_ALARM
+  base_tel_count = {
+      "CASE-01": {"failure_category": "UNGROUNDED_HALLUCINATED_CLAIM"},
+      "CASE-02": {"failure_category": "FLAWLESS_CONTAINMENT"},
+  }
+  cand_tel_count = {
+      "CASE-01": {"failure_category": "OVER_CONTAINMENT_FALSE_ALARM"},
+      "CASE-02": {"failure_category": "OVER_CONTAINMENT_FALSE_ALARM"},
+  }
+  dec_count = evaluate_candidate_acceptance(
+      {"CASE-01": 0.85, "CASE-02": 0.85},
+      {"CASE-01": 0.90, "CASE-02": 0.90},
+      tau_accept=0.01,
+      baseline_telemetry=base_tel_count,
+      candidate_telemetry=cand_tel_count,
+  )
+  assert dec_count.accepted is False
+  assert dec_count.status == "REVERTED_CATEGORICAL_TAXONOMY"
+
+
+
 def test_hillclimb_ledger_appends_and_reads(tmp_path: Path):
   ledger_file = tmp_path / "hillclimb_ledger.jsonl"
   ledger = HillclimbLedger(ledger_file)
