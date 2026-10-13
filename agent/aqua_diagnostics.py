@@ -289,7 +289,8 @@ def extract_trace_diagnosis(
     loss_penalty_val = trace.get("loss_penalty")
     loss_penalty = float(loss_penalty_val) if loss_penalty_val is not None else score
 
-    assert_passed = bool(trace.get("assert_passed", score >= pass_threshold))
+    raw_assert = trace.get("assert_passed")
+    assert_passed = bool(score >= pass_threshold if raw_assert is None else raw_assert)
 
     expected_verdict = str(
         trace.get("expected_verdict") or trace.get("ground_truth_label") or ""

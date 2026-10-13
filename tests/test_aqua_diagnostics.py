@@ -401,3 +401,43 @@ class TestAquaDiagnosticsEdgeCases:
             assert report.directives[rb].is_frozen is True
             assert "LOCKED_PASSING_RUNBOOK" in report.directives[rb].render_prompt_block()
 
+    def test_assert_passed_explicit_none_fallback_to_score_threshold(self):
+        # When assert_passed is explicitly None and score >= pass_threshold, assert_passed must be True
+        trace_pass = {
+            "case_id": "CASE-NONE-ASSERT-PASS",
+            "component_name": "malware_triage.md",
+            "expected_verdict": "MALICIOUS",
+            "expected_actions": ["get_file_report", "isolate_host"],
+            "actual_verdict": "MALICIOUS",
+            "executed_actions": ["get_file_report", "isolate_host"],
+            "score": 0.95,
+            "loss_penalty": 0.95,
+            "assert_passed": None,
+            "trajectory": [
+                {"tool": "get_file_report", "input": {}},
+                {"tool": "isolate_host", "input": {}},
+            ],
+        }
+        diag_pass = extract_trace_diagnosis(trace_pass, pass_threshold=0.80)
+        assert diag_pass.failure_category == "FLAWLESS_CONTAINMENT"
+
+        # When assert_passed is explicitly None and score < pass_threshold, assert_passed must be False
+        trace_fail = {
+            "case_id": "CASE-NONE-ASSERT-FAIL",
+            "component_name": "malware_triage.md",
+            "expected_verdict": "MALICIOUS",
+            "expected_actions": ["get_file_report", "isolate_host"],
+            "actual_verdict": "MALICIOUS",
+            "executed_actions": ["get_file_report", "isolate_host"],
+            "score": 0.50,
+            "loss_penalty": 0.50,
+            "assert_passed": None,
+            "trajectory": [
+                {"tool": "get_file_report", "input": {}},
+                {"tool": "isolate_host", "input": {}},
+            ],
+        }
+        diag_fail = extract_trace_diagnosis(trace_fail, pass_threshold=0.80)
+        assert diag_fail.failure_category != "FLAWLESS_CONTAINMENT"
+
+
