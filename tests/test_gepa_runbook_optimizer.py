@@ -1167,3 +1167,62 @@ def test_adapter_evaluate_gen5_prohibited_entity_lowers_the_loss_penalty():
     assert trace["prohibited_entity_violations"], "the verifier must flag the prohibited entity"
     assert trace["loss_penalty"] <= math.exp(-1.0) + 1e-9
     assert trace["inert"] is False
+
+def test_zero_tool_hesitation_penalty():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    
+    # Fake verifier that returns zero tools
+    def fake_agent_factory(**kwargs):
+        from types import SimpleNamespace
+        class FakeAgent:
+            def query(self, prompt, max_iterations=None):
+                return SimpleNamespace(response="Done.", trajectory=[], usage={}, classification="suspicious_login_triage.md")
+        return FakeAgent()
+        
+    adapter = RunbookGEPAAdapter(task_lm="mock", agent_factory=fake_agent_factory)
+    case = {"id": "C-1", "expected_actions": [], "prohibited_actions": [], "ground_truth_label": "BENIGN"}
+    batch = adapter.evaluate([case], {"suspicious_login_triage.md": "# Seed"}, capture_traces=True)
+    assert batch.scores[0] == 0.0
+    trace = batch.trajectories[0]
+    assert trace.get("zero_tool_hesitation") is True
+    assert trace.get("epistemic_step_count") == 0
+    assert trace.get("jev_choice") == "PREMATURE_TERMINATION_ZERO_TOOLS"
+    assert trace.get("implicated_runbook") == "suspicious_login_triage.md"
+
+def test_make_reflective_dataset_strict_attribution():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    from agent.aqua_diagnostics import AquaDiagnosticReport, AquaInsightCluster
+    import gepa
+    adapter = RunbookGEPAAdapter(task_lm="mock")
+    
+    trajectories = [
+        {
+            "case_id": "c1", "alert_type": "suspicious_login_triage.md", "implicated_runbook": "suspicious_login_triage.md",
+            "score": 0.0, "loss_penalty": 0.0, "assert_passed": False, "zero_tool_hesitation": True, "prompt": "p1"
+        },
+        {
+            "case_id": "c2", "alert_type": "malware_triage.md", "implicated_runbook": "malware_triage.md",
+            "score": 1.0, "loss_penalty": 1.0, "assert_passed": True, "zero_tool_hesitation": False, "inert": False
+        }
+    ]
+    eval_batch = gepa.EvaluationBatch(outputs=["", ""], scores=[0.0, 1.0], trajectories=trajectories)
+    candidate = {"suspicious_login_triage.md": "# A", "malware_triage.md": "# B"}
+    
+    dataset = adapter.make_reflective_dataset(candidate, eval_batch, list(candidate.keys()))
+    
+    assert "suspicious_login_triage.md" not in adapter.frozen_runbooks
+    assert "malware_triage.md" in adapter.frozen_runbooks
+    
+    assert len(dataset["suspicious_login_triage.md"]) == 1
+    assert "PREMATURE_TERMINATION_ZERO_TOOLS" in dataset["suspicious_login_triage.md"][0]["Feedback"]
+    assert len(dataset["malware_triage.md"]) == 0
+
+def test_enforce_frozen_runbooks():
+    from agent.gepa_runbook_optimizer import enforce_frozen_runbooks
+    
+    candidate = {"A.md": "new A", "B.md": "new B"}
+    seed = {"A.md": "seed A", "B.md": "seed B"}
+    
+    res = enforce_frozen_runbooks(candidate, seed, {"A.md"})
+    assert res["A.md"] == "seed A"
+    assert res["B.md"] == "new B"
