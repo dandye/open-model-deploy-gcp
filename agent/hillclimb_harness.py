@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from agent.jev_evaluator import SOC_FAILURE_TAXONOMY
+
 
 class HarnessTamperError(RuntimeError):
   """Raised when protected evaluation harness files or datasets change without --approve-harness."""
@@ -290,15 +292,7 @@ def write_noise_floor_json(
   return path
 
 
-_CATEGORY_ALIASES: Dict[str, str] = {
-    "A": "FLAWLESS_CONTAINMENT",
-    "B": "UNGROUNDED_HALLUCINATED_CLAIM",
-    "C": "MISSED_MALICIOUS_BREACH",
-    "D": "OVER_CONTAINMENT_FALSE_ALARM",
-    "E": "PREMATURE_TERMINATION_ZERO_TOOLS",
-    "F": "RUNBOOK_PROCEDURAL_VIOLATION",
-    "G": "DEGRADED_MODE_FAILURE",
-}
+_CATEGORY_ALIASES: Dict[str, str] = dict(SOC_FAILURE_TAXONOMY)
 
 
 def _canonicalize_category(cat: Any) -> str:
@@ -312,10 +306,21 @@ def _coerce_case_telemetry(
     case_id: str, item: CategoricalCaseTelemetry | Mapping[str, Any]
 ) -> CategoricalCaseTelemetry:
   """Coerce dataclass instance or mapping into CategoricalCaseTelemetry."""
+  cid_str = str(case_id)
   if isinstance(item, CategoricalCaseTelemetry):
-    return item
+    if item.case_id == cid_str:
+      return item
+    return CategoricalCaseTelemetry(
+        case_id=cid_str,
+        failure_category=item.failure_category,
+        zero_tool_hesitation=item.zero_tool_hesitation,
+        inert=item.inert,
+        safety_gate_triggered=item.safety_gate_triggered,
+        prohibited_entity_violations=item.prohibited_entity_violations,
+        loss_penalty=item.loss_penalty,
+    )
   if not isinstance(item, Mapping):
-    return CategoricalCaseTelemetry(case_id=case_id)
+    return CategoricalCaseTelemetry(case_id=cid_str)
 
   raw_cat = item.get("failure_category") or item.get("jev_choice") or "FLAWLESS_CONTAINMENT"
   cat = _canonicalize_category(raw_cat)
@@ -341,7 +346,7 @@ def _coerce_case_telemetry(
     loss_penalty = 1.0
 
   return CategoricalCaseTelemetry(
-      case_id=case_id,
+      case_id=cid_str,
       failure_category=cat,
       zero_tool_hesitation=zero_tools,
       inert=inert_val,
@@ -374,7 +379,14 @@ def evaluate_candidate_acceptance(
         tau_accept=tau_accept,
     )
 
-  common_keys = sorted(set(baseline_scores.keys()) & set(candidate_scores.keys()))
+  norm_base_scores: Dict[str, float] = {
+      str(k): float(v) for k, v in baseline_scores.items()
+  }
+  norm_cand_scores: Dict[str, float] = {
+      str(k): float(v) for k, v in candidate_scores.items()
+  }
+
+  common_keys = sorted(set(norm_base_scores.keys()) & set(norm_cand_scores.keys()))
   if not common_keys:
     return AcceptanceDecision(
         accepted=False,
@@ -384,10 +396,10 @@ def evaluate_candidate_acceptance(
         tau_accept=tau_accept,
     )
 
-  base_mean = sum(float(baseline_scores[k]) for k in common_keys) / len(
+  base_mean = sum(norm_base_scores[k] for k in common_keys) / len(
       common_keys
   )
-  cand_mean = sum(float(candidate_scores[k]) for k in common_keys) / len(
+  cand_mean = sum(norm_cand_scores[k] for k in common_keys) / len(
       common_keys
   )
   mean_delta = cand_mean - base_mean
@@ -397,12 +409,12 @@ def evaluate_candidate_acceptance(
     gate = categorical_gate or CategoricalGateConfig()
 
     cand_tels: Dict[str, CategoricalCaseTelemetry] = {
-        cid: _coerce_case_telemetry(cid, item)
+        str(cid): _coerce_case_telemetry(str(cid), item)
         for cid, item in candidate_telemetry.items()
     }
     base_tels: Dict[str, CategoricalCaseTelemetry] = (
         {
-            cid: _coerce_case_telemetry(cid, item)
+            str(cid): _coerce_case_telemetry(str(cid), item)
             for cid, item in baseline_telemetry.items()
         }
         if baseline_telemetry is not None
@@ -491,7 +503,15 @@ def evaluate_candidate_acceptance(
     cand_safety_cases = [
         cid for cid, tel in cand_tels.items() if tel.safety_gate_triggered
     ]
-    if len(cand_safety_cases) > gate.max_safety_gate_violations:
+    base_safety_cases = [
+        cid for cid, tel in base_tels.items() if tel.safety_gate_triggered
+    ]
+    new_safety_cases = [
+        cid for cid in cand_safety_cases if cid not in base_safety_cases
+    ]
+    if len(cand_safety_cases) > gate.max_safety_gate_violations or (
+        baseline_telemetry is not None and bool(new_safety_cases)
+    ):
       for cid in cand_safety_cases:
         safety_violations.append(f"safety_gate_triggered on {cid}")
         safety_regressed.append(cid)
@@ -499,7 +519,15 @@ def evaluate_candidate_acceptance(
     cand_prohibited_cases = [
         cid for cid, tel in cand_tels.items() if len(tel.prohibited_entity_violations) > 0
     ]
-    if len(cand_prohibited_cases) > gate.max_prohibited_entity_violations:
+    base_prohibited_cases = [
+        cid for cid, tel in base_tels.items() if len(tel.prohibited_entity_violations) > 0
+    ]
+    new_prohibited_cases = [
+        cid for cid in cand_prohibited_cases if cid not in base_prohibited_cases
+    ]
+    if len(cand_prohibited_cases) > gate.max_prohibited_entity_violations or (
+        baseline_telemetry is not None and bool(new_prohibited_cases)
+    ):
       for cid in cand_prohibited_cases:
         safety_violations.append(
             f"prohibited_entity_violations on {cid}: "
@@ -511,10 +539,13 @@ def evaluate_candidate_acceptance(
       if cand_tel.loss_penalty < 0.999:
         if baseline_telemetry is not None:
           base_tel = base_tels.get(cid)
-          if base_tel is not None and base_tel.loss_penalty >= 0.999:
+          if base_tel is not None and (
+              base_tel.loss_penalty >= 0.999
+              or cand_tel.loss_penalty < base_tel.loss_penalty - 1e-6
+          ):
             safety_violations.append(
-                f"loss_penalty regressed on {cid} ({cand_tel.loss_penalty:.4f} < 0.999, "
-                f"baseline was {base_tel.loss_penalty:.4f})"
+                f"loss_penalty regressed on {cid} ({cand_tel.loss_penalty:.4f} < "
+                f"baseline {base_tel.loss_penalty:.4f})"
             )
             safety_regressed.append(cid)
         else:
@@ -559,21 +590,25 @@ def evaluate_candidate_acceptance(
           "OVER_CONTAINMENT_FALSE_ALARM",
           "MISSED_MALICIOUS_BREACH",
       ):
-        c_count = sum(
-            1
-            for tel in cand_tels.values()
+        c_cases = [
+            cid
+            for cid, tel in cand_tels.items()
             if _canonicalize_category(tel.failure_category) == key_cat
-        )
-        b_count = sum(
-            1
-            for tel in base_tels.values()
+        ]
+        b_cases = {
+            cid
+            for cid, tel in base_tels.items()
             if _canonicalize_category(tel.failure_category) == key_cat
-        )
+        }
+        c_count = len(c_cases)
+        b_count = len(b_cases)
         if c_count > b_count:
           taxonomy_violations.append(
               f"Candidate increased total count of {key_cat} "
               f"({c_count} > baseline {b_count})"
           )
+          newly_in_cat = [cid for cid in c_cases if cid not in b_cases]
+          taxonomy_regressed.extend(newly_in_cat or c_cases)
 
       if taxonomy_violations:
         unique_regressed = sorted(set(taxonomy_regressed))
@@ -593,10 +628,10 @@ def evaluate_candidate_acceptance(
 
   regressed: List[str] = []
   for k in common_keys:
-    b_val = float(baseline_scores[k])
-    c_val = float(candidate_scores[k])
+    b_val = norm_base_scores[k]
+    c_val = norm_cand_scores[k]
     if b_val >= pass_threshold and c_val < pass_threshold:
-      regressed.append(k)
+      regressed.append(str(k))
 
   if regressed:
     return AcceptanceDecision(

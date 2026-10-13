@@ -57,6 +57,7 @@ def test_is_forbidden_split_file() -> None:
     assert is_forbidden_split_file("configs/evals/gen5/final_test.json") is True
     assert is_forbidden_split_file("path/to/final_test.json") is True
     assert is_forbidden_split_file("path/to/final_test/scorecard.json") is True
+    assert is_forbidden_split_file("docs/soc_eval_results/gen5_final_test_report.json") is True
     assert is_forbidden_split_file("docs/soc_eval_results/gen5_validation_report.json") is False
     assert is_forbidden_split_file("docs/soc_eval_results/gemini_report.json") is False
 
@@ -177,6 +178,16 @@ def test_load_traces_skips_summary_and_forbidden_split(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
+    # Report whose internal payload specifies split: final_test
+    forbidden_payload_file = eval_dir / "sneaky_report.json"
+    forbidden_payload_file.write_text(
+        json.dumps({
+            "split": "final_test",
+            "case_results": [{"case_id": "CASE-SNEAKY-FINAL", "score": 0.0}],
+        }),
+        encoding="utf-8",
+    )
+
     traces = load_traces_from_inputs([eval_dir])
     assert len(traces) == 1
     assert traces[0]["case_id"] == "CASE-01"
@@ -234,6 +245,19 @@ def test_promote_failure_fixtures(tmp_path: Path) -> None:
             "trajectory": [{"tool": "lookup_entity"}],
             "component_name": "basic_ioc_enrichment.md",
         },
+        {
+            "case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+            "prompt": "False positive containment on SRV-PROD-PAYMENT-01.",
+            "score": 0.30,
+            "assert_passed": True,  # substring assertions passed, but case failed overall
+            "passed": False,
+            "actual_verdict": "MALICIOUS",
+            "expected_verdict": "BENIGN",
+            "executed_actions": ["isolate_host"],
+            "prohibited_actions": ["isolate_host"],
+            "trajectory": [{"tool": "lookup_entity"}, {"tool": "isolate_host"}],
+            "component_name": "suspicious_login_triage.md",
+        },
     ]
 
     out_fixtures_dir = tmp_path / "promoted_fixtures"
@@ -243,13 +267,16 @@ def test_promote_failure_fixtures(tmp_path: Path) -> None:
         forbidden_literals=["secret_leak"],
     )
 
-    assert len(saved_files) == 1
-    saved_path = saved_files[0]
-    assert saved_path.exists()
-    content = saved_path.read_text(encoding="utf-8")
-    assert "DESKTOP-FIN-08" not in content
-    assert "10.0.4.15" not in content
-    assert "CASE-GEN3-01-LOKIBOT-C2" not in content
+    assert len(saved_files) == 2
+    for saved_path in saved_files:
+        assert saved_path.exists()
+        assert "case_id_redacted" not in saved_path.name
+        content = saved_path.read_text(encoding="utf-8")
+        assert "DESKTOP-FIN-08" not in content
+        assert "SRV-PROD-PAYMENT-01" not in content
+        assert "10.0.4.15" not in content
+        assert "CASE-GEN3-01-LOKIBOT-C2" not in content
+        assert "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE" not in content
 
 
 def test_build_markdown_report_zero_emojis(tmp_path: Path) -> None:

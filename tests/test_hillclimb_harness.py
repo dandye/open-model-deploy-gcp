@@ -358,6 +358,39 @@ def test_evaluate_candidate_acceptance_reverts_taxonomy_regression():
   )
   assert dec_count.accepted is False
   assert dec_count.status == "REVERTED_CATEGORICAL_TAXONOMY"
+  assert "CASE-01" in dec_count.regressed_cases or "CASE-02" in dec_count.regressed_cases
+
+
+def test_evaluate_candidate_acceptance_int_keys_and_worsened_partial_loss():
+  from agent.hillclimb_harness import CategoricalCaseTelemetry
+
+  # 1. Integer keys from GEPA ListDataLoader regressing must not raise TypeError
+  dec_int = evaluate_candidate_acceptance(
+      {0: 0.90, 1: 0.90},
+      {0: 0.50, 1: 0.95},
+      tau_accept=0.01,
+  )
+  assert dec_int.accepted is False
+  assert dec_int.status == "REVERTED_REGRESSION"
+  assert "0" in dec_int.regressed_cases
+
+  # 2. Worsening an already partial loss_penalty (e.g. 0.6065 -> 0.2231) must trigger REVERTED_CATEGORICAL_SAFETY
+  base_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", loss_penalty=0.6065),
+  }
+  cand_tel = {
+      "CASE-01": CategoricalCaseTelemetry(case_id="CASE-01", loss_penalty=0.2231),
+  }
+  dec_loss = evaluate_candidate_acceptance(
+      {"CASE-01": 0.60},
+      {"CASE-01": 0.75},
+      tau_accept=0.01,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel,
+  )
+  assert dec_loss.accepted is False
+  assert dec_loss.status == "REVERTED_CATEGORICAL_SAFETY"
+  assert "CASE-01" in dec_loss.regressed_cases
 
 
 

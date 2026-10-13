@@ -14,7 +14,10 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from agent.hierarchical_soc_agent import CLASSIFICATION_RUNBOOK_MAP
+from agent.hierarchical_soc_agent import (
+    CLASSIFICATION_RUNBOOK_MAP,
+    DEFAULT_FALLBACK_RUNBOOK,
+)
 from agent.jev_evaluator import SOC_FAILURE_TAXONOMY
 from scripts.eval_trajectory_verifier import is_epistemic_tool
 
@@ -35,8 +38,6 @@ CORE_RUNBOOKS: Tuple[str, ...] = (
     "lateral_movement_hunt_psexec_wmi.md",
 )
 
-DEFAULT_FALLBACK_RUNBOOK: str = "basic_ioc_enrichment.md"
-
 FORBIDDEN_EVAL_HOSTNAMES: Tuple[str, ...] = (
     "GW-CORE-VPN-01",
     "SRV-PROD-PAYMENT-01",
@@ -51,12 +52,31 @@ IPV4_LITERAL_REGEX: re.Pattern = re.compile(
 )
 
 CASE_ID_REGEX: re.Pattern = re.compile(
-    r"\bCASE-(?:GEN\d+-[A-Z0-9-]*?\d+|\d+)\b", re.IGNORECASE
+    r"\bCASE-(?:GEN\d+-[A-Z0-9_-]+|[A-Z0-9_-]*\d[A-Z0-9_-]*)\b", re.IGNORECASE
 )
 
 ALERT_TYPE_TO_RUNBOOK: Dict[str, str] = dict(CLASSIFICATION_RUNBOOK_MAP)
 
 MIN_FORBIDDEN_LITERAL_LENGTH = 4
+
+
+def compile_forbidden_literals(
+    literals: Optional[Sequence[str]],
+) -> Optional[re.Pattern]:
+    """One case-insensitive alternation over the manifest literals, longest first, bounded so that
+    `evil.example` does not match inside `notevil.example` and `10.10.3.4` not inside `10.10.3.45`."""
+    cleaned = sorted(
+        {
+            str(x).strip()
+            for x in (literals or [])
+            if len(str(x).strip()) >= MIN_FORBIDDEN_LITERAL_LENGTH
+        },
+        key=lambda s: (-len(s), s),
+    )
+    if not cleaned:
+        return None
+    body = "|".join(re.escape(x) for x in cleaned)
+    return re.compile(rf"(?<![A-Za-z0-9-])(?:{body})(?![A-Za-z0-9-])", re.IGNORECASE)
 
 
 def sanitize_text(text: str, forbidden_literals: Sequence[str] = ()) -> str:
@@ -87,16 +107,32 @@ def sanitize_text(text: str, forbidden_literals: Sequence[str] = ()) -> str:
         sanitized = pattern.sub("[HOSTNAME_REDACTED]", sanitized)
 
     # Strip custom forbidden literals
-    cleaned_literals = sorted(
-        {str(x).strip() for x in (forbidden_literals or []) if len(str(x).strip()) >= MIN_FORBIDDEN_LITERAL_LENGTH},
-        key=lambda s: (-len(s), s),
-    )
-    if cleaned_literals:
-        body = "|".join(re.escape(x) for x in cleaned_literals)
-        lit_pattern = re.compile(rf"(?<![A-Za-z0-9-])(?:{body})(?![A-Za-z0-9-])", re.IGNORECASE)
+    lit_pattern = compile_forbidden_literals(forbidden_literals)
+    if lit_pattern is not None:
         sanitized = lit_pattern.sub("[LITERAL_REDACTED]", sanitized)
 
     return sanitized
+
+
+def sanitize_payload(
+    payload: Any,
+    forbidden_literals: Sequence[str] = (),
+) -> Any:
+    """Recursively scrubs strings in a dict/list/tuple/str payload using sanitize_text."""
+    if isinstance(payload, str):
+        return sanitize_text(payload, forbidden_literals=forbidden_literals)
+    if isinstance(payload, Mapping):
+        return {
+            sanitize_text(str(k), forbidden_literals=forbidden_literals): sanitize_payload(
+                v, forbidden_literals=forbidden_literals
+            )
+            for k, v in payload.items()
+        }
+    if isinstance(payload, list):
+        return [sanitize_payload(item, forbidden_literals=forbidden_literals) for item in payload]
+    if isinstance(payload, tuple):
+        return tuple(sanitize_payload(item, forbidden_literals=forbidden_literals) for item in payload)
+    return payload
 
 
 @dataclass(frozen=True)
@@ -192,7 +228,7 @@ class DiagnosticMutationDirective:
                 f"   - Directive: {sanitized_instruction}"
             )
 
-        implicated_stage = self.target_stages[0] if self.target_stages else "STAGE_A_IDENTITY"
+        implicated_stage = ", ".join(self.target_stages) if self.target_stages else "STAGE_A_IDENTITY"
         lines.append(
             f"\nSurgical Constraint: Modify ONLY the implicated stage ({implicated_stage}) "
             "while preserving all other stages and markdown headings verbatim."
@@ -243,31 +279,63 @@ class AquaDiagnosticReport:
 
 def resolve_implicated_runbook(trace: Mapping[str, Any]) -> str:
     """Deterministically maps a trace to one of CORE_RUNBOOKS."""
-    # 1. Direct component name if valid
-    comp = trace.get("component_name")
-    if comp and str(comp) in CORE_RUNBOOKS:
-        return str(comp)
+    # 1. Direct component or implicated_runbook name if valid
+    for field_name in ("component_name", "implicated_runbook"):
+        comp = trace.get(field_name)
+        if comp and str(comp) in CORE_RUNBOOKS:
+            return str(comp)
 
     # 2. Alert type mapping
     alert_type = str(trace.get("alert_type") or "").strip()
+    if alert_type in CORE_RUNBOOKS:
+        return alert_type
     if alert_type in ALERT_TYPE_TO_RUNBOOK:
         return ALERT_TYPE_TO_RUNBOOK[alert_type]
 
-    # 3. Keyword heuristic on case_id, alert_type, name, and prompt
+    # 3. Classify using SOCSupervisorAgent.classify_alert rules across trace metadata
     text_corpus = " ".join([
-        str(trace.get("case_id") or ""),
-        str(trace.get("eval_id") or ""),
+        str(trace.get("prompt") or ""),
         str(trace.get("name") or ""),
         str(trace.get("alert_type") or ""),
-        str(trace.get("prompt") or ""),
-    ]).upper()
+        str(trace.get("family_id") or ""),
+        str(trace.get("case_id") or ""),
+        str(trace.get("eval_id") or ""),
+    ])
+    p_lower = text_corpus.lower()
 
-    if any(k in text_corpus for k in ("LATERAL", "PSEXEC", "WMI")):
+    lateral_keywords = (
+        "psexec", "wmi", "wmic", "lateral movement", "lateral", "smb session",
+        "remote execution", "pass-the-hash", "type 3 logon", "admin$",
+        "remote process", "serviceinstalled",
+    )
+    if any(k in p_lower for k in lateral_keywords):
         return "lateral_movement_hunt_psexec_wmi.md"
-    if any(k in text_corpus for k in ("LOGIN", "IMPOSSIBLE_TRAVEL", "MFA", "VPN")):
-        return "suspicious_login_triage.md"
-    if any(k in text_corpus for k in ("MALWARE", "HASH", "SHA256", "RANSOMWARE")):
-        return "malware_triage.md"
+
+    hash_regex = r"\b[a-fA-F0-9]{32}\b|\b[a-fA-F0-9]{40}\b|\b[a-fA-F0-9]{64}\b"
+    malware_keywords = (
+        "sha256", "md5", "sha1", "ransomware", "trojan", "malware",
+        "binary", "mimikatz", "payload", "quarantine file",
+        "revoked certificate", "unsigned binary", "malicious file", "hash",
+    )
+    has_hash = bool(re.search(hash_regex, text_corpus))
+    if has_hash or any(k in p_lower for k in malware_keywords):
+        is_beacon_subject = (
+            "connecting repeatedly to" in p_lower
+            or ("beacon" in p_lower and "domain" in p_lower)
+        )
+        if not is_beacon_subject or has_hash or "ransomware" in p_lower or "certificate" in p_lower:
+            return "malware_triage.md"
+
+    login_keywords = (
+        "suspicious login", "impossible travel", "impossible_travel", "failed login",
+        "untrusted location", "logon", "brute force", "authentication log",
+        "auth attempt", "vpn authentication", "vpn login", "mfa", "login",
+        "scanner noise", "authorized scanner", "qualys", "scanner",
+    )
+    if any(k in p_lower for k in login_keywords):
+        # Do not misattribute RFC5737 / C2 gateway connection attempts that only mention VPN in the hostname
+        if not ("rfc5737" in p_lower or "connecting repeatedly" in p_lower):
+            return "suspicious_login_triage.md"
 
     return DEFAULT_FALLBACK_RUNBOOK
 
@@ -281,26 +349,78 @@ def extract_trace_diagnosis(
     case_id = str(trace.get("case_id") or trace.get("eval_id") or "UNKNOWN_CASE")
     implicated_runbook = resolve_implicated_runbook(trace)
 
-    score_val = trace.get("score")
-    if score_val is None:
-        score_val = trace.get("reward", 0.0)
-    score = float(score_val)
+    traj_verif = (
+        trace.get("trajectory_verification")
+        if isinstance(trace.get("trajectory_verification"), Mapping)
+        else {}
+    )
+    soc_dec = (
+        trace.get("soc_decision")
+        if isinstance(trace.get("soc_decision"), Mapping)
+        else {}
+    )
+    assertions_dict = (
+        trace.get("assertions")
+        if isinstance(trace.get("assertions"), Mapping)
+        else {}
+    )
+    jev_eval_dict = (
+        trace.get("jev_evaluation")
+        if isinstance(trace.get("jev_evaluation"), Mapping)
+        else {}
+    )
+
+    if trace.get("score") is not None:
+        score = float(trace["score"])
+    elif trace.get("gen5_reward") is not None:
+        score = float(trace["gen5_reward"])
+    elif trace.get("reward") is not None:
+        score = float(trace["reward"])
+    elif trace.get("rubric_score") is not None:
+        raw_rubric = float(trace["rubric_score"])
+        score = raw_rubric / 100.0 if raw_rubric > 1.0 else raw_rubric
+    else:
+        score = 0.0
 
     loss_penalty_val = trace.get("loss_penalty")
     loss_penalty = float(loss_penalty_val) if loss_penalty_val is not None else score
 
     raw_assert = trace.get("assert_passed")
+    if raw_assert is None and "all_passed" in assertions_dict:
+        raw_assert = assertions_dict.get("all_passed")
     assert_passed = bool(score >= pass_threshold if raw_assert is None else raw_assert)
+
+    raw_passed = trace.get("passed")
+    if raw_passed is not None:
+        case_failed = not bool(raw_passed)
+    else:
+        case_failed = (not assert_passed) or (score < pass_threshold)
 
     expected_verdict = str(
         trace.get("expected_verdict") or trace.get("ground_truth_label") or ""
     ).strip().upper()
-    actual_verdict = str(trace.get("actual_verdict") or "").strip().upper()
+    if not expected_verdict and trace.get("ground_truth_threat") is not None:
+        expected_verdict = "MALICIOUS" if trace.get("ground_truth_threat") else "BENIGN"
+
+    actual_verdict = str(
+        trace.get("actual_verdict") or soc_dec.get("verdict") or ""
+    ).strip().upper()
+    if not actual_verdict and trace.get("agent_threat_call") is not None:
+        actual_verdict = "MALICIOUS" if trace.get("agent_threat_call") else "BENIGN"
+
+    decision_outcome = str(trace.get("decision_outcome") or "").strip().upper()
 
     expected_actions = tuple(str(a) for a in (trace.get("expected_actions") or ()))
-    executed_actions = tuple(str(a) for a in (trace.get("executed_actions") or ()))
+    raw_exec = trace.get("executed_actions")
+    if raw_exec is None:
+        raw_exec = traj_verif.get("executed_actions")
+    executed_actions = tuple(str(a) for a in (raw_exec or ()))
+
     prohibited_actions = tuple(str(a) for a in (trace.get("prohibited_actions") or ()))
-    prohibited_entity_violations = tuple(str(v) for v in (trace.get("prohibited_entity_violations") or ()))
+    raw_ent_viols = trace.get("prohibited_entity_violations")
+    if raw_ent_viols is None:
+        raw_ent_viols = traj_verif.get("prohibited_entity_violations")
+    prohibited_entity_violations = tuple(str(v) for v in (raw_ent_viols or ()))
 
     trajectory = trace.get("trajectory") or []
     if not isinstance(trajectory, list):
@@ -309,6 +429,8 @@ def extract_trace_diagnosis(
     # Calculate epistemic steps
     if trace.get("epistemic_step_count") is not None:
         epistemic_steps = int(trace["epistemic_step_count"])
+    elif traj_verif.get("epistemic_step_count") is not None:
+        epistemic_steps = int(traj_verif["epistemic_step_count"])
     else:
         epistemic_steps = sum(
             1 for step in trajectory if isinstance(step, dict) and is_epistemic_tool(str(step.get("tool") or ""))
@@ -320,43 +442,59 @@ def extract_trace_diagnosis(
     # Prohibited actions executed
     prohibited_executed = tuple(a for a in executed_actions if a in prohibited_actions)
 
-    is_inert = bool(trace.get("inert", False))
-    zero_tool_hesitation = False
-
-    # Check zero tool hesitation
-    if (len(trajectory) == 0 or epistemic_steps == 0) and not (
-        len(expected_actions) == 0 and score >= pass_threshold and trace.get("zero_tool_hesitation") is False
-    ):
-        zero_tool_hesitation = True
-
     # Taxonomy mapping from JEV choice if present
-    jev_choice_raw = str(trace.get("jev_choice") or "").strip()
+    jev_choice_raw = str(
+        trace.get("jev_choice") or jev_eval_dict.get("primary_choice") or ""
+    ).strip()
     jev_category = SOC_FAILURE_TAXONOMY.get(jev_choice_raw, jev_choice_raw)
+
+    is_inert = bool(
+        trace.get("inert", False)
+        or traj_verif.get("inert", False)
+        or jev_category == "INERT"
+    )
+
+    if isinstance(trace.get("zero_tool_hesitation"), bool):
+        zero_tool_hesitation = bool(trace["zero_tool_hesitation"]) and not is_inert
+    else:
+        has_no_tools = (
+            len(trajectory) == 0
+            and epistemic_steps == 0
+            and len(executed_actions) == 0
+        )
+        zero_tool_hesitation = bool(
+            not is_inert
+            and has_no_tools
+            and not (len(expected_actions) == 0 and not case_failed)
+        )
 
     failure_category = "FLAWLESS_CONTAINMENT"
     implicated_stage = "STAGE_A_IDENTITY"
 
     # Stage 1 Classification cascade
-    if zero_tool_hesitation:
-        failure_category = "PREMATURE_TERMINATION_ZERO_TOOLS"
-        implicated_stage = "STAGE_A_IDENTITY"
-    elif is_inert or jev_category == "INERT":
-        is_inert = True
+    if is_inert:
         failure_category = "INERT"
         implicated_stage = "STAGE_A_IDENTITY"
+    elif zero_tool_hesitation:
+        failure_category = "PREMATURE_TERMINATION_ZERO_TOOLS"
+        implicated_stage = "STAGE_A_IDENTITY"
     elif prohibited_executed or prohibited_entity_violations or (
+        case_failed and decision_outcome == "FALSE_POSITIVE"
+    ) or (
         actual_verdict == "MALICIOUS" and expected_verdict == "BENIGN" and any("isolate" in a or "block" in a for a in executed_actions)
     ):
         failure_category = "OVER_CONTAINMENT_FALSE_ALARM"
         implicated_stage = "STAGE_D_CONTAINMENT"
-    elif "MALICIOUS" in expected_verdict and (
-        any("isolate" in a or "block" in a for a in missing_expected) or actual_verdict == "BENIGN"
-    ):
+    elif (
+        "MALICIOUS" in expected_verdict and (
+            any("isolate" in a or "block" in a for a in missing_expected) or actual_verdict == "BENIGN"
+        )
+    ) or (case_failed and decision_outcome == "FALSE_NEGATIVE"):
         failure_category = "MISSED_MALICIOUS_BREACH"
         implicated_stage = "STAGE_D_CONTAINMENT"
-    elif "INCONCLUSIVE" in expected_verdict or (
-        any(k in f"{case_id} {trace.get('alert_type', '')} {trace.get('prompt', '')}".upper() for k in ("503", "TOOL_OUTAGE"))
-        and score < pass_threshold
+    elif case_failed and (
+        "INCONCLUSIVE" in expected_verdict
+        or any(k in f"{case_id} {trace.get('alert_type', '')} {trace.get('prompt', '')}".upper() for k in ("503", "TOOL_OUTAGE"))
     ):
         failure_category = "DEGRADED_MODE_FAILURE"
         implicated_stage = "STAGE_C_THREAT_INTEL"
@@ -371,7 +509,7 @@ def extract_trace_diagnosis(
             "MISSED_MALICIOUS_BREACH": "STAGE_D_CONTAINMENT",
         }
         implicated_stage = stage_map.get(failure_category, "STAGE_B_ROUTING")
-    elif not assert_passed or score < pass_threshold:
+    elif case_failed:
         failure_category = "RUNBOOK_PROCEDURAL_VIOLATION"
         implicated_stage = "STAGE_B_ROUTING"
     else:
@@ -381,6 +519,8 @@ def extract_trace_diagnosis(
     # Compute operational loss USD
     if trace.get("operational_loss_usd") is not None:
         operational_loss_usd = float(trace["operational_loss_usd"])
+    elif trace.get("case_loss_usd") is not None:
+        operational_loss_usd = float(trace["case_loss_usd"])
     elif failure_category == "FLAWLESS_CONTAINMENT":
         operational_loss_usd = 0.0
     else:
@@ -434,9 +574,12 @@ def extract_trace_diagnosis(
         root_cause_summary = "Flawless containment: all actions verified, zero procedural violations."
         remediation_constraint = "Maintain current verified procedural logic."
 
-    # Sanitize root cause summary and remediation constraint
+    # Sanitize root cause summary, remediation constraint, and entity violations
     clean_root_cause = sanitize_text(root_cause_summary, forbidden_literals=forbidden_literals)
     clean_remediation = sanitize_text(remediation_constraint, forbidden_literals=forbidden_literals)
+    clean_entity_violations = tuple(
+        sanitize_text(v, forbidden_literals=forbidden_literals) for v in prohibited_entity_violations
+    )
 
     return AquaTraceDiagnosis(
         case_id=case_id,
@@ -446,7 +589,7 @@ def extract_trace_diagnosis(
         zero_tool_hesitation=zero_tool_hesitation,
         inert=is_inert,
         prohibited_actions_executed=prohibited_executed,
-        prohibited_entity_violations=prohibited_entity_violations,
+        prohibited_entity_violations=clean_entity_violations,
         missing_expected_actions=missing_expected,
         operational_loss_usd=operational_loss_usd,
         score=score,
@@ -460,6 +603,7 @@ def cluster_trace_diagnoses(
     all_runbooks: Sequence[str] = CORE_RUNBOOKS,
     pass_threshold: float = 0.80,
     forbidden_literals: Sequence[str] = (),
+    require_evaluated_to_freeze: bool = False,
 ) -> AquaDiagnosticReport:
     """Aggregates per-trace diagnoses into structured insight clusters and mutation directives."""
     diagnoses: List[AquaTraceDiagnosis] = []
@@ -484,14 +628,14 @@ def cluster_trace_diagnoses(
             zero_tool_count += 1
         if diag.inert:
             inert_count += 1
-        if cat != "FLAWLESS_CONTAINMENT" or diag.score < pass_threshold:
+        if cat != "FLAWLESS_CONTAINMENT":
             failed_count += 1
             total_loss += diag.operational_loss_usd
 
     # Cluster failures by (implicated_runbook, failure_category, implicated_stage)
     grouped: Dict[Tuple[str, str, str], List[AquaTraceDiagnosis]] = {}
     for d in diagnoses:
-        if d.failure_category != "FLAWLESS_CONTAINMENT" or d.score < pass_threshold:
+        if d.failure_category != "FLAWLESS_CONTAINMENT":
             key = (d.implicated_runbook, d.failure_category, d.implicated_stage)
             grouped.setdefault(key, []).append(d)
 
@@ -504,9 +648,11 @@ def cluster_trace_diagnoses(
         mean_score = sum(x.score for x in group) / count if count > 0 else 0.0
         affected_ids = tuple(x.case_id for x in group)
 
-        # Consolidate root cause and instruction
-        consolidated_root_cause = group[0].root_cause_summary
-        targeted_instruction = group[0].remediation_constraint
+        # Consolidate distinct root causes and instructions across the cluster
+        distinct_causes = list(dict.fromkeys(x.root_cause_summary for x in group))
+        distinct_instructions = list(dict.fromkeys(x.remediation_constraint for x in group))
+        consolidated_root_cause = " | ".join(distinct_causes)
+        targeted_instruction = " ".join(distinct_instructions)
 
         clusters.append(
             AquaInsightCluster(
@@ -528,7 +674,13 @@ def cluster_trace_diagnoses(
 
     # Formulate directives per runbook
     runbooks_with_failures = {c.implicated_runbook for c in clusters}
-    frozen_runbooks: List[str] = [rb for rb in all_runbooks if rb not in runbooks_with_failures]
+    evaluated_runbooks = {d.implicated_runbook for d in diagnoses}
+    if require_evaluated_to_freeze:
+        frozen_runbooks: List[str] = [
+            rb for rb in all_runbooks if rb in evaluated_runbooks and rb not in runbooks_with_failures
+        ]
+    else:
+        frozen_runbooks = [rb for rb in all_runbooks if rb not in runbooks_with_failures]
 
     directives: Dict[str, DiagnosticMutationDirective] = {}
     for rb in all_runbooks:

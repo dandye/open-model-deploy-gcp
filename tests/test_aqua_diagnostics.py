@@ -63,10 +63,16 @@ class TestSanitizeText:
     """Test anti-memorization literal stripping."""
 
     def test_strips_case_ids(self):
-        raw = "Case CASE-02 failed on CASE-GEN5-001 with error."
+        raw = (
+            "Case CASE-02 failed on CASE-GEN5-001, CASE-GEN3-02-RFC5737-BENIGN-IP, "
+            "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE, and CASE-GEN5-503-TOOL_OUTAGE with error."
+        )
         sanitized = sanitize_text(raw)
         assert "CASE-02" not in sanitized
         assert "CASE-GEN5-001" not in sanitized
+        assert "RFC5737" not in sanitized
+        assert "AUTHORIZED-SCANNER-NOISE" not in sanitized
+        assert "TOOL_OUTAGE" not in sanitized
 
     def test_strips_ipv4_literals_except_loopback_and_zeros(self):
         raw = "Host 192.168.1.50 contacted 10.0.0.1, but 127.0.0.1 and 0.0.0.0 are fine."
@@ -439,5 +445,183 @@ class TestAquaDiagnosticsEdgeCases:
         }
         diag_fail = extract_trace_diagnosis(trace_fail, pass_threshold=0.80)
         assert diag_fail.failure_category != "FLAWLESS_CONTAINMENT"
+
+    def test_eval_soc_agent_gen3_and_gen5_schema_compatibility(self):
+        # Passing Gen 3 case_results entry from eval_soc_agent.py (no top-level score/reward/executed_actions)
+        gen3_pass = {
+            "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+            "name": "Lokibot C2 InfoStealer Host Containment",
+            "prompt": "Triage alert for host DESKTOP-FIN-08 (10.0.4.15) connecting repeatedly to update-service-win32.com.",
+            "trajectory": [
+                {"iteration": 1, "tool": "get_domain_report", "args": {"domain": "update-service-win32.com"}},
+                {"iteration": 2, "tool": "isolate_host", "args": {"hostname": "DESKTOP-FIN-08"}},
+            ],
+            "assert_passed": True,
+            "rubric_score": 90.0,
+            "grounding_score": 1.0,
+            "passed": True,
+            "ground_truth_label": "MALICIOUS",
+            "decision_outcome": "TRUE_POSITIVE",
+            "trajectory_verification": {
+                "actions_matched": True,
+                "prohibited_actions_avoided": True,
+                "executed_actions": ["block_indicator", "isolate_host", "update_case_comment"],
+                "epistemic_step_count": 1,
+            },
+            "soc_decision": {
+                "verdict": "MALICIOUS",
+                "recommended_actions": ["block_indicator", "isolate_host", "update_case_comment"],
+            },
+            "expected_actions": ["isolate_host", "update_case_comment"],
+            "prohibited_actions": ["close_case"],
+            "case_loss_usd": 0.0,
+        }
+        diag = extract_trace_diagnosis(gen3_pass)
+        assert diag.failure_category == "FLAWLESS_CONTAINMENT"
+        assert diag.score == pytest.approx(0.90)
+        assert diag.operational_loss_usd == 0.0
+
+        # Failing Gen 3 false positive from eval_soc_agent.py
+        gen3_fp = {
+            "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+            "name": "Authorized Vulnerability Scanner Suppression",
+            "prompt": "Triage alert for host SRV-PROD-PAYMENT-01 receiving scanner noise from Qualys.",
+            "trajectory": [
+                {"iteration": 1, "tool": "lookup_entity", "args": {"entity_id": "SRV-PROD-PAYMENT-01"}},
+                {"iteration": 2, "tool": "isolate_host", "args": {"hostname": "SRV-PROD-PAYMENT-01"}},
+            ],
+            "assert_passed": True,
+            "rubric_score": 30.0,
+            "passed": False,
+            "ground_truth_label": "BENIGN",
+            "decision_outcome": "FALSE_POSITIVE",
+            "trajectory_verification": {
+                "actions_matched": False,
+                "prohibited_actions_avoided": False,
+                "executed_actions": ["isolate_host"],
+                "epistemic_step_count": 1,
+            },
+            "soc_decision": {"verdict": "MALICIOUS"},
+            "expected_actions": ["close_case"],
+            "prohibited_actions": ["isolate_host"],
+            "case_loss_usd": 50000.0,
+        }
+        diag_fp = extract_trace_diagnosis(gen3_fp)
+        assert diag_fp.implicated_runbook == "suspicious_login_triage.md"
+        assert diag_fp.failure_category == "OVER_CONTAINMENT_FALSE_ALARM"
+        assert diag_fp.implicated_stage == "STAGE_D_CONTAINMENT"
+        assert diag_fp.operational_loss_usd == 50000.0
+
+    def test_harbor_scorecard_nested_schema_compatibility(self):
+        scorecard = {
+            "case_id": "CASE-GEN5-009",
+            "reward": 0.92,
+            "decision_outcome": "TRUE_POSITIVE",
+            "operational_loss_usd": 0.0,
+            "loss_penalty": 1.0,
+            "assertions": {"all_passed": True, "unit_score": 1.0},
+            "jev_evaluation": {"primary_choice": "A", "rubric_score": 95},
+            "trajectory_verification": {
+                "executed_actions": ["isolate_host"],
+                "epistemic_step_count": 2,
+                "prohibited_actions_avoided": True,
+            },
+            "ground_truth_threat": True,
+            "agent_threat_call": True,
+            "inert": False,
+            "safety_gate_triggered": False,
+            "prohibited_entity_violations": [],
+        }
+        diag = extract_trace_diagnosis(scorecard)
+        assert diag.failure_category == "FLAWLESS_CONTAINMENT"
+        assert diag.zero_tool_hesitation is False
+
+    def test_passing_inconclusive_case_is_flawless_not_degraded_failure(self):
+        trace = {
+            "case_id": "CASE-GEN5-503-PASS",
+            "alert_type": "C2_BEACON",
+            "prompt": "Enrichment API returned 503 TOOL_OUTAGE during lookup.",
+            "expected_verdict": "INCONCLUSIVE",
+            "actual_verdict": "INCONCLUSIVE",
+            "expected_actions": [],
+            "executed_actions": [],
+            "score": 0.95,
+            "loss_penalty": 1.0,
+            "assert_passed": True,
+            "trajectory": [{"tool": "get_ip_address_report", "observation": "503 Unavailable"}],
+        }
+        diag = extract_trace_diagnosis(trace)
+        assert diag.failure_category == "FLAWLESS_CONTAINMENT"
+        assert diag.operational_loss_usd == 0.0
+
+    def test_zero_tool_inert_trace_classified_as_inert_not_shadowed(self):
+        trace = {
+            "case_id": "CASE-GEN5-INERT-0",
+            "expected_verdict": "MALICIOUS",
+            "inert": True,
+            "score": 0.0,
+            "loss_penalty": 0.0,
+            "assert_passed": False,
+            "trajectory": [],
+        }
+        diag = extract_trace_diagnosis(trace)
+        assert diag.inert is True
+        assert diag.zero_tool_hesitation is False
+        assert diag.failure_category == "INERT"
+
+    def test_require_evaluated_to_freeze_does_not_freeze_untested_runbooks(self):
+        traces = [
+            {
+                "case_id": "CASE-20",
+                "component_name": "suspicious_login_triage.md",
+                "expected_verdict": "BENIGN",
+                "actual_verdict": "BENIGN",
+                "executed_actions": ["lookup_entity"],
+                "trajectory": [{"tool": "lookup_entity", "input": {}}],
+                "score": 1.0,
+                "loss_penalty": 1.0,
+                "assert_passed": True,
+            }
+        ]
+        report = cluster_trace_diagnoses(
+            traces,
+            all_runbooks=CORE_RUNBOOKS,
+            require_evaluated_to_freeze=True,
+        )
+        assert report.frozen_runbooks == ("suspicious_login_triage.md",)
+
+    def test_multi_stage_directive_includes_all_target_stages_in_surgical_constraint(self):
+        traces = [
+            {
+                "case_id": "CASE-30",
+                "component_name": "basic_ioc_enrichment.md",
+                "expected_verdict": "MALICIOUS",
+                "actual_verdict": "BENIGN",
+                "trajectory": [],
+                "score": 0.0,
+                "loss_penalty": 0.0,
+                "assert_passed": False,
+            },
+            {
+                "case_id": "CASE-31",
+                "component_name": "basic_ioc_enrichment.md",
+                "expected_verdict": "BENIGN",
+                "actual_verdict": "MALICIOUS",
+                "prohibited_actions": ["isolate_host"],
+                "executed_actions": ["isolate_host"],
+                "trajectory": [{"tool": "lookup_entity"}, {"tool": "isolate_host"}],
+                "score": 0.2,
+                "loss_penalty": 0.2,
+                "assert_passed": False,
+            },
+        ]
+        report = cluster_trace_diagnoses(traces, all_runbooks=["basic_ioc_enrichment.md"])
+        block = report.directives["basic_ioc_enrichment.md"].render_prompt_block()
+        assert "STAGE_A_IDENTITY" in block
+        assert "STAGE_D_CONTAINMENT" in block
+        assert "Modify ONLY the implicated stage (STAGE_A_IDENTITY, STAGE_D_CONTAINMENT)" in block or (
+            "Modify ONLY the implicated stage (STAGE_D_CONTAINMENT, STAGE_A_IDENTITY)" in block
+        )
+
 
 

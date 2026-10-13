@@ -25,17 +25,20 @@ from agent.aqua_diagnostics import (
     FORBIDDEN_EVAL_HOSTNAMES,
     AquaDiagnosticReport,
     cluster_trace_diagnoses,
+    extract_trace_diagnosis,
+    sanitize_payload,
     sanitize_text,
 )
 
 logger = logging.getLogger(__name__)
 
-FINAL_TEST_PATTERN: re.Pattern = re.compile(r"(?:^|[\\/])final_test(?:\.json|[\\/]|$)", re.IGNORECASE)
+FINAL_TEST_PATTERN: re.Pattern = re.compile(r"final_test", re.IGNORECASE)
 EXCLUDE_REPORT_NAMES: Sequence[str] = (
     "aqua_diagnostic_report.json",
     "aqua_diagnostic_report.md",
     "evolution_metadata.json",
     "cost_staircase_report.json",
+    "noise_floor.json",
 )
 
 
@@ -43,6 +46,21 @@ def is_forbidden_split_file(path_str: str) -> bool:
     """Returns True if the file path targets the sealed final_test split."""
     norm = path_str.replace("\\", "/")
     return bool(FINAL_TEST_PATTERN.search(norm))
+
+
+def _is_final_test_payload(data: Any) -> bool:
+    """Returns True if a JSON dict or trace payload belongs to the sealed final_test split."""
+    if not isinstance(data, dict):
+        return False
+    split_val = str(data.get("split") or "").strip().lower()
+    if split_val == "final_test" or "final_test" in split_val:
+        return True
+    meta = data.get("metadata")
+    if isinstance(meta, dict):
+        meta_split = str(meta.get("split") or "").strip().lower()
+        if meta_split == "final_test" or "final_test" in meta_split:
+            return True
+    return False
 
 
 def load_forbidden_literals_from_manifest(manifest_path: str | Path) -> List[str]:
@@ -66,27 +84,14 @@ def sanitize_trace_payload(
     trace: Dict[str, Any],
     forbidden_literals: Sequence[str] = (),
 ) -> Dict[str, Any]:
-    """Recursively scrubs strings in a trace dict using sanitize_text."""
-
-    def _sanitize_val(val: Any) -> Any:
-        if isinstance(val, str):
-            return sanitize_text(val, forbidden_literals=forbidden_literals)
-        elif isinstance(val, dict):
-            return {
-                sanitize_text(str(k), forbidden_literals=forbidden_literals): _sanitize_val(v)
-                for k, v in val.items()
-            }
-        elif isinstance(val, list):
-            return [_sanitize_val(item) for item in val]
-        elif isinstance(val, tuple):
-            return tuple(_sanitize_val(item) for item in val)
-        return val
-
-    return _sanitize_val(trace)
+    """Recursively scrubs strings in a trace dict using sanitize_payload."""
+    return sanitize_payload(dict(trace), forbidden_literals=forbidden_literals)
 
 
 def _load_harbor_trial(trial_dir: Path) -> Optional[Dict[str, Any]]:
     """Loads a single Harbor trial directory containing scorecard.json."""
+    if is_forbidden_split_file(str(trial_dir)):
+        return None
     scorecard_path = trial_dir / "scorecard.json"
     if not scorecard_path.exists():
         return None
@@ -94,6 +99,9 @@ def _load_harbor_trial(trial_dir: Path) -> Optional[Dict[str, Any]]:
     try:
         scorecard = json.loads(scorecard_path.read_text(encoding="utf-8"))
     except Exception:
+        return None
+
+    if not isinstance(scorecard, dict) or _is_final_test_payload(scorecard):
         return None
 
     # Load trajectory from trajectory.jsonl or trajectory.json if available
@@ -137,11 +145,16 @@ def _load_harbor_trial(trial_dir: Path) -> Optional[Dict[str, Any]]:
 
 def _extract_traces_from_dict(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extracts trace/case items from known JSON formats."""
+    if _is_final_test_payload(data):
+        return []
     # Format 1: eval_soc_agent.py results
     for key in ("results", "case_results", "cases", "eval_cases", "trajectories"):
         items = data.get(key)
         if isinstance(items, list):
-            return [x for x in items if isinstance(x, dict)]
+            return [
+                x for x in items
+                if isinstance(x, dict) and not _is_final_test_payload(x)
+            ]
 
     # Format 2: single case or Harbor scorecard dict directly
     if "case_id" in data or "eval_id" in data:
@@ -166,7 +179,7 @@ def load_traces_from_inputs(paths: Sequence[str | Path]) -> List[Dict[str, Any]]
 
     files_or_dirs_to_check: List[Path] = []
     for rpath in resolved_paths:
-        if not rpath.exists():
+        if is_forbidden_split_file(str(rpath)) or not rpath.exists():
             continue
         if rpath.is_file():
             files_or_dirs_to_check.append(rpath)
@@ -176,12 +189,14 @@ def load_traces_from_inputs(paths: Sequence[str | Path]) -> List[Dict[str, Any]]
                 files_or_dirs_to_check.append(rpath)
             else:
                 # Recurse or iterate files
-                for child in rpath.rglob("*"):
+                for child in sorted(rpath.rglob("*")):
                     if is_forbidden_split_file(str(child)):
                         continue
                     if child.is_dir() and (child / "scorecard.json").exists():
                         files_or_dirs_to_check.append(child)
                     elif child.is_file() and child.suffix == ".json":
+                        if child.parent != rpath and (child.parent / "scorecard.json").exists():
+                            continue
                         files_or_dirs_to_check.append(child)
 
     seen_case_keys = set()
@@ -192,11 +207,12 @@ def load_traces_from_inputs(paths: Sequence[str | Path]) -> List[Dict[str, Any]]
         if item.is_file() and item.name in EXCLUDE_REPORT_NAMES:
             continue
 
+        resolved_item_str = str(item.resolve())
         if item.is_dir():
             trial_data = _load_harbor_trial(item)
             if trial_data:
-                cid = str(trial_data.get("case_id") or trial_data.get("eval_id") or "")
-                key = (cid, str(item))
+                cid = str(trial_data.get("case_id") or trial_data.get("eval_id") or "harbor_trial")
+                key = (cid, resolved_item_str)
                 if key not in seen_case_keys:
                     seen_case_keys.add(key)
                     traces.append(trial_data)
@@ -207,18 +223,22 @@ def load_traces_from_inputs(paths: Sequence[str | Path]) -> List[Dict[str, Any]]
                 continue
 
             if isinstance(content, dict):
+                if _is_final_test_payload(content):
+                    continue
                 sub_traces = _extract_traces_from_dict(content)
-                for st in sub_traces:
-                    cid = str(st.get("case_id") or st.get("eval_id") or "")
-                    key = (cid, str(item), id(st))
+                for idx, st in enumerate(sub_traces):
+                    if _is_final_test_payload(st):
+                        continue
+                    cid = str(st.get("case_id") or st.get("eval_id") or f"anon_{idx}")
+                    key = (cid, resolved_item_str)
                     if key not in seen_case_keys:
                         seen_case_keys.add(key)
                         traces.append(st)
             elif isinstance(content, list):
-                for st in content:
-                    if isinstance(st, dict):
-                        cid = str(st.get("case_id") or st.get("eval_id") or "")
-                        key = (cid, str(item), id(st))
+                for idx, st in enumerate(content):
+                    if isinstance(st, dict) and not _is_final_test_payload(st):
+                        cid = str(st.get("case_id") or st.get("eval_id") or f"anon_{idx}")
+                        key = (cid, resolved_item_str)
                         if key not in seen_case_keys:
                             seen_case_keys.add(key)
                             traces.append(st)
@@ -226,7 +246,10 @@ def load_traces_from_inputs(paths: Sequence[str | Path]) -> List[Dict[str, Any]]
     return traces
 
 
-def build_markdown_report(report: AquaDiagnosticReport) -> str:
+def build_markdown_report(
+    report: AquaDiagnosticReport,
+    forbidden_literals: Sequence[str] = (),
+) -> str:
     """Generates an AQuA Insights-First diagnostic markdown report (strictly ASCII)."""
     lines: List[str] = [
         "# AQuA SOC Trajectory Diagnostic Report",
@@ -299,7 +322,7 @@ def build_markdown_report(report: AquaDiagnosticReport) -> str:
         if directive:
             lines.append(f"### Directives for `{rb}`")
             lines.append("```markdown")
-            lines.append(directive.render_prompt_block())
+            lines.append(directive.render_prompt_block(forbidden_literals=forbidden_literals))
             lines.append("```")
             lines.append("")
 
@@ -324,17 +347,28 @@ def promote_failure_fixtures(
     counter = 1
 
     for trace in traces:
-        score = float(trace.get("score") if trace.get("score") is not None else trace.get("reward", 0.0))
-        assert_passed = trace.get("assert_passed")
-        is_pass = (score >= pass_threshold) if assert_passed is None else bool(assert_passed)
-
-        if is_pass:
+        if _is_final_test_payload(trace):
+            continue
+        diag = extract_trace_diagnosis(
+            trace,
+            pass_threshold=pass_threshold,
+            forbidden_literals=forbidden_literals,
+        )
+        if diag.failure_category == "FLAWLESS_CONTAINMENT":
             continue
 
         sanitized = sanitize_trace_payload(dict(trace), forbidden_literals=forbidden_literals)
-        cid = str(sanitized.get("case_id") or sanitized.get("eval_id") or f"failure_{counter:03d}")
-        slug = re.sub(r"[^a-zA-Z0-9_-]", "_", cid.lower())
-        file_name = f"fixture_{counter:03d}_{slug}.json"
+        rb_slug = re.sub(
+            r"[^a-zA-Z0-9_-]",
+            "_",
+            diag.implicated_runbook.replace(".md", "").lower(),
+        )
+        cat_slug = re.sub(
+            r"[^a-zA-Z0-9_-]",
+            "_",
+            diag.failure_category.lower(),
+        )
+        file_name = f"fixture_{counter:03d}_{rb_slug}_{cat_slug}.json"
         dest_file = out_path / file_name
 
         dest_file.write_text(json.dumps(sanitized, indent=2), encoding="utf-8")
@@ -401,7 +435,7 @@ def main(args: Optional[List[str]] = None) -> int:
     if not out_md.is_absolute():
         out_md = ROOT_DIR / out_md
     out_md.parent.mkdir(parents=True, exist_ok=True)
-    md_content = build_markdown_report(report)
+    md_content = build_markdown_report(report, forbidden_literals=forbidden_literals)
     out_md.write_text(md_content, encoding="ascii")
     logger.info("Wrote diagnostic report to %s", out_md)
 
