@@ -39,6 +39,19 @@ try:
     from agent.jev_judge import MockJevBackend
     from agent.soc_environment import SocEnvironment
     from agent.soc_tier1_agent import extract_soc_decision
+    from agent.aqua_diagnostics import (
+        CASE_ID_REGEX,
+        CORE_RUNBOOKS as _AQUA_CORE_RUNBOOKS,
+        FORBIDDEN_EVAL_HOSTNAMES as _AQUA_FORBIDDEN_EVAL_HOSTNAMES,
+        IPV4_LITERAL_REGEX,
+        MIN_FORBIDDEN_LITERAL_LENGTH,
+        AquaDiagnosticReport,
+        cluster_trace_diagnoses,
+        compile_forbidden_literals,
+        extract_trace_diagnosis,
+        resolve_implicated_runbook,
+        sanitize_payload,
+    )
 except ModuleNotFoundError:
     from hierarchical_soc_agent import HierarchicalSOCTier1Agent
     from hillclimb_harness import (
@@ -57,6 +70,19 @@ except ModuleNotFoundError:
     from jev_judge import MockJevBackend
     from soc_environment import SocEnvironment
     from soc_tier1_agent import extract_soc_decision
+    from aqua_diagnostics import (
+        CASE_ID_REGEX,
+        CORE_RUNBOOKS as _AQUA_CORE_RUNBOOKS,
+        FORBIDDEN_EVAL_HOSTNAMES as _AQUA_FORBIDDEN_EVAL_HOSTNAMES,
+        IPV4_LITERAL_REGEX,
+        MIN_FORBIDDEN_LITERAL_LENGTH,
+        AquaDiagnosticReport,
+        cluster_trace_diagnoses,
+        compile_forbidden_literals,
+        extract_trace_diagnosis,
+        resolve_implicated_runbook,
+        sanitize_payload,
+    )
 
 from scripts import gen5_exposure
 from scripts.eval_soc_agent import evaluate_assertions
@@ -65,12 +91,22 @@ DEFAULT_RUNBOOKS_DIR = (
     ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books"
 )
 
-CORE_RUNBOOKS: List[str] = [
-    "basic_ioc_enrichment.md",
-    "suspicious_login_triage.md",
-    "malware_triage.md",
-    "lateral_movement_hunt_psexec_wmi.md",
-]
+CORE_RUNBOOKS: List[str] = list(_AQUA_CORE_RUNBOOKS)
+FORBIDDEN_EVAL_HOSTNAMES: List[str] = list(_AQUA_FORBIDDEN_EVAL_HOSTNAMES)
+
+
+
+def enforce_frozen_runbooks(
+    candidate: Dict[str, str],
+    seed_candidate: Optional[Dict[str, str]],
+    frozen_runbooks: Optional[Union[Sequence[str], "Set[str]"]],
+) -> Dict[str, str]:
+    new_cand = dict(candidate)
+    if seed_candidate and frozen_runbooks:
+        for rb in frozen_runbooks:
+            if rb in seed_candidate:
+                new_cand[rb] = seed_candidate[rb]
+    return new_cand
 
 
 def load_seed_runbooks(
@@ -276,44 +312,12 @@ class GoogleGenAILM:
         return getattr(response, "text", "") or str(response or "")
 
 
-FORBIDDEN_EVAL_HOSTNAMES: List[str] = [
-    "GW-CORE-VPN-01",
-    "SRV-PROD-PAYMENT-01",
-    "DESKTOP-FIN-08",
-    "SRV-DATA-01",
-    "SRV-DC-01",
-    "LAPTOP-CFO-01",
-]
-
 SHORT_CIRCUIT_PATTERNS: List[str] = [
     r"skip\s+(?:all\s+)?enrichment",
     r"skip\s+(?:all\s+)?investigation",
     r"skip\s+steps?\s+\d+",
     r"proceed\s+directly\s+to\s+step\s+\d+",
 ]
-
-IPV4_LITERAL_REGEX: re.Pattern = re.compile(
-    r"\b(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:/(?:[1-2]?\d|3[0-2]))?\b"
-)
-
-CASE_ID_REGEX: re.Pattern = re.compile(
-    r"\bCASE-(?:GEN\d+-[A-Z0-9-]*?\d+|\d+)\b", re.IGNORECASE
-)
-
-MIN_FORBIDDEN_LITERAL_LENGTH = 4
-
-
-def compile_forbidden_literals(literals: Optional[Sequence[str]]) -> Optional[re.Pattern]:
-    """One case-insensitive alternation over the manifest literals, longest first, bounded so that
-    `evil.example` does not match inside `notevil.example` and `10.10.3.4` not inside `10.10.3.45`."""
-    cleaned = sorted(
-        {str(x).strip() for x in (literals or []) if len(str(x).strip()) >= MIN_FORBIDDEN_LITERAL_LENGTH},
-        key=lambda s: (-len(s), s),
-    )
-    if not cleaned:
-        return None
-    body = "|".join(re.escape(x) for x in cleaned)
-    return re.compile(rf"(?<![A-Za-z0-9-])(?:{body})(?![A-Za-z0-9-])", re.IGNORECASE)
 
 
 def load_forbidden_literals(manifest_path: Path) -> List[str]:
@@ -430,6 +434,8 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         seed_candidate: Optional[Dict[str, str]] = None,
         max_growth_ratio: float = 1.35,
         forbidden_literals: Optional[Sequence[str]] = None,
+        freeze_passing_runbooks: bool = True,
+        frozen_runbooks: Optional[Union[Sequence[str], set]] = None,
     ):
         self.task_lm = task_lm
         resolved_project_id = (
@@ -455,6 +461,47 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         self.seed_candidate = seed_candidate
         self.max_growth_ratio = max_growth_ratio
         self.forbidden_literals = list(forbidden_literals or [])
+        self.last_diagnostic_report: Optional[AquaDiagnosticReport] = None
+        self.freeze_passing_runbooks: bool = bool(freeze_passing_runbooks)
+        self.frozen_runbooks: set = set(frozen_runbooks) if frozen_runbooks is not None else set()
+        self._frozen_locked: bool = frozen_runbooks is not None
+        self._eval_cache: Dict[str, Dict[str, Dict[str, Any]]] = {}
+        self._eval_cache_by_candidate: Dict[str, Dict[str, Dict[str, Any]]] = {}
+
+    @staticmethod
+    def _candidate_cache_key(
+        candidate: Dict[str, str], batch: Optional[Sequence[Dict[str, Any]]] = None
+    ) -> Tuple[str, str]:
+        cand_key = json.dumps(candidate, sort_keys=True, separators=(",", ":"))
+        if batch is None:
+            return cand_key, ""
+        case_ids = [
+            str(c.get("eval_id") or c.get("id") or f"case-{i}")
+            for i, c in enumerate(batch)
+        ]
+        batch_key = json.dumps([cand_key, case_ids], separators=(",", ":"))
+        return cand_key, batch_key
+
+    def lock_frozen_runbooks(self, frozen: Union[Sequence[str], set]) -> None:
+        """Lock baseline-derived frozen runbooks so minibatch reflection cannot clobber them."""
+        self.frozen_runbooks = set(frozen)
+        self._frozen_locked = True
+
+    def get_cached_telemetry(
+        self,
+        candidate: Dict[str, str],
+        batch: Optional[Sequence[Dict[str, Any]]] = None,
+    ) -> Optional[Dict[str, Dict[str, Any]]]:
+        """Retrieve per-case telemetry cached from an earlier evaluate() call."""
+        effective_cand = candidate
+        if self.freeze_passing_runbooks and self.seed_candidate and self.frozen_runbooks:
+            effective_cand = enforce_frozen_runbooks(
+                candidate, self.seed_candidate, self.frozen_runbooks
+            )
+        cand_key, batch_key = self._candidate_cache_key(effective_cand, batch)
+        if batch_key and batch_key in self._eval_cache:
+            return self._eval_cache[batch_key]
+        return self._eval_cache_by_candidate.get(cand_key)
 
     def evaluate(
         self,
@@ -463,6 +510,9 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         capture_traces: bool = False,
     ) -> gepa.EvaluationBatch:
         """Evaluates runbook candidate against a batch of evaluation cases."""
+        if self.freeze_passing_runbooks and self.seed_candidate and self.frozen_runbooks:
+            candidate = enforce_frozen_runbooks(candidate, self.seed_candidate, self.frozen_runbooks)
+
         if self.harness_guard is not None:
             self.harness_guard.verify(auto_initialize=False)
 
@@ -481,11 +531,12 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 "Candidate rejected by anti-memorization validator. Violations:\n"
                 + "\n".join(f"- {v}" for v in violations)
             )
-            for case in batch:
+            for idx, case in enumerate(batch):
+                cid = str(case.get("eval_id") or case.get("id") or f"case-{idx}")
                 outputs.append(rejection_msg)
                 scores.append(0.0)
                 trajectories.append({
-                    "case_id": case.get("eval_id", ""),
+                    "case_id": cid,
                     "alert_type": case.get("name", ""),
                     "prompt": case.get("prompt", ""),
                     "cmdb_context": case.get("cmdb_context", {}),
@@ -500,7 +551,9 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     "assert_passed": False,
                     "component_name": "",
                     "trajectory": [],
-                    "jev_choice": None,
+                    "jev_choice": "RUNBOOK_PROCEDURAL_VIOLATION",
+                    "failure_category": "RUNBOOK_PROCEDURAL_VIOLATION",
+                    "safety_gate_triggered": True,
                 })
             return gepa.EvaluationBatch(
                 outputs=outputs,
@@ -508,7 +561,8 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 trajectories=trajectories,
             )
 
-        for case in batch:
+        for idx, case in enumerate(batch):
+            cid = str(case.get("eval_id") or case.get("id") or f"case-{idx}")
             try:
                 env = None
                 if not self.use_live_mcp:
@@ -613,62 +667,98 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     operator_compliance=op_compliance,
                     loss_penalty=loss_penalty,
                 )
+
+                zero_tool_hesitation = bool(
+                    not inert
+                    and traj_verif.epistemic_step_count == 0
+                    and len(agent_traj) == 0
+                )
                 if inert:
                     fitness = 0.0
+                    jev_choice = "INERT"
+                elif zero_tool_hesitation:
+                    fitness = 0.0
+                    jev_choice = "PREMATURE_TERMINATION_ZERO_TOOLS"
 
                 outputs.append(resp_text)
                 scores.append(fitness)
 
-                if capture_traces:
-                    trajectories.append({
-                        "case_id": case.get("eval_id", case.get("id", "")),
-                        "alert_type": case.get("alert_type", getattr(response, "classification", "")),
-                        "prompt": prompt,
-                        "cmdb_context": case.get("cmdb_context", {}),
-                        "expected_verdict": case.get("ground_truth_label", ""),
-                        "expected_actions": case.get("expected_actions", []),
-                        "prohibited_actions": case.get("prohibited_actions", []),
-                        "actual_verdict": actual_verdict,
-                        "executed_actions": traj_verif.executed_actions,
-                        "summary": f"Case evaluated. Fitness: {fitness:.3f}, loss_penalty: {loss_penalty:.3f}, assert_passed: {assert_passed}",
-                        "score": fitness,
-                        "loss_penalty": loss_penalty,
-                        "assert_passed": assert_passed,
-                        "component_name": getattr(response, "runbook", ""),
-                        "trajectory": agent_traj,
-                        "jev_choice": jev_choice,
-                        "inert": inert,
-                        "prohibited_entity_violations": entity_violations,
-                        "generation": int(case.get("generation") or 0),
-                        "family_id": case.get("family_id"),
-                        "usage": _response_usage(response),
-                        "latency_ms": latency_ms,
-                    })
+                safety_gate_triggered = bool(
+                    (not traj_verif.prohibited_actions_avoided)
+                    or entity_violations
+                )
+                implicated_runbook = resolve_implicated_runbook({
+                    "component_name": getattr(response, "runbook", ""),
+                    "alert_type": case.get("alert_type", getattr(response, "classification", "")),
+                    "case_id": cid,
+                    "name": case.get("name", ""),
+                    "prompt": prompt,
+                })
+                trace_entry: Dict[str, Any] = {
+                    "case_id": cid,
+                    "alert_type": case.get("alert_type", getattr(response, "classification", "")),
+                    "prompt": prompt,
+                    "cmdb_context": case.get("cmdb_context", {}),
+                    "expected_verdict": case.get("ground_truth_label", ""),
+                    "expected_actions": case.get("expected_actions", []),
+                    "prohibited_actions": case.get("prohibited_actions", []),
+                    "actual_verdict": actual_verdict,
+                    "executed_actions": traj_verif.executed_actions,
+                    "summary": f"Case evaluated. Fitness: {fitness:.3f}, loss_penalty: {loss_penalty:.3f}, assert_passed: {assert_passed}",
+                    "score": fitness,
+                    "loss_penalty": loss_penalty,
+                    "assert_passed": assert_passed,
+                    "component_name": getattr(response, "runbook", ""),
+                    "trajectory": agent_traj,
+                    "jev_choice": jev_choice,
+                    "inert": inert,
+                    "prohibited_entity_violations": entity_violations,
+                    "safety_gate_triggered": safety_gate_triggered,
+                    "generation": int(case.get("generation") or 0),
+                    "family_id": case.get("family_id"),
+                    "usage": _response_usage(response),
+                    "latency_ms": latency_ms,
+                    "zero_tool_hesitation": zero_tool_hesitation,
+                    "epistemic_step_count": traj_verif.epistemic_step_count,
+                    "implicated_runbook": implicated_runbook,
+                }
+                diag = extract_trace_diagnosis(
+                    trace_entry, forbidden_literals=self.forbidden_literals
+                )
+                trace_entry["failure_category"] = diag.failure_category
+                trajectories.append(trace_entry)
 
             except Exception as e:
                 import traceback
                 traceback.print_exc(file=sys.stderr)
                 outputs.append(f"Evaluation error: {e}")
                 scores.append(0.0)
-                if capture_traces:
-                    trajectories.append({
-                        "case_id": case.get("eval_id", case.get("id", "")),
-                        "alert_type": case.get("alert_type", ""),
-                        "prompt": case.get("prompt", ""),
-                        "cmdb_context": case.get("cmdb_context", {}),
-                        "expected_verdict": case.get("ground_truth_label", ""),
-                        "expected_actions": case.get("expected_actions", []),
-                        "prohibited_actions": case.get("prohibited_actions", []),
-                        "actual_verdict": "ERROR",
-                        "executed_actions": [],
-                        "summary": f"Exception encountered during evaluation: {e}",
-                        "score": 0.0,
-                        "loss_penalty": 0.0,
-                        "assert_passed": False,
-                        "component_name": "",
-                        "trajectory": [],
-                        "jev_choice": None,
-                    })
+                trajectories.append({
+                    "case_id": cid,
+                    "alert_type": case.get("alert_type", ""),
+                    "prompt": case.get("prompt", ""),
+                    "cmdb_context": case.get("cmdb_context", {}),
+                    "expected_verdict": case.get("ground_truth_label", ""),
+                    "expected_actions": case.get("expected_actions", []),
+                    "prohibited_actions": case.get("prohibited_actions", []),
+                    "actual_verdict": "ERROR",
+                    "executed_actions": [],
+                    "summary": f"Exception encountered during evaluation: {e}",
+                    "score": 0.0,
+                    "loss_penalty": 0.0,
+                    "assert_passed": False,
+                    "component_name": "",
+                    "trajectory": [],
+                    "jev_choice": None,
+                    "failure_category": "RUNBOOK_PROCEDURAL_VIOLATION",
+                    "safety_gate_triggered": False,
+                })
+
+        telemetry_map = {str(t["case_id"]): t for t in trajectories}
+        cand_key, batch_key = self._candidate_cache_key(candidate, batch)
+        if batch_key:
+            self._eval_cache[batch_key] = telemetry_map
+        self._eval_cache_by_candidate[cand_key] = telemetry_map
 
         return gepa.EvaluationBatch(
             outputs=outputs,
@@ -686,11 +776,28 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         dataset: Dict[str, List[Dict[str, Any]]] = {name: [] for name in components_to_update}
         trajectories = eval_batch.trajectories or []
 
+        aqua_report = cluster_trace_diagnoses(
+            trajectories,
+            all_runbooks=list(candidate.keys()),
+            forbidden_literals=self.forbidden_literals,
+            require_evaluated_to_freeze=True,
+        )
+        self.last_diagnostic_report = aqua_report
+        if self.freeze_passing_runbooks:
+            if not self._frozen_locked:
+                self.frozen_runbooks = set(aqua_report.frozen_runbooks)
+                self._frozen_locked = True
+        else:
+            self.frozen_runbooks = set()
+
         for comp_name in components_to_update:
+            if self.freeze_passing_runbooks and comp_name in self.frozen_runbooks:
+                continue
+
+            directive_attached = False
             for trace in trajectories:
-                trace_comp = trace.get("component_name", "")
-                # If trace specifies component_name, check match; otherwise match via classification or allow all
-                if trace_comp and trace_comp != comp_name:
+                implicated_runbook = trace.get("implicated_runbook") or resolve_implicated_runbook(trace)
+                if implicated_runbook != comp_name:
                     continue
 
                 score = trace.get("score", 1.0)
@@ -698,7 +805,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 assert_pass = trace.get("assert_passed", True)
 
                 # Filter to underperforming cases
-                if score >= 0.95 and loss_pen >= 1.0 and assert_pass:
+                if score >= 0.95 and loss_pen >= 1.0 and assert_pass and not trace.get("zero_tool_hesitation") and not trace.get("inert"):
                     continue
 
                 prompt = trace.get("prompt", "")
@@ -731,6 +838,12 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                         "The agent neither investigated nor decided (inert trajectory). "
                         "The runbook must require at least one enrichment lookup before any conclusion and must always end with a verdict."
                     )
+
+                if trace.get("zero_tool_hesitation"):
+                    feedback_items.append(
+                        "PREMATURE_TERMINATION_ZERO_TOOLS: The agent terminated prematurely without calling any epistemic tools."
+                    )
+
                 prohibited_ent_viols = trace.get("prohibited_entity_violations")
                 if prohibited_ent_viols:
                     feedback_items.append(
@@ -744,7 +857,15 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                         f"Jev System-One Diagnostic Taxonomy: {jev_choice}."
                     )
 
-                record = {
+                if not directive_attached and comp_name in aqua_report.directives:
+                    feedback_items.append(
+                        aqua_report.directives[comp_name].render_prompt_block(
+                            forbidden_literals=self.forbidden_literals
+                        )
+                    )
+                    directive_attached = True
+
+                raw_record = {
                     "Inputs": {
                         "case_id": case_id,
                         "alert_type": trace.get("alert_type", ""),
@@ -761,22 +882,16 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     },
                     "Feedback": " ".join(feedback_items),
                 }
+                record = sanitize_payload(
+                    raw_record, forbidden_literals=self.forbidden_literals
+                )
                 dataset[comp_name].append(record)
 
         return dataset
 
 
 def build_reflection_prompt_template() -> str:
-    """Build domain-specific reflection prompt template for GEPA mutation.
-
-    Instructs the reflection LM to refine the active runbook with procedural
-    epistemic verification steps, asset inventory correlation, and threat
-    intelligence reputation, while strictly forbidding hardcoded network literals,
-    hostnames, short-circuit bypasses, and emojis.
-
-    Returns:
-        Template string containing placeholders <curr_param> and <side_info>.
-    """
+    """Build domain-specific reflection prompt template for GEPA mutation."""
     return (
         "You are an expert Security Operations Center (SOC) engineering teacher tasked with refining\n"
         "cybersecurity incident response runbooks to optimize Tier 1 autonomous agent performance.\n\n"
@@ -791,7 +906,7 @@ def build_reflection_prompt_template() -> str:
         "```\n\n"
         "Refinement Guidelines and Operational Guardrails:\n"
         "1. Epistemic Evidence Verification Sequence: Refine the runbook into a disciplined 4-stage procedural flow:\n"
-        "   - Stage A: Asset Identity & CMDB Context: Query lookup_entity to determine asset business role, criticality, and authorized tags.\n"
+        "   - Stage A: Asset Identity & CMDB Context: Query lookup_entity to determine asset business role, criticality, and authorized tags. (MANDATORY: Terminating with 0 tool calls yields 0.0 reward)\n"
         "   - Stage B: Network Routing & Scope Verification: Query get_ip_address_report or get_domain_report to determine if target infrastructure is public, private, or reserved documentation space.\n"
         "   - Stage C: Threat Intelligence Reputation: Check GTI reputation scores and known malware associations.\n"
         "   - Stage D: Corroboration of Malicious Activity: Correlate telemetry with observed behaviors (e.g. active malware, C2 beaconing vs benign scanning).\n"
@@ -799,10 +914,10 @@ def build_reflection_prompt_template() -> str:
         "3. Anti-Memorization Rule (Generalization): Strictly DO NOT hardcode specific IP addresses, CIDR blocks, domain names, or hostnames in the runbook. All triage logic must rely on dynamic variables (e.g. ${IOC_VALUE}, ${ASSET_ROLE}, ${IP_ROUTING_TYPE}).\n"
         "4. Strict Malicious Containment: Maintain unambiguous containment protocols (isolate_host, block_indicator) when high-severity malicious activity is corroborated.\n"
         "5. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
-        "6. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n\n"
+        "6. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n"
+        "7. Diagnosis-Guided Surgical Stage Mutation: Modify ONLY the implicated stage indicated in the feedback while preserving all other stages and markdown headings verbatim.\n\n"
         "Provide the complete revised runbook inside ```markdown blocks."
     )
-
 
 def build_arg_parser() -> argparse.ArgumentParser:
     """Build command-line argument parser for GEPA runbook optimization.
@@ -974,6 +1089,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=0.05,
         help="Maximum acceptable fitness drop from ceiling model during cost staircase walk (default: 0.05).",
     )
+    parser.add_argument(
+        "--freeze-passing-runbooks",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Freeze runbooks that have 100% pass rate in the baseline.",
+    )
     return parser
 
 
@@ -1114,6 +1235,7 @@ def main(args: Optional[List[str]] = None) -> int:
         seed_candidate=seed_candidate,
         max_growth_ratio=parsed_args.max_growth_ratio,
         forbidden_literals=forbidden_literals,
+        freeze_passing_runbooks=parsed_args.freeze_passing_runbooks,
     )
 
     if parsed_args.dry_run:
@@ -1127,10 +1249,14 @@ def main(args: Optional[List[str]] = None) -> int:
 
     tau_accept = float(parsed_args.min_delta)
     noise_metrics_dict: Optional[Dict[str, Any]] = None
+    first_noise_batch = None
     if parsed_args.noise_runs >= 2:
         runs: List[List[float]] = []
-        for _ in range(int(parsed_args.noise_runs)):
-            batch = adapter.evaluate(valset, seed_candidate, capture_traces=False)
+        for run_idx in range(int(parsed_args.noise_runs)):
+            capture = (run_idx == 0)
+            batch = adapter.evaluate(valset, seed_candidate, capture_traces=capture)
+            if run_idx == 0:
+                first_noise_batch = batch
             scores_k = getattr(batch, "scores", None)
             if (
                 not isinstance(scores_k, list) or not scores_k
@@ -1209,14 +1335,85 @@ def main(args: Optional[List[str]] = None) -> int:
             print(f"GEPA returned an invalid validation score for candidate {index}.", file=sys.stderr)
             return 1
 
+    def _case_key(idx: int) -> str:
+        if 0 <= idx < len(valset):
+            return str(valset[idx].get("eval_id") or valset[idx].get("id") or f"case-{idx}")
+        return f"case-{idx}"
+
+    def _normalize_subscores_dict(raw_map: Mapping[Any, Any]) -> Dict[str, float]:
+        normalized: Dict[str, float] = {}
+        known_ids = {
+            str(c.get("eval_id") or c.get("id") or f"case-{i}")
+            for i, c in enumerate(valset)
+        }
+        for k, v in raw_map.items():
+            if isinstance(k, int) and not isinstance(k, bool):
+                key_str = _case_key(k)
+            else:
+                k_str = str(k)
+                if k_str not in known_ids and k_str.isdigit():
+                    key_str = _case_key(int(k_str))
+                else:
+                    key_str = k_str
+            normalized[key_str] = float(v)
+        return normalized
+
+    def _get_valid_cached_telemetry(cand: Dict[str, str]) -> Optional[Dict[str, Dict[str, Any]]]:
+        getter = getattr(adapter, "get_cached_telemetry", None)
+        if not callable(getter):
+            return None
+        cached = getter(cand, valset)
+        if isinstance(cached, dict) and cached and all(isinstance(v, dict) for v in cached.values()):
+            return cached
+        return None
+
     ledger = HillclimbLedger(output_dir / "hillclimb_ledger.jsonl")
     composite_sha = harness_guard.compute_composite_sha256()
     val_subscores = getattr(result, "val_subscores", None) or []
-    baseline_subscores = (
-        val_subscores[0]
-        if (len(val_subscores) > 0 and isinstance(val_subscores[0], dict) and val_subscores[0])
-        else None
-    )
+
+    baseline_subscores: Optional[Dict[str, float]] = None
+    baseline_telemetry: Optional[Dict[str, Dict[str, Any]]] = None
+    seed_frozen_runbooks = set()
+    seed_aqua_report: Optional[AquaDiagnosticReport] = None
+
+    base_traces: Optional[List[Dict[str, Any]]] = None
+    if first_noise_batch is not None and isinstance(getattr(first_noise_batch, "trajectories", None), list) and first_noise_batch.trajectories:
+        base_traces = list(first_noise_batch.trajectories)
+    else:
+        cached_seed_tel = _get_valid_cached_telemetry(seed_candidate)
+        if cached_seed_tel is not None:
+            base_traces = list(cached_seed_tel.values())
+
+    if len(val_subscores) > 0 and isinstance(val_subscores[0], dict) and val_subscores[0]:
+        baseline_subscores = _normalize_subscores_dict(val_subscores[0])
+        if base_traces is None and first_noise_batch is None:
+            base_batch = adapter.evaluate(valset, seed_candidate, capture_traces=True)
+            if isinstance(getattr(base_batch, "trajectories", None), list) and base_batch.trajectories:
+                base_traces = list(base_batch.trajectories)
+    elif first_noise_batch is not None and isinstance(getattr(first_noise_batch, "scores", None), list) and len(first_noise_batch.scores) == len(valset):
+        baseline_subscores = {_case_key(i): float(sc) for i, sc in enumerate(first_noise_batch.scores)}
+    else:
+        base_batch = adapter.evaluate(valset, seed_candidate, capture_traces=True)
+        scores_list = getattr(base_batch, "scores", None)
+        if isinstance(scores_list, list) and len(scores_list) == len(valset) and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in scores_list):
+            baseline_subscores = {_case_key(i): float(sc) for i, sc in enumerate(scores_list)}
+            if isinstance(getattr(base_batch, "trajectories", None), list) and base_batch.trajectories:
+                base_traces = list(base_batch.trajectories)
+        else:
+            baseline_subscores = {_case_key(i): float(scores[0] if scores else 0.0) for i in range(len(valset))}
+
+    if base_traces:
+        baseline_telemetry = {
+            str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(base_traces)
+        }
+        seed_aqua_report = cluster_trace_diagnoses(
+            base_traces,
+            all_runbooks=list(seed_candidate.keys()),
+            forbidden_literals=forbidden_literals,
+        )
+        seed_frozen_runbooks = set(seed_aqua_report.frozen_runbooks)
+        if parsed_args.freeze_passing_runbooks and hasattr(adapter, "lock_frozen_runbooks"):
+            adapter.lock_frozen_runbooks(seed_frozen_runbooks)
 
     valid_count = 0
     selected_index: Optional[int] = None
@@ -1227,12 +1424,35 @@ def main(args: Optional[List[str]] = None) -> int:
             for name, text in candidate.items()
         ):
             continue
+
+        if index > 0 and parsed_args.freeze_passing_runbooks and seed_frozen_runbooks:
+            candidate = enforce_frozen_runbooks(candidate, seed_candidate, seed_frozen_runbooks)
+            candidates[index] = candidate
+
         is_valid, violations = validate_runbook_candidate(
             candidate,
             seed_candidate=seed_candidate,
             max_growth_ratio=parsed_args.max_growth_ratio,
             forbidden_literals=forbidden_literals,
         )
+
+        if index == 0:
+            if is_valid:
+                selected_index = 0
+                selected_score = float(score)
+                valid_count += 1
+                ledger.append_entry(
+                    iteration=0,
+                    harness_sha256=composite_sha,
+                    train_score=None,
+                    val_score=float(score),
+                    tau_accept=tau_accept,
+                    decision="KEPT",
+                    rationale="Seed candidate baseline.",
+                    metadata={"task_lm": parsed_args.task_lm},
+                )
+            continue
+
         if not is_valid:
             ledger.append_entry(
                 iteration=index,
@@ -1248,46 +1468,57 @@ def main(args: Optional[List[str]] = None) -> int:
 
         valid_count += 1
 
-        cand_subscores = (
-            val_subscores[index]
-            if (index < len(val_subscores) and isinstance(val_subscores[index], dict) and val_subscores[index])
-            else None
-        )
-        if index > 0 and baseline_subscores is not None and cand_subscores is not None:
-            acc = evaluate_candidate_acceptance(
-                baseline_scores=baseline_subscores,
-                candidate_scores=cand_subscores,
-                tau_accept=tau_accept,
-            )
-            ledger.append_entry(
-                iteration=index,
-                harness_sha256=composite_sha,
-                train_score=None,
-                val_score=float(score),
-                tau_accept=tau_accept,
-                decision=acc.status,
-                rationale=acc.reason,
-                metadata={"task_lm": parsed_args.task_lm, "regressed_cases": acc.regressed_cases},
-            )
-            if acc.accepted and (selected_score is None or score > selected_score):
-                selected_index = index
-                selected_score = float(score)
+        cand_subscores = None
+        cand_telemetry = None
+        if index < len(val_subscores) and isinstance(val_subscores[index], dict) and val_subscores[index]:
+            cand_subscores = _normalize_subscores_dict(val_subscores[index])
+            val_traj = getattr(result, "val_trajectories", None)
+            if isinstance(val_traj, list) and index < len(val_traj) and isinstance(val_traj[index], list) and val_traj[index]:
+                cand_telemetry = {
+                    str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(val_traj[index])
+                }
+            else:
+                cand_telemetry = _get_valid_cached_telemetry(candidate)
         else:
-            # Strict comparison preserves the earliest candidate when scores tie.
-            is_better = selected_score is None or score > selected_score
-            ledger.append_entry(
-                iteration=index,
-                harness_sha256=composite_sha,
-                train_score=None,
-                val_score=float(score),
-                tau_accept=tau_accept,
-                decision="KEPT" if is_better else "SKIPPED_LOWER_SCORE",
-                rationale="Baseline or aggregate validation score comparison",
-                metadata={"task_lm": parsed_args.task_lm},
-            )
-            if is_better:
-                selected_index = index
-                selected_score = float(score)
+            cand_telemetry = _get_valid_cached_telemetry(candidate)
+            if cand_telemetry is not None and len(cand_telemetry) == len(valset):
+                cand_subscores = {
+                    cid: float(t.get("score", score)) for cid, t in cand_telemetry.items()
+                }
+            else:
+                cand_batch = adapter.evaluate(valset, candidate, capture_traces=True)
+                scores_list = getattr(cand_batch, "scores", None)
+                if isinstance(scores_list, list) and len(scores_list) == len(valset) and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in scores_list):
+                    cand_subscores = {_case_key(i): float(sc) for i, sc in enumerate(scores_list)}
+                    if isinstance(getattr(cand_batch, "trajectories", None), list) and cand_batch.trajectories:
+                        cand_telemetry = {
+                            str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(cand_batch.trajectories)
+                        }
+                else:
+                    cand_subscores = {_case_key(i): float(score) for i in range(len(valset))}
+                
+        acc = evaluate_candidate_acceptance(
+            baseline_scores=baseline_subscores,
+            candidate_scores=cand_subscores,
+            tau_accept=tau_accept,
+            baseline_telemetry=baseline_telemetry,
+            candidate_telemetry=cand_telemetry,
+        )
+        
+        ledger.append_entry(
+            iteration=index,
+            harness_sha256=composite_sha,
+            train_score=None,
+            val_score=float(score),
+            tau_accept=tau_accept,
+            decision=acc.status,
+            rationale=acc.reason,
+            metadata={"task_lm": parsed_args.task_lm, "regressed_cases": acc.regressed_cases, "categorical_violations": getattr(acc, "categorical_violations", []), "zero_tool_cases": getattr(acc, "zero_tool_cases", [])},
+        )
+        
+        if acc.accepted and (selected_score is None or score > selected_score):
+            selected_index = index
+            selected_score = float(score)
 
     reason, write_runbooks = select_candidate_outcome(selected_index, valid_count)
     best_candidate = seed_candidate if selected_index in (None, 0) else candidates[selected_index]
@@ -1360,12 +1591,22 @@ def main(args: Optional[List[str]] = None) -> int:
         )
         metadata["cost_staircase"] = staircase_report.to_dict()
 
+    if seed_aqua_report:
+        metadata["aqua_diagnostics_summary"] = {
+            "frozen_runbooks": list(seed_aqua_report.frozen_runbooks),
+            "directive_count": len(seed_aqua_report.directives)
+        }
+        
     if write_runbooks:
         print(f"Saving evolved runbooks to {output_dir}...")
         save_runbooks(candidate=best_candidate, output_dir=output_dir, metadata=metadata)
+        if seed_aqua_report:
+            (output_dir / "aqua_diagnostic_report.json").write_text(json.dumps(seed_aqua_report.to_dict(), indent=2), encoding="utf-8")
     else:
         print(f"Seed retained ({reason}); runbooks in {output_dir} are left untouched.")
         write_evolution_metadata(output_dir, metadata)
+        if seed_aqua_report:
+            (output_dir / "aqua_diagnostic_report.json").write_text(json.dumps(seed_aqua_report.to_dict(), indent=2), encoding="utf-8")
     print("Runbook evolution complete.")
     return 0
 

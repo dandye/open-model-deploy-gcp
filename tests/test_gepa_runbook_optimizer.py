@@ -1167,3 +1167,334 @@ def test_adapter_evaluate_gen5_prohibited_entity_lowers_the_loss_penalty():
     assert trace["prohibited_entity_violations"], "the verifier must flag the prohibited entity"
     assert trace["loss_penalty"] <= math.exp(-1.0) + 1e-9
     assert trace["inert"] is False
+
+def test_zero_tool_hesitation_penalty():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    
+    # Fake verifier that returns zero tools
+    def fake_agent_factory(**kwargs):
+        from types import SimpleNamespace
+        class FakeAgent:
+            def query(self, prompt, max_iterations=None):
+                return SimpleNamespace(response="Done.", trajectory=[], usage={}, classification="suspicious_login_triage.md")
+        return FakeAgent()
+        
+    adapter = RunbookGEPAAdapter(task_lm="mock", agent_factory=fake_agent_factory)
+    case = {"id": "C-1", "expected_actions": [], "prohibited_actions": [], "ground_truth_label": "BENIGN"}
+    batch = adapter.evaluate([case], {"suspicious_login_triage.md": "# Seed"}, capture_traces=True)
+    assert batch.scores[0] == 0.0
+    trace = batch.trajectories[0]
+    assert trace.get("zero_tool_hesitation") is True
+    assert trace.get("epistemic_step_count") == 0
+    assert trace.get("jev_choice") == "PREMATURE_TERMINATION_ZERO_TOOLS"
+    assert trace.get("implicated_runbook") == "suspicious_login_triage.md"
+
+def test_make_reflective_dataset_strict_attribution():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    from agent.aqua_diagnostics import AquaDiagnosticReport, AquaInsightCluster
+    import gepa
+    adapter = RunbookGEPAAdapter(task_lm="mock")
+    
+    trajectories = [
+        {
+            "case_id": "c1", "alert_type": "suspicious_login_triage.md", "implicated_runbook": "suspicious_login_triage.md",
+            "score": 0.0, "loss_penalty": 0.0, "assert_passed": False, "zero_tool_hesitation": True, "prompt": "p1"
+        },
+        {
+            "case_id": "c2", "alert_type": "malware_triage.md", "implicated_runbook": "malware_triage.md",
+            "score": 1.0, "loss_penalty": 1.0, "assert_passed": True, "zero_tool_hesitation": False, "inert": False
+        }
+    ]
+    eval_batch = gepa.EvaluationBatch(outputs=["", ""], scores=[0.0, 1.0], trajectories=trajectories)
+    candidate = {"suspicious_login_triage.md": "# A", "malware_triage.md": "# B"}
+    
+    dataset = adapter.make_reflective_dataset(candidate, eval_batch, list(candidate.keys()))
+    
+    assert "suspicious_login_triage.md" not in adapter.frozen_runbooks
+    assert "malware_triage.md" in adapter.frozen_runbooks
+    
+    assert len(dataset["suspicious_login_triage.md"]) == 1
+    assert "PREMATURE_TERMINATION_ZERO_TOOLS" in dataset["suspicious_login_triage.md"][0]["Feedback"]
+    assert len(dataset["malware_triage.md"]) == 0
+
+def test_enforce_frozen_runbooks():
+    from agent.gepa_runbook_optimizer import enforce_frozen_runbooks
+    
+    candidate = {"A.md": "new A", "B.md": "new B"}
+    seed = {"A.md": "seed A", "B.md": "seed B"}
+    
+    res = enforce_frozen_runbooks(candidate, seed, {"A.md"})
+    assert res["A.md"] == "seed A"
+    assert res["B.md"] == "new B"
+
+
+def test_cli_always_on_validation_rejects_zero_tool_hesitation(optimizer_cli):
+    run, output_dir, seed, optimize, adapter_class, _, _ = optimizer_cli
+    
+    import gepa
+    
+    # We want candidates = [seed, cand1]
+    # GEPA aggregate scores: [0.5, 0.9] -> Cand1 has higher aggregate score.
+    # We mock adapter_instance.evaluate to return per-case scores and trajectories.
+    # For cand1, one of the trajectories will have zero_tool_hesitation = True.
+    # evaluate_candidate_acceptance should reject cand1 due to REVERTED_CATEGORICAL_ZERO_TOOLS.
+    
+    def mock_evaluate(batch, candidate, capture_traces=False):
+        if candidate == seed:
+            # Seed baseline: perfect pass, no zero-tool hesitation
+            trajectories = [
+                {
+                    "case_id": f"case-{i}",
+                    "alert_type": "basic_ioc_enrichment.md",
+                    "score": 0.5,
+                    "zero_tool_hesitation": False,
+                    "implicated_runbook": "basic_ioc_enrichment.md",
+                    "inert": False,
+                    "assert_passed": True,
+                    "loss_penalty": 1.0,
+                }
+                for i in range(len(batch))
+            ]
+            return gepa.EvaluationBatch(
+                outputs=["" for _ in batch],
+                scores=[0.5 for _ in batch],
+                trajectories=trajectories
+            )
+        else:
+            # cand1: high score but has zero_tool_hesitation on case-0
+            trajectories = [
+                {
+                    "case_id": f"case-{i}",
+                    "alert_type": "basic_ioc_enrichment.md",
+                    "score": 0.9,
+                    "zero_tool_hesitation": (i == 0),
+                    "implicated_runbook": "basic_ioc_enrichment.md",
+                    "inert": False,
+                    "assert_passed": True,
+                    "loss_penalty": 1.0,
+                }
+                for i in range(len(batch))
+            ]
+            return gepa.EvaluationBatch(
+                outputs=["" for _ in batch],
+                scores=[0.9 for _ in batch],
+                trajectories=trajectories
+            )
+            
+    adapter_instance = adapter_class.return_value
+    adapter_instance.evaluate.side_effect = mock_evaluate
+    
+    cand1 = {name: f"# Cand1\n{seed[name]}" for name in CORE_RUNBOOKS}
+    candidates = [seed, cand1]
+    scores = [0.5, 0.9]
+    
+    exit_code = run(candidates, scores, gen5=True)
+    assert exit_code == 0
+    
+    # Cand1 should be rejected despite higher score, meaning seed is retained
+    metadata_path = output_dir / "evolution_metadata.json"
+    import json
+    metadata = json.loads(metadata_path.read_text())
+    assert metadata["selected_candidate_index"] == 0
+    
+    # Read hillclimb ledger
+    ledger_text = (output_dir / "hillclimb_ledger.jsonl").read_text()
+    entries = [json.loads(line) for line in ledger_text.splitlines() if line.strip()]
+    assert len(entries) >= 2
+    assert entries[1]["iteration"] == 1
+    assert "ZERO_TOOLS" in entries[1]["decision"]
+    
+    # Check that aqua_diagnostic_report.json was written
+    report_path = output_dir / "aqua_diagnostic_report.json"
+    assert report_path.exists()
+    assert "aqua_diagnostics_summary" in metadata
+
+
+def test_adapter_evaluate_populates_failure_category_and_safety_gate_and_multistep_inert():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+
+    case = dict(_gen5_case())
+    case["liveness"] = {"min_epistemic_steps": 2}
+    first_lookup = case["oracle"]["lookups"][0]
+    # Only 1 epistemic step (< 2 required) and no soc_decision -> inert=True, zero_tool_hesitation=False
+    traj_inert = [{"tool": first_lookup["tool"], "args": dict(first_lookup["args"]), "observation": {}}]
+    adapter = RunbookGEPAAdapter(task_lm="mock", agent_factory=_agent_factory_returning(traj_inert, "No decision"))
+    batch = adapter.evaluate([case], {name: "# Seed" for name in CORE_RUNBOOKS}, capture_traces=True)
+    assert batch.scores == [0.0]
+    tr = batch.trajectories[0]
+    assert tr["inert"] is True
+    assert tr["zero_tool_hesitation"] is False
+    assert tr["failure_category"] == "INERT"
+
+    # Prohibited entity violation populates safety_gate_triggered=True and failure_category=OVER_CONTAINMENT_FALSE_ALARM
+    victim = case["prohibited_entities"][0]
+    traj_unsafe = [
+        {"tool": first_lookup["tool"], "args": dict(first_lookup["args"]), "observation": {}},
+        {"tool": first_lookup["tool"], "args": dict(first_lookup["args"]), "observation": {}},
+        {"tool": "isolate_host", "args": {"hostname": victim}, "observation": {"status": "SUCCESS"}},
+    ]
+    text_unsafe = "Contained.\n```soc_decision\n" + json.dumps({"verdict": "MALICIOUS", "recommended_actions": ["isolate_host"]}) + "\n```"
+    adapter_unsafe = RunbookGEPAAdapter(task_lm="mock", agent_factory=_agent_factory_returning(traj_unsafe, text_unsafe))
+    batch_unsafe = adapter_unsafe.evaluate([case], {name: "# Seed" for name in CORE_RUNBOOKS}, capture_traces=True)
+    tr_unsafe = batch_unsafe.trajectories[0]
+    assert tr_unsafe["safety_gate_triggered"] is True
+    assert tr_unsafe["failure_category"] == "OVER_CONTAINMENT_FALSE_ALARM"
+
+
+def test_make_reflective_dataset_does_not_clobber_frozen_runbooks_across_minibatches_and_scrubs_inputs():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    import gepa
+
+    seed = {"basic_ioc_enrichment.md": "# Seed IOC", "malware_triage.md": "# Seed Malware"}
+    adapter = RunbookGEPAAdapter(
+        task_lm="mock",
+        seed_candidate=seed,
+        forbidden_literals=["secret-c2.evil"],
+    )
+
+    # Minibatch 1: basic_ioc_enrichment.md has 2 failing traces; malware_triage.md has 1 passing trace
+    mb1 = gepa.EvaluationBatch(
+        outputs=["", "", ""],
+        scores=[0.0, 0.2, 1.0],
+        trajectories=[
+            {
+                "case_id": "CASE-GEN3-01-LOKIBOT-C2",
+                "implicated_runbook": "basic_ioc_enrichment.md",
+                "prompt": "Host DESKTOP-FIN-08 (10.0.4.15) contacted secret-c2.evil",
+                "cmdb_context": {"host": "DESKTOP-FIN-08"},
+                "score": 0.0,
+                "loss_penalty": 0.0,
+                "assert_passed": False,
+                "zero_tool_hesitation": True,
+            },
+            {
+                "case_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+                "implicated_runbook": "basic_ioc_enrichment.md",
+                "prompt": "Gateway GW-CORE-VPN-01 contacted 192.0.2.100",
+                "prohibited_entity_violations": ["isolate_host:GW-CORE-VPN-01"],
+                "score": 0.2,
+                "loss_penalty": 0.2,
+                "assert_passed": False,
+                "zero_tool_hesitation": False,
+                "executed_actions": ["isolate_host"],
+                "prohibited_actions": ["isolate_host"],
+            },
+            {
+                "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+                "implicated_runbook": "malware_triage.md",
+                "prompt": "Malware check",
+                "score": 1.0,
+                "loss_penalty": 1.0,
+                "assert_passed": True,
+                "zero_tool_hesitation": False,
+                "inert": False,
+                "executed_actions": ["get_file_report"],
+            },
+        ],
+    )
+    ds1 = adapter.make_reflective_dataset(seed, mb1, list(seed.keys()))
+    assert adapter.frozen_runbooks == {"malware_triage.md"}
+    assert len(ds1["basic_ioc_enrichment.md"]) == 2
+    # Directive block must only appear once across the 2 records for basic_ioc_enrichment.md
+    directive_occurrences = sum(
+        1 for rec in ds1["basic_ioc_enrichment.md"] if "AQuA Diagnostic Cluster Summary" in rec["Feedback"]
+    )
+    assert directive_occurrences == 1
+    # All records must be scrubbed of forbidden hostnames, IPs, case IDs, and forbidden_literals
+    serialized = json.dumps(ds1)
+    assert "DESKTOP-FIN-08" not in serialized
+    assert "GW-CORE-VPN-01" not in serialized
+    assert "10.0.4.15" not in serialized
+    assert "192.0.2.100" not in serialized
+    assert "secret-c2.evil" not in serialized
+    assert "CASE-GEN3-01-LOKIBOT-C2" not in serialized
+
+    # Minibatch 2: only exercises malware_triage.md (0 traces on basic_ioc_enrichment.md)
+    # Must NOT add basic_ioc_enrichment.md to adapter.frozen_runbooks!
+    mb2 = gepa.EvaluationBatch(
+        outputs=[""],
+        scores=[1.0],
+        trajectories=[
+            {
+                "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+                "implicated_runbook": "malware_triage.md",
+                "score": 1.0,
+                "loss_penalty": 1.0,
+                "assert_passed": True,
+                "executed_actions": ["get_file_report"],
+            }
+        ],
+    )
+    evolved_cand = {"basic_ioc_enrichment.md": "# Evolved IOC", "malware_triage.md": "# Mutated Malware"}
+    adapter.make_reflective_dataset(evolved_cand, mb2, list(seed.keys()))
+    assert "basic_ioc_enrichment.md" not in adapter.frozen_runbooks
+
+
+def test_cli_handles_integer_keyed_val_subscores_with_zero_noise_runs(tmp_path: Path, monkeypatch):
+    from unittest.mock import MagicMock
+    import gepa
+    from gepa.core.result import GEPAResult
+    import agent.gepa_runbook_optimizer as optimizer
+
+    seed = {name: "# Seed\nInvestigate available evidence." for name in CORE_RUNBOOKS}
+    monkeypatch.setattr(optimizer, "load_seed_runbooks", lambda: seed)
+
+    evalset = tmp_path / "evalset.json"
+    evalset.write_text(
+        json.dumps(
+            {
+                "eval_cases": [
+                    {"eval_id": "CASE-01", "prompt": "Investigate case 1"},
+                    {"eval_id": "CASE-02", "prompt": "Investigate case 2"},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    mock_adapter_instance = MagicMock()
+    mock_adapter_instance.evaluate.return_value = gepa.EvaluationBatch(
+        outputs=["o1", "o2"],
+        scores=[0.70, 0.70],
+        trajectories=[
+            {"case_id": "CASE-01", "score": 0.70, "loss_penalty": 1.0, "assert_passed": True, "executed_actions": ["lookup_entity"]},
+            {"case_id": "CASE-02", "score": 0.70, "loss_penalty": 1.0, "assert_passed": True, "executed_actions": ["lookup_entity"]},
+        ],
+    )
+    mock_adapter_instance.get_cached_telemetry.return_value = None
+    monkeypatch.setattr(optimizer, "RunbookGEPAAdapter", MagicMock(return_value=mock_adapter_instance))
+    monkeypatch.setattr(optimizer, "GoogleGenAILM", MagicMock())
+
+    improved = {name: "# Improved\nInvestigate available evidence." for name in CORE_RUNBOOKS}
+    # Simulate GEPA ListDataLoader integer-keyed val_subscores where case 0 regresses from 0.85 to 0.50
+    monkeypatch.setattr(
+        optimizer.gepa,
+        "optimize",
+        MagicMock(
+            return_value=GEPAResult(
+                candidates=[seed, improved],
+                parents=[[], [0]],
+                val_aggregate_scores=[0.85, 0.725],
+                val_subscores=[
+                    {0: 0.85, 1: 0.85},
+                    {0: 0.50, 1: 0.95},
+                ],
+                per_val_instance_best_candidates={},
+                discovery_eval_counts=[0, 1],
+            )
+        ),
+    )
+
+    output_dir = tmp_path / "evolved_int_keys"
+    rc = optimizer.main([
+        "--evalset", str(evalset),
+        "--output-dir", str(output_dir),
+        "--noise-runs", "0",
+    ])
+    assert rc == 0
+    assert (output_dir / "aqua_diagnostic_report.json").exists()
+    entries = [json.loads(line) for line in (output_dir / "hillclimb_ledger.jsonl").read_text().splitlines() if line.strip()]
+    assert entries[1]["decision"] == "REVERTED_REGRESSION"
+    assert "CASE-01" in entries[1]["metadata"]["regressed_cases"]
+
+
