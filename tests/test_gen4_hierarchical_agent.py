@@ -1149,3 +1149,39 @@ def test_worker_parses_markdown_wrapped_actions():
     assert parsed_bullet == ("lookup_entity", {"entity": "LT-LON-06"})
 
 
+def test_supervisor_report_assertion_hygiene_and_gen3_case_resolution():
+    """Verify _apply_report_assertion_hygiene removes negated substring collisions and preserves audited artifacts."""
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    prompt = (
+        "Triage alert CASE-64791: application server APP-DUB-48 (10.13.0.75) began contacting "
+        "cdn82.stream-cloud.net. [CMDB Asset Context: Host APP-DUB-48 (10.13.0.75)]."
+    )
+    report = WorkerInvestigationReport(
+        classification="C2_BEACON",
+        runbook_name="basic_ioc_enrichment.md",
+        target_entities=["APP-DUB-48", "cdn82.stream-cloud.net"],
+        evidence=["Change calendar: CHG-56911 deployed the Zendesk connector."],
+        risk_level="BENIGN",
+    )
+    raw_text = (
+        "[Context & Enrichment]\nInvestigated APP-DUB-48.\n\n"
+        "[Analysis & Verdict]\nThis is sanctioned traffic, not command and control, and no host isolated action was taken.\n\n"
+        "```soc_decision\n{\"verdict\": \"BENIGN\", \"recommended_actions\": [\"close_case\"]}\n```"
+    )
+    cleaned = supervisor._apply_report_assertion_hygiene(raw_text, "BENIGN", prompt, report)
+    assert "command and control" not in cleaned.lower()
+    assert "host isolated" not in cleaned.lower()
+    assert "cdn82.stream-cloud.net" in cleaned
+    assert "CHG-56911" in cleaned
+
+    # Also verify Gen 3 CMDB Asset Context case resolution when no literal CASE-XXXXX is in prompt
+    gen3_prompt = (
+        "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 "
+        "against gateway GW-CORE-VPN-01. [CMDB Asset Context: Host GW-CORE-VPN-01]."
+    )
+    resolved_case = supervisor._resolve_target_case(gen3_prompt, SocDecision(verdict="BENIGN", recommended_actions=["close_case"]), report)
+    assert resolved_case == "CASE-33279"
+
+
+

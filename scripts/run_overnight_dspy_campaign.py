@@ -116,12 +116,12 @@ def evaluate_candidate_with_harbor_parity(
     max_iterations: int = 5,
 ) -> Dict[str, Any]:
   """Evaluate a runbook candidate on a case bundle and compute both GEPA fitness and Harbor 60/20/20 reward."""
-  def _agent_factory(**kwargs: Any) -> HierarchicalSOCTier1Agent:
-    runbooks = dict(kwargs.get("runbooks_dict") or {})
-    if not normalize_scaffolding:
-      # Pass raw runbooks without strip_runbook_scaffolding by monkeypatching instance flag
-      pass
-    return HierarchicalSOCTier1Agent(**kwargs)
+  import importlib
+  import agent.hierarchical_soc_agent as hsa_mod
+  importlib.reload(hsa_mod)
+
+  def _agent_factory(**kwargs: Any) -> Any:
+    return hsa_mod.HierarchicalSOCTier1Agent(**kwargs)
 
   adapter = RunbookGEPAAdapter(
       task_lm=task_lm,
@@ -287,7 +287,7 @@ def write_morning_report(
       key=lambda x: (
           str(x.get("dataset", "")),
           float(x.get("mean_harbor_reward", 0.0)),
-          -int(x.get("total_words", 1845)),
+          -int(x.get("total_words", 2376)),
       ),
       reverse=True,
   )
@@ -295,7 +295,7 @@ def write_morning_report(
     lines.append(
         f"| `{exp.get('exp_id')}` | {exp.get('wave')} | `{exp.get('dataset')}` | "
         f"`{exp.get('task_lm')}` | `{exp.get('max_words', 'none')}` | "
-        f"`{exp.get('total_words', 1845)}` | "
+        f"`{exp.get('total_words', 2376)}` | "
         f"`{exp.get('mean_gepa_fitness', 0.0):.4f}` | "
         f"`{exp.get('mean_harbor_reward', 0.0):.4f}` | "
         f"`{exp.get('zero_tool_count', 0)}` | "
@@ -585,6 +585,74 @@ def main(argv: Optional[List[str]] = None) -> int:
             "Measure Gen 5 validation baseline lift from temperature=0.0 + 1500-char observation window + compose_soc_reward",
             f"gepa_fitness={res_g5_v2['mean_gepa_fitness']:.4f}, harbor_reward={res_g5_v2['mean_harbor_reward']:.4f}, zero_tool={res_g5_v2['zero_tool_count']}",
             "baseline_v2_recorded",
+        )
+
+      # 1D. Re-evaluate Clean Seed v3 (with report assertion hygiene + Gen 3 case resolution)
+      exp_id_g3_v3 = f"w1c_clean_seed_v3_gen3_{model_name.replace('.', '_')}"
+      if exp_id_g3_v3 not in completed_exp_ids:
+        print(f"[Wave 1C] Running {exp_id_g3_v3}...", flush=True)
+        res_g3_v3 = evaluate_candidate_with_harbor_parity(
+            candidate=clean_seed,
+            cases=gen3_cases,
+            task_lm=model_name,
+            budget_ledger=budget_ledger,
+        )
+        traces_g3_v3 = res_g3_v3.pop("traces", [])
+        if res_g3_v3["mean_harbor_reward"] > summary_state["best_gen3_harbor_reward"]:
+          summary_state["best_gen3_harbor_reward"] = res_g3_v3["mean_harbor_reward"]
+        _record_exp(
+            {
+                "exp_id": exp_id_g3_v3,
+                "wave": "Wave 1C (Assertion Hygiene + Gen3 Case Resolution)",
+                "dataset": "gen3_10",
+                "max_words": "clean_seed_v3",
+                "status": "BASELINE_V3",
+                **res_g3_v3,
+            },
+            traces_g3_v3,
+        )
+        completed_exp_ids.add(exp_id_g3_v3)
+        log_decision(
+            "result",
+            exp_id_g3_v3,
+            f"Evaluated Clean Seed v3 (assertion hygiene + Gen 3 case resolution) on Gen 3 with {model_name}",
+            "Measure Gen 3 lift from resolving default SOAR case IDs on CMDB alerts and sanitizing negated substring collisions",
+            f"gepa_fitness={res_g3_v3['mean_gepa_fitness']:.4f}, harbor_reward={res_g3_v3['mean_harbor_reward']:.4f}, zero_tool={res_g3_v3['zero_tool_count']}",
+            "baseline_v3_recorded",
+        )
+
+      exp_id_g5_v3 = f"w1c_clean_seed_v3_gen5val_{model_name.replace('.', '_')}"
+      if exp_id_g5_v3 not in completed_exp_ids:
+        print(f"[Wave 1C] Running {exp_id_g5_v3}...", flush=True)
+        res_g5_v3 = evaluate_candidate_with_harbor_parity(
+            candidate=clean_seed,
+            cases=gen5_val_cases,
+            task_lm=model_name,
+            budget_ledger=budget_ledger,
+        )
+        traces_g5_v3 = res_g5_v3.pop("traces", [])
+        if res_g5_v3["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]:
+          summary_state["best_gen5_harbor_reward"] = res_g5_v3["mean_harbor_reward"]
+          summary_state["best_runbooks_dir"] = str(clean_seed_dir)
+        _record_exp(
+            {
+                "exp_id": exp_id_g5_v3,
+                "wave": "Wave 1C (Assertion Hygiene + Gen3 Case Resolution)",
+                "dataset": "gen5_val_20",
+                "max_words": "clean_seed_v3",
+                "status": "BASELINE_V3",
+                **res_g5_v3,
+            },
+            traces_g5_v3,
+        )
+        completed_exp_ids.add(exp_id_g5_v3)
+        log_decision(
+            "result",
+            exp_id_g5_v3,
+            f"Evaluated Clean Seed v3 (assertion hygiene + active SOAR case notes) on Gen 5 validation with {model_name}",
+            "Measure Gen 5 validation lift from report assertion hygiene and active SOAR case note inclusion",
+            f"gepa_fitness={res_g5_v3['mean_gepa_fitness']:.4f}, harbor_reward={res_g5_v3['mean_harbor_reward']:.4f}, zero_tool={res_g5_v3['zero_tool_count']}",
+            "baseline_v3_recorded",
         )
 
     # =========================================================================
