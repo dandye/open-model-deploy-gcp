@@ -537,35 +537,47 @@ def validate_runbook_candidate(
                     f"{filename}: Candidate growth ratio ({ratio:.2f}x) exceeds max_growth_ratio ({max_growth_ratio:.2f}x)."
                 )
 
-        if forbid_template_vars:
-            found_vars = sorted(set(TEMPLATE_VAR_REGEX.findall(content)))
-            if found_vars:
-                violations.append(
-                    f"{filename}: Contains shell-style template placeholders {found_vars[:5]}. Use plain English or <angle_bracket> references."
-                )
-
-        if forbid_mermaid_diagrams and (
-            MERMAID_BLOCK_REGEX.search(content)
-            or re.search(r"\bsequenceDiagram\b", content)
-        ):
-            violations.append(
-                f"{filename}: Contains non-executable Mermaid/sequenceDiagram block."
-            )
-
-        if forbid_interactive_pseudotools:
-            for pt_pat in INTERACTIVE_PSEUDOTOOL_PATTERNS:
-                pt_match = re.search(pt_pat, content, re.IGNORECASE)
-                if pt_match:
+        is_untouched_seed = bool(
+            seed_candidate
+            and filename in seed_candidate
+            and seed_candidate[filename] == content
+        )
+        if not is_untouched_seed:
+            if forbid_template_vars:
+                found_vars = sorted(set(TEMPLATE_VAR_REGEX.findall(content)))
+                if found_vars:
                     violations.append(
-                        f"{filename}: Contains interactive Cline pseudo-tool '{pt_match.group(0)}'."
+                        f"{filename}: Contains shell-style template placeholders {found_vars[:5]}. Use plain English or <angle_bracket> references."
                     )
 
-        if max_words is not None and int(max_words) > 0:
-            word_count = len(content.split())
-            if word_count > int(max_words):
+            if forbid_mermaid_diagrams and (
+                MERMAID_BLOCK_REGEX.search(content)
+                or re.search(r"\bsequenceDiagram\b", content)
+            ):
                 violations.append(
-                    f"{filename}: Word count ({word_count}) exceeds max_words ({int(max_words)})."
+                    f"{filename}: Contains non-executable Mermaid/sequenceDiagram block."
                 )
+
+            if forbid_interactive_pseudotools:
+                for pt_pat in INTERACTIVE_PSEUDOTOOL_PATTERNS:
+                    pt_match = re.search(pt_pat, content, re.IGNORECASE)
+                    if pt_match:
+                        violations.append(
+                            f"{filename}: Contains interactive Cline pseudo-tool '{pt_match.group(0)}'."
+                        )
+
+            if max_words is not None and int(max_words) > 0:
+                word_count = len(content.split())
+                effective_max_words = int(max_words)
+                if seed_candidate and filename in seed_candidate:
+                    effective_max_words = max(
+                        effective_max_words,
+                        int(len(seed_candidate[filename].split()) * 1.15),
+                    )
+                if word_count > effective_max_words:
+                    violations.append(
+                        f"{filename}: Word count ({word_count}) exceeds max_words ({effective_max_words})."
+                    )
 
     return (len(violations) == 0, violations)
 
