@@ -655,6 +655,70 @@ def main(argv: Optional[List[str]] = None) -> int:
             "baseline_v3_recorded",
         )
 
+    # 1E. Re-evaluate promoted GEPA candidates with clean_seed hygiene + v3 fixes
+    promoted_rechecks = [
+        (
+            "r1_gepa_gen3_gemini-2_5-flash_w450_s42",
+            "gemini-2.5-flash",
+            "450",
+        ),
+        (
+            "r1_gepa_gen3_gemini-2_5-flash-lite_w550_s202",
+            "gemini-2.5-flash-lite",
+            "550",
+        ),
+    ]
+    for src_exp_id, model_name, max_w_label in promoted_rechecks:
+      src_dir = out_dir / "candidates" / src_exp_id
+      if not src_dir.exists():
+        continue
+      recheck_exp_id = f"{src_exp_id}_v3_hygiene"
+      if recheck_exp_id in completed_exp_ids:
+        continue
+      hygienic_cand: Dict[str, str] = {}
+      recheck_dir = out_dir / "candidates" / recheck_exp_id
+      recheck_dir.mkdir(parents=True, exist_ok=True)
+      for name in CORE_RUNBOOKS:
+        p = src_dir / name
+        raw_txt = p.read_text(encoding="utf-8") if p.exists() else clean_seed[name]
+        cleaned_txt = strip_runbook_scaffolding(
+            raw_txt, normalize_template_vars=True
+        )
+        hygienic_cand[name] = cleaned_txt
+        (recheck_dir / name).write_text(cleaned_txt, encoding="utf-8")
+
+      print(f"[Wave 1C] Running {recheck_exp_id}...", flush=True)
+      res_recheck = evaluate_candidate_with_harbor_parity(
+          candidate=hygienic_cand,
+          cases=gen3_cases,
+          task_lm=model_name,
+          budget_ledger=budget_ledger,
+      )
+      traces_recheck = res_recheck.pop("traces", [])
+      if res_recheck["mean_harbor_reward"] > summary_state["best_gen3_harbor_reward"]:
+        summary_state["best_gen3_harbor_reward"] = res_recheck["mean_harbor_reward"]
+        summary_state["best_runbooks_dir"] = str(recheck_dir)
+      _record_exp(
+          {
+              "exp_id": recheck_exp_id,
+              "wave": "Wave 2/3 (GEPA+Harbor r1 + v3 Hygiene)",
+              "dataset": "gen3_10",
+              "max_words": max_w_label,
+              "status": "PROMOTED",
+              **res_recheck,
+          },
+          traces_recheck,
+      )
+      completed_exp_ids.add(recheck_exp_id)
+      log_decision(
+          "promotion",
+          recheck_exp_id,
+          f"Re-evaluated promoted GEPA candidate {src_exp_id} with strip_runbook_scaffolding on unmutated files and v3 case resolution",
+          "Combine GEPA-evolved runbook instructions with clean_seed hygiene on untouched runbooks and Gen 3 CMDB case resolution",
+          f"words={res_recheck['total_words']}, gepa_fitness={res_recheck['mean_gepa_fitness']:.4f}, harbor_reward={res_recheck['mean_harbor_reward']:.4f}",
+          "promoted_v3_hygiene",
+      )
+
     # =========================================================================
     # WAVE 2 & 3: Continuous Constrained GEPA Sweeps + Harbor Parity Audits
     # =========================================================================
