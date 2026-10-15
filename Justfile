@@ -71,7 +71,8 @@ default:
     @printf "  \033[1;32mjust gen5-noise [k] [task_lm]\033[0m          \033[2mMeasurement gate 1: K-run seed noise floor on validation\033[0m\n"
     @printf "  \033[1;32mjust gen5-gradient [flavor] [endpoint]\033[0m \033[2mMeasurement gate 4: one capability rung on validation\033[0m\n"
     @printf "  \033[1;32mjust harness-approve\033[0m                   \033[2mRe-approve .eval_harness_lock.json after intended changes\033[0m\n"
-    @printf "  \033[1;32mjust harness-verify\033[0m                    \033[2mVerify protected scoring and Gen 5 inputs against the lock\033[0m\n\n"
+    @printf "  \033[1;32mjust harness-verify\033[0m                    \033[2mVerify protected scoring and Gen 5 inputs against the lock\033[0m\n"
+    @printf "  \033[1;32mjust lint-runbooks [dir] [max_words]\033[0m  \033[2mValidate runbooks against the 10 authoring & hygiene rules\033[0m\n\n"
     @printf "\033[1;36m==============================================================================\033[0m\n"
 
 # ------------------------------------------------------------------------------
@@ -432,6 +433,11 @@ harness-approve:
 # Verify every protected path against .eval_harness_lock.json (exit 1 on drift)
 harness-verify:
     @.venv/bin/python scripts/harness_lock.py verify
+
+# Validate SOC runbooks against the 10 context hygiene, word-budget, and anti-memorization rules (Usage: just lint-runbooks [dir] [max_words])
+lint-runbooks DIR="docs/soc_eval_results/dspy_overnight/candidates/arena_grafted_all4_w300" MAX_WORDS="350":
+    @.venv/bin/python -c 'from pathlib import Path; import sys; from agent.gepa_runbook_optimizer import load_forbidden_literals, load_seed_runbooks, validate_runbook_candidate; cand = load_seed_runbooks(Path("{{DIR}}")); fl = load_forbidden_literals(Path("configs/evals/gen5/manifest.json")); ok, v = validate_runbook_candidate(cand, forbidden_literals=fl, forbid_template_vars=True, forbid_mermaid_diagrams=True, forbid_interactive_pseudotools=True, max_words=int("{{MAX_WORDS}}")); print(f"[OK] {len(cand)} runbooks in {{DIR}} passed 10-rule lint (total words: {sum(len(t.split()) for t in cand.values())})") if ok else (print("\n".join(v), file=sys.stderr), sys.exit(1))'
+
 
 
 

@@ -248,6 +248,16 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("harness_lock.py approve", content)
         self.assertIn("harness_lock.py verify", content)
 
+    def test_justfile_contains_lint_runbooks_recipe(self):
+        """lint-runbooks recipe exists, appears in the help menu, and enforces the 10-rule validator."""
+        content = (ROOT_DIR / "Justfile").read_text(encoding="utf-8")
+        self.assertIn("\nlint-runbooks ", content, "Recipe 'lint-runbooks' not defined in Justfile")
+        self.assertIn("just lint-runbooks", content, "Help menu missing 'just lint-runbooks'")
+        self.assertIn("validate_runbook_candidate", content)
+        self.assertIn("forbid_template_vars=True", content)
+        self.assertIn("forbid_mermaid_diagrams=True", content)
+        self.assertIn("forbid_interactive_pseudotools=True", content)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -481,6 +481,70 @@ The mechanism-by-mechanism version, with a prioritized gap list, is in `docs/hil
 
 ---
 
+## Closing the Campaign 5 transfer gap: DSPy context hygiene and the ten rules for agentic runbooks
+
+On 2026-10-15, I implemented those missing structural pruning and cost-aware acceptance mechanisms on branch `dspy__context-engineering` (PR #14, commit `8b701a1`), drawing on `WordLimitProposer` and `BalancedBootstrapFinetune` from Chapter 6 and structural antipattern validation from Chapter 11 of *Context Engineering with DSPy*. I then ran a continuous 9-hour overnight optimization campaign (29 experiments, \$8.9843 total spend under a \$20.00 hard `BudgetLedger` cap) across the 10-case Gen 3 interactive suite (`gen3_10`) and the 20-case Gen 5 family-instanced validation suite (`gen5_val_20`).
+
+### Why the Campaign 5 runbooks failed in the container sandbox
+
+Inspecting the raw upstream files in `third_party/ai-runbooks/.clinerules/run_books/` alongside the earlier GEPA reflection prompts exposed three concrete sources of context pollution:
+
+1. **Mermaid `sequenceDiagram` blocks (`~35%` of every file).** Each upstream runbook ends with a 50-to-65-line ```` ```{mermaid} sequenceDiagram ``` ```` block written for human documentation rendering. Inside an agent system prompt, those diagrams burn 250 to 350 tokens per runbook and introduce notional participant names (`Actor`, `SIEM`, `CTI`, `EDR`, `SOAR`) that do not match the worker's five epistemic tools.
+2. **Interactive Cline IDE pseudo-tools.** Because the upstream runbooks were originally written for interactive Cline IDE sessions, they instruct the model to call `ask_followup_question` when parameters are missing, `write_to_file` (`generate_report_file.md`) to save reports, and `attempt_completion` to finish. None of those tools exist in the headless SOC sandbox.
+3. **Shell-style `${VAR_NAME}` placeholders.** My earlier `build_reflection_prompt_template()` told `gemini-2.5-pro` to replace hardcoded literals with `${IOC_VALUE}`, `${ASSET_ROLE}`, and `${IP_ROUTING_TYPE}`. Smaller worker models (`gemini-2.5-flash-lite`, `gemma-4-e4b`) treated `${SRC_IP}` as a literal string and emitted unexpanded tool arguments like `{"ip": "${SRC_IP}"}`.
+
+Stripping those three artifacts in `strip_runbook_scaffolding()` (`agent/hierarchical_soc_agent.py`) immediately cut the four core seed runbooks from `3,648` raw words to `2,376` clean words (`-34.9%`). Pairing that hygiene pass with native `function_call` part bridging in `GemmaAgent.query()`, a `1,500`-character worker observation slice, Gen 3 CMDB default case resolution (`_resolve_target_case`), and negated-substring assertion hygiene (`_apply_report_assertion_hygiene`) lifted the unmodified seed from `0.4361` (Campaign 5 `gepa_evolved_skills`) to `0.9508` on `gen3_10` and `0.9843` on `gen5_val_20` with `gemini-2.5-flash-lite`.
+
+### Breaking score ties with an intrinsic context-debt regularizer
+
+Once the clean seed already scored `0.98+` on validation minibatches, standard GEPA hit a tie-breaking wall: GEPA's internal acceptance test (`new_sum > old_sum`) only keeps a mutated runbook if its minibatch score strictly exceeds the parent's score. A compressed 300-word runbook that tied a 710-word seed at `1.0000` on a minibatch was discarded.
+
+To give GEPA a gradient toward shorter, cleaner instructions without sacrificing accuracy, I added two mechanisms in `agent/gepa_runbook_optimizer.py`:
+
+1. **`WordLimitReflectionLM`.** Wraps `GoogleGenAILM` (`gemini-2.5-pro`) and instructs the teacher to aim for `int(max_words * 0.80)` words so single-pass rewrites land safely below `max_words` without a second compression call.
+2. **`_compute_context_debt_penalty()`.** Deducts `0.008` per runbook component that still exceeds `max_words` or carries structural scaffolding (`_component_has_context_debt`). Whenever GEPA compresses a runbook below `max_words` while matching the seed's `1.0000` raw accuracy, its regularized score increases by `+0.008` (`0.968 -> 0.976`), clearing `new_sum > old_sum`.
+
+### Empirical compression and Harbor 60/20/20 results across 29 experiments
+
+Grafting the promoted `<350`-word GEPA-evolved versions of all four core runbooks into `candidates/arena_grafted_all4_w300` compressed the entire runbook suite by **65.5%** relative to upstream (`-47.0%` relative to the de-scaffolded seed):
+
+| Core runbook | Raw upstream (`third_party/ai-runbooks`) | Clean seed (`strip_runbook_scaffolding`) | Promoted (`arena_grafted_all4_w300`) | Word reduction vs raw |
+| :--- | ---: | ---: | ---: | ---: |
+| `basic_ioc_enrichment.md` | 842 words | 576 words | **313 words** (48 lines) | **-62.8%** |
+| `lateral_movement_hunt_psexec_wmi.md` | 1,069 words | 710 words | **321 words** (48 lines) | **-70.0%** |
+| `malware_triage.md` | 876 words | 561 words | **300 words** (46 lines) | **-65.8%** |
+| `suspicious_login_triage.md` | 861 words | 529 words | **326 words** (49 lines) | **-62.1%** |
+| **Total (4 core runbooks)** | **3,648 words** | **2,376 words** | **1,260 words** | **-65.5%** |
+
+Compressing `lateral_movement_hunt_psexec_wmi.md` eliminated worker reasoning loops on `CASE-GEN5-LATERAL-PSEXEC-05` with `gemini-2.5-flash-lite`, cutting completion tokens on that case from `68,652` (`2m07s`, \$0.0295) down to `6,771` (`21s`, \$0.0048, **-83.6% cost and -83.5% latency**). Across both benchmark suites, the compressed runbooks matched or beat the 2,376-word seed with zero ungrounded zero-tool guesses:
+
+| Candidate / experiment | Dataset | Task model | Total words | GEPA fitness | Harbor 60/20/20 | Zero-tool | Safety violations |
+| :--- | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
+| `r1_gepa_gen5_gemini-2_5-flash_w350_s101` | `gen5_val_20` | `gemini-2.5-flash` | 2,119 | **0.9898** | **0.9898** | 0 | 0 |
+| `w5_arena_grafted_all4_w300_gen5_val_20_gemini-2_5-flash-lite` | `gen5_val_20` | `gemini-2.5-flash-lite` | **1,260** | **0.9869** | **0.9869** | 0 | 0 |
+| `w5_arena_grafted_all4_w300_gen5_val_20_gemini-2_5-flash` | `gen5_val_20` | `gemini-2.5-flash` | **1,260** | **0.9865** | **0.9865** | 0 | 0 |
+| `r1_gepa_gen5_gemini-2_5-flash-lite_w550_s202` | `gen5_val_20` | `gemini-2.5-flash-lite` | 1,988 | 0.9843 | 0.9843 | 0 | 0 |
+| `r1_gepa_gen3_gemini-2_5-flash_w350_s101` | `gen3_10` | `gemini-2.5-flash` | 1,924 | **1.0000** | **0.9801** | 0 | 0 |
+| `w5_arena_grafted_all4_w300_gen3_10_gemini-2_5-flash` | `gen3_10` | `gemini-2.5-flash` | **1,260** | 0.9874 | **0.9745** | 0 | 1 |
+| `r1_gepa_gen3_gemini-2_5-flash-lite_w550_s202_v3_hygiene` | `gen3_10` | `gemini-2.5-flash-lite` | 2,026 | **0.9874** | **0.9745** | 0 | 1 |
+
+### Ten rules for writing agentic SOC runbooks
+
+I distilled the failure modes and validator checks from those 29 experiments into ten rules (codified in `docs/RUNBOOK_AUTHORING_BEST_PRACTICES.md` and enforced via `just lint-runbooks`):
+
+1. **Keep each runbook under 350 words and 50 lines.** Cut textbook background on what an attack is; state only what the agent must query, verify, and decide.
+2. **Use a fixed 6-section Markdown skeleton.** `# <Title>`, `## Objective`, `## Scope`, `## Inputs`, `## Tools`, and `## Workflow Steps` (`Stage A` through `Stage D`) so both the worker and `agent/aqua_diagnostics.py` locate each stage deterministically.
+3. **Order steps into the 4-stage epistemic sequence (`Stage A` to `Stage D`).** Stage A (`lookup_entity` + `list_cases` for asset role, criticality, `CHG-...` windows, and duplicate SOAR cases), Stage B (`get_ip_address_report` / `get_domain_report` for `PUBLIC`, `PRIVATE`, or RFC-5737 routing), Stage C (GTI/VirusTotal reputation), and Stage D (`search_security_events` behavioral corroboration and verdict).
+4. **Write `<angle_bracket>` input slots, never `${VAR_NAME}` shell placeholders.** Enforced by `forbid_template_vars=True` (`TEMPLATE_VAR_REGEX`).
+5. **Omit Mermaid `sequenceDiagram` blocks and ASCII flowcharts.** Enforced by `forbid_mermaid_diagrams=True` (`MERMAID_BLOCK_REGEX`).
+6. **Reference only registered sandbox tools, never IDE pseudo-tools.** Strip `ask_followup_question`, `attempt_completion`, `write_to_file`, and `generate_report_file.md` (`forbid_interactive_pseudotools=True`).
+7. **Never include short-circuit directives.** Ban `"skip all enrichment"` and `"proceed directly to step N"` (`SHORT_CIRCUIT_PATTERNS`); require `epistemic_step_count >= 1`.
+8. **Never hardcode benchmark IPs, hostnames, case IDs, or Gen 5 `forbidden_literals`.** Wrap generic illustrative class examples in `(e.g., ...)`.
+9. **Define mutually exclusive Stage D rules for all four verdicts (`MALICIOUS`, `SUSPICIOUS`, `INCONCLUSIVE`, `BENIGN`).** Never call `isolate_host` or `close_case` on `SUSPICIOUS` or `INCONCLUSIVE`, and avoid negated verdict phrases (`"not a false positive"`, `"not command and control"`) that collide with substring assertions.
+10. **Gate every commit with `just lint-runbooks`.** Run `validate_runbook_candidate()` with `forbid_template_vars=True`, `forbid_mermaid_diagrams=True`, `forbid_interactive_pseudotools=True`, and `max_words=350`.
+
+---
+
 ## What I learned from breaking the optimizer first
 
 Automated prompt and skill evolution works, but only after you treat the optimizer like an untrusted adversary that will exploit every gap in your measurement rig.
