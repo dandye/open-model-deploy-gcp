@@ -545,3 +545,67 @@ def test_cost_staircase_marks_inert_rungs_and_records_telemetry():
   assert bottom.passed_safety is False and bottom.within_tolerance is False
   assert report.to_dict()["rungs"][2]["inert"] is True
 
+
+def test_budget_ledger_enforces_limit_and_persists(tmp_path: Path):
+  from agent.hillclimb_harness import (
+      BudgetExceeded,
+      BudgetLedger,
+      estimate_model_cost_usd,
+      redact,
+  )
+
+  ledger_path = tmp_path / "budget.json"
+  ledger = BudgetLedger(ledger_path, limit_usd=0.01)
+  assert ledger.spent_usd == 0.0
+  assert ledger.remaining_usd == pytest.approx(0.01)
+
+  entry = ledger.record(
+      model="gemini-2.5-flash",
+      prompt_tokens=10_000,
+      completion_tokens=1_000,
+      note="contact with sk-1234567890abcdef12345678",
+  )
+  assert "sk-[REDACTED]" in entry["note"]
+  assert ledger.spent_usd > 0.0
+
+  reloaded = BudgetLedger(ledger_path, limit_usd=0.01)
+  assert reloaded.spent_usd == pytest.approx(ledger.spent_usd)
+
+  reloaded.record(
+      model="gemini-2.5-pro",
+      prompt_tokens=100_000,
+      completion_tokens=10_000,
+      note="push over limit",
+  )
+  with pytest.raises(BudgetExceeded):
+    reloaded.assert_can_spend()
+
+  assert estimate_model_cost_usd("gemma-4-e4b-it", 5000, 1000) == 0.0
+  assert redact("token sk-1234567890abcdef1234") == "token sk-[REDACTED]"
+
+
+def test_filter_balanced_traces_balances_verdict_classes():
+  from agent.hillclimb_harness import filter_balanced_traces
+
+  traces = [
+      {"case_id": f"M-{i}", "expected_verdict": "MALICIOUS", "actual_verdict": "MALICIOUS", "score": 0.90 + 0.01 * i, "inert": False, "zero_tool_hesitation": False, "safety_gate_triggered": False}
+      for i in range(6)
+  ] + [
+      {"case_id": f"B-{i}", "expected_verdict": "BENIGN", "actual_verdict": "BENIGN", "score": 0.85 + 0.01 * i, "inert": False, "zero_tool_hesitation": False, "safety_gate_triggered": False}
+      for i in range(4)
+  ] + [
+      {"case_id": f"S-{i}", "expected_verdict": "SUSPICIOUS", "actual_verdict": "SUSPICIOUS", "score": 0.82 + 0.01 * i, "inert": False, "zero_tool_hesitation": False, "safety_gate_triggered": False}
+      for i in range(2)
+  ] + [
+      {"case_id": "BAD-1", "expected_verdict": "MALICIOUS", "actual_verdict": "BENIGN", "score": 0.99, "inert": False, "zero_tool_hesitation": False, "safety_gate_triggered": False},
+      {"case_id": "BAD-2", "expected_verdict": "MALICIOUS", "actual_verdict": "MALICIOUS", "score": 0.99, "inert": True, "zero_tool_hesitation": False, "safety_gate_triggered": False},
+  ]
+
+  balanced = filter_balanced_traces(traces, min_examples_per_class=2, min_score=0.80)
+  assert len(balanced) == 6
+  counts = {}
+  for t in balanced:
+    counts[t["expected_verdict"]] = counts.get(t["expected_verdict"], 0) + 1
+  assert counts == {"BENIGN": 2, "MALICIOUS": 2, "SUSPICIOUS": 2}
+
+

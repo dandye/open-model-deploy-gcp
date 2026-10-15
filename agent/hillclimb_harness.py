@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
+import threading
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from agent.jev_evaluator import SOC_FAILURE_TAXONOMY
@@ -824,3 +826,232 @@ def run_cost_staircase_walk(
       tolerance=tolerance,
       rungs=rungs,
   )
+
+
+class BudgetExceeded(RuntimeError):
+  """Raised when cumulative optimization or evaluation spend exceeds the hard USD limit."""
+
+
+_SECRET_PATTERNS: Tuple[Tuple[re.Pattern, str], ...] = (
+    (re.compile(r"sk-[A-Za-z0-9_\-]{12,}"), "sk-[REDACTED]"),
+    (re.compile(r"AIza[0-9A-Za-z_\-]{20,}"), "AIza[REDACTED]"),
+    (re.compile(r"ya29\.[0-9A-Za-z_\-.]+"), "ya29.[REDACTED]"),
+    (re.compile(r"(Bearer\s+)[A-Za-z0-9._\-]{16,}", re.IGNORECASE), r"\1[REDACTED]"),
+    (
+        re.compile(
+            r"((?:OPENAI|GEMINI|ANTHROPIC|GOOGLE|VERTEX)_API_KEY\s*=\s*)[^\s\"']+"
+        ),
+        r"\1[REDACTED]",
+    ),
+)
+
+# Per-1M-token USD pricing table for Vertex AI Gemini and self-hosted Gemma tiers.
+DEFAULT_MODEL_PRICING_PER_1M: Dict[str, Tuple[float, float]] = {
+    "gemini-2.5-pro": (1.25, 10.00),
+    "gemini-2.5-flash": (0.30, 2.50),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini-3.5-flash-lite": (0.10, 0.40),
+    "gemini-3.7-flash": (0.30, 2.50),
+    "gemini-3.8-flash": (0.30, 2.50),
+    "gemma-4-31b-it": (0.00, 0.00),
+    "gemma-4-e4b-it": (0.00, 0.00),
+    "gemma-3-4b-it": (0.00, 0.00),
+    "gemma-3-1b-it": (0.00, 0.00),
+}
+
+
+def redact(text: str) -> str:
+  """Strip API keys and bearer tokens from text before writing to logs or ledgers."""
+  if not text:
+    return ""
+  out = str(text)
+  for pat, repl in _SECRET_PATTERNS:
+    out = pat.sub(repl, out)
+  return out
+
+
+def estimate_model_cost_usd(
+    model: str,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    pricing_table: Optional[Mapping[str, Tuple[float, float]]] = None,
+) -> float:
+  """Estimate USD cost for a single call or batch from token counts."""
+  table = pricing_table or DEFAULT_MODEL_PRICING_PER_1M
+  norm_model = (model or "").strip().lower()
+  rates = table.get(norm_model)
+  if rates is None:
+    for key, val in table.items():
+      if key in norm_model:
+        rates = val
+        break
+  if rates is None:
+    rates = (0.30, 2.50)
+  in_rate, out_rate = rates
+  p_tok = max(0, int(prompt_tokens or 0))
+  c_tok = max(0, int(completion_tokens or 0))
+  return (p_tok * in_rate + c_tok * out_rate) / 1_000_000.0
+
+
+class BudgetLedger:
+  """Thread-safe JSON cost ledger ported from Context Engineering with DSPy Chapter 6."""
+
+  def __init__(self, path: Path | str, limit_usd: float = 25.0) -> None:
+    self.path = Path(path)
+    self.limit_usd = float(limit_usd)
+    self._lock = threading.Lock()
+    self._state: Dict[str, Any] = {
+        "limit_usd": self.limit_usd,
+        "spent_usd": 0.0,
+        "entries": [],
+    }
+    if self.path.exists():
+      try:
+        loaded = json.loads(self.path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+          loaded["limit_usd"] = self.limit_usd
+          loaded.setdefault("spent_usd", 0.0)
+          loaded.setdefault("entries", [])
+          self._state = loaded
+      except Exception:
+        pass
+    self._flush()
+
+  def _flush(self) -> None:
+    self.path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = self.path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(self._state, indent=2), encoding="utf-8")
+    tmp.replace(self.path)
+
+  @property
+  def spent_usd(self) -> float:
+    with self._lock:
+      return float(self._state["spent_usd"])
+
+  @property
+  def remaining_usd(self) -> float:
+    with self._lock:
+      return max(0.0, self.limit_usd - float(self._state["spent_usd"]))
+
+  def assert_can_spend(self, reserve_usd: float = 0.05) -> None:
+    with self._lock:
+      spent = float(self._state["spent_usd"])
+      if spent + float(reserve_usd) > self.limit_usd:
+        raise BudgetExceeded(
+            f"Hard budget cap reached: spent=${spent:.4f} + reserve=${reserve_usd:.4f} "
+            f"> limit=${self.limit_usd:.2f}"
+        )
+
+  def record(
+      self,
+      run_key: str = "",
+      delta_usd: Optional[float] = None,
+      meta: Optional[Dict[str, Any]] = None,
+      *,
+      model: Optional[str] = None,
+      prompt_tokens: int = 0,
+      completion_tokens: int = 0,
+      note: str = "",
+  ) -> Dict[str, Any]:
+    if delta_usd is None:
+      delta_usd = estimate_model_cost_usd(
+          model=model or run_key or "gemini-2.5-flash",
+          prompt_tokens=prompt_tokens,
+          completion_tokens=completion_tokens,
+      )
+    effective_key = run_key or note or model or "eval_call"
+    sanitized_meta: Dict[str, Any] = {}
+    if meta:
+      for k, v in meta.items():
+        sanitized_meta[redact(str(k))] = redact(str(v)) if isinstance(v, str) else v
+    if model:
+      sanitized_meta["model"] = redact(str(model))
+    if note:
+      sanitized_meta["note"] = redact(str(note))
+    if prompt_tokens or completion_tokens:
+      sanitized_meta["prompt_tokens"] = int(prompt_tokens)
+      sanitized_meta["completion_tokens"] = int(completion_tokens)
+    with self._lock:
+      self._state["spent_usd"] = round(
+          float(self._state["spent_usd"]) + max(0.0, float(delta_usd)), 6
+      )
+      entry = {
+          "ts": datetime.now(timezone.utc).isoformat(),
+          "run_key": redact(str(effective_key)),
+          "delta_usd": round(float(delta_usd), 6),
+          "cumulative_usd": self._state["spent_usd"],
+          **(sanitized_meta),
+      }
+      self._state["entries"].append(entry)
+      self._flush()
+      return entry
+
+
+def filter_balanced_traces(
+    traces: Sequence[Mapping[str, Any]],
+    min_examples_per_class: int = 1,
+    max_examples_per_class: Optional[int] = None,
+    label_key: str = "expected_verdict",
+    actual_key: str = "actual_verdict",
+    min_score: float = 0.80,
+    require_exact_verdict: bool = True,
+    required_classes: Optional[Sequence[str]] = None,
+) -> List[Dict[str, Any]]:
+  """Filter and class-balance teacher trajectories before student SFT/LoRA distillation.
+
+  Ported from BalancedBootstrapFinetune in Context Engineering with DSPy Chapter 6
+  (optimizer_runtime.py) to prevent single-class collapse when distilling Gemini
+  SOC trajectories into smaller 1B-4B Gemma models.
+  """
+  by_label: Dict[str, List[Dict[str, Any]]] = {}
+  for raw_trace in traces:
+    if not isinstance(raw_trace, Mapping):
+      continue
+    score = float(raw_trace.get("score", 0.0) or 0.0)
+    if score < min_score:
+      continue
+    if raw_trace.get("inert") or raw_trace.get("zero_tool_hesitation"):
+      continue
+    if raw_trace.get("safety_gate_triggered"):
+      continue
+    expected = str(raw_trace.get(label_key, "") or "").strip().upper()
+    actual = str(raw_trace.get(actual_key, "") or "").strip().upper()
+    if not expected:
+      continue
+    if require_exact_verdict and actual != expected:
+      continue
+    by_label.setdefault(expected, []).append(dict(raw_trace))
+
+  target_classes = (
+      [str(c).strip().upper() for c in required_classes]
+      if required_classes is not None
+      else sorted(by_label.keys())
+  )
+  if not target_classes:
+    raise ValueError(
+        "Balanced trace filter found 0 passing teacher traces across all verdict classes."
+    )
+
+  counts = {label: len(by_label.get(label, [])) for label in target_classes}
+  underfilled = {
+      label: cnt for label, cnt in counts.items() if cnt < min_examples_per_class
+  }
+  if underfilled:
+    raise ValueError(
+        f"Balanced trace filter requires at least {min_examples_per_class} traces per class; "
+        f"got {counts} (underfilled: {underfilled})."
+    )
+
+  cap = min(counts.values()) if max_examples_per_class is None else min(
+      min(counts.values()), int(max_examples_per_class)
+  )
+  balanced: List[Dict[str, Any]] = []
+  for label in sorted(target_classes):
+    ranked = sorted(
+        by_label[label],
+        key=lambda t: (float(t.get("score", 0.0) or 0.0), -int(t.get("latency_ms", 0) or 0)),
+        reverse=True,
+    )
+    balanced.extend(ranked[:cap])
+  return balanced
+

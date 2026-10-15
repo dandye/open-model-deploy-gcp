@@ -1067,3 +1067,43 @@ def test_hierarchical_agent_with_runbooks_dict():
         _, kwargs = mock_worker_cls.call_args
         assert kwargs["runbook_name"] == "malware_triage.md"
         assert "Custom EVOLVED Malware Runbook" in kwargs["runbook_content"]
+
+
+def test_strip_runbook_scaffolding_and_system_instruction_hygiene():
+    """Verify strip_runbook_scaffolding removes Mermaid diagrams, Cline pseudo-tools, and ${VAR} syntax."""
+    from agent.hierarchical_soc_agent import (
+        strip_runbook_scaffolding,
+        translate_runbook_to_system_instruction,
+    )
+
+    raw_runbook = (
+        "# Basic IOC Enrichment\n\n"
+        "```{mermaid}\n"
+        "sequenceDiagram\n"
+        "    participant User\n"
+        "    participant Agent\n"
+        "    User->>Agent: Provide ${IOC_VALUE}\n"
+        "```\n\n"
+        "1. Receive `${IOC_VALUE}` and `${ASSET_ROLE}` from the alert.\n"
+        "2. If missing, use `ask_followup_question` to clarify with the user.\n"
+        "3. Query `gti-mcp.get_ip_address_report` and `secops-mcp.lookup_entity`.\n"
+        "4. Follow [generate_report_file.md](./common_steps/generate_report_file.md) and call `attempt_completion`.\n"
+    )
+    cleaned = strip_runbook_scaffolding(raw_runbook)
+    assert "sequenceDiagram" not in cleaned
+    assert "```{mermaid}" not in cleaned
+    assert "ask_followup_question" not in cleaned
+    assert "attempt_completion" not in cleaned
+    assert "generate_report_file.md" not in cleaned
+    assert "${IOC_VALUE}" not in cleaned
+    assert "<ioc_value>" in cleaned
+    assert "<asset_role>" in cleaned
+
+    sys_inst = translate_runbook_to_system_instruction(raw_runbook, "C2_BEACON")
+    assert "sequenceDiagram" not in sys_inst
+    assert "${IOC_VALUE}" not in sys_inst
+    assert "get_ip_address_report" in sys_inst
+    assert "lookup_entity" in sys_inst
+    assert "gti-mcp." not in sys_inst
+    assert "secops-mcp." not in sys_inst
+

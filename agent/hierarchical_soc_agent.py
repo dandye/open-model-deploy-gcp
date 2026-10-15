@@ -337,7 +337,48 @@ def get_generic_worker_instruction(classification: str) -> str:
     )
 
 
-def translate_runbook_to_system_instruction(runbook_content: str, classification: str) -> str:
+_MERMAID_FENCE_RE = re.compile(
+    r"```\{?mermaid\}?[\s\S]*?(?:```|\Z)", re.IGNORECASE
+)
+_TEMPLATE_VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_PSEUDOTOOL_LINE_RE = re.compile(
+    r"^\s*(?:[\*\-]|\d+\.)\s+.*\b(?:ask_followup_question|attempt_completion|write_to_file|common_steps/generate_report_file\.md)\b.*$",
+    re.IGNORECASE,
+)
+
+
+def strip_runbook_scaffolding(
+    runbook_content: str,
+    normalize_template_vars: bool = True,
+) -> str:
+    """Strips non-executable Mermaid diagrams, Cline pseudo-tools, and shell template syntax.
+
+    Prevents tool paralysis on smaller models (gemini-2.5-flash-lite, gemma-3-4b-it,
+    gemma-4-e4b-it) caused by `${IOC_VALUE}` shell placeholders and sequenceDiagram blocks.
+    """
+    if not runbook_content:
+        return ""
+
+    cleaned = _MERMAID_FENCE_RE.sub("", runbook_content)
+    lines: List[str] = []
+    for line in cleaned.splitlines():
+        if _PSEUDOTOOL_LINE_RE.match(line):
+            continue
+        lines.append(line)
+    cleaned = "\n".join(lines)
+
+    if normalize_template_vars:
+        cleaned = _TEMPLATE_VAR_RE.sub(lambda m: f"<{m.group(1).lower()}>", cleaned)
+
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned
+
+
+def translate_runbook_to_system_instruction(
+    runbook_content: str,
+    classification: str,
+    strip_scaffolding: bool = True,
+) -> str:
     """Translates a raw runbook markdown into executable system instructions for the worker agent."""
     if not runbook_content or runbook_content.strip() == "":
         return get_generic_worker_instruction(classification)
@@ -349,6 +390,7 @@ def translate_runbook_to_system_instruction(runbook_content: str, classification
         ("gti-mcp.get_ip_address_report", "get_ip_address_report"),
         ("gti-mcp.get_domain_report", "get_domain_report"),
         ("secops-mcp.lookup_entity", "lookup_entity"),
+        ("secops-mcp.search_security_events", "lookup_entity"),
         ("secops-soar.list_cases", "list_cases"),
         ("gti-mcp: get_file_report", "Available tool: get_file_report"),
         ("gti-mcp: get_ip_address_report", "Available tool: get_ip_address_report"),
@@ -358,6 +400,9 @@ def translate_runbook_to_system_instruction(runbook_content: str, classification
     ]
     for old_syntax, new_syntax in replacements:
         translated = translated.replace(old_syntax, new_syntax)
+
+    if strip_scaffolding:
+        translated = strip_runbook_scaffolding(translated, normalize_template_vars=True)
 
     persona = (
         f"You are the SOC Runbook Worker Agent specializing in {classification} alert triage.\n"

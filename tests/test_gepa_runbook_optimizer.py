@@ -1498,3 +1498,122 @@ def test_cli_handles_integer_keyed_val_subscores_with_zero_noise_runs(tmp_path: 
     assert "CASE-01" in entries[1]["metadata"]["regressed_cases"]
 
 
+def test_word_limit_reflection_lm_and_structural_validation_flags(tmp_path: Path):
+    from agent.gepa_runbook_optimizer import (
+        RunbookGEPAAdapter,
+        WordLimitReflectionLM,
+        validate_runbook_candidate,
+    )
+    from agent.hillclimb_harness import BudgetExceeded, BudgetLedger
+
+    captured_prompts = []
+
+    def fake_base_lm(prompt):
+        captured_prompts.append(prompt)
+        return (
+            "```markdown\n"
+            "# Basic IOC Enrichment\n"
+            "```{mermaid}\nsequenceDiagram\nA->>B: test\n```\n"
+            "1. Query lookup_entity for ${IOC_VALUE}.\n"
+            "2. Call ask_followup_question if needed.\n"
+            "```"
+        )
+
+    wrapped = WordLimitReflectionLM(
+        fake_base_lm,
+        max_words=350,
+        forbid_template_vars=True,
+        forbid_mermaid_diagrams=True,
+        forbid_interactive_pseudotools=True,
+    )
+    out = wrapped("Refine runbook")
+    assert len(captured_prompts) == 1
+    assert "under 350 words" in captured_prompts[0]
+    assert "${" not in out
+    assert "sequenceDiagram" not in out
+    assert "ask_followup_question" not in out
+    assert "<ioc_value>" in out
+
+    dirty_cand = {
+        "basic_ioc_enrichment.md": (
+            "# Title\n"
+            "```{mermaid}\nsequenceDiagram\n```\n"
+            "Check ${IOC_VALUE} and call attempt_completion.\n"
+            + ("word " * 400)
+        )
+    }
+    ok, violations = validate_runbook_candidate(
+        dirty_cand,
+        forbid_template_vars=True,
+        forbid_mermaid_diagrams=True,
+        forbid_interactive_pseudotools=True,
+        max_words=350,
+    )
+    assert ok is False
+    assert any("template placeholder" in v for v in violations)
+    assert any("Mermaid" in v for v in violations)
+    assert any("pseudo-tool" in v for v in violations)
+    assert any("max_words" in v for v in violations)
+
+    # BudgetLedger integration in RunbookGEPAAdapter
+    exhausted_ledger = BudgetLedger(tmp_path / "exhausted.json", limit_usd=0.0001)
+    exhausted_ledger.record(model="gemini-2.5-pro", prompt_tokens=50_000, completion_tokens=10_000)
+    adapter = RunbookGEPAAdapter(task_lm="mock", budget_ledger=exhausted_ledger)
+    with pytest.raises(BudgetExceeded):
+        adapter.evaluate(
+            [{"eval_id": "CASE-01", "prompt": "test"}],
+            {"basic_ioc_enrichment.md": "# Clean"},
+        )
+
+
+def test_overnight_campaign_clean_seed_and_report(tmp_path: Path):
+    from agent.hillclimb_harness import BudgetLedger
+    from scripts.run_overnight_dspy_campaign import (
+        load_clean_seed_runbooks,
+        write_morning_report,
+    )
+
+    clean = load_clean_seed_runbooks()
+    assert set(clean.keys()) == set(CORE_RUNBOOKS)
+    for text in clean.values():
+        assert "sequenceDiagram" not in text
+        assert "${" not in text
+        assert "ask_followup_question" not in text
+        assert "attempt_completion" not in text
+
+    ledger = BudgetLedger(tmp_path / "budget.json", limit_usd=20.0)
+    ledger.record(run_key="exp1", delta_usd=0.15)
+    summary = {
+        "started_at_utc": "2026-10-15T02:30:00Z",
+        "target_hours": 9.0,
+        "elapsed_hours": 0.5,
+        "experiments": [
+            {
+                "exp_id": "w1_clean_seed_gen3",
+                "wave": "Wave 1",
+                "dataset": "gen3_10",
+                "task_lm": "gemini-2.5-flash-lite",
+                "max_words": "clean_seed",
+                "mean_gepa_fitness": 0.88,
+                "mean_harbor_reward": 0.86,
+                "zero_tool_count": 0,
+                "safety_violations": 0,
+                "status": "BASELINE",
+                "verdict_harbor_means": {"MALICIOUS": 0.90, "BENIGN": 0.82},
+            }
+        ],
+        "balanced_trace_count": 4,
+        "best_gen5_harbor_reward": 0.85,
+        "best_gen3_harbor_reward": 0.86,
+        "best_runbooks_dir": str(tmp_path / "best"),
+        "gpu_audit": {"status": "OK", "active_endpoints": 0},
+    }
+    report_path = write_morning_report(tmp_path, summary, ledger)
+    assert report_path.exists()
+    content = report_path.read_text(encoding="utf-8")
+    assert "w1_clean_seed_gen3" in content
+    assert "0.8600" in content
+
+
+
+

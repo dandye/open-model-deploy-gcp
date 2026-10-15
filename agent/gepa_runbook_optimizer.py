@@ -22,15 +22,22 @@ if str(ROOT_DIR) not in sys.path:
 import gepa
 
 try:
-    from agent.hierarchical_soc_agent import HierarchicalSOCTier1Agent
+    from agent.hierarchical_soc_agent import (
+        HierarchicalSOCTier1Agent,
+        strip_runbook_scaffolding,
+    )
     from agent.hillclimb_harness import (
+        BudgetExceeded,
+        BudgetLedger,
         DEFAULT_COST_STAIRCASE_TIERS,
         DEFAULT_PROTECTED_HARNESS_PATHS,
         HarnessIntegrityGuard,
         HarnessTamperError,
         HillclimbLedger,
+        estimate_model_cost_usd,
         estimate_noise_floor,
         evaluate_candidate_acceptance,
+        filter_balanced_traces,
         run_cost_staircase_walk,
         write_noise_floor_json,
     )
@@ -53,15 +60,22 @@ try:
         sanitize_payload,
     )
 except ModuleNotFoundError:
-    from hierarchical_soc_agent import HierarchicalSOCTier1Agent
+    from hierarchical_soc_agent import (
+        HierarchicalSOCTier1Agent,
+        strip_runbook_scaffolding,
+    )
     from hillclimb_harness import (
+        BudgetExceeded,
+        BudgetLedger,
         DEFAULT_COST_STAIRCASE_TIERS,
         DEFAULT_PROTECTED_HARNESS_PATHS,
         HarnessIntegrityGuard,
         HarnessTamperError,
         HillclimbLedger,
+        estimate_model_cost_usd,
         estimate_noise_floor,
         evaluate_candidate_acceptance,
+        filter_balanced_traces,
         run_cost_staircase_walk,
         write_noise_floor_json,
     )
@@ -319,6 +333,109 @@ SHORT_CIRCUIT_PATTERNS: List[str] = [
     r"proceed\s+directly\s+to\s+step\s+\d+",
 ]
 
+TEMPLATE_VAR_REGEX: re.Pattern = re.compile(r"\$\{[A-Za-z_][A-Za-z0-9_]*\}")
+MERMAID_BLOCK_REGEX: re.Pattern = re.compile(
+    r"```\{?mermaid\}?[\s\S]*?(?:```|\Z)", re.IGNORECASE
+)
+INTERACTIVE_PSEUDOTOOL_PATTERNS: Tuple[str, ...] = (
+    r"\bask_followup_question\b",
+    r"\battempt_completion\b",
+    r"\bwrite_to_file\b",
+)
+
+
+class WordLimitReflectionLM:
+    """Wraps a reflection LM to enforce word limits and strip non-executable scaffolding.
+
+    Ported from WordLimitProposer(ProposalFn) in Context Engineering with DSPy Chapter 6
+    (chapter06/gepa.ipynb) and structural antipattern checks in Chapter 11
+    (chapter11/test-agents-md.ipynb).
+    """
+
+    def __init__(
+        self,
+        base_lm: Callable[[Union[str, List[Dict[str, Any]]]], str],
+        max_words: Optional[int] = None,
+        strip_scaffolding: bool = True,
+        normalize_template_vars: bool = True,
+        forbid_template_vars: bool = True,
+        forbid_mermaid_diagrams: bool = True,
+        forbid_interactive_pseudotools: bool = True,
+        budget_ledger: Optional[BudgetLedger] = None,
+        model_name: str = "gemini-2.5-pro",
+    ):
+        self.base_lm = base_lm
+        self.max_words = int(max_words) if max_words is not None and int(max_words) > 0 else None
+        self.strip_scaffolding = bool(
+            strip_scaffolding or forbid_mermaid_diagrams or forbid_interactive_pseudotools
+        )
+        self.normalize_template_vars = bool(normalize_template_vars or forbid_template_vars)
+        self.forbid_template_vars = bool(forbid_template_vars)
+        self.forbid_mermaid_diagrams = bool(forbid_mermaid_diagrams)
+        self.forbid_interactive_pseudotools = bool(forbid_interactive_pseudotools)
+        self.budget_ledger = budget_ledger
+        self.model_name = model_name or getattr(base_lm, "model", "gemini-2.5-pro")
+
+    def _augment_prompt(
+        self, prompt: Union[str, List[Dict[str, Any]]]
+    ) -> Union[str, List[Dict[str, Any]]]:
+        suffix_parts: List[str] = []
+        if self.max_words is not None:
+            suffix_parts.append(
+                f"WORD BUDGET CONSTRAINT: Keep the complete revised runbook concise and under {self.max_words} words."
+            )
+        if self.strip_scaffolding:
+            suffix_parts.append(
+                "STRUCTURAL CONSTRAINT: Do NOT emit Mermaid diagrams (```mermaid or sequenceDiagram) or interactive Cline pseudo-tools (ask_followup_question, attempt_completion, write_to_file)."
+            )
+        if self.normalize_template_vars:
+            suffix_parts.append(
+                "VARIABLE CONSTRAINT: Do NOT emit shell-style ${VAR_NAME} placeholders; refer to entities in plain English or angle-bracket notation (<ioc_value>, <hostname>)."
+            )
+        if not suffix_parts:
+            return prompt
+        suffix = "\n\n" + "\n".join(suffix_parts)
+        if isinstance(prompt, str):
+            return prompt + suffix
+        if isinstance(prompt, list) and prompt:
+            augmented = [dict(item) if isinstance(item, dict) else item for item in prompt]
+            last = augmented[-1]
+            if isinstance(last, dict) and isinstance(last.get("content"), str):
+                last["content"] = last["content"] + suffix
+            return augmented
+        return prompt
+
+    def _clean_response(self, raw_text: str) -> str:
+        if not raw_text:
+            return ""
+        text = str(raw_text)
+        if self.strip_scaffolding:
+            text = strip_runbook_scaffolding(
+                text,
+                normalize_template_vars=self.normalize_template_vars,
+            )
+        return text
+
+    def __call__(self, prompt: Union[str, List[Dict[str, Any]]]) -> str:
+        if self.budget_ledger is not None:
+            self.budget_ledger.assert_can_spend()
+        augmented = self._augment_prompt(prompt)
+        raw_out = self.base_lm(augmented)
+        cleaned_out = self._clean_response(raw_out)
+        if self.budget_ledger is not None:
+            p_str = augmented if isinstance(augmented, str) else json.dumps(augmented)
+            p_tok = int(len(p_str.split()) * 1.3)
+            c_tok = int(len(str(raw_out).split()) * 1.3)
+            cost = estimate_model_cost_usd(
+                self.model_name, prompt_tokens=p_tok, completion_tokens=c_tok
+            )
+            self.budget_ledger.record(
+                run_key=f"reflection:{self.model_name}",
+                delta_usd=cost,
+                meta={"prompt_tokens": p_tok, "completion_tokens": c_tok},
+            )
+        return cleaned_out
+
 
 def load_forbidden_literals(manifest_path: Path) -> List[str]:
     """`manifest.forbidden_literals` from the Gen 5 manifest (spec section 6.5)."""
@@ -342,6 +459,10 @@ def validate_runbook_candidate(
     seed_candidate: Optional[Dict[str, str]] = None,
     max_growth_ratio: float = 1.35,
     forbidden_literals: Optional[Sequence[str]] = None,
+    forbid_template_vars: bool = False,
+    forbid_mermaid_diagrams: bool = False,
+    forbid_interactive_pseudotools: bool = False,
+    max_words: Optional[int] = None,
 ) -> Tuple[bool, List[str]]:
     """Validates a candidate runbook set against anti-memorization and anti-bloat guardrails.
 
@@ -352,6 +473,10 @@ def validate_runbook_candidate(
     4. Hardcoded evaluation case identifiers (e.g. 'CASE-02', 'CASE-GEN3-01').
     5. Runbook length bloat exceeding max_growth_ratio relative to seed_candidate.
     6. Instance literals from the Gen 5 manifest forbidden_literals (memorization).
+    7. (Opt-in) Shell-style ${VAR_NAME} template placeholders (forbid_template_vars).
+    8. (Opt-in) Mermaid sequenceDiagram blocks (forbid_mermaid_diagrams).
+    9. (Opt-in) Interactive Cline pseudo-tools (forbid_interactive_pseudotools).
+    10. (Opt-in) Word count exceeding max_words (WordLimitProposer cap).
 
     Args:
         candidate: Mapping of runbook filenames to markdown content.
@@ -359,6 +484,10 @@ def validate_runbook_candidate(
         seed_candidate: Optional seed runbooks dictionary for bloat ratio checks.
         max_growth_ratio: Maximum allowed character growth ratio vs seed (default: 1.35).
         forbidden_literals: Optional sequence of literal strings to prohibit.
+        forbid_template_vars: Reject runbooks containing ${...} placeholders.
+        forbid_mermaid_diagrams: Reject runbooks containing ```mermaid blocks.
+        forbid_interactive_pseudotools: Reject runbooks containing interactive pseudo-tools.
+        max_words: Optional maximum word count per runbook.
 
     Returns:
         Tuple of (is_valid: bool, violations: List[str]).
@@ -408,6 +537,36 @@ def validate_runbook_candidate(
                     f"{filename}: Candidate growth ratio ({ratio:.2f}x) exceeds max_growth_ratio ({max_growth_ratio:.2f}x)."
                 )
 
+        if forbid_template_vars:
+            found_vars = sorted(set(TEMPLATE_VAR_REGEX.findall(content)))
+            if found_vars:
+                violations.append(
+                    f"{filename}: Contains shell-style template placeholders {found_vars[:5]}. Use plain English or <angle_bracket> references."
+                )
+
+        if forbid_mermaid_diagrams and (
+            MERMAID_BLOCK_REGEX.search(content)
+            or re.search(r"\bsequenceDiagram\b", content)
+        ):
+            violations.append(
+                f"{filename}: Contains non-executable Mermaid/sequenceDiagram block."
+            )
+
+        if forbid_interactive_pseudotools:
+            for pt_pat in INTERACTIVE_PSEUDOTOOL_PATTERNS:
+                pt_match = re.search(pt_pat, content, re.IGNORECASE)
+                if pt_match:
+                    violations.append(
+                        f"{filename}: Contains interactive Cline pseudo-tool '{pt_match.group(0)}'."
+                    )
+
+        if max_words is not None and int(max_words) > 0:
+            word_count = len(content.split())
+            if word_count > int(max_words):
+                violations.append(
+                    f"{filename}: Word count ({word_count}) exceeds max_words ({int(max_words)})."
+                )
+
     return (len(violations) == 0, violations)
 
 
@@ -436,6 +595,11 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         forbidden_literals: Optional[Sequence[str]] = None,
         freeze_passing_runbooks: bool = True,
         frozen_runbooks: Optional[Union[Sequence[str], set]] = None,
+        forbid_template_vars: bool = False,
+        forbid_mermaid_diagrams: bool = False,
+        forbid_interactive_pseudotools: bool = False,
+        max_words: Optional[int] = None,
+        budget_ledger: Optional[BudgetLedger] = None,
     ):
         self.task_lm = task_lm
         resolved_project_id = (
@@ -465,6 +629,11 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         self.freeze_passing_runbooks: bool = bool(freeze_passing_runbooks)
         self.frozen_runbooks: set = set(frozen_runbooks) if frozen_runbooks is not None else set()
         self._frozen_locked: bool = frozen_runbooks is not None
+        self.forbid_template_vars = bool(forbid_template_vars)
+        self.forbid_mermaid_diagrams = bool(forbid_mermaid_diagrams)
+        self.forbid_interactive_pseudotools = bool(forbid_interactive_pseudotools)
+        self.max_words = max_words
+        self.budget_ledger = budget_ledger
         self._eval_cache: Dict[str, Dict[str, Dict[str, Any]]] = {}
         self._eval_cache_by_candidate: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
@@ -525,6 +694,10 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
             seed_candidate=self.seed_candidate,
             max_growth_ratio=self.max_growth_ratio,
             forbidden_literals=self.forbidden_literals,
+            forbid_template_vars=self.forbid_template_vars,
+            forbid_mermaid_diagrams=self.forbid_mermaid_diagrams,
+            forbid_interactive_pseudotools=self.forbid_interactive_pseudotools,
+            max_words=self.max_words,
         )
         if not is_valid:
             rejection_msg = (
@@ -564,6 +737,9 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         for idx, case in enumerate(batch):
             cid = str(case.get("eval_id") or case.get("id") or f"case-{idx}")
             try:
+                if self.budget_ledger is not None:
+                    self.budget_ledger.assert_can_spend()
+
                 env = None
                 if not self.use_live_mcp:
                     env = SocEnvironment.from_eval_case(case)
@@ -582,6 +758,14 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 prompt = case.get("prompt", "")
                 response = agent.query(prompt, max_iterations=self.max_iterations)
                 latency_ms = int(round((time.time() - t_query) * 1000))
+                resp_usage = _response_usage(response)
+                if self.budget_ledger is not None:
+                    self.budget_ledger.record(
+                        model=self.task_lm,
+                        prompt_tokens=int(resp_usage.get("prompt_tokens") or 500),
+                        completion_tokens=int(resp_usage.get("completion_tokens") or 200),
+                        note=f"eval:{cid}",
+                    )
 
                 resp_text = getattr(response, "response", "") or ""
                 agent_traj = getattr(response, "trajectory", []) or []
@@ -728,6 +912,8 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 trace_entry["failure_category"] = diag.failure_category
                 trajectories.append(trace_entry)
 
+            except BudgetExceeded:
+                raise
             except Exception as e:
                 import traceback
                 traceback.print_exc(file=sys.stderr)
@@ -911,11 +1097,16 @@ def build_reflection_prompt_template() -> str:
         "   - Stage C: Threat Intelligence Reputation: Check GTI reputation scores and known malware associations.\n"
         "   - Stage D: Corroboration of Malicious Activity: Correlate telemetry with observed behaviors (e.g. active malware, C2 beaconing vs benign scanning).\n"
         "2. Mandatory Epistemic Investigation (No Short-Circuits): Forbid instructions that tell the analyst to 'skip all enrichment' or 'bypass investigation'. The analyst must always execute telemetry queries to substantiate their findings.\n"
-        "3. Anti-Memorization Rule (Generalization): Strictly DO NOT hardcode specific IP addresses, CIDR blocks, domain names, or hostnames in the runbook. All triage logic must rely on dynamic variables (e.g. ${IOC_VALUE}, ${ASSET_ROLE}, ${IP_ROUTING_TYPE}).\n"
-        "4. Strict Malicious Containment: Maintain unambiguous containment protocols (isolate_host, block_indicator) when high-severity malicious activity is corroborated.\n"
-        "5. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
-        "6. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n"
-        "7. Diagnosis-Guided Surgical Stage Mutation: Modify ONLY the implicated stage indicated in the feedback while preserving all other stages and markdown headings verbatim.\n\n"
+        "3. Anti-Memorization Rule (Generalization): Strictly DO NOT hardcode specific IP addresses, CIDR blocks, domain names, or hostnames in the runbook. Express all triage logic using general variable concepts in plain English or angle-bracket descriptors (e.g. <ioc_value>, <asset_role>, <ip_routing_type>); NEVER emit shell-style dollar-brace template syntax.\n"
+        "4. Strict Verdict & Containment Discipline:\n"
+        "   - MALICIOUS: Execute isolate_host and/or block_indicator ONLY when high-severity malicious activity is corroborated, and confirm the target is the alerted asset (never isolate a peer server or victim controller).\n"
+        "   - SUSPICIOUS: When telemetry shows an unverified anomaly (e.g. impossible travel without MFA compromise or malware), set verdict to SUSPICIOUS, call update_case_comment to escalate, and NEVER call isolate_host, block_indicator, or close_case.\n"
+        "   - INCONCLUSIVE: When an enrichment tool returns 503 / service unavailable, pivot to available local telemetry (lookup_entity), set verdict to INCONCLUSIVE, call update_case_comment, and NEVER call isolate_host, block_indicator, or close_case.\n"
+        "   - BENIGN: When activity is verified as authorized scanning or RFC-5737 documentation space, set verdict to BENIGN and call close_case.\n"
+        "5. Context Hygiene (No Diagrams or Interactive Pseudo-Tools): NEVER include Mermaid diagrams (sequenceDiagram or ```{mermaid}```) and NEVER reference interactive human prompts (ask_followup_question, attempt_completion, write_to_file).\n"
+        "6. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
+        "7. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n"
+        "8. Diagnosis-Guided Surgical Stage Mutation: Modify ONLY the implicated stage indicated in the feedback while preserving all other stages and markdown headings verbatim.\n\n"
         "Provide the complete revised runbook inside ```markdown blocks."
     )
 
@@ -1095,6 +1286,36 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default=True,
         help="Freeze runbooks that have 100% pass rate in the baseline.",
     )
+    parser.add_argument(
+        "--max-words",
+        type=int,
+        default=None,
+        help="Maximum allowed word count per evolved runbook (DSPy Chapter 6 WordLimitReflectionLM constraint).",
+    )
+    parser.add_argument(
+        "--forbid-template-vars",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Reject runbooks containing ${VAR_NAME} template placeholders.",
+    )
+    parser.add_argument(
+        "--forbid-mermaid",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Reject runbooks containing Mermaid sequenceDiagram blocks.",
+    )
+    parser.add_argument(
+        "--forbid-pseudotools",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Reject runbooks containing interactive Cline pseudo-tools (ask_followup_question, attempt_completion, write_to_file).",
+    )
+    parser.add_argument(
+        "--budget-limit-usd",
+        type=float,
+        default=None,
+        help="Hard USD budget ceiling enforced via BudgetLedger across the optimization run.",
+    )
     return parser
 
 
@@ -1126,6 +1347,17 @@ def main(args: Optional[List[str]] = None) -> int:
 
     print(f"Loading seed runbooks from {DEFAULT_RUNBOOKS_DIR}...")
     seed_candidate = load_seed_runbooks()
+    if (
+        parsed_args.forbid_template_vars
+        or parsed_args.forbid_mermaid
+        or parsed_args.forbid_pseudotools
+    ):
+        seed_candidate = {
+            name: strip_runbook_scaffolding(
+                text, normalize_template_vars=parsed_args.forbid_template_vars
+            )
+            for name, text in seed_candidate.items()
+        }
 
     run_id = parsed_args.run_id or gen5_exposure.new_run_id()
     exposure_entries: List[Dict[str, Any]] = []
@@ -1225,6 +1457,13 @@ def main(args: Optional[List[str]] = None) -> int:
 
     jev_evaluator = build_inner_judge(parsed_args)
 
+    budget_ledger: Optional[BudgetLedger] = None
+    if parsed_args.budget_limit_usd is not None:
+        budget_ledger = BudgetLedger(
+            output_dir / "budget_ledger.json",
+            limit_usd=float(parsed_args.budget_limit_usd),
+        )
+
     adapter = RunbookGEPAAdapter(
         task_lm=parsed_args.task_lm,
         project_id=parsed_args.project_id,
@@ -1236,6 +1475,11 @@ def main(args: Optional[List[str]] = None) -> int:
         max_growth_ratio=parsed_args.max_growth_ratio,
         forbidden_literals=forbidden_literals,
         freeze_passing_runbooks=parsed_args.freeze_passing_runbooks,
+        forbid_template_vars=parsed_args.forbid_template_vars,
+        forbid_mermaid_diagrams=parsed_args.forbid_mermaid,
+        forbid_interactive_pseudotools=parsed_args.forbid_pseudotools,
+        max_words=parsed_args.max_words,
+        budget_ledger=budget_ledger,
     )
 
     if parsed_args.dry_run:
@@ -1301,11 +1545,26 @@ def main(args: Optional[List[str]] = None) -> int:
         write_evolution_metadata(output_dir, metadata_only)
         return 0
 
-    reflection_lm = GoogleGenAILM(
+    base_reflection_lm = GoogleGenAILM(
         model=parsed_args.reflection_lm,
         project_id=parsed_args.project_id,
         location=parsed_args.region,
     )
+    if (
+        parsed_args.max_words is not None
+        or parsed_args.forbid_template_vars
+        or parsed_args.forbid_mermaid
+        or parsed_args.forbid_pseudotools
+    ):
+        reflection_lm: Any = WordLimitReflectionLM(
+            base_reflection_lm,
+            max_words=parsed_args.max_words or 450,
+            forbid_template_vars=parsed_args.forbid_template_vars,
+            forbid_mermaid_diagrams=parsed_args.forbid_mermaid,
+            forbid_interactive_pseudotools=parsed_args.forbid_pseudotools,
+        )
+    else:
+        reflection_lm = base_reflection_lm
 
     reflection_prompt_template = build_reflection_prompt_template()
 
@@ -1434,6 +1693,10 @@ def main(args: Optional[List[str]] = None) -> int:
             seed_candidate=seed_candidate,
             max_growth_ratio=parsed_args.max_growth_ratio,
             forbidden_literals=forbidden_literals,
+            forbid_template_vars=parsed_args.forbid_template_vars if index > 0 else False,
+            forbid_mermaid_diagrams=parsed_args.forbid_mermaid if index > 0 else False,
+            forbid_interactive_pseudotools=parsed_args.forbid_pseudotools if index > 0 else False,
+            max_words=parsed_args.max_words if index > 0 else None,
         )
 
         if index == 0:
