@@ -668,6 +668,41 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         self.frozen_runbooks = set(frozen)
         self._frozen_locked = True
 
+    def _component_has_context_debt(self, content: str) -> bool:
+        """Return True if a runbook component still carries structural scaffolding or exceeds max_words."""
+        if not content:
+            return False
+        if self.max_words is not None and int(self.max_words) > 0:
+            if len(content.split()) > int(self.max_words):
+                return True
+        if self.forbid_template_vars and TEMPLATE_VAR_REGEX.search(content):
+            return True
+        if self.forbid_mermaid_diagrams and (
+            MERMAID_BLOCK_REGEX.search(content)
+            or re.search(r"\bsequenceDiagram\b", content)
+        ):
+            return True
+        if self.forbid_interactive_pseudotools and any(
+            re.search(pat, content, re.IGNORECASE)
+            for pat in INTERACTIVE_PSEUDOTOOL_PATTERNS
+        ):
+            return True
+        return False
+
+    def _compute_context_debt_penalty(self, candidate: Dict[str, str]) -> float:
+        """Compute intrinsic context-hygiene deduction (0.008 per un-cleaned/over-budget runbook)."""
+        if not (
+            self.max_words is not None
+            or self.forbid_template_vars
+            or self.forbid_mermaid_diagrams
+            or self.forbid_interactive_pseudotools
+        ):
+            return 0.0
+        debt_count = sum(
+            1 for content in candidate.values() if self._component_has_context_debt(content)
+        )
+        return 0.008 * float(debt_count)
+
     def get_cached_telemetry(
         self,
         candidate: Dict[str, str],
@@ -897,12 +932,15 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     and traj_verif.epistemic_step_count == 0
                     and len(agent_traj) == 0
                 )
+                context_debt_penalty = self._compute_context_debt_penalty(candidate)
                 if inert:
                     fitness = 0.0
                     jev_choice = "INERT"
                 elif zero_tool_hesitation:
                     fitness = 0.0
                     jev_choice = "PREMATURE_TERMINATION_ZERO_TOOLS"
+                elif context_debt_penalty > 0.0:
+                    fitness = max(0.0, fitness - context_debt_penalty)
 
                 outputs.append(resp_text)
                 scores.append(fitness)
@@ -1146,8 +1184,9 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 fallback_pool = underperforming if underperforming else [
                     min(trajectories, key=lambda t: float(t.get("score", 1.0)))
                 ]
+                has_debt = self._component_has_context_debt(candidate.get(comp_name, ""))
                 for ft in fallback_pool[:2]:
-                    if float(ft.get("score", 1.0)) < 0.995:
+                    if float(ft.get("score", 1.0)) < 0.995 or has_debt:
                         fb_rec = sanitize_payload(
                             {
                                 "Inputs": {
@@ -1165,8 +1204,8 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                                     "summary": ft.get("summary", ""),
                                 },
                                 "Feedback": (
-                                    f"Triage operational refinement: score={float(ft.get('score', 0.0)):.2f}. "
-                                    "Refine runbook into a concise <= 3 tool call 4-stage epistemic flow (Stage A identity/CMDB, Stage B network scope, Stage C threat intel, Stage D corroboration/containment) while strictly avoiding prohibited actions."
+                                    f"Triage operational & context-hygiene refinement: score={float(ft.get('score', 0.0)):.2f}. "
+                                    "Strip any non-executable Mermaid diagrams, interactive Cline pseudo-tools, and ${VAR_NAME} placeholders, and refine the runbook into a concise <= 3 tool call 4-stage epistemic flow (Stage A identity/CMDB, Stage B network scope, Stage C threat intel, Stage D corroboration/containment) while strictly avoiding prohibited actions."
                                 ),
                             },
                             forbidden_literals=self.forbidden_literals,

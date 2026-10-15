@@ -182,9 +182,12 @@ def evaluate_candidate_with_harbor_parity(
       k: round(sum(vals) / len(vals), 4) for k, vals in sorted(by_verdict.items()) if vals
   }
 
+  total_words = sum(len(str(text).split()) for text in candidate.values())
+
   return {
       "task_lm": task_lm,
       "case_count": len(cases),
+      "total_words": total_words,
       "mean_gepa_fitness": round(mean_fitness, 4),
       "mean_harbor_reward": round(mean_harbor, 4),
       "mean_loss_penalty": round(mean_loss_penalty, 4),
@@ -275,8 +278,8 @@ def write_morning_report(
       "",
       "## 1. Experiment Leaderboard (Sorted by Harbor 60/20/20 Reward)",
       "",
-      "| Exp ID | Wave | Dataset | Task Model | Max Words | GEPA Fitness | Harbor 60/20/20 | Zero-Tool | Safety Viol | Status |",
-      "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
+      "| Exp ID | Wave | Dataset | Task Model | Max Words | Total Words | GEPA Fitness | Harbor 60/20/20 | Zero-Tool | Safety Viol | Status |",
+      "| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
   ]
 
   exps = sorted(
@@ -284,6 +287,7 @@ def write_morning_report(
       key=lambda x: (
           str(x.get("dataset", "")),
           float(x.get("mean_harbor_reward", 0.0)),
+          -int(x.get("total_words", 1845)),
       ),
       reverse=True,
   )
@@ -291,6 +295,7 @@ def write_morning_report(
     lines.append(
         f"| `{exp.get('exp_id')}` | {exp.get('wave')} | `{exp.get('dataset')}` | "
         f"`{exp.get('task_lm')}` | `{exp.get('max_words', 'none')}` | "
+        f"`{exp.get('total_words', 1845)}` | "
         f"`{exp.get('mean_gepa_fitness', 0.0):.4f}` | "
         f"`{exp.get('mean_harbor_reward', 0.0):.4f}` | "
         f"`{exp.get('zero_tool_count', 0)}` | "
@@ -695,12 +700,21 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         if (
             ds_mode == "gen5"
-            and parity_res["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]
             and parity_res["zero_tool_count"] == 0
             and parity_res["safety_violations"] == 0
+            and (
+                parity_res["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]
+                or (
+                    wrote_evolved
+                    and parity_res["mean_harbor_reward"] >= summary_state["best_gen5_harbor_reward"] - 0.0025
+                    and parity_res.get("total_words", 1845) < int(summary_state.get("best_runbooks_total_words", 1845))
+                )
+            )
         ):
-          summary_state["best_gen5_harbor_reward"] = parity_res["mean_harbor_reward"]
+          if parity_res["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]:
+            summary_state["best_gen5_harbor_reward"] = parity_res["mean_harbor_reward"]
           summary_state["best_runbooks_dir"] = str(cand_out_dir if wrote_evolved else clean_seed_dir)
+          summary_state["best_runbooks_total_words"] = int(parity_res.get("total_words", 1845))
           best_dest = out_dir / "best_promoted_runbooks"
           best_dest.mkdir(parents=True, exist_ok=True)
           for name, text in evolved_candidate.items():

@@ -1649,6 +1649,38 @@ def test_adapter_evaluate_gen5_oracle_trajectory_matches_compose_soc_reward():
     assert batch.trajectories[0]["gen5_components"] == expected_scorecard["components"]
 
 
+def test_context_debt_penalty_rewards_compressed_clean_runbooks():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+
+    seed = {
+        name: "# Seed\n```{mermaid}\nsequenceDiagram\n```\nCheck ${IOC_VALUE} and call attempt_completion.\n"
+        + ("word " * 400)
+        for name in CORE_RUNBOOKS
+    }
+    adapter_default = RunbookGEPAAdapter(task_lm="mock", seed_candidate=seed)
+    assert adapter_default._compute_context_debt_penalty(seed) == 0.0
+
+    adapter_constrained = RunbookGEPAAdapter(
+        task_lm="mock",
+        seed_candidate=seed,
+        max_words=350,
+        forbid_template_vars=True,
+        forbid_mermaid_diagrams=True,
+        forbid_interactive_pseudotools=True,
+    )
+    assert adapter_constrained._compute_context_debt_penalty(seed) == pytest.approx(0.032)
+
+    partially_evolved = dict(seed)
+    partially_evolved["basic_ioc_enrichment.md"] = "# Clean Basic IOC\n1. Query lookup_entity."
+    partially_evolved["malware_triage.md"] = "# Clean Malware Triage\n1. Query get_file_report."
+    assert adapter_constrained._compute_context_debt_penalty(partially_evolved) == pytest.approx(0.016)
+    assert (
+        adapter_constrained._compute_context_debt_penalty(seed)
+        - adapter_constrained._compute_context_debt_penalty(partially_evolved)
+    ) == pytest.approx(0.016)
+
+
+
 
 
 
