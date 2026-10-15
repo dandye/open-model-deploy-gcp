@@ -387,6 +387,25 @@ def main(argv: Optional[List[str]] = None) -> int:
       "gpu_audit": check_zero_gpu_endpoints(),
   }
   all_harvested_traces: List[Dict[str, Any]] = []
+  existing_summary_path = out_dir / "campaign_summary.json"
+  if existing_summary_path.exists():
+    try:
+      loaded_summary = json.loads(existing_summary_path.read_text(encoding="utf-8"))
+      if isinstance(loaded_summary, dict) and isinstance(loaded_summary.get("experiments"), list):
+        summary_state.update(loaded_summary)
+    except Exception:
+      pass
+  existing_sft_path = out_dir / "balanced_sft_traces.jsonl"
+  if existing_sft_path.exists():
+    try:
+      for line in existing_sft_path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+          all_harvested_traces.append(json.loads(line))
+    except Exception:
+      pass
+  completed_exp_ids = {
+      str(e.get("exp_id")) for e in summary_state.get("experiments", []) if e.get("exp_id")
+  }
 
   def _record_exp(exp_record: Dict[str, Any], traces: List[Dict[str, Any]]) -> None:
     all_harvested_traces.extend(traces)
@@ -423,73 +442,77 @@ def main(argv: Optional[List[str]] = None) -> int:
 
       # 1A. Gen 3 evaluation
       exp_id_g3 = f"w1_clean_seed_gen3_{model_name.replace('.', '_')}"
-      print(f"[Wave 1] Running {exp_id_g3}...", flush=True)
-      res_g3 = evaluate_candidate_with_harbor_parity(
-          candidate=clean_seed,
-          cases=gen3_cases,
-          task_lm=model_name,
-          budget_ledger=budget_ledger,
-      )
-      traces_g3 = res_g3.pop("traces", [])
-      if res_g3["mean_harbor_reward"] > summary_state["best_gen3_harbor_reward"]:
-        summary_state["best_gen3_harbor_reward"] = res_g3["mean_harbor_reward"]
-        if summary_state["best_runbooks_dir"] is None:
-          summary_state["best_runbooks_dir"] = str(clean_seed_dir)
-      _record_exp(
-          {
-              "exp_id": exp_id_g3,
-              "wave": "Wave 1 (Context Hygiene Seed)",
-              "dataset": "gen3_10",
-              "max_words": "clean_seed",
-              "status": "BASELINE",
-              **res_g3,
-          },
-          traces_g3,
-      )
-      log_decision(
-          "result",
-          exp_id_g3,
-          f"Evaluated de-scaffolded seed runbooks on Gen 3 with {model_name}",
-          "Measure baseline Harbor 60/20/20 reward after stripping Mermaid and ${VAR} scaffolding",
-          f"gepa_fitness={res_g3['mean_gepa_fitness']:.4f}, harbor_reward={res_g3['mean_harbor_reward']:.4f}, zero_tool={res_g3['zero_tool_count']}",
-          "baseline_recorded",
-      )
+      if exp_id_g3 not in completed_exp_ids:
+        print(f"[Wave 1] Running {exp_id_g3}...", flush=True)
+        res_g3 = evaluate_candidate_with_harbor_parity(
+            candidate=clean_seed,
+            cases=gen3_cases,
+            task_lm=model_name,
+            budget_ledger=budget_ledger,
+        )
+        traces_g3 = res_g3.pop("traces", [])
+        if res_g3["mean_harbor_reward"] > summary_state["best_gen3_harbor_reward"]:
+          summary_state["best_gen3_harbor_reward"] = res_g3["mean_harbor_reward"]
+          if summary_state["best_runbooks_dir"] is None:
+            summary_state["best_runbooks_dir"] = str(clean_seed_dir)
+        _record_exp(
+            {
+                "exp_id": exp_id_g3,
+                "wave": "Wave 1 (Context Hygiene Seed)",
+                "dataset": "gen3_10",
+                "max_words": "clean_seed",
+                "status": "BASELINE",
+                **res_g3,
+            },
+            traces_g3,
+        )
+        completed_exp_ids.add(exp_id_g3)
+        log_decision(
+            "result",
+            exp_id_g3,
+            f"Evaluated de-scaffolded seed runbooks on Gen 3 with {model_name}",
+            "Measure baseline Harbor 60/20/20 reward after stripping Mermaid and ${VAR} scaffolding",
+            f"gepa_fitness={res_g3['mean_gepa_fitness']:.4f}, harbor_reward={res_g3['mean_harbor_reward']:.4f}, zero_tool={res_g3['zero_tool_count']}",
+            "baseline_recorded",
+        )
 
       # 1B. Gen 5 validation evaluation
       if time.time() >= deadline_ts:
         break
       budget_ledger.assert_can_spend()
       exp_id_g5 = f"w1_clean_seed_gen5val_{model_name.replace('.', '_')}"
-      print(f"[Wave 1] Running {exp_id_g5}...", flush=True)
-      res_g5 = evaluate_candidate_with_harbor_parity(
-          candidate=clean_seed,
-          cases=gen5_val_cases,
-          task_lm=model_name,
-          budget_ledger=budget_ledger,
-      )
-      traces_g5 = res_g5.pop("traces", [])
-      if res_g5["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]:
-        summary_state["best_gen5_harbor_reward"] = res_g5["mean_harbor_reward"]
-        summary_state["best_runbooks_dir"] = str(clean_seed_dir)
-      _record_exp(
-          {
-              "exp_id": exp_id_g5,
-              "wave": "Wave 1 (Context Hygiene Seed)",
-              "dataset": "gen5_val_20",
-              "max_words": "clean_seed",
-              "status": "BASELINE",
-              **res_g5,
-          },
-          traces_g5,
-      )
-      log_decision(
-          "result",
-          exp_id_g5,
-          f"Evaluated de-scaffolded seed runbooks on Gen 5 validation with {model_name}",
-          "Establish Gen 5 validation baseline with de-scaffolded runbooks",
-          f"gepa_fitness={res_g5['mean_gepa_fitness']:.4f}, harbor_reward={res_g5['mean_harbor_reward']:.4f}, zero_tool={res_g5['zero_tool_count']}",
-          "baseline_recorded",
-      )
+      if exp_id_g5 not in completed_exp_ids:
+        print(f"[Wave 1] Running {exp_id_g5}...", flush=True)
+        res_g5 = evaluate_candidate_with_harbor_parity(
+            candidate=clean_seed,
+            cases=gen5_val_cases,
+            task_lm=model_name,
+            budget_ledger=budget_ledger,
+        )
+        traces_g5 = res_g5.pop("traces", [])
+        if res_g5["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]:
+          summary_state["best_gen5_harbor_reward"] = res_g5["mean_harbor_reward"]
+          summary_state["best_runbooks_dir"] = str(clean_seed_dir)
+        _record_exp(
+            {
+                "exp_id": exp_id_g5,
+                "wave": "Wave 1 (Context Hygiene Seed)",
+                "dataset": "gen5_val_20",
+                "max_words": "clean_seed",
+                "status": "BASELINE",
+                **res_g5,
+            },
+            traces_g5,
+        )
+        completed_exp_ids.add(exp_id_g5)
+        log_decision(
+            "result",
+            exp_id_g5,
+            f"Evaluated de-scaffolded seed runbooks on Gen 5 validation with {model_name}",
+            "Establish Gen 5 validation baseline with de-scaffolded runbooks",
+            f"gepa_fitness={res_g5['mean_gepa_fitness']:.4f}, harbor_reward={res_g5['mean_harbor_reward']:.4f}, zero_tool={res_g5['zero_tool_count']}",
+            "baseline_recorded",
+        )
 
     # =========================================================================
     # WAVE 2 & 3: Continuous Constrained GEPA Sweeps + Harbor Parity Audits
@@ -522,6 +545,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             f"r{round_num}_gepa_{ds_mode}_{task_lm.replace('.', '_')}"
             f"_w{max_words}_s{actual_seed}"
         )
+        if exp_id in completed_exp_ids:
+          continue
         cand_out_dir = out_dir / "candidates" / exp_id
         cand_out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -624,6 +649,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             },
             traces,
         )
+        completed_exp_ids.add(exp_id)
         log_decision(
             "result",
             exp_id,

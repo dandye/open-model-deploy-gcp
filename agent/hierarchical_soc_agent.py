@@ -833,23 +833,24 @@ class SOCSupervisorAgent(GemmaAgent):
             f"- Worker Findings: {json.dumps(worker_report.findings, indent=2)}\n"
             f"- Worker Summary:\n{worker_report.raw_response}\n\n"
             "Supervisor Mission:\n"
-            "1. Synthesize the findings into an authoritative threat assessment (BENIGN, SUSPICIOUS, or MALICIOUS).\n"
+            "1. Synthesize the findings into an authoritative threat assessment (BENIGN, SUSPICIOUS, INCONCLUSIVE, or MALICIOUS).\n"
             "2. Determine containment actions:\n"
-            "   - For MALICIOUS / active threat: recommend isolate_host, block_indicator, update_case_comment. Avoid close_case.\n"
-            "   - For BENIGN / false positive: recommend close_case, update_case_comment. Avoid isolate_host and block_indicator.\n"
-            "   - For SUSPICIOUS / ambiguous: recommend update_case_comment, block_indicator if indicated, escalate to Tier 2.\n"
+            "   - For MALICIOUS / corroborated active threat: recommend isolate_host, block_indicator, update_case_comment. Avoid close_case, and NEVER isolate a peer server or victim controller outside the alerted endpoint.\n"
+            "   - For BENIGN / verified false positive or authorized scanner: recommend close_case, update_case_comment. Avoid isolate_host and block_indicator.\n"
+            "   - For SUSPICIOUS / unverified anomaly: recommend ONLY update_case_comment and escalate to Tier 2. Avoid isolate_host, block_indicator, and close_case.\n"
+            "   - For INCONCLUSIVE / enrichment tool 503 outage: recommend ONLY update_case_comment and escalate to Tier 2. Avoid isolate_host, block_indicator, and close_case.\n"
             "3. Structure your response into the standard four sections followed by the ```soc_decision block:\n"
             "[Context & Enrichment]\n"
             "<entities and enrichment findings>\n\n"
             "[Analysis & Verdict]\n"
-            "<threat assessment and verdict: BENIGN, SUSPICIOUS, or MALICIOUS>\n\n"
+            "<threat assessment and verdict: BENIGN, SUSPICIOUS, INCONCLUSIVE, or MALICIOUS>\n\n"
             "[Action & Escalation]\n"
             "<containment decisions and mitigation plan>\n\n"
             "[SOAR Documentation]\n"
             "<markdown case log comment>\n\n"
             "```soc_decision\n"
             "{\n"
-            '  "verdict": "<BENIGN|SUSPICIOUS|MALICIOUS>",\n'
+            '  "verdict": "<BENIGN|SUSPICIOUS|INCONCLUSIVE|MALICIOUS>",\n'
             '  "recommended_actions": ["<action1>", ...],\n'
             '  "target_entity": "<primary entity>",\n'
             '  "rationale": "<summary explanation>"\n'

@@ -370,11 +370,23 @@ class GemmaAgent:
                 )
             chat = client.chats.create(model=target_managed_model, config=config)
             res = chat.send_message(prompt)
+            text_out = res.text or ""
+            try:
+                for cand in getattr(res, "candidates", None) or []:
+                    content = getattr(cand, "content", None)
+                    for part in getattr(content, "parts", None) or []:
+                        fc = getattr(part, "function_call", None)
+                        if fc is not None and getattr(fc, "name", None):
+                            fc_args = dict(getattr(fc, "args", None) or {})
+                            action_line = f'Action: {json.dumps({"name": fc.name, "arguments": fc_args})}'
+                            text_out = f"{text_out}\n{action_line}".strip() if text_out else action_line
+            except Exception:
+                pass
             prompt_cnt = getattr(res.usage_metadata, "prompt_token_count", int(len(prompt.split()) * 1.3))
-            comp_cnt = getattr(res.usage_metadata, "candidates_token_count", int(len((res.text or "").split()) * 1.3))
+            comp_cnt = getattr(res.usage_metadata, "candidates_token_count", int(len(text_out.split()) * 1.3))
             total_cnt = getattr(res.usage_metadata, "total_token_count", prompt_cnt + comp_cnt)
             return {
-                "response": res.text or "",
+                "response": text_out,
                 "backend": f"Vertex AI Model Garden / MaaS ({target_managed_model})",
                 "model": target_managed_model,
                 "region": target_region,
