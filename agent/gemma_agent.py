@@ -349,6 +349,7 @@ class GemmaAgent:
             "gemini-3.7" in target_managed_model.lower()
             or "gemini-3.5" in target_managed_model.lower()
             or "gemini-3.1" in target_managed_model.lower()
+            or "gemini-3-" in target_managed_model.lower()
             or "gemma-4" in target_managed_model.lower()
         ) and target_region == "us-central1":
             target_region = "global"
@@ -356,7 +357,12 @@ class GemmaAgent:
         try:
             from google import genai
             from google.genai import types
-            client = genai.Client(vertexai=True, project=self.project_id, location=target_region)
+            client = genai.Client(
+                vertexai=True,
+                project=self.project_id,
+                location=target_region,
+                http_options=types.HttpOptions(timeout=90000),
+            )
             if max_tokens is not None:
                 config = types.GenerateContentConfig(
                     temperature=temperature,
@@ -368,8 +374,22 @@ class GemmaAgent:
                     temperature=temperature,
                     system_instruction=self.system_instruction,
                 )
-            chat = client.chats.create(model=target_managed_model, config=config)
-            res = chat.send_message(prompt)
+            res = None
+            last_err = None
+            for attempt in range(5):
+                try:
+                    chat = client.chats.create(model=target_managed_model, config=config)
+                    res = chat.send_message(prompt)
+                    break
+                except Exception as call_err:
+                    last_err = call_err
+                    err_str = str(call_err)
+                    if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "503" in err_str) and attempt < 4:
+                        time.sleep((2 ** attempt) * 3)
+                        continue
+                    raise
+            if res is None and last_err is not None:
+                raise last_err
             text_out = res.text or ""
             try:
                 for cand in getattr(res, "candidates", None) or []:
@@ -382,9 +402,18 @@ class GemmaAgent:
                             text_out = f"{text_out}\n{action_line}".strip() if text_out else action_line
             except Exception:
                 pass
-            prompt_cnt = getattr(res.usage_metadata, "prompt_token_count", int(len(prompt.split()) * 1.3))
-            comp_cnt = getattr(res.usage_metadata, "candidates_token_count", int(len(text_out.split()) * 1.3))
-            total_cnt = getattr(res.usage_metadata, "total_token_count", prompt_cnt + comp_cnt)
+            prompt_cnt = int(
+                getattr(res.usage_metadata, "prompt_token_count", None)
+                or int(len(prompt.split()) * 1.3)
+            )
+            comp_cnt = int(
+                getattr(res.usage_metadata, "candidates_token_count", None)
+                or int(len(text_out.split()) * 1.3)
+            )
+            total_cnt = int(
+                getattr(res.usage_metadata, "total_token_count", None)
+                or (prompt_cnt + comp_cnt)
+            )
             return {
                 "response": text_out,
                 "backend": f"Vertex AI Model Garden / MaaS ({target_managed_model})",

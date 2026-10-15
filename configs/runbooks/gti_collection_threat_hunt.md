@@ -10,7 +10,7 @@ Covers fleet-wide CTI collection sweeps (GTI reports, C2 domains, and MITRE ATT&
 
 ## Inputs
 
-*   `<collection_id>`: Target GTI collection or report ID.
+*   `<collection_id>`: Target GTI collection, report ID, or seed C2 domain.
 *   `<time_frame_hours>`: SIEM lookback in hours (default `72`; widen to `168` on zero hits).
 *   `<target_scope_query>`: Optional UDM host-group filter.
 
@@ -22,25 +22,22 @@ Covers fleet-wide CTI collection sweeps (GTI reports, C2 domains, and MITRE ATT&
 
 ## Workflow Steps
 
-### Stage A: CTI Collection & Second-Hop Indicator Expansion
+### Stage A: CTI Collection & Multi-Horizon SIEM Sweep (`72h` to `168h`)
 
-1.  Query `gti-mcp.get_collection_report` and `gti-mcp.get_entities_related_to_a_collection` on `<collection_id>` across `domains`, `files`, `ip_addresses`, and `attack_techniques`.
-2.  For C2 domains, query `gti-mcp.get_entities_related_to_a_domain` (`relationship_name="communicating_files"`) to collect second-hop payload hashes.
+1.  Call `get_collection_report` and `get_entities_related_to_a_collection` on `<collection_id>` (`relationship_name="all"`) to extract domains, file hashes, IPs, and TTPs (or `get_domain_report` and `get_entities_related_to_a_domain` for a seed domain).
+2.  Call `get_ioc_matches` (`hours_back=72`) and `search_security_events` (`hours_back=72`) for extracted indicators.
+3.  If `72` hours returns zero matches, widen `hours_back` to `168` hours (`7` days) and run `get_ioc_matches` (`hours_back=168`) and `search_security_events` (`hours_back=168`) across DNS, network, `PROCESS_LAUNCH`, and `PROCESS_MODULE_LOAD`.
 
-### Stage B: Multi-Horizon SIEM Sweep (`72h` to `168h`)
+### Stage B: Second-Hop Domain Pivot, LOLBin Filtering, & Case Correlation
 
-3.  Query `secops-mcp.get_ioc_matches` and `secops-mcp.search_security_events` for extracted domains, IPs, and hashes over `<time_frame_hours>` (`72` hours).
-4.  If `72` hours returns zero events, widen `hours_back` to `168` hours (`7` days) and search `PROCESS_MODULE_LOAD` and `PROCESS_LAUNCH` events for communicating file hashes.
+4.  For matched C2 domains, call `get_entities_related_to_a_domain` (`relationship_name="communicating_files"`) to collect second-hop payload hashes and search `PROCESS_MODULE_LOAD` over `168` hours.
+5.  Call `get_file_report` on matched hashes to separate malicious payloads from signed OS LOLBins (`rundll32.exe`, `wscript.exe`) or benign web files.
+6.  On matched hosts (`<matched_hostname>`), call `lookup_entity` and `list_cases` to verify parent-child lineage, `CHG-...` records, and unalerted cases.
 
-### Stage C: LOLBin Filtering, Patient-Zero Lineage, & Case Correlation
-
-5.  Query `gti-mcp.get_file_report` on matched hashes to separate malicious payloads from signed OS LOLBins (e.g., `rundll32.exe`, `wscript.exe`) or benign web files.
-6.  On matched hosts (`<matched_hostname>`), inspect parent-child lineage (`wscript.exe` spawning `rundll32.exe` DLL load), call `secops-mcp.lookup_entity`, and query `secops-soar.list_cases` for related or unalerted cases.
-
-### Stage D: Hunt Verdict, Containment, & Detection-Gap Handoff
+### Stage C: Hunt Verdict, Containment, & Detection-Gap Handoff
 
 7.  Apply a verdict:
     *   **MALICIOUS:** Campaign C2 or payload execution confirmed on `<matched_hostname>`. Call `isolate_host` on `<matched_hostname>`, `block_indicator` on verified C2 domains, IPs, and payload hashes (never block signed OS LOLBins), and `update_case_comment` documenting Patient Zero and detection gaps.
     *   **SUSPICIOUS:** Unconfirmed LOLBin/TTP outlier or critical-asset activity where isolation is prohibited. Call `update_case_comment` with YARA-L 2.0 (`YL2`) detection criteria. Never call `isolate_host` or `close_case`.
-    *   **INCONCLUSIVE:** Tool outage. Pivot to local telemetry, set `INCONCLUSIVE`, and call `update_case_comment`.
-    *   **BENIGN:** Zero malicious hits across `72h` and `168h`, or authorized activity. Call `update_case_comment` and `close_case`.
+    *   **INCONCLUSIVE:** Tool outage (`HTTP 503`). Set `INCONCLUSIVE` and call `update_case_comment`.
+    *   **BENIGN:** Zero malicious hits across `72h` and `168h`, or authorized `CHG-...` maintenance. Call `update_case_comment` and `close_case`.

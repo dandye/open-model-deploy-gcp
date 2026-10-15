@@ -68,6 +68,7 @@ CLASSIFICATION_RUNBOOK_MAP: Dict[str, str] = {
     "PHISHING_DOMAIN": "basic_ioc_enrichment.md",
     "SUSPICIOUS_LOGIN": "suspicious_login_triage.md",
     "LATERAL_MOVEMENT": "lateral_movement_hunt_psexec_wmi.md",
+    "THREAT_HUNT": "gti_collection_threat_hunt.md",
 }
 
 DEFAULT_FALLBACK_RUNBOOK: str = "basic_ioc_enrichment.md"
@@ -302,6 +303,10 @@ def load_runbook(
         if custom_path.exists():
             return custom_path.read_text(encoding="utf-8")
 
+    local_configs_path = ROOT_DIR / "configs" / "runbooks" / runbook_name
+    if local_configs_path.exists():
+        return local_configs_path.read_text(encoding="utf-8")
+
     fallback_path = DEFAULT_RUNBOOKS_DIR / runbook_name
     if fallback_path.exists():
         return fallback_path.read_text(encoding="utf-8")
@@ -385,22 +390,36 @@ def translate_runbook_to_system_instruction(
 
     # Normalize tool identifiers from third-party runbook syntax to local tool function names
     translated = runbook_content
-    replacements = [
-        ("gti-mcp.get_file_report", "get_file_report"),
-        ("gti-mcp.get_ip_address_report", "get_ip_address_report"),
-        ("gti-mcp.get_domain_report", "get_domain_report"),
-        ("secops-mcp.lookup_entity", "lookup_entity"),
-        ("secops-mcp.search_security_events", "lookup_entity"),
-        ("search_security_events", "lookup_entity"),
-        ("secops-soar.list_cases", "list_cases"),
-        ("common_steps/find_relevant_soar_case.md", "list_cases"),
-        ("common_steps/enrich_ioc.md", "get_domain_report / get_ip_address_report / get_file_report and lookup_entity"),
-        ("gti-mcp: get_file_report", "Available tool: get_file_report"),
-        ("gti-mcp: get_ip_address_report", "Available tool: get_ip_address_report"),
-        ("gti-mcp: get_domain_report", "Available tool: get_domain_report"),
-        ("secops-mcp: lookup_entity", "Available tool: lookup_entity"),
-        ("secops-soar: list_cases", "Available tool: list_cases"),
-    ]
+    if classification == "THREAT_HUNT":
+        replacements = [
+            ("gti-mcp.get_collection_report", "get_collection_report"),
+            ("gti-mcp.get_entities_related_to_a_collection", "get_entities_related_to_a_collection"),
+            ("gti-mcp.get_entities_related_to_a_domain", "get_entities_related_to_a_domain"),
+            ("gti-mcp.get_file_report", "get_file_report"),
+            ("gti-mcp.get_ip_address_report", "get_ip_address_report"),
+            ("gti-mcp.get_domain_report", "get_domain_report"),
+            ("secops-mcp.get_ioc_matches", "get_ioc_matches"),
+            ("secops-mcp.search_security_events", "search_security_events"),
+            ("secops-mcp.lookup_entity", "lookup_entity"),
+            ("secops-soar.list_cases", "list_cases"),
+        ]
+    else:
+        replacements = [
+            ("gti-mcp.get_file_report", "get_file_report"),
+            ("gti-mcp.get_ip_address_report", "get_ip_address_report"),
+            ("gti-mcp.get_domain_report", "get_domain_report"),
+            ("secops-mcp.lookup_entity", "lookup_entity"),
+            ("secops-mcp.search_security_events", "lookup_entity"),
+            ("search_security_events", "lookup_entity"),
+            ("secops-soar.list_cases", "list_cases"),
+            ("common_steps/find_relevant_soar_case.md", "list_cases"),
+            ("common_steps/enrich_ioc.md", "get_domain_report / get_ip_address_report / get_file_report and lookup_entity"),
+            ("gti-mcp: get_file_report", "Available tool: get_file_report"),
+            ("gti-mcp: get_ip_address_report", "Available tool: get_ip_address_report"),
+            ("gti-mcp: get_domain_report", "Available tool: get_domain_report"),
+            ("secops-mcp: lookup_entity", "Available tool: lookup_entity"),
+            ("secops-soar: list_cases", "Available tool: list_cases"),
+        ]
     for old_syntax, new_syntax in replacements:
         translated = translated.replace(old_syntax, new_syntax)
 
@@ -449,12 +468,29 @@ def extract_worker_report(
                         raw_entities = [raw_entities]
                     findings = data.get("findings") if isinstance(data.get("findings"), dict) else {}
                     evidence = data.get("evidence") if isinstance(data.get("evidence"), list) else []
+                    ent_list = [str(e) for e in raw_entities]
+                    ev_list = [str(ev) for ev in evidence]
+                    if classification == "THREAT_HUNT":
+                        for step in trajectory:
+                            tool = str(step.get("tool") or "")
+                            if not tool:
+                                continue
+                            s_args = step.get("args") or {}
+                            s_obs = str(step.get("observation") or "")
+                            call_repr = f"{tool}({json.dumps(s_args, sort_keys=True)})"
+                            findings.setdefault(call_repr, s_obs[:1500])
+                            ev_entry = f"{tool}: {s_obs[:600]}"
+                            if ev_entry not in ev_list:
+                                ev_list.append(ev_entry)
+                            for case_m in re.findall(r"\bCASE-[A-Z0-9]+(?:-[A-Z0-9]+)*\b", s_obs):
+                                if case_m not in ent_list:
+                                    ent_list.append(case_m)
                     return WorkerInvestigationReport(
                         classification=str(data.get("classification") or classification),
                         runbook_name=runbook_name,
-                        target_entities=[str(e) for e in raw_entities],
+                        target_entities=ent_list,
                         findings=findings,
-                        evidence=[str(ev) for ev in evidence],
+                        evidence=ev_list,
                         risk_level=risk_level,
                         recommended_escalation=data.get("recommended_escalation"),
                         raw_response=response_text,
@@ -491,8 +527,13 @@ def extract_worker_report(
             or "503" in obs
             or "comments" in obs
             or "events" in obs
+            or classification == "THREAT_HUNT"
         ):
             evidence.append(f"{tool}: {obs[:600]}")
+        if classification == "THREAT_HUNT":
+            for case_m in re.findall(r"\bCASE-[A-Z0-9]+(?:-[A-Z0-9]+)*\b", obs):
+                if case_m not in target_entities:
+                    target_entities.append(case_m)
 
     # Risk level determination from response text or observations
     risk_level = "UNKNOWN"
@@ -533,8 +574,13 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         managed_model: Optional[str] = None,
         use_live_mcp: bool = False,
         environment: Optional[Any] = None,
+        strip_scaffolding: bool = True,
     ):
-        system_instruction = translate_runbook_to_system_instruction(runbook_content, classification)
+        system_instruction = translate_runbook_to_system_instruction(
+            runbook_content,
+            classification,
+            strip_scaffolding=strip_scaffolding,
+        )
         super().__init__(
             project_id=project_id,
             region=region,
@@ -573,11 +619,35 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
                 get_file_report,
                 list_cases,
             ]
+            if classification == "THREAT_HUNT" or getattr(environment, "supports_threat_hunt_tools", False):
+                from agent.threat_hunt_environment import (
+                    get_collection_report,
+                    get_entities_related_to_a_collection,
+                    get_entities_related_to_a_domain,
+                    get_ioc_matches,
+                    search_security_events,
+                )
+                worker_tools.extend([
+                    get_collection_report,
+                    get_entities_related_to_a_collection,
+                    get_entities_related_to_a_domain,
+                    get_ioc_matches,
+                    search_security_events,
+                ])
         self.tools = worker_tools
         self.tools_dict = {tool.__name__: tool for tool in worker_tools}
 
     def _is_tool_allowed(self, tool_name: str) -> bool:
-        return tool_name in self.tools_dict and is_epistemic_tool(tool_name)
+        hunt_epistemic_tools = {
+            "get_collection_report",
+            "get_entities_related_to_a_collection",
+            "get_entities_related_to_a_domain",
+            "get_ioc_matches",
+            "search_security_events",
+        }
+        return tool_name in self.tools_dict and (
+            is_epistemic_tool(tool_name) or tool_name in hunt_epistemic_tools
+        )
 
     def _build_tools_description(self) -> str:
         """Lists only the worker's allowed epistemic tools, never pragmatic containment actions."""
@@ -589,23 +659,75 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             descriptions.append(f"- {name}{sig}: {desc}")
         return "\n".join(descriptions)
 
+    def _normalize_mcp_action(
+        self, tool_name: str, tool_args: Dict[str, Any]
+    ) -> Tuple[str, Dict[str, Any]]:
+        """Normalizes MCP server prefixes (e.g. gti-mcp.get_collection_report or gti-mcp(get_collection_report=...))."""
+        clean_name = str(tool_name or "").strip()
+        args = dict(tool_args or {})
+        for prefix in ("gti-mcp.", "secops-mcp.", "secops-soar.", "gti_mcp.", "secops_mcp.", "secops_soar."):
+            if clean_name.lower().startswith(prefix):
+                clean_name = clean_name[len(prefix):]
+                break
+
+        if clean_name.lower() in {"gti-mcp", "secops-mcp", "secops-soar", "gti_mcp", "secops_mcp", "secops_soar"}:
+            for meta_key in ("tool_name", "tool", "function", "method", "name"):
+                if meta_key in args and str(args[meta_key]) in self.tools_dict:
+                    clean_name = str(args.pop(meta_key))
+                    break
+            else:
+                for k in list(args.keys()):
+                    if k in self.tools_dict:
+                        val = args.pop(k)
+                        clean_name = k
+                        primary_param_map = {
+                            "get_collection_report": "collection_id",
+                            "get_entities_related_to_a_collection": "collection_id",
+                            "get_entities_related_to_a_domain": "domain",
+                            "get_domain_report": "domain",
+                            "get_file_report": "hash",
+                            "get_ip_address_report": "ip",
+                            "lookup_entity": "entity_id",
+                            "get_ioc_matches": "hours_back",
+                            "search_security_events": "query",
+                        }
+                        param_name = primary_param_map.get(clean_name, "arg")
+                        if val is not None and str(val).strip() != "" and param_name not in args:
+                            args[param_name] = val
+                        break
+        return clean_name, args
+
     def _parse_action(self, step_output: str = "", text: Optional[str] = None) -> Optional[Tuple[str, Dict[str, Any]]]:
-        """Parses worker tool calls, normalizing markdown bold or backtick wrappers around Action lines."""
-        parsed = super()._parse_action(step_output=step_output, text=text)
-        if parsed is not None:
-            return parsed
+        """Parses worker tool calls, normalizing markdown bold, backticks, escaped quotes, and MCP prefixes."""
         raw_text = text if text is not None else step_output
         if not raw_text or not isinstance(raw_text, str):
             return None
         normalized = re.sub(r"\*{1,2}Action\*{1,2}\s*:", "Action:", raw_text)
         normalized = re.sub(r"Action:\s*\*{1,2}\s*", "Action: ", normalized)
         normalized = re.sub(r"Action:\s*`([^`\n]+)`", r"Action: \1", normalized)
-        if normalized != raw_text:
-            return super()._parse_action(step_output=normalized)
+        normalized = re.sub(
+            r"(Action:\s*)(?:gti-mcp|secops-mcp|secops-soar)\.",
+            r"\1",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = re.sub(
+            r"(Action:\s*)(gti|secops)-(mcp|soar)\b",
+            r"\1\2_\3",
+            normalized,
+            flags=re.IGNORECASE,
+        )
+        normalized = normalized.replace('\\"', "'")
+        parsed = super()._parse_action(step_output=normalized)
+        if parsed is None and normalized != raw_text:
+            parsed = super()._parse_action(step_output=raw_text)
+        if parsed is not None:
+            return self._normalize_mcp_action(parsed[0], parsed[1])
         return None
 
     def _execute_tool_action(self, tool_name: str, args: Dict[str, Any]) -> str:
         """Enforce worker permissions before either simulated or live dispatch."""
+        tool_name, args = self._normalize_mcp_action(tool_name, args)
         if not self._is_tool_allowed(tool_name):
             return json.dumps({
                 "status": "DENIED",
@@ -708,6 +830,24 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
                 )
                 continue
 
+            if self.classification == "THREAT_HUNT" and iteration < max_iterations - 1:
+                has_internal_telemetry = any(
+                    s.get("tool") in {"get_ioc_matches", "search_security_events", "udm_search", "list_cases", "lookup_entity"}
+                    and s.get("execution_status") == "SUCCESS"
+                    and '"status": "NOT_FOUND"' not in str(s.get("observation", ""))
+                    for s in trajectory
+                )
+                has_outage = any("503" in str(s.get("observation", "")) for s in trajectory)
+                if not has_internal_telemetry and not has_outage:
+                    final_answer = step_output.strip()
+                    current_prompt += (
+                        "\nObservation: Threat hunt incomplete. You only queried external GTI metadata and have not "
+                        "yet queried internal SIEM or SOAR telemetry (such as get_ioc_matches, search_security_events, "
+                        "lookup_entity, or list_cases) to check whether internal hosts are affected. "
+                        'Emit a tool call using: Action: <tool_name>(<arg_name>="<value>")\n'
+                    )
+                    continue
+
             # 3. Explicit Final Answer
             if "Final Answer:" in step_output:
                 final_answer = step_output.split("Final Answer:", 1)[1].strip()
@@ -758,6 +898,7 @@ class SOCSupervisorAgent(GemmaAgent):
         runbooks_dir: Optional[Union[Path, str]] = None,
         runbooks_dict: Optional[Dict[str, str]] = None,
         use_runbooks: bool = True,
+        strip_scaffolding: bool = True,
     ):
         super().__init__(
             project_id=project_id,
@@ -773,6 +914,7 @@ class SOCSupervisorAgent(GemmaAgent):
         self.runbooks_dir = Path(runbooks_dir) if runbooks_dir is not None else DEFAULT_RUNBOOKS_DIR
         self.runbooks_dict = runbooks_dict
         self.use_runbooks = use_runbooks
+        self.strip_scaffolding = strip_scaffolding
         self.name = "hierarchical_soc_supervisor"
         self.last_backend: str = "Unknown"
 
@@ -780,6 +922,7 @@ class SOCSupervisorAgent(GemmaAgent):
         """Classifies the alert prompt into a primary operational runbook category.
 
         Categories:
+        - THREAT_HUNT: Proactive GTI collection sweep, campaign hunt, hypothesis-led pivot.
         - MALWARE_HASH: File hash, binary anomaly, ransomware, trojan, suspicious executable.
         - LATERAL_MOVEMENT: PsExec, WMI abuse, SMB session, remote process launch.
         - SUSPICIOUS_LOGIN: Authentication anomaly, impossible travel, failed logins, scanner noise.
@@ -787,6 +930,15 @@ class SOCSupervisorAgent(GemmaAgent):
         - C2_BEACON: Command and control, beaconing, malicious IP traffic, DNS tunneling.
         """
         p_lower = prompt.lower()
+
+        # 0. Proactive Threat Hunt / GTI Collection Sweep indicators
+        hunt_keywords = [
+            "threat hunt", "proactive hunt", "collection_id", "alienvault_",
+            "gti collection", "gti report", "unwrapping ursnif", "campaign sweep",
+            "hypothesis-led", "threat hunting",
+        ]
+        if any(k in p_lower for k in hunt_keywords):
+            return "THREAT_HUNT"
 
         # 1. Lateral Movement indicators
         lateral_keywords = [
@@ -878,7 +1030,7 @@ class SOCSupervisorAgent(GemmaAgent):
         worker_report: WorkerInvestigationReport,
     ) -> str:
         """Ensure synthesized triage report preserves audited artifacts and avoids negated substring collisions."""
-        if "[CMDB Asset Context:" not in prompt:
+        if "[CMDB Asset Context:" not in prompt and worker_report.classification != "THREAT_HUNT":
             return final_text
 
         parts = final_text.split("```soc_decision", 1)
@@ -944,7 +1096,7 @@ class SOCSupervisorAgent(GemmaAgent):
         for m in re.findall(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", prompt):
             if m not in candidate_tokens:
                 candidate_tokens.append(m)
-        for m in re.findall(r"\b(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+(?:com|org|net|io|co|info|biz|xyz|site|exe|msi)\b", prompt):
+        for m in re.findall(r"\b(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+(?:com|org|net|io|co|info|biz|xyz|site|top|in|exe|msi)\b", prompt):
             if m not in candidate_tokens:
                 candidate_tokens.append(m)
         for m in re.findall(r"\b[a-fA-F0-9]{64}\b", prompt):
@@ -982,11 +1134,17 @@ class SOCSupervisorAgent(GemmaAgent):
         """Synthesizes worker investigation findings into final triage report and containment decision."""
         active_case_notes: List[str] = []
         if self.environment is not None and getattr(self.environment, "cases", None):
+            ev_text = " ".join(str(x) for x in (worker_report.evidence or [])) + " " + " ".join(str(x) for x in (worker_report.target_entities or []))
             for cid, cobj in self.environment.cases.items():
-                if cid.lower() in prompt.lower():
+                if cid.lower() in prompt.lower() or (classification == "THREAT_HUNT" and cid.lower() in ev_text.lower()):
                     active_case_notes.extend(getattr(cobj, "comments", []) or [])
         case_notes_section = (
             f"- Active SOAR Case Notes: {active_case_notes}\n" if active_case_notes else ""
+        )
+        hunt_mission_note = (
+            "   - For THREAT_HUNT campaign sweeps: set target_entity to the compromised hostname (e.g., malwaretest-win) or confirmed malicious indicator (e.g., superstarts.top or malicious payload SHA-256). NEVER recommend blocking a signed OS LOLBin hash (verdict BENIGN / Microsoft Windows Operating System such as rundll32.exe) or benign web server HTML hash.\n"
+            if classification == "THREAT_HUNT"
+            else ""
         )
         supervisor_instruction = (
             f"{SOC_TIER1_PERSONA}\n\n"
@@ -1008,6 +1166,7 @@ class SOCSupervisorAgent(GemmaAgent):
             "   - For BENIGN / false positive (including sanctioned SaaS/business connector traffic with BENIGN domain reputation or change calendar records CHG-..., authorized vulnerability scanners, and RFC-5737 documentation IPs): verdict MUST be BENIGN, recommend close_case and update_case_comment (explicitly citing any CHG-... change ID in the rationale and report), and avoid isolate_host and block_indicator.\n"
             "   - For SUSPICIOUS / ambiguous: recommend update_case_comment (and block_indicator ONLY when a revoked-certificate binary or confirmed suspicious file hash is identified; NEVER recommend block_indicator on a BENIGN domain or documentation IP, and avoid isolate_host and close_case).\n"
             "   - For INCONCLUSIVE / upstream tool outage (e.g., HTTP 503 Service Unavailable with unverified intelligence): verdict MUST be INCONCLUSIVE, recommend ONLY update_case_comment (citing HTTP 503), and avoid isolate_host, block_indicator, and close_case.\n"
+            f"{hunt_mission_note}"
             "3. Structure your response into the standard four sections followed by the ```soc_decision block:\n"
             "[Context & Enrichment]\n"
             "<entities and enrichment findings>\n\n"
@@ -1209,14 +1368,24 @@ class SOCSupervisorAgent(GemmaAgent):
         report_hosts = _extract_hosts(list(worker_report.target_entities))
 
         if decision.target_entity:
-            if len(decision_hosts) != 1:
+            if len(decision_hosts) == 1:
+                if report_hosts and not (decision_hosts <= report_hosts):
+                    return None
+                return next(iter(decision_hosts))
+            if worker_report.classification != "THREAT_HUNT":
                 return None
-            if report_hosts and not (decision_hosts <= report_hosts):
-                return None
-            return next(iter(decision_hosts))
 
         if report_hosts:
             return next(iter(report_hosts)) if len(report_hosts) == 1 else None
+
+        if worker_report.classification == "THREAT_HUNT" and self.environment is not None:
+            hunt_blob = f"{worker_report.raw_response} {' '.join(str(e) for e in (worker_report.evidence or []))}"
+            discovered_hosts: Set[str] = set()
+            for alias, hostnames in aliases.items():
+                if re.search(rf"(?<![A-Za-z0-9_.-]){re.escape(alias)}(?![A-Za-z0-9_-])", hunt_blob, re.IGNORECASE):
+                    discovered_hosts.update(hostnames)
+            if len(discovered_hosts) == 1:
+                return next(iter(discovered_hosts))
 
         # Dot and hyphen boundaries prevent treating SRV-WEB.example.com or a
         # substring of another identifier as an explicitly referenced host.
@@ -1246,7 +1415,7 @@ class SOCSupervisorAgent(GemmaAgent):
             "jar", "zip", "rar", "7z", "tmp", "log", "sys", "bin", "elf", "dmg",
             "pkg", "deb", "rpm", "iso", "cab", "scr", "lnk", "doc", "docx",
             "xls", "xlsx", "pdf", "txt", "csv", "json", "xml", "yml", "yaml",
-            "md", "crypt", "akira", "lockbit",
+            "md", "crypt", "akira", "lockbit", "db", "html",
         }
         host_ips: Set[str] = set()
         host_users: Set[str] = set()
@@ -1260,6 +1429,10 @@ class SOCSupervisorAgent(GemmaAgent):
             for dom_k, dom_v in getattr(self.environment, "domains", {}).items():
                 if str(getattr(dom_v, "verdict", "")).upper() in {"BENIGN", "SAFE"} or str(getattr(dom_v, "reputation", "")).upper() in {"BENIGN", "SAFE"}:
                     benign_indicators.add(str(dom_k).lower())
+            if worker_report.classification == "THREAT_HUNT":
+                for h_k, h_v in getattr(self.environment, "hashes", {}).items():
+                    if str(getattr(h_v, "verdict", "")).upper() in {"BENIGN", "SAFE"}:
+                        benign_indicators.add(str(h_k).lower())
 
         def _extract_indicators(items: List[str], exclude_host_ips: bool = False) -> List[str]:
             found: List[str] = []
@@ -1294,7 +1467,7 @@ class SOCSupervisorAgent(GemmaAgent):
         report_inds = _extract_indicators(list(worker_report.target_entities), exclude_host_ips=True)
 
         if len(decision_inds) == 1:
-            if report_inds and decision_inds[0] not in report_inds:
+            if worker_report.classification != "THREAT_HUNT" and report_inds and decision_inds[0] not in report_inds:
                 return None
             return decision_inds[0]
 
@@ -1303,11 +1476,24 @@ class SOCSupervisorAgent(GemmaAgent):
             pool = non_benign if non_benign else report_inds
             if len(pool) == 1:
                 return pool[0]
-            if decision.target_entity and pool:
+            if (decision.target_entity or worker_report.classification == "THREAT_HUNT") and pool:
                 return pool[0]
             return None
 
-        if decision.target_entity:
+        if worker_report.classification == "THREAT_HUNT":
+            hunt_blob = f"{worker_report.raw_response} {' '.join(str(e) for e in (worker_report.evidence or []))}"
+            blob_matches = re.findall(
+                rf"(?<![A-Za-z0-9_.-])({domain_pattern}|{hash_pattern}|{ip_pattern})(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])",
+                hunt_blob,
+            )
+            blob_inds = [
+                ind for ind in _extract_indicators(blob_matches, exclude_host_ips=True)
+                if ind not in benign_indicators
+            ]
+            if blob_inds:
+                return blob_inds[0]
+
+        if decision.target_entity and worker_report.classification != "THREAT_HUNT":
             return None
 
         prompt_matches = re.findall(
@@ -1343,6 +1529,16 @@ class SOCSupervisorAgent(GemmaAgent):
 
         if len(report_cases) == 1:
             return next(iter(report_cases))
+
+        if worker_report is not None and worker_report.classification == "THREAT_HUNT":
+            hunt_blob = f"{worker_report.raw_response} {' '.join(str(e) for e in (worker_report.evidence or []))}"
+            discovered_cases = {
+                m.upper() for m in re.findall(rf"(?<![A-Za-z0-9_.-])({pattern})(?![A-Za-z0-9_-])", hunt_blob, re.IGNORECASE)
+            }
+            if len(discovered_cases) == 1:
+                return next(iter(discovered_cases))
+            if self.environment is not None and getattr(self.environment, "cases", None) and len(self.environment.cases) == 1:
+                return next(iter(self.environment.cases.keys()))
 
         prompt_cases = {
             match.upper() for match in re.findall(
@@ -1418,6 +1614,7 @@ class SOCSupervisorAgent(GemmaAgent):
             managed_model=self.managed_model,
             use_live_mcp=self.use_live_mcp,
             environment=self.environment,
+            strip_scaffolding=self.strip_scaffolding,
         )
         # Inherit supervisor LLM caller so mocks and configurations apply uniformly
         worker._call_llm_step = self._call_llm_step
