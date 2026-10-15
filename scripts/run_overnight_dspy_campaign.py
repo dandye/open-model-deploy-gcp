@@ -514,6 +514,74 @@ def main(argv: Optional[List[str]] = None) -> int:
             "baseline_recorded",
         )
 
+      # 1C. Re-evaluate Clean Seed v2 (with temperature=0.0, 1500-char observation window, and Gen 5 target resolution)
+      exp_id_g3_v2 = f"w1b_clean_seed_v2_gen3_{model_name.replace('.', '_')}"
+      if exp_id_g3_v2 not in completed_exp_ids:
+        print(f"[Wave 1B] Running {exp_id_g3_v2}...", flush=True)
+        res_g3_v2 = evaluate_candidate_with_harbor_parity(
+            candidate=clean_seed,
+            cases=gen3_cases,
+            task_lm=model_name,
+            budget_ledger=budget_ledger,
+        )
+        traces_g3_v2 = res_g3_v2.pop("traces", [])
+        if res_g3_v2["mean_harbor_reward"] > summary_state["best_gen3_harbor_reward"]:
+          summary_state["best_gen3_harbor_reward"] = res_g3_v2["mean_harbor_reward"]
+        _record_exp(
+            {
+                "exp_id": exp_id_g3_v2,
+                "wave": "Wave 1B (Context Hygiene + Temp0 + 1500c)",
+                "dataset": "gen3_10",
+                "max_words": "clean_seed_v2",
+                "status": "BASELINE_V2",
+                **res_g3_v2,
+            },
+            traces_g3_v2,
+        )
+        completed_exp_ids.add(exp_id_g3_v2)
+        log_decision(
+            "result",
+            exp_id_g3_v2,
+            f"Evaluated Clean Seed v2 (temp=0.0, 1500-char obs, target resolution) on Gen 3 with {model_name}",
+            "Measure baseline lift from temperature=0.0 + 1500-char observation window + Gen 5 target resolution",
+            f"gepa_fitness={res_g3_v2['mean_gepa_fitness']:.4f}, harbor_reward={res_g3_v2['mean_harbor_reward']:.4f}, zero_tool={res_g3_v2['zero_tool_count']}",
+            "baseline_v2_recorded",
+        )
+
+      exp_id_g5_v2 = f"w1b_clean_seed_v2_gen5val_{model_name.replace('.', '_')}"
+      if exp_id_g5_v2 not in completed_exp_ids:
+        print(f"[Wave 1B] Running {exp_id_g5_v2}...", flush=True)
+        res_g5_v2 = evaluate_candidate_with_harbor_parity(
+            candidate=clean_seed,
+            cases=gen5_val_cases,
+            task_lm=model_name,
+            budget_ledger=budget_ledger,
+        )
+        traces_g5_v2 = res_g5_v2.pop("traces", [])
+        if res_g5_v2["mean_harbor_reward"] > summary_state["best_gen5_harbor_reward"]:
+          summary_state["best_gen5_harbor_reward"] = res_g5_v2["mean_harbor_reward"]
+          summary_state["best_runbooks_dir"] = str(clean_seed_dir)
+        _record_exp(
+            {
+                "exp_id": exp_id_g5_v2,
+                "wave": "Wave 1B (Context Hygiene + Temp0 + 1500c)",
+                "dataset": "gen5_val_20",
+                "max_words": "clean_seed_v2",
+                "status": "BASELINE_V2",
+                **res_g5_v2,
+            },
+            traces_g5_v2,
+        )
+        completed_exp_ids.add(exp_id_g5_v2)
+        log_decision(
+            "result",
+            exp_id_g5_v2,
+            f"Evaluated Clean Seed v2 (temp=0.0, 1500-char obs, compose_soc_reward) on Gen 5 validation with {model_name}",
+            "Measure Gen 5 validation baseline lift from temperature=0.0 + 1500-char observation window + compose_soc_reward",
+            f"gepa_fitness={res_g5_v2['mean_gepa_fitness']:.4f}, harbor_reward={res_g5_v2['mean_harbor_reward']:.4f}, zero_tool={res_g5_v2['zero_tool_count']}",
+            "baseline_v2_recorded",
+        )
+
     # =========================================================================
     # WAVE 2 & 3: Continuous Constrained GEPA Sweeps + Harbor Parity Audits
     # =========================================================================
@@ -566,7 +634,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             "--forbid-template-vars",
             "--forbid-mermaid",
             "--forbid-pseudotools",
-            "--freeze-passing-runbooks",
+            "--no-freeze-passing-runbooks",
             "--budget-limit-usd",
             str(round(budget_ledger.remaining_usd, 2)),
             "--output-dir",

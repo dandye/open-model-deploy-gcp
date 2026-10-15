@@ -1107,3 +1107,45 @@ def test_strip_runbook_scaffolding_and_system_instruction_hygiene():
     assert "gti-mcp." not in sys_inst
     assert "secops-mcp." not in sys_inst
 
+
+def test_supervisor_resolves_gen5_host_and_indicator_despite_bystander_in_prompt():
+    """Verify Gen 5 prompts with bystander hosts, usernames, and filenames do not block explicit targets."""
+    val_cases = json.loads((ROOT_DIR / "configs/evals/gen5/validation.json").read_text(encoding="utf-8"))["eval_cases"]
+    c2_case = next(c for c in val_cases if c["eval_id"] == "CASE-GEN5-C2-INFOSTEALER-05")
+    env = SocEnvironment(initial_state=c2_case["environment_state"])
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+
+    decision = SocDecision(
+        verdict="MALICIOUS",
+        recommended_actions=["isolate_host", "update_case_comment"],
+        target_entity="LT-LON-06",
+        rationale="Confirmed Lumma Stealer C2 on LT-LON-06.",
+    )
+    report = WorkerInvestigationReport(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        target_entities=["LT-LON-06", "bd1098a3b1497fa954e2bc544fa1b3872e711334c213ed68173c053f348866ab"],
+        risk_level="MALICIOUS",
+    )
+    steps = supervisor._execute_containment_decisions(decision, report, c2_case["prompt"])
+    executed = [s["tool"] for s in steps if s.get("tool")]
+    assert "isolate_host" in executed
+    assert "update_case_comment" in executed
+    assert env.hosts["LT-LON-06"].isolated is True
+    assert env.hosts["PC-LON-78"].isolated is False
+
+
+def test_worker_parses_markdown_wrapped_actions():
+    """Verify worker _parse_action strips markdown bold and backtick formatting around Action lines."""
+    worker = SOCRunbookWorkerAgent(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        runbook_content="# Investigate",
+        managed_model="offline",
+    )
+    parsed_bold = worker._parse_action('Thought: Check hash.\n**Action:** `get_file_report(file_hash="abc123")`')
+    assert parsed_bold == ("get_file_report", {"file_hash": "abc123"})
+    parsed_bullet = worker._parse_action('- **Action**: lookup_entity(entity="LT-LON-06")')
+    assert parsed_bullet == ("lookup_entity", {"entity": "LT-LON-06"})
+
+

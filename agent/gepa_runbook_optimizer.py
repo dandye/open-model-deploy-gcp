@@ -822,7 +822,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 rubric_normalized = (epistemic_pts + action_pts + assertion_pts + 25.0) / 100.0
 
                 jev_choice: Optional[str] = None
-                if self.jev_evaluator is not None:
+                if self.jev_evaluator is not None and not is_gen5:
                     rubric_text = case.get("reference", {}).get(
                         "grading_rubric", "Standard SOC Triage Rubric."
                     )
@@ -841,12 +841,11 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     jev_choice = jev_out.primary_choice
 
                 actual_verdict = ""
+                decision_obj = extract_soc_decision(resp_text)
                 if hasattr(response, "get"):
                     actual_verdict = response.get("verdict", "")
-                if not actual_verdict:
-                    decision_obj = extract_soc_decision(resp_text)
-                    if decision_obj is not None:
-                        actual_verdict = getattr(decision_obj, "verdict", "")
+                if not actual_verdict and decision_obj is not None:
+                    actual_verdict = getattr(decision_obj, "verdict", "")
 
                 loss_penalty = calculate_loss_penalty(
                     expected_label=case.get("ground_truth_label", ""),
@@ -856,13 +855,42 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     prohibited_violation=bool(entity_violations) if is_gen5 else None,
                 )
 
-                op_compliance = 1.0 if traj_verif.operator_actions_matched else 0.0
-                fitness = calculate_case_fitness(
-                    rubric_score=rubric_normalized,
-                    assertions_passed=assert_passed,
-                    operator_compliance=op_compliance,
-                    loss_penalty=loss_penalty,
-                )
+                gen5_components = None
+                if is_gen5:
+                    from scripts.verify_harbor_soc import compose_soc_reward
+
+                    decision_dict = decision_obj.to_dict() if decision_obj is not None else (
+                        {"verdict": actual_verdict} if actual_verdict else None
+                    )
+                    usage_dict = _response_usage(response)
+                    card = compose_soc_reward(
+                        case=case,
+                        trajectory=agent_traj,
+                        report_text=resp_text,
+                        decision_data=decision_dict,
+                        jev_evaluator=self.jev_evaluator,
+                        jev_backend_name="mock",
+                        manifest_path=gen5_exposure.MANIFEST_PATH,
+                        metrics={
+                            "tokens_in": usage_dict.get("prompt_tokens"),
+                            "tokens_out": usage_dict.get("completion_tokens"),
+                            "latency_ms": latency_ms,
+                            "infra_failure": False,
+                        },
+                    )
+                    fitness = float(card["reward"])
+                    gen5_components = card.get("components")
+                    inert = bool(card.get("inert", inert))
+                    entity_violations = list(card.get("prohibited_entity_violations", entity_violations) or [])
+                    jev_choice = (card.get("jev_evaluation") or {}).get("primary_choice") or jev_choice
+                else:
+                    op_compliance = 1.0 if traj_verif.operator_actions_matched else 0.0
+                    fitness = calculate_case_fitness(
+                        rubric_score=rubric_normalized,
+                        assertions_passed=assert_passed,
+                        operator_compliance=op_compliance,
+                        loss_penalty=loss_penalty,
+                    )
 
                 zero_tool_hesitation = bool(
                     not inert
@@ -917,6 +945,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                     "zero_tool_hesitation": zero_tool_hesitation,
                     "epistemic_step_count": traj_verif.epistemic_step_count,
                     "implicated_runbook": implicated_runbook,
+                    "gen5_components": gen5_components,
                 }
                 diag = extract_trace_diagnosis(
                     trace_entry, forbidden_literals=self.forbidden_literals
@@ -1024,11 +1053,27 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                         "Missed containment: Confirmed active malware or C2 activity requires immediate host isolation. "
                         "The runbook must mandate host isolation for confirmed malicious threats."
                     )
+                elif "SUSPICIOUS" in trace.get("expected_verdict", "").upper() and (
+                    ("block_indicator" in executed_actions and "block_indicator" not in (trace.get("expected_actions") or []))
+                    or "isolate_host" in executed_actions
+                ):
+                    feedback_items.append(
+                        "Over-containment on SUSPICIOUS ambiguous activity: The agent recommended or executed disruptive containment "
+                        "on an ambiguous alert where neither malicious indicators nor benign authorization were confirmed. "
+                        "The runbook must instruct the analyst that when telemetry is ambiguous (SUSPICIOUS verdict), they must NOT "
+                        "execute isolate_host or close_case, and should only execute block_indicator if a revoked-certificate binary hash is confirmed."
+                    )
+                elif "INCONCLUSIVE" in trace.get("expected_verdict", "").upper() and score < 0.95:
+                    feedback_items.append(
+                        "Degraded tool outage efficiency: When a threat intelligence tool returns HTTP 503 / SERVICE_UNAVAILABLE, "
+                        "do not repeatedly retry the failing endpoint; pivot once to local entity lookup (lookup_entity), classify as INCONCLUSIVE, "
+                        "and recommend only update_case_comment (never close_case, isolate_host, or block_indicator)."
+                    )
                 else:
                     feedback_items.append(
                         f"Triage operational failure: score={score:.2f}, loss_penalty={loss_pen:.2f}. "
                         f"Prohibited actions executed: {[a for a in executed_actions if a in prohibited_actions]}. "
-                        "The runbook instructions should be clarified to avoid prohibited actions, gather verified telemetry, and adhere to operational guardrails."
+                        "The runbook instructions should be clarified to avoid prohibited actions, gather verified telemetry in <= 3 epistemic tool calls, and adhere to operational guardrails."
                     )
 
                 if trace.get("inert"):
@@ -1085,6 +1130,49 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 )
                 dataset[comp_name].append(record)
 
+            # Sparse-minibatch fallback when GEPA proposes for a single component
+            if (
+                not dataset[comp_name]
+                and len(components_to_update) == 1
+                and trajectories
+                and not (self.freeze_passing_runbooks and comp_name in self.frozen_runbooks)
+            ):
+                underperforming = [
+                    t for t in trajectories
+                    if float(t.get("score", 1.0)) < 0.95
+                    or float(t.get("loss_penalty", 1.0)) < 1.0
+                    or not t.get("assert_passed", True)
+                ]
+                fallback_pool = underperforming if underperforming else [
+                    min(trajectories, key=lambda t: float(t.get("score", 1.0)))
+                ]
+                for ft in fallback_pool[:2]:
+                    if float(ft.get("score", 1.0)) < 0.995:
+                        fb_rec = sanitize_payload(
+                            {
+                                "Inputs": {
+                                    "case_id": ft.get("case_id", ""),
+                                    "alert_type": ft.get("alert_type", ""),
+                                    "prompt": ft.get("prompt", ""),
+                                    "cmdb_context": ft.get("cmdb_context", {}),
+                                    "expected_verdict": ft.get("expected_verdict", ""),
+                                    "expected_actions": ft.get("expected_actions", []),
+                                    "prohibited_actions": ft.get("prohibited_actions", []),
+                                },
+                                "Generated Outputs": {
+                                    "actual_verdict": ft.get("actual_verdict", ""),
+                                    "executed_actions": ft.get("executed_actions", []),
+                                    "summary": ft.get("summary", ""),
+                                },
+                                "Feedback": (
+                                    f"Triage operational refinement: score={float(ft.get('score', 0.0)):.2f}. "
+                                    "Refine runbook into a concise <= 3 tool call 4-stage epistemic flow (Stage A identity/CMDB, Stage B network scope, Stage C threat intel, Stage D corroboration/containment) while strictly avoiding prohibited actions."
+                                ),
+                            },
+                            forbidden_literals=self.forbidden_literals,
+                        )
+                        dataset[comp_name].append(fb_rec)
+
         return dataset
 
 
@@ -1108,13 +1196,13 @@ def build_reflection_prompt_template() -> str:
         "   - Stage B: Network Routing & Scope Verification: Query get_ip_address_report or get_domain_report to determine if target infrastructure is public, private, or reserved documentation space.\n"
         "   - Stage C: Threat Intelligence Reputation: Check GTI reputation scores and known malware associations.\n"
         "   - Stage D: Corroboration of Malicious Activity: Correlate telemetry with observed behaviors (e.g. active malware, C2 beaconing vs benign scanning).\n"
-        "2. Mandatory Epistemic Investigation (No Short-Circuits): Forbid instructions that tell the analyst to 'skip all enrichment' or 'bypass investigation'. The analyst must always execute telemetry queries to substantiate their findings.\n"
+        "2. Mandatory Epistemic Investigation (No Short-Circuits): Forbid instructions that tell the analyst to 'skip all enrichment', 'skip all investigation', 'skip step <N>', or 'proceed directly to step <N>'. Never use the phrases 'skip step' or 'proceed directly to step' anywhere in the runbook. The analyst must always execute telemetry queries to substantiate their findings.\n"
         "3. Anti-Memorization Rule (Generalization): Strictly DO NOT hardcode specific IP addresses, CIDR blocks, domain names, or hostnames in the runbook. Express all triage logic using general variable concepts in plain English or angle-bracket descriptors (e.g. <ioc_value>, <asset_role>, <ip_routing_type>); NEVER emit shell-style dollar-brace template syntax.\n"
         "4. Strict Verdict & Containment Discipline:\n"
         "   - MALICIOUS: Execute isolate_host and/or block_indicator ONLY when high-severity malicious activity is corroborated, and confirm the target is the alerted asset (never isolate a peer server or victim controller).\n"
-        "   - SUSPICIOUS: When telemetry shows an unverified anomaly (e.g. impossible travel without MFA compromise or malware), set verdict to SUSPICIOUS, call update_case_comment to escalate, and NEVER call isolate_host, block_indicator, or close_case.\n"
-        "   - INCONCLUSIVE: When an enrichment tool returns 503 / service unavailable, pivot to available local telemetry (lookup_entity), set verdict to INCONCLUSIVE, call update_case_comment, and NEVER call isolate_host, block_indicator, or close_case.\n"
-        "   - BENIGN: When activity is verified as authorized scanning or RFC-5737 documentation space, set verdict to BENIGN and call close_case.\n"
+        "   - SUSPICIOUS: When telemetry shows an unverified anomaly (e.g. ambiguous DNS queries or duplicate SOAR cases), set verdict to SUSPICIOUS, call update_case_comment to escalate (and block_indicator ONLY if a revoked-certificate binary hash is confirmed), and NEVER call isolate_host or close_case.\n"
+        "   - INCONCLUSIVE: When an enrichment tool returns 503 / service unavailable, do not retry the failing endpoint repeatedly; pivot once to available local telemetry (lookup_entity), set verdict to INCONCLUSIVE, call update_case_comment, and NEVER call isolate_host, block_indicator, or close_case.\n"
+        "   - BENIGN: When activity is verified as authorized scanning, sanctioned SaaS with change record CHG-..., or RFC-5737 documentation space, set verdict to BENIGN and call close_case and update_case_comment (never isolate_host or block_indicator).\n"
         "5. Context Hygiene (No Diagrams or Interactive Pseudo-Tools): NEVER include Mermaid diagrams (sequenceDiagram or ```{mermaid}```) and NEVER reference interactive human prompts (ask_followup_question, attempt_completion, write_to_file).\n"
         "6. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
         "7. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n"
@@ -1580,14 +1668,21 @@ def main(args: Optional[List[str]] = None) -> int:
 
     reflection_prompt_template = build_reflection_prompt_template()
 
-    print(f"Starting GEPA optimization (max_metric_calls={parsed_args.max_metric_calls}, seed={parsed_args.seed})...")
+    effective_max_metric_calls = int(parsed_args.max_metric_calls)
+    if effective_max_metric_calls <= len(valset):
+        effective_max_metric_calls = len(valset) + 4 * max(1, effective_max_metric_calls)
+
+    print(
+        f"Starting GEPA optimization (max_metric_calls={effective_max_metric_calls} "
+        f"[requested={parsed_args.max_metric_calls}], seed={parsed_args.seed})..."
+    )
     result = gepa.optimize(
         seed_candidate=seed_candidate,
         trainset=trainset,
         valset=valset,
         adapter=adapter,
         reflection_lm=reflection_lm,
-        max_metric_calls=parsed_args.max_metric_calls,
+        max_metric_calls=effective_max_metric_calls,
         reflection_prompt_template=reflection_prompt_template,
         candidate_selection_strategy="pareto",
         seed=parsed_args.seed,

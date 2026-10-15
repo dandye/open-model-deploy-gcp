@@ -1615,5 +1615,40 @@ def test_overnight_campaign_clean_seed_and_report(tmp_path: Path):
     assert "0.8600" in content
 
 
+def test_adapter_evaluate_gen5_oracle_trajectory_matches_compose_soc_reward():
+    from agent.gepa_runbook_optimizer import RunbookGEPAAdapter
+    from scripts.verify_harbor_soc import compose_soc_reward
+
+    case = _gen5_case(1)
+    trajectory = [
+        {"tool": step["tool"], "args": dict(step["args"]), "observation": {"status": "SUCCESS"}}
+        for step in case["oracle"]["lookups"]
+    ] + [
+        {"tool": act["action"], "args": dict(act["args"]), "observation": {"status": "SUCCESS"}}
+        for act in case["oracle"]["actions"]
+    ]
+    must_contain = " ".join(case.get("assertions", {}).get("must_contain", []))
+    decision_payload = {
+        "verdict": case["ground_truth_label"],
+        "recommended_actions": list(case["expected_actions"]),
+    }
+    text = f"{must_contain}\n```soc_decision\n{json.dumps(decision_payload)}\n```"
+
+    adapter = RunbookGEPAAdapter(task_lm="mock", agent_factory=_agent_factory_returning(trajectory, text))
+    batch = adapter.evaluate([case], {name: "# Seed" for name in CORE_RUNBOOKS}, capture_traces=True)
+    expected_scorecard = compose_soc_reward(
+        case=case,
+        trajectory=trajectory,
+        report_text=text,
+        decision_data=decision_payload,
+        jev_backend_name="mock",
+        case_id=case["eval_id"],
+    )
+    assert batch.scores == [expected_scorecard["reward"]]
+    assert batch.scores == [1.0]
+    assert batch.trajectories[0]["gen5_components"] == expected_scorecard["components"]
+
+
+
 
 

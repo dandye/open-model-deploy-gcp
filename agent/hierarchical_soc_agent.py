@@ -391,7 +391,10 @@ def translate_runbook_to_system_instruction(
         ("gti-mcp.get_domain_report", "get_domain_report"),
         ("secops-mcp.lookup_entity", "lookup_entity"),
         ("secops-mcp.search_security_events", "lookup_entity"),
+        ("search_security_events", "lookup_entity"),
         ("secops-soar.list_cases", "list_cases"),
+        ("common_steps/find_relevant_soar_case.md", "list_cases"),
+        ("common_steps/enrich_ioc.md", "get_domain_report / get_ip_address_report / get_file_report and lookup_entity"),
         ("gti-mcp: get_file_report", "Available tool: get_file_report"),
         ("gti-mcp: get_ip_address_report", "Available tool: get_ip_address_report"),
         ("gti-mcp: get_domain_report", "Available tool: get_domain_report"),
@@ -466,18 +469,30 @@ def extract_worker_report(
 
     for step in trajectory:
         tool = str(step.get("tool") or "")
+        if not tool:
+            continue
         args = step.get("args") or {}
         obs = str(step.get("observation") or "")
 
         for k, v in args.items():
+            if k in {"entity_type", "hours_back", "limit"}:
+                continue
             val_str = str(v).strip()
             if val_str and val_str not in target_entities:
                 target_entities.append(val_str)
 
         call_repr = f"{tool}({json.dumps(args, sort_keys=True)})"
-        findings[call_repr] = obs[:300]
-        if "reputation" in obs or "verdict" in obs or "threat_category" in obs or "isolated" in obs:
-            evidence.append(f"{tool}: {obs[:200]}")
+        findings[call_repr] = obs[:1500]
+        if (
+            "reputation" in obs
+            or "verdict" in obs
+            or "threat_category" in obs
+            or "isolated" in obs
+            or "503" in obs
+            or "comments" in obs
+            or "events" in obs
+        ):
+            evidence.append(f"{tool}: {obs[:600]}")
 
     # Risk level determination from response text or observations
     risk_level = "UNKNOWN"
@@ -564,6 +579,31 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
     def _is_tool_allowed(self, tool_name: str) -> bool:
         return tool_name in self.tools_dict and is_epistemic_tool(tool_name)
 
+    def _build_tools_description(self) -> str:
+        """Lists only the worker's allowed epistemic tools, never pragmatic containment actions."""
+        descriptions = []
+        for name, func in self.tools_dict.items():
+            doc = inspect.getdoc(func) or "No description available."
+            desc = self.mcp_provider.get_description(name, default_doc=doc)
+            sig = inspect.signature(func)
+            descriptions.append(f"- {name}{sig}: {desc}")
+        return "\n".join(descriptions)
+
+    def _parse_action(self, step_output: str = "", text: Optional[str] = None) -> Optional[Tuple[str, Dict[str, Any]]]:
+        """Parses worker tool calls, normalizing markdown bold or backtick wrappers around Action lines."""
+        parsed = super()._parse_action(step_output=step_output, text=text)
+        if parsed is not None:
+            return parsed
+        raw_text = text if text is not None else step_output
+        if not raw_text or not isinstance(raw_text, str):
+            return None
+        normalized = re.sub(r"\*{1,2}Action\*{1,2}\s*:", "Action:", raw_text)
+        normalized = re.sub(r"Action:\s*\*{1,2}\s*", "Action: ", normalized)
+        normalized = re.sub(r"Action:\s*`([^`\n]+)`", r"Action: \1", normalized)
+        if normalized != raw_text:
+            return super()._parse_action(step_output=normalized)
+        return None
+
     def _execute_tool_action(self, tool_name: str, args: Dict[str, Any]) -> str:
         """Enforce worker permissions before either simulated or live dispatch."""
         if not self._is_tool_allowed(tool_name):
@@ -578,7 +618,7 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         prompt: str,
         max_iterations: int = 5,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.2,
+        temperature: float = 0.0,
     ) -> Tuple[WorkerInvestigationReport, List[Dict[str, Any]], Dict[str, int]]:
         """Executes epistemic investigation loop guided by the translated runbook."""
         tools_doc = self._build_tools_description()
@@ -590,19 +630,22 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             "Format 1 (Standard ReAct): Action: <tool_name>(<arg_name>=\"<value>\")\n"
             "Format 2 (JSON Action): Action: {\"name\": \"<tool_name>\", \"arguments\": {\"<arg_name>\": \"<value>\"}}\n"
             "Format 3 (Fenced Block): ```tool_call\n{\"name\": \"<tool_name>\", \"args\": {\"<arg_name>\": \"<value>\"}}\n```\n\n"
-            "When you receive the Observation, analyze it. You must invoke at least one investigation tool before concluding.\n"
-            "When you have gathered sufficient evidence to fulfill the runbook, conclude with:\n"
+            "CRITICAL EXECUTION RULES:\n"
+            "- In each turn before your Final Answer, output ONLY a Thought and a single Action tool call, then STOP immediately to wait for the real Observation.\n"
+            "- NEVER fabricate, simulate, or guess Observation outputs, and NEVER copy placeholder example values (such as 198.51.100.10 or evil-domain.com) from the runbook template.\n"
+            "- Enrich both the external indicator (via get_domain_report, get_ip_address_report, or get_file_report) AND the host or case context (via lookup_entity on the alerted hostname or list_cases on the CASE-... ID / change record) so change tickets (CHG-...) and host telemetry are verified before concluding.\n"
+            "When you have gathered sufficient verified Observation evidence, conclude with:\n"
             "Final Answer:\n"
             "[Context & Enrichment]\n<entities and observations>\n\n"
             "[Findings & Evidence]\n<correlated technical evidence>\n\n"
-            "[Preliminary Risk Assessment]\n<BENIGN, SUSPICIOUS, or MALICIOUS>\n\n"
+            "[Preliminary Risk Assessment]\n<BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE>\n\n"
             "```worker_report\n"
             "{\n"
             f'  "classification": "{self.classification}",\n'
             '  "target_entities": ["<entity1>", ...],\n'
             '  "findings": {"<entity>": "<summary>"},\n'
             '  "evidence": ["<evidence1>", ...],\n'
-            '  "risk_level": "<BENIGN|SUSPICIOUS|MALICIOUS>"\n'
+            '  "risk_level": "<BENIGN|SUSPICIOUS|MALICIOUS|INCONCLUSIVE>"\n'
             "}\n"
             "```\n"
         )
@@ -619,7 +662,15 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             total_usage["total_tokens"] += step_usage.get("total_tokens", 0)
 
             if not step_output:
-                break
+                if _has_investigation_evidence(trajectory):
+                    break
+                current_prompt += (
+                    "\nObservation: Investigation incomplete. "
+                    "Use an available investigation tool to gather verified telemetry "
+                    "before issuing findings; prior failed or denied calls are insufficient. "
+                    'Emit a tool call using: Action: <tool_name>(<arg_name>="<value>")\n'
+                )
+                continue
 
             # 1. Parse and execute tool invocation
             parsed = self._parse_action(step_output)
@@ -634,17 +685,26 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
                 )
                 step["agent"] = "worker"
                 trajectory.append(step)
-                current_prompt += f"{step_output}\nObservation: {observation}\n"
+                clean_step_output = re.split(
+                    r"\n(?:Observation:|Final Answer:|\[Context & Enrichment\])",
+                    step_output,
+                    maxsplit=1,
+                )[0].strip()
+                current_prompt += f"{clean_step_output}\nObservation: {observation}\n"
                 continue
 
             # Retry every premature completion, regardless of its format or
             # iteration. Denied calls and failed tools do not satisfy the guard.
+            # Do NOT append ungrounded step_output to current_prompt so fabricated
+            # reports cannot poison subsequent tool-calling turns.
             if not _has_investigation_evidence(trajectory):
                 final_answer = step_output.strip()
                 current_prompt += (
-                    f"{step_output}\nObservation: Investigation incomplete. "
-                    "Use an available investigation tool to gather verified telemetry "
-                    "before issuing findings; prior failed or denied calls are insufficient.\n"
+                    "\nObservation: Investigation incomplete. Your ungrounded response was discarded because "
+                    "no verified investigation tool was invoked. Do NOT fabricate tool outputs or copy example IPs "
+                    "(such as 198.51.100.10) from the runbook template. "
+                    "Use an available investigation tool on the actual entities in the Alert To Investigate "
+                    'using: Action: <tool_name>(<arg_name>="<value>")\n'
                 )
                 continue
 
@@ -796,7 +856,7 @@ class SOCSupervisorAgent(GemmaAgent):
         self,
         prompt: str,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.2,
+        temperature: float = 0.0,
     ) -> Tuple[str, Dict[str, int]]:
         """Invokes LLM backend for supervisor reasoning step."""
         res = super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
@@ -817,7 +877,7 @@ class SOCSupervisorAgent(GemmaAgent):
         runbook_name: str,
         worker_report: WorkerInvestigationReport,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.2,
+        temperature: float = 0.0,
     ) -> Tuple[str, SocDecision, Dict[str, int]]:
         """Synthesizes worker investigation findings into final triage report and containment decision."""
         supervisor_instruction = (
@@ -833,24 +893,24 @@ class SOCSupervisorAgent(GemmaAgent):
             f"- Worker Findings: {json.dumps(worker_report.findings, indent=2)}\n"
             f"- Worker Summary:\n{worker_report.raw_response}\n\n"
             "Supervisor Mission:\n"
-            "1. Synthesize the findings into an authoritative threat assessment (BENIGN, SUSPICIOUS, INCONCLUSIVE, or MALICIOUS).\n"
+            "1. Synthesize the findings into an authoritative threat assessment (BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE).\n"
             "2. Determine containment actions:\n"
-            "   - For MALICIOUS / corroborated active threat: recommend isolate_host, block_indicator, update_case_comment. Avoid close_case, and NEVER isolate a peer server or victim controller outside the alerted endpoint.\n"
-            "   - For BENIGN / verified false positive or authorized scanner: recommend close_case, update_case_comment. Avoid isolate_host and block_indicator.\n"
-            "   - For SUSPICIOUS / unverified anomaly: recommend ONLY update_case_comment and escalate to Tier 2. Avoid isolate_host, block_indicator, and close_case.\n"
-            "   - For INCONCLUSIVE / enrichment tool 503 outage: recommend ONLY update_case_comment and escalate to Tier 2. Avoid isolate_host, block_indicator, and close_case.\n"
+            "   - For MALICIOUS / active threat: recommend isolate_host, block_indicator (when an external C2 domain, IP, or hash is involved), update_case_comment. Avoid close_case, and NEVER isolate a peer server or victim controller outside the alerted endpoint.\n"
+            "   - For BENIGN / false positive (including sanctioned SaaS/business connector traffic with BENIGN domain reputation or change calendar records CHG-..., authorized vulnerability scanners, and RFC-5737 documentation IPs): verdict MUST be BENIGN, recommend close_case and update_case_comment (explicitly citing any CHG-... change ID in the rationale and report), and avoid isolate_host and block_indicator.\n"
+            "   - For SUSPICIOUS / ambiguous: recommend update_case_comment (and block_indicator ONLY when a revoked-certificate binary or confirmed suspicious file hash is identified; NEVER recommend block_indicator on a BENIGN domain or documentation IP, and avoid isolate_host and close_case).\n"
+            "   - For INCONCLUSIVE / upstream tool outage (e.g., HTTP 503 Service Unavailable with unverified intelligence): verdict MUST be INCONCLUSIVE, recommend ONLY update_case_comment (citing HTTP 503), and avoid isolate_host, block_indicator, and close_case.\n"
             "3. Structure your response into the standard four sections followed by the ```soc_decision block:\n"
             "[Context & Enrichment]\n"
             "<entities and enrichment findings>\n\n"
             "[Analysis & Verdict]\n"
-            "<threat assessment and verdict: BENIGN, SUSPICIOUS, INCONCLUSIVE, or MALICIOUS>\n\n"
+            "<threat assessment and verdict: BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE>\n\n"
             "[Action & Escalation]\n"
             "<containment decisions and mitigation plan>\n\n"
             "[SOAR Documentation]\n"
             "<markdown case log comment>\n\n"
             "```soc_decision\n"
             "{\n"
-            '  "verdict": "<BENIGN|SUSPICIOUS|INCONCLUSIVE|MALICIOUS>",\n'
+            '  "verdict": "<BENIGN|SUSPICIOUS|MALICIOUS|INCONCLUSIVE>",\n'
             '  "recommended_actions": ["<action1>", ...],\n'
             '  "target_entity": "<primary entity>",\n'
             '  "rationale": "<summary explanation>"\n'
@@ -865,7 +925,7 @@ class SOCSupervisorAgent(GemmaAgent):
         if decision is None:
             raw_risk = worker_report.risk_level.upper()
             verdict = _normalize_verdict(raw_risk) if raw_risk != "UNKNOWN" else "INCONCLUSIVE"
-            target_entity = worker_report.target_entities[0] if worker_report.target_entities else None
+            target_entity = None
 
             if verdict == "MALICIOUS":
                 recommended_actions = ["isolate_host", "block_indicator", "update_case_comment"]
@@ -1016,20 +1076,36 @@ class SOCSupervisorAgent(GemmaAgent):
                     continue
                 aliases.setdefault(ip_alias, set()).add(hostname)
 
-        host_pattern = r"(?:DESKTOP|SRV|GW)-[A-Z0-9]+(?:-[A-Z0-9]+)*"
-        candidates: Set[str] = set()
-        entities = list(worker_report.target_entities)
+        host_pattern = r"(?:DESKTOP|SRV|GW|WKS|LT|PC|BLD|CI|DEV|FS|BKP|DC|PAY|SCN|APP|PRX|VPN|DB|HR|WEB|MAIL|JUMP|BASTION)-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+
+        def _extract_hosts(items: List[str]) -> Set[str]:
+            found: Set[str] = set()
+            for item in items:
+                cleaned = str(item).strip()
+                if not cleaned:
+                    continue
+                if cleaned.lower() in aliases:
+                    found.update(aliases[cleaned.lower()])
+                elif re.fullmatch(host_pattern, cleaned, re.IGNORECASE):
+                    found.add(cleaned.upper())
+            return found
+
+        decision_hosts = _extract_hosts([str(decision.target_entity)]) if decision.target_entity else set()
+        report_hosts = _extract_hosts(list(worker_report.target_entities))
+
         if decision.target_entity:
-            entities.append(str(decision.target_entity))
-        for entity in entities:
-            cleaned = str(entity).strip()
-            if cleaned.lower() in aliases:
-                candidates.update(aliases[cleaned.lower()])
-            elif re.fullmatch(host_pattern, cleaned, re.IGNORECASE):
-                candidates.add(cleaned.upper())
+            if len(decision_hosts) != 1:
+                return None
+            if report_hosts and not (decision_hosts <= report_hosts):
+                return None
+            return next(iter(decision_hosts))
+
+        if report_hosts:
+            return next(iter(report_hosts)) if len(report_hosts) == 1 else None
 
         # Dot and hyphen boundaries prevent treating SRV-WEB.example.com or a
         # substring of another identifier as an explicitly referenced host.
+        candidates: Set[str] = set()
         boundary = r"[A-Za-z0-9_.-]"
         end_boundary = r"(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])"
         for match in re.finditer(rf"(?<!{boundary})({host_pattern}){end_boundary}", prompt, re.IGNORECASE):
@@ -1050,25 +1126,81 @@ class SOCSupervisorAgent(GemmaAgent):
         domain_pattern = r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,63}"
         hash_pattern = r"(?:[a-fA-F0-9]{32}|[a-fA-F0-9]{40}|[a-fA-F0-9]{64})"
         ip_pattern = r"(?:\d{1,3}\.){3}\d{1,3}"
-        entities = list(worker_report.target_entities)
+        file_exts = {
+            "exe", "dll", "msi", "bat", "ps1", "sh", "py", "hta", "vbs", "js",
+            "jar", "zip", "rar", "7z", "tmp", "log", "sys", "bin", "elf", "dmg",
+            "pkg", "deb", "rpm", "iso", "cab", "scr", "lnk", "doc", "docx",
+            "xls", "xlsx", "pdf", "txt", "csv", "json", "xml", "yml", "yaml",
+            "md", "crypt", "akira", "lockbit",
+        }
+        host_ips: Set[str] = set()
+        host_users: Set[str] = set()
+        benign_indicators: Set[str] = set()
+        if self.environment is not None:
+            for host in self.environment.hosts.values():
+                if getattr(host, "ip", None) and host.ip not in getattr(self.environment, "ips", {}):
+                    host_ips.add(str(host.ip).strip())
+                if getattr(host, "active_user", None):
+                    host_users.add(str(host.active_user).strip().lower())
+            for dom_k, dom_v in getattr(self.environment, "domains", {}).items():
+                if str(getattr(dom_v, "verdict", "")).upper() in {"BENIGN", "SAFE"} or str(getattr(dom_v, "reputation", "")).upper() in {"BENIGN", "SAFE"}:
+                    benign_indicators.add(str(dom_k).lower())
+
+        def _extract_indicators(items: List[str], exclude_host_ips: bool = False) -> List[str]:
+            found: List[str] = []
+            for entity in items:
+                cleaned = str(entity).strip()
+                if not cleaned:
+                    continue
+                if re.fullmatch(ip_pattern, cleaned):
+                    try:
+                        norm_ip = str(ipaddress.ip_address(cleaned))
+                    except ValueError:
+                        # A malformed IP must not become an executable block target.
+                        continue
+                    if exclude_host_ips and norm_ip in host_ips:
+                        continue
+                    if norm_ip not in found:
+                        found.append(norm_ip)
+                elif re.fullmatch(hash_pattern, cleaned):
+                    low = cleaned.lower()
+                    if low not in found:
+                        found.append(low)
+                elif re.fullmatch(domain_pattern, cleaned):
+                    low = cleaned.lower()
+                    tld = low.rsplit(".", 1)[-1]
+                    if tld in file_exts or low in host_users:
+                        continue
+                    if low not in found:
+                        found.append(low)
+            return found
+
+        decision_inds = _extract_indicators([str(decision.target_entity)]) if decision.target_entity else []
+        report_inds = _extract_indicators(list(worker_report.target_entities), exclude_host_ips=True)
+
+        if len(decision_inds) == 1:
+            if report_inds and decision_inds[0] not in report_inds:
+                return None
+            return decision_inds[0]
+
+        if not decision_inds and report_inds:
+            non_benign = [ind for ind in report_inds if ind not in benign_indicators]
+            pool = non_benign if non_benign else report_inds
+            if len(pool) == 1:
+                return pool[0]
+            if decision.target_entity and pool:
+                return pool[0]
+            return None
+
         if decision.target_entity:
-            entities.append(str(decision.target_entity))
-        entities.extend(re.findall(
+            return None
+
+        prompt_matches = re.findall(
             rf"(?<![A-Za-z0-9_.-])({domain_pattern}|{hash_pattern}|{ip_pattern})(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])",
             prompt,
-        ))
-        candidates: Set[str] = set()
-        for entity in entities:
-            cleaned = str(entity).strip()
-            if re.fullmatch(ip_pattern, cleaned):
-                try:
-                    candidates.add(str(ipaddress.ip_address(cleaned)))
-                except ValueError:
-                    # A malformed IP must not become an executable block target.
-                    continue
-            elif re.fullmatch(domain_pattern, cleaned) or re.fullmatch(hash_pattern, cleaned):
-                candidates.add(cleaned.lower())
-        return next(iter(candidates)) if len(candidates) == 1 else None
+        )
+        prompt_inds = _extract_indicators(prompt_matches, exclude_host_ips=True)
+        return prompt_inds[0] if len(prompt_inds) == 1 else None
 
     def _resolve_target_case(
         self, prompt: str, decision: Optional[SocDecision] = None,
@@ -1076,19 +1208,33 @@ class SOCSupervisorAgent(GemmaAgent):
     ) -> Optional[str]:
         """Require one explicitly referenced case instead of choosing inventory."""
         pattern = r"CASE-[A-Z0-9]+(?:-[A-Z0-9]+)*"
-        candidates = {
+        decision_cases: Set[str] = set()
+        if decision is not None and decision.target_entity:
+            cleaned = str(decision.target_entity).strip()
+            if re.fullmatch(pattern, cleaned, re.IGNORECASE):
+                decision_cases.add(cleaned.upper())
+
+        report_cases: Set[str] = set()
+        if worker_report is not None:
+            for entity in worker_report.target_entities:
+                cleaned = str(entity).strip()
+                if re.fullmatch(pattern, cleaned, re.IGNORECASE):
+                    report_cases.add(cleaned.upper())
+
+        if len(decision_cases) == 1:
+            if report_cases and not (decision_cases <= report_cases):
+                return None
+            return next(iter(decision_cases))
+
+        if len(report_cases) == 1:
+            return next(iter(report_cases))
+
+        prompt_cases = {
             match.upper() for match in re.findall(
                 rf"(?<![A-Za-z0-9_.-])({pattern})(?![A-Za-z0-9_-]|\.[A-Za-z0-9_-])", prompt, re.IGNORECASE,
             )
         }
-        entities = list(worker_report.target_entities) if worker_report is not None else []
-        if decision is not None and decision.target_entity:
-            entities.append(str(decision.target_entity))
-        for entity in entities:
-            cleaned = str(entity).strip()
-            if re.fullmatch(pattern, cleaned, re.IGNORECASE):
-                candidates.add(cleaned.upper())
-        return next(iter(candidates)) if len(candidates) == 1 else None
+        return next(iter(prompt_cases)) if len(prompt_cases) == 1 else None
 
     def format_triage_prompt(self, query: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Formats an operational triage request with optional case metadata."""
@@ -1102,7 +1248,7 @@ class SOCSupervisorAgent(GemmaAgent):
         prompt: str,
         max_iterations: int = 5,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.2,
+        temperature: float = 0.0,
     ) -> SOCTier1Response:
         """Executes hierarchical supervisor-worker alert triage.
 
