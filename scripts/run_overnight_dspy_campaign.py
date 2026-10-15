@@ -592,18 +592,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     # =========================================================================
     # Structured curriculum of (dataset_mode, task_lm, max_words, seed, max_metric_calls)
     sweep_configs: List[Tuple[str, str, int, int, int]] = [
-        ("gen3", "gemini-2.5-flash-lite", 450, 42, 30),
-        ("gen5", "gemini-2.5-flash-lite", 450, 42, 60),
-        ("gen3", "gemini-2.5-flash-lite", 350, 101, 30),
-        ("gen5", "gemini-2.5-flash-lite", 350, 101, 60),
-        ("gen3", "gemini-2.5-flash", 450, 42, 30),
-        ("gen5", "gemini-2.5-flash", 450, 42, 60),
-        ("gen3", "gemini-2.5-flash-lite", 550, 202, 36),
-        ("gen5", "gemini-2.5-flash-lite", 550, 202, 70),
-        ("gen3", "gemini-2.5-flash", 350, 101, 36),
-        ("gen5", "gemini-2.5-flash", 350, 101, 70),
-        ("gen5", "gemini-2.5-flash-lite", 400, 303, 80),
-        ("gen5", "gemini-2.5-flash", 400, 303, 80),
+        ("gen3", "gemini-2.5-flash-lite", 450, 42, 55),
+        ("gen5", "gemini-2.5-flash-lite", 450, 42, 100),
+        ("gen3", "gemini-2.5-flash-lite", 350, 101, 55),
+        ("gen5", "gemini-2.5-flash-lite", 350, 101, 100),
+        ("gen3", "gemini-2.5-flash", 450, 42, 55),
+        ("gen5", "gemini-2.5-flash", 450, 42, 100),
+        ("gen3", "gemini-2.5-flash-lite", 550, 202, 55),
+        ("gen5", "gemini-2.5-flash-lite", 550, 202, 100),
+        ("gen3", "gemini-2.5-flash", 350, 101, 55),
+        ("gen5", "gemini-2.5-flash", 350, 101, 100),
+        ("gen5", "gemini-2.5-flash-lite", 400, 303, 100),
+        ("gen5", "gemini-2.5-flash", 400, 303, 100),
     ]
 
     round_num = 1
@@ -634,6 +634,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             str(actual_seed),
             "--noise-runs",
             "0",
+            "--min-delta",
+            "0.005",
             "--max-words",
             str(max_words),
             "--forbid-template-vars",

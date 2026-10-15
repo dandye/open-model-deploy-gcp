@@ -381,8 +381,9 @@ class WordLimitReflectionLM:
     ) -> Union[str, List[Dict[str, Any]]]:
         suffix_parts: List[str] = []
         if self.max_words is not None:
+            soft_target = max(120, int(self.max_words * 0.80))
             suffix_parts.append(
-                f"WORD BUDGET CONSTRAINT: Keep the complete revised runbook concise and under {self.max_words} words."
+                f"WORD BUDGET CONSTRAINT: Keep the complete revised runbook concise and under {self.max_words} words (aim for {soft_target} words or fewer)."
             )
         if self.strip_scaffolding:
             suffix_parts.append(
@@ -1231,10 +1232,10 @@ def build_reflection_prompt_template() -> str:
         "```\n\n"
         "Refinement Guidelines and Operational Guardrails:\n"
         "1. Epistemic Evidence Verification Sequence: Refine the runbook into a disciplined 4-stage procedural flow:\n"
-        "   - Stage A: Asset Identity & CMDB Context: Query lookup_entity to determine asset business role, criticality, and authorized tags. (MANDATORY: Terminating with 0 tool calls yields 0.0 reward)\n"
+        "   - Stage A: Asset Identity, CMDB Context, & SOAR Case Correlation: Query lookup_entity to determine asset business role, criticality, and authorized change records (CHG-...). If the alert asks whether SOAR already tracks the host/IOC or asks to check existing incident records for duplicate cases, query list_cases (and get_case if needed) to correlate the existing SOAR case ID (e.g. CASE-...) and cite it in your findings. (MANDATORY: Terminating with 0 tool calls yields 0.0 reward)\n"
         "   - Stage B: Network Routing & Scope Verification: Query get_ip_address_report or get_domain_report to determine if target infrastructure is public, private, or reserved documentation space.\n"
-        "   - Stage C: Threat Intelligence Reputation: Check GTI reputation scores and known malware associations.\n"
-        "   - Stage D: Corroboration of Malicious Activity: Correlate telemetry with observed behaviors (e.g. active malware, C2 beaconing vs benign scanning).\n"
+        "   - Stage C: Threat Intelligence Reputation: Check GTI reputation scores and known malware associations using get_ip_address_report, get_domain_report, or get_file_report.\n"
+        "   - Stage D: Corroboration of Malicious Activity: Correlate telemetry from Stages A-C with observed behaviors (e.g. active malware, C2 beaconing vs benign scanning) without redundant tool calls.\n"
         "2. Mandatory Epistemic Investigation (No Short-Circuits): Forbid instructions that tell the analyst to 'skip all enrichment', 'skip all investigation', 'skip step <N>', or 'proceed directly to step <N>'. Never use the phrases 'skip step' or 'proceed directly to step' anywhere in the runbook. The analyst must always execute telemetry queries to substantiate their findings.\n"
         "3. Anti-Memorization Rule (Generalization): Strictly DO NOT hardcode specific IP addresses, CIDR blocks, domain names, or hostnames in the runbook. Express all triage logic using general variable concepts in plain English or angle-bracket descriptors (e.g. <ioc_value>, <asset_role>, <ip_routing_type>); NEVER emit shell-style dollar-brace template syntax.\n"
         "4. Strict Verdict & Containment Discipline:\n"
