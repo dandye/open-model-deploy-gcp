@@ -1055,3 +1055,335 @@ def filter_balanced_traces(
     balanced.extend(ranked[:cap])
   return balanced
 
+
+HARNESS2_ATTRIBUTION_LABELS: Tuple[str, ...] = (
+    "helped",
+    "hurt",
+    "no_observed_effect",
+    "confounded",
+)
+
+
+@dataclass(frozen=True)
+class ComponentAttribution:
+  """Per-component edit attribution against the clean base harness H_0."""
+
+  component_name: str
+  label: str
+  changed: bool
+  mean_delta: float
+  evaluated_cases: Tuple[str, ...] = ()
+  regressed_cases: Tuple[str, ...] = ()
+  reason: str = ""
+
+  def to_dict(self) -> Dict[str, Any]:
+    return asdict(self)
+
+
+def _extract_case_component_map(
+    baseline_telemetry: Optional[Mapping[str, Any]],
+    candidate_telemetry: Optional[Mapping[str, Any]],
+    common_cases: Sequence[str],
+) -> Dict[str, List[str]]:
+  """Map component_name -> sorted list of evaluated case IDs from trace telemetry."""
+  comp_to_cases: Dict[str, set[str]] = {}
+  common_set = set(common_cases)
+  for tel_map in (baseline_telemetry, candidate_telemetry):
+    if not isinstance(tel_map, Mapping):
+      continue
+    for raw_cid, entry in tel_map.items():
+      cid = str(raw_cid)
+      if cid not in common_set:
+        continue
+      comp = ""
+      if isinstance(entry, Mapping):
+        comp = str(
+            entry.get("implicated_runbook")
+            or entry.get("component_name")
+            or ""
+        ).strip()
+      else:
+        comp = str(
+            getattr(entry, "implicated_runbook", "")
+            or getattr(entry, "component_name", "")
+            or ""
+        ).strip()
+      if comp:
+        comp_to_cases.setdefault(comp, set()).add(cid)
+  return {comp: sorted(cases) for comp, cases in comp_to_cases.items()}
+
+
+def attribute_candidate_edits(
+    base_candidate: Mapping[str, str],
+    candidate: Mapping[str, str],
+    baseline_scores: Mapping[str, float],
+    candidate_scores: Mapping[str, float],
+    tau_accept: float,
+    baseline_telemetry: Optional[Mapping[str, Any]] = None,
+    candidate_telemetry: Optional[Mapping[str, Any]] = None,
+    pass_threshold: float = 0.70,
+) -> Dict[str, ComponentAttribution]:
+  """Label each component edit as helped, hurt, no_observed_effect, or confounded.
+
+  Matches Harness^2 (Xu et al., arXiv:2610.14224): when multiple components
+  change together without isolated disjoint per-component rollouts, each changed
+  component is labeled 'confounded' so multi-edit changes cannot poison credit
+  assignment or the experience library.
+  """
+  norm_base = {str(k): float(v) for k, v in baseline_scores.items()}
+  norm_cand = {str(k): float(v) for k, v in candidate_scores.items()}
+  common_cases = sorted(set(norm_base) & set(norm_cand))
+
+  all_components = sorted(set(base_candidate.keys()) | set(candidate.keys()))
+  changed_components = [
+      comp
+      for comp in all_components
+      if base_candidate.get(comp) != candidate.get(comp)
+  ]
+
+  comp_to_cases = _extract_case_component_map(
+      baseline_telemetry, candidate_telemetry, common_cases
+  )
+
+  # Check whether multi-component changes have strictly disjoint, non-empty case sets.
+  disjoint_multi_isolated = False
+  if len(changed_components) > 1:
+    assigned_sets = [set(comp_to_cases.get(comp, [])) for comp in changed_components]
+    if all(bool(s) for s in assigned_sets):
+      union_len = len(set().union(*assigned_sets))
+      sum_len = sum(len(s) for s in assigned_sets)
+      disjoint_multi_isolated = (union_len == sum_len)
+
+  overall_delta = (
+      sum(norm_cand[c] - norm_base[c] for c in common_cases) / len(common_cases)
+      if common_cases
+      else 0.0
+  )
+
+  results: Dict[str, ComponentAttribution] = {}
+  for comp in all_components:
+    if comp not in changed_components:
+      results[comp] = ComponentAttribution(
+          component_name=comp,
+          label="no_observed_effect",
+          changed=False,
+          mean_delta=0.0,
+          evaluated_cases=tuple(comp_to_cases.get(comp, [])),
+          regressed_cases=(),
+          reason="Component unchanged from base harness.",
+      )
+      continue
+
+    if len(changed_components) > 1 and not disjoint_multi_isolated:
+      results[comp] = ComponentAttribution(
+          component_name=comp,
+          label="confounded",
+          changed=True,
+          mean_delta=overall_delta,
+          evaluated_cases=tuple(comp_to_cases.get(comp, common_cases)),
+          regressed_cases=(),
+          reason=(
+              f"Multiple components ({len(changed_components)}) changed together "
+              "without isolated per-component rollouts."
+          ),
+      )
+      continue
+
+    eval_cases = comp_to_cases.get(comp) or list(common_cases)
+    if not eval_cases:
+      results[comp] = ComponentAttribution(
+          component_name=comp,
+          label="no_observed_effect",
+          changed=True,
+          mean_delta=0.0,
+          evaluated_cases=(),
+          regressed_cases=(),
+          reason="No evaluated cases mapped to this component.",
+      )
+      continue
+
+    comp_delta = sum(norm_cand[c] - norm_base[c] for c in eval_cases) / len(eval_cases)
+    regressed = [
+        c
+        for c in eval_cases
+        if norm_base[c] >= pass_threshold and norm_cand[c] < pass_threshold
+    ]
+
+    safety_regressed = False
+    if isinstance(candidate_telemetry, Mapping):
+      for c in eval_cases:
+        c_tel = candidate_telemetry.get(c)
+        b_tel = baseline_telemetry.get(c) if isinstance(baseline_telemetry, Mapping) else None
+        if isinstance(c_tel, Mapping):
+          c_safety = bool(c_tel.get("safety_gate_triggered")) or bool(c_tel.get("zero_tool_hesitation"))
+          b_safety = (
+              (bool(b_tel.get("safety_gate_triggered")) or bool(b_tel.get("zero_tool_hesitation")))
+              if isinstance(b_tel, Mapping)
+              else False
+          )
+          if c_safety and not b_safety:
+            safety_regressed = True
+            if c not in regressed:
+              regressed.append(c)
+
+    if regressed or safety_regressed or comp_delta <= -float(tau_accept):
+      label = "hurt"
+      reason = (
+          f"Isolated edit hurt performance (delta={comp_delta:+.4f}, "
+          f"regressed_cases={regressed})."
+      )
+    elif comp_delta >= float(tau_accept):
+      label = "helped"
+      reason = (
+          f"Isolated edit helped performance (delta={comp_delta:+.4f} >= "
+          f"tau_accept={float(tau_accept):.4f}) with zero regressions."
+      )
+    else:
+      label = "no_observed_effect"
+      reason = (
+          f"Isolated edit delta ({comp_delta:+.4f}) stayed within noise band "
+          f"tau_accept ({float(tau_accept):.4f})."
+      )
+
+    results[comp] = ComponentAttribution(
+        component_name=comp,
+        label=label,
+        changed=True,
+        mean_delta=comp_delta,
+        evaluated_cases=tuple(eval_cases),
+        regressed_cases=tuple(sorted(regressed)),
+        reason=reason,
+    )
+
+  return results
+
+
+@dataclass(frozen=True)
+class ExperienceEntry:
+  """Transferable contrast-verified lesson stored in the continual harness R_t."""
+
+  cue: str
+  lesson: str
+  evidence: str
+  confidence: str
+  scope: str
+  component_name: str
+  attribution_label: str
+  mean_delta: float
+  created_at_utc: str
+
+  def to_dict(self) -> Dict[str, Any]:
+    return asdict(self)
+
+  @classmethod
+  def from_dict(cls, data: Mapping[str, Any]) -> "ExperienceEntry":
+    return cls(
+        cue=str(data.get("cue", "")),
+        lesson=str(data.get("lesson", "")),
+        evidence=str(data.get("evidence", "")),
+        confidence=str(data.get("confidence", "medium")),
+        scope=str(data.get("scope", "COMPOSED")),
+        component_name=str(data.get("component_name", "")),
+        attribution_label=str(data.get("attribution_label", "helped")),
+        mean_delta=float(data.get("mean_delta", 0.0) or 0.0),
+        created_at_utc=str(data.get("created_at_utc", "")),
+    )
+
+
+class ExperienceLibrary:
+  """Indexed continual improvement library (R_t) storing contrast-verified EXPERIENCE.md entries."""
+
+  def __init__(self, library_dir: Path | str) -> None:
+    self.library_dir = Path(library_dir)
+    self.jsonl_path = self.library_dir / "experience_library.jsonl"
+    self.markdown_path = self.library_dir / "EXPERIENCE.md"
+    self._lock = threading.Lock()
+
+  def read_entries(self) -> List[ExperienceEntry]:
+    if not self.jsonl_path.exists():
+      return []
+    entries: List[ExperienceEntry] = []
+    for line in self.jsonl_path.read_text(encoding="utf-8").splitlines():
+      if line.strip():
+        entries.append(ExperienceEntry.from_dict(json.loads(line)))
+    return entries
+
+  def _write_entry(self, entry: ExperienceEntry) -> ExperienceEntry:
+    with self._lock:
+      self.library_dir.mkdir(parents=True, exist_ok=True)
+      with open(self.jsonl_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry.to_dict()) + "\n")
+      self.markdown_path.write_text(self.render_markdown(), encoding="utf-8")
+    return entry
+
+  def record_from_attributions(
+      self,
+      attributions: Mapping[str, ComponentAttribution],
+      cue: str,
+      lesson: str,
+      evidence: str,
+      scope: str = "COMPOSED",
+      confidence: str = "high",
+  ) -> Optional[ExperienceEntry]:
+    """Write at most one transferable entry when an isolated edit helped; skip confounded edits."""
+    if any(attr.changed and attr.label == "confounded" for attr in attributions.values()):
+      return None
+
+    helped = [
+        attr
+        for attr in attributions.values()
+        if attr.changed and attr.label == "helped"
+    ]
+    if not helped:
+      return None
+
+    best_attr = max(helped, key=lambda a: a.mean_delta)
+    entry = ExperienceEntry(
+        cue=redact(cue).strip(),
+        lesson=redact(lesson).strip(),
+        evidence=redact(evidence).strip(),
+        confidence=confidence,
+        scope=scope,
+        component_name=best_attr.component_name,
+        attribution_label=best_attr.label,
+        mean_delta=round(best_attr.mean_delta, 6),
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    return self._write_entry(entry)
+
+  def retrieve_for_component(
+      self, component_name: str, limit: int = 3
+  ) -> List[ExperienceEntry]:
+    """Return top contrast-verified lessons for a target component or invariant scope."""
+    all_entries = self.read_entries()
+    matched = [
+        e
+        for e in all_entries
+        if e.component_name == component_name or e.scope.upper() == "INV"
+    ]
+    matched.sort(key=lambda e: e.mean_delta, reverse=True)
+    return matched[: max(0, int(limit))]
+
+  def render_markdown(self) -> str:
+    """Render EXPERIENCE.md for human review and editor prompt conditioning."""
+    entries = self.read_entries()
+    lines = [
+        "# Continual Improvement Library (EXPERIENCE.md)",
+        "",
+        "Contrast-verified lessons extracted from isolated runbook probes.",
+        "Confounded multi-component edits are excluded.",
+        "",
+    ]
+    for idx, entry in enumerate(entries, start=1):
+      lines.extend([
+          f"## {idx}. {entry.cue}",
+          f"- **Component**: `{entry.component_name}` (`{entry.scope}`)",
+          f"- **Attribution**: `{entry.attribution_label}` (mean delta `{entry.mean_delta:+.4f}`)",
+          f"- **Lesson**: {entry.lesson}",
+          f"- **Evidence**: {entry.evidence}",
+          f"- **Confidence**: `{entry.confidence}`",
+          "",
+      ])
+    return "\n".join(lines).rstrip() + "\n"
+
+

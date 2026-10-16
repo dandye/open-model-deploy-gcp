@@ -29,11 +29,16 @@ try:
     from agent.hillclimb_harness import (
         BudgetExceeded,
         BudgetLedger,
+        ComponentAttribution,
         DEFAULT_COST_STAIRCASE_TIERS,
         DEFAULT_PROTECTED_HARNESS_PATHS,
+        ExperienceEntry,
+        ExperienceLibrary,
+        HARNESS2_ATTRIBUTION_LABELS,
         HarnessIntegrityGuard,
         HarnessTamperError,
         HillclimbLedger,
+        attribute_candidate_edits,
         estimate_model_cost_usd,
         estimate_noise_floor,
         evaluate_candidate_acceptance,
@@ -67,11 +72,16 @@ except ModuleNotFoundError:
     from hillclimb_harness import (
         BudgetExceeded,
         BudgetLedger,
+        ComponentAttribution,
         DEFAULT_COST_STAIRCASE_TIERS,
         DEFAULT_PROTECTED_HARNESS_PATHS,
+        ExperienceEntry,
+        ExperienceLibrary,
+        HARNESS2_ATTRIBUTION_LABELS,
         HarnessIntegrityGuard,
         HarnessTamperError,
         HillclimbLedger,
+        attribute_candidate_edits,
         estimate_model_cost_usd,
         estimate_noise_floor,
         evaluate_candidate_acceptance,
@@ -1250,6 +1260,335 @@ def build_reflection_prompt_template() -> str:
         "Provide the complete revised runbook inside ```markdown blocks."
     )
 
+
+def build_invariant_reflection_prompt_template() -> str:
+    """Build INVARIANT (INV) scoped reflection prompt targeting cross-domain agent procedure."""
+    return (
+        "You are the INVARIANT (INV) agent harness editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Your scope is strictly cross-domain agentic workflow, step-0 enrichment gating, tool-call\n"
+        "sequencing, degraded-mode pivot checks, and structural runbook hygiene.\n"
+        "Do NOT invent domain-specific threat intelligence rules; focus on procedural execution.\n\n"
+        "Here is the active runbook component (<curr_param>):\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "Diagnostic trace feedback and prior experience (<side_info>):\n"
+        "```\n"
+        "<side_info>\n"
+        "```\n\n"
+        "INVARIANT (INV) Refinement Rules:\n"
+        "1. Step-0 Epistemic Gate: Require at least 1 enrichment tool call before any triage verdict (0 tool calls yields 0.0 reward). Never allow 'skip all enrichment', 'skip step', or 'proceed directly to step'.\n"
+        "2. 4-Stage Procedural Skeleton: Keep `# <Title>`, `## Objective`, `## Scope`, `## Inputs`, `## Tools`, and `## Workflow Steps` (`Stage A` -> `Stage B` -> `Stage C` -> `Stage D`) in order.\n"
+        "3. Tool Budget & Degraded Mode: Gather corroborating evidence in <= 3 epistemic calls. On HTTP 503 / tool unavailability, do not retry the failing endpoint in a loop; pivot once to local lookup_entity.\n"
+        "4. Structural Hygiene: Use `<angle_bracket>` input slots, never `${VAR_NAME}` placeholders, never Mermaid `sequenceDiagram` blocks, and never interactive pseudo-tools (`ask_followup_question`, `attempt_completion`, `write_to_file`).\n"
+        "5. Output Standards: Output only the revised markdown runbook inside ```markdown blocks, with zero emojis.\n"
+    )
+
+
+def build_domain_reflection_prompt_template() -> str:
+    """Build DOMAIN (DOM) scoped reflection prompt targeting SecOps practitioner contracts."""
+    return (
+        "You are the DOMAIN (DOM) SecOps practitioner editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Your scope is strictly cybersecurity triage contracts, CMDB asset blast-radius checks,\n"
+        "network routing classifications, LOLBin vs payload discrimination, SIEM lookback horizons,\n"
+        "and mutually exclusive Stage D verdict/containment rules.\n\n"
+        "Here is the active runbook component (<curr_param>):\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "Diagnostic trace feedback and prior experience (<side_info>):\n"
+        "```\n"
+        "<side_info>\n"
+        "```\n\n"
+        "DOMAIN (DOM) SecOps Practitioner Rules:\n"
+        "1. Stage A CMDB & SOAR Correlation: Query `lookup_entity` for asset role, criticality (`CRITICAL` vs `STANDARD`), and change tickets (`CHG-...`). Query `list_cases` when checking duplicate SOAR incidents.\n"
+        "2. Stage B Network Routing Scope: Classify target IPs/domains as `PUBLIC`, `PRIVATE`, or RFC-5737 documentation space before any containment.\n"
+        "3. Stage C & D Threat Intel, LOLBin Safety, & SIEM Horizon: Check `get_file_report` certificate status to distinguish signed Windows LOLBins (never block signed OS binary hashes) from malicious payloads. When a `72h` SIEM search (`search_security_events`) returns 0 hits on a threat hunt, widen lookback to `168h` (`7d`).\n"
+        "4. Mutually Exclusive Stage D Verdicts:\n"
+        "   - `MALICIOUS`: Corroborated active threat on the alerted asset -> `isolate_host` and/or `block_indicator`.\n"
+        "   - `SUSPICIOUS`: Unverified anomaly -> `update_case_comment` only (never `isolate_host` or `close_case`).\n"
+        "   - `INCONCLUSIVE`: 503 outage after local pivot -> `update_case_comment` only (never contain or close).\n"
+        "   - `BENIGN`: Verified authorized scanner, change ticket `CHG-...`, or documentation IP -> `update_case_comment` + `close_case`.\n"
+        "5. Anti-Memorization & Hygiene: Never hardcode literal IPs, benchmark hostnames, or `CASE-` IDs. Never use `${VAR_NAME}`, Mermaid diagrams, interactive pseudo-tools, or emojis.\n"
+        "Provide the complete revised runbook inside ```markdown blocks.\n"
+    )
+
+
+def build_compose_prompt(
+    component_name: str,
+    base_text: str,
+    inv_text: str,
+    dom_text: str,
+    base_score: Optional[float] = None,
+    inv_score: Optional[float] = None,
+    dom_score: Optional[float] = None,
+) -> str:
+    """Build COMPOSE prompt to merge supported INV and DOM edits or return KEEP_BASE."""
+    score_line = ""
+    if base_score is not None and inv_score is not None and dom_score is not None:
+        score_line = (
+            f"Matched Probe Scores on `{component_name}`: "
+            f"Base={base_score:.4f}, INV={inv_score:.4f}, DOM={dom_score:.4f}.\n\n"
+        )
+    return (
+        "You are the COMPOSE editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Inspect the clean base runbook, the INVARIANT (INV) candidate, and the DOMAIN (DOM) candidate.\n"
+        "Selectively merge the supported, non-conflicting improvements from INV and DOM into one\n"
+        "cohesive runbook. If neither candidate offers a safe improvement over Base, output `KEEP_BASE`.\n\n"
+        f"{score_line}"
+        "### Base Runbook\n"
+        "```markdown\n"
+        f"{base_text}\n"
+        "```\n\n"
+        "### INV Candidate (Workflow & Procedure)\n"
+        "```markdown\n"
+        f"{inv_text}\n"
+        "```\n\n"
+        "### DOM Candidate (SecOps Domain Contracts)\n"
+        "```markdown\n"
+        f"{dom_text}\n"
+        "```\n\n"
+        "COMPOSE Rules:\n"
+        "1. Preserve the 6-section markdown skeleton and 4-stage flow (`Stage A`..`Stage D`).\n"
+        "2. Do not exceed word limits, and never include `${VAR_NAME}`, Mermaid blocks, interactive pseudo-tools, hardcoded IPs/hostnames/CASE IDs, or emojis.\n"
+        "3. Output either `KEEP_BASE` or the merged markdown runbook inside ```markdown blocks.\n"
+    )
+
+
+class Harness2ProposeProbeComposeProposer:
+    """Contrastive Propose-Probe-Compose proposer with scoped INV and DOM editors.
+
+    Implements GEPA's ProposalFn contract:
+        (candidate, reflective_dataset, components_to_update) -> dict[str, str]
+    """
+
+    def __init__(
+        self,
+        reflection_lm: Callable[[Union[str, List[Dict[str, Any]]]], str],
+        probe_adapter: Optional[Any] = None,
+        probe_batch: Optional[List[Dict[str, Any]]] = None,
+        experience_library: Optional[ExperienceLibrary] = None,
+        seed_candidate: Optional[Dict[str, str]] = None,
+        max_growth_ratio: float = 1.35,
+        forbidden_literals: Optional[Sequence[str]] = None,
+        forbid_template_vars: bool = True,
+        forbid_mermaid_diagrams: bool = True,
+        forbid_interactive_pseudotools: bool = True,
+        max_words: Optional[int] = None,
+    ) -> None:
+        self.reflection_lm = reflection_lm
+        self.probe_adapter = probe_adapter
+        self.probe_batch = list(probe_batch) if probe_batch else None
+        self.experience_library = experience_library
+        self.seed_candidate = seed_candidate
+        self.max_growth_ratio = max_growth_ratio
+        self.forbidden_literals = list(forbidden_literals or [])
+        self.forbid_template_vars = bool(forbid_template_vars)
+        self.forbid_mermaid_diagrams = bool(forbid_mermaid_diagrams)
+        self.forbid_interactive_pseudotools = bool(forbid_interactive_pseudotools)
+        self.max_words = max_words
+        self.last_probe_records: List[Dict[str, Any]] = []
+
+    def _enrich_dataset_with_experience(
+        self,
+        comp_name: str,
+        records: Sequence[Mapping[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        enriched = [dict(r) for r in records]
+        if self.experience_library is None:
+            return enriched
+        lessons = self.experience_library.retrieve_for_component(comp_name, limit=3)
+        if not lessons:
+            return enriched
+        exp_lines = [
+            f"- [{entry.scope}] {entry.cue}: {entry.lesson} (delta={entry.mean_delta:+.3f})"
+            for entry in lessons
+        ]
+        exp_block = "\n".join(exp_lines)
+        if enriched:
+            first = dict(enriched[0])
+            first["Prior Experience (R_t)"] = exp_block
+            enriched[0] = first
+        else:
+            enriched.append({"Prior Experience (R_t)": exp_block})
+        return enriched
+
+    def _validate_component_candidate(
+        self,
+        candidate: Dict[str, str],
+        comp_name: str,
+        new_text: str,
+    ) -> bool:
+        if not new_text or "KEEP_BASE" in new_text:
+            return False
+        trial = dict(candidate)
+        trial[comp_name] = new_text
+        ok, _ = validate_runbook_candidate(
+            {comp_name: new_text},
+            seed_candidate=self.seed_candidate,
+            max_growth_ratio=self.max_growth_ratio,
+            forbidden_literals=self.forbidden_literals,
+            forbid_template_vars=self.forbid_template_vars,
+            forbid_mermaid_diagrams=self.forbid_mermaid_diagrams,
+            forbid_interactive_pseudotools=self.forbid_interactive_pseudotools,
+            max_words=self.max_words,
+        )
+        return ok
+
+    def _probe_score(self, cand: Dict[str, str]) -> Optional[float]:
+        if self.probe_adapter is None or not self.probe_batch:
+            return None
+        cached_fn = getattr(self.probe_adapter, "get_cached_telemetry", None)
+        if callable(cached_fn):
+            cached = cached_fn(cand, self.probe_batch)
+            if isinstance(cached, Mapping) and cached:
+                vals = [
+                    float(v.get("score", 0.0))
+                    for v in cached.values()
+                    if isinstance(v, Mapping) and isinstance(v.get("score"), (int, float))
+                ]
+                if len(vals) == len(self.probe_batch):
+                    return sum(vals) / len(vals)
+        batch_res = self.probe_adapter.evaluate(self.probe_batch, cand, capture_traces=False)
+        scores = list(getattr(batch_res, "scores", None) or [])
+        if not scores:
+            return 0.0
+        return sum(float(x) for x in scores) / len(scores)
+
+    def __call__(
+        self,
+        candidate: Dict[str, str],
+        reflective_dataset: Mapping[str, Sequence[Mapping[str, Any]]],
+        components_to_update: List[str],
+    ) -> Dict[str, str]:
+        from gepa.strategies.instruction_proposal import InstructionProposalSignature
+
+        proposed: Dict[str, str] = {}
+        inv_tmpl = build_invariant_reflection_prompt_template()
+        dom_tmpl = build_domain_reflection_prompt_template()
+
+        for comp_name in components_to_update:
+            base_text = candidate.get(comp_name, "")
+            raw_records = reflective_dataset.get(comp_name) or []
+            if not raw_records and self.experience_library is None:
+                proposed[comp_name] = base_text
+                continue
+
+            enriched_records = self._enrich_dataset_with_experience(comp_name, raw_records)
+            if not enriched_records:
+                proposed[comp_name] = base_text
+                continue
+
+            # 1. Propose INV and DOM candidates
+            inv_prompt = InstructionProposalSignature.prompt_renderer({
+                "current_instruction_doc": base_text,
+                "dataset_with_feedback": enriched_records,
+                "prompt_template": inv_tmpl,
+            })
+            dom_prompt = InstructionProposalSignature.prompt_renderer({
+                "current_instruction_doc": base_text,
+                "dataset_with_feedback": enriched_records,
+                "prompt_template": dom_tmpl,
+            })
+
+            inv_raw = self.reflection_lm(inv_prompt)
+            dom_raw = self.reflection_lm(dom_prompt)
+
+            inv_text = InstructionProposalSignature.output_extractor(str(inv_raw))["new_instruction"]
+            dom_text = InstructionProposalSignature.output_extractor(str(dom_raw))["new_instruction"]
+
+            inv_valid = self._validate_component_candidate(candidate, comp_name, inv_text)
+            dom_valid = self._validate_component_candidate(candidate, comp_name, dom_text)
+
+            # 2. Probe under matched container/sandbox settings (when probe_adapter is wired)
+            if self.probe_adapter is not None and self.probe_batch:
+                base_score = self._probe_score(candidate) or 0.0
+                inv_score = (
+                    self._probe_score({**candidate, comp_name: inv_text})
+                    if inv_valid
+                    else -1.0
+                )
+                dom_score = (
+                    self._probe_score({**candidate, comp_name: dom_text})
+                    if dom_valid
+                    else -1.0
+                )
+                inv_helps = inv_valid and (inv_score is not None) and (inv_score > base_score + 1e-6)
+                dom_helps = dom_valid and (dom_score is not None) and (dom_score > base_score + 1e-6)
+
+                selected_scope = "KEEP_BASE"
+                selected_text = base_text
+                composed_score: Optional[float] = None
+
+                if inv_helps and dom_helps:
+                    comp_prompt = build_compose_prompt(
+                        component_name=comp_name,
+                        base_text=base_text,
+                        inv_text=inv_text,
+                        dom_text=dom_text,
+                        base_score=base_score,
+                        inv_score=inv_score,
+                        dom_score=dom_score,
+                    )
+                    comp_raw = str(self.reflection_lm(comp_prompt))
+                    if "KEEP_BASE" not in comp_raw:
+                        comp_text = InstructionProposalSignature.output_extractor(comp_raw)["new_instruction"]
+                        if self._validate_component_candidate(candidate, comp_name, comp_text):
+                            composed_score = self._probe_score({**candidate, comp_name: comp_text})
+                            if composed_score is not None and composed_score >= max(inv_score, dom_score) - 1e-6:
+                                selected_text = comp_text
+                                selected_scope = "COMPOSED"
+                    if selected_scope == "KEEP_BASE":
+                        if (inv_score or 0.0) >= (dom_score or 0.0):
+                            selected_text = inv_text
+                            selected_scope = "INV"
+                        else:
+                            selected_text = dom_text
+                            selected_scope = "DOM"
+                elif inv_helps:
+                    selected_text = inv_text
+                    selected_scope = "INV"
+                elif dom_helps:
+                    selected_text = dom_text
+                    selected_scope = "DOM"
+
+                self.last_probe_records.append({
+                    "component_name": comp_name,
+                    "base_score": base_score,
+                    "inv_score": inv_score,
+                    "dom_score": dom_score,
+                    "composed_score": composed_score,
+                    "selected_scope": selected_scope,
+                })
+                proposed[comp_name] = selected_text
+                continue
+
+            # 3. Verifier-free / un-probed fallback composition
+            if inv_valid and dom_valid:
+                comp_prompt = build_compose_prompt(
+                    component_name=comp_name,
+                    base_text=base_text,
+                    inv_text=inv_text,
+                    dom_text=dom_text,
+                )
+                comp_raw = str(self.reflection_lm(comp_prompt))
+                if "KEEP_BASE" in comp_raw:
+                    proposed[comp_name] = base_text
+                    continue
+                comp_text = InstructionProposalSignature.output_extractor(comp_raw)["new_instruction"]
+                if self._validate_component_candidate(candidate, comp_name, comp_text):
+                    proposed[comp_name] = comp_text
+                else:
+                    proposed[comp_name] = inv_text
+            elif inv_valid:
+                proposed[comp_name] = inv_text
+            elif dom_valid:
+                proposed[comp_name] = dom_text
+            else:
+                proposed[comp_name] = base_text
+
+        return proposed
+
 def build_arg_parser() -> argparse.ArgumentParser:
     """Build command-line argument parser for GEPA runbook optimization.
 
@@ -1424,7 +1763,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--freeze-passing-runbooks",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Freeze runbooks that have 100% pass rate in the baseline.",
+        help="Freeze runbooks that have 100%% pass rate in the baseline.",
     )
     parser.add_argument(
         "--max-words",
@@ -1455,6 +1794,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help="Hard USD budget ceiling enforced via BudgetLedger across the optimization run.",
+    )
+    parser.add_argument(
+        "--proposal-mode",
+        choices=["single", "harness2"],
+        default="single",
+        help="Reflection proposal mode: 'single' (default GEPA) or 'harness2' (scoped INV/DOM Propose-Probe-Compose).",
+    )
+    parser.add_argument(
+        "--experience-dir",
+        type=str,
+        default=None,
+        help="Directory for EXPERIENCE.md and experience_library.jsonl (defaults to --output-dir when --proposal-mode=harness2).",
     )
     return parser
 
@@ -1708,25 +2059,55 @@ def main(args: Optional[List[str]] = None) -> int:
 
     reflection_prompt_template = build_reflection_prompt_template()
 
+    experience_library: Optional[ExperienceLibrary] = None
+    if parsed_args.proposal_mode == "harness2" or parsed_args.experience_dir:
+        exp_dir = (
+            Path(parsed_args.experience_dir)
+            if parsed_args.experience_dir
+            else output_dir
+        )
+        if not exp_dir.is_absolute():
+            exp_dir = ROOT_DIR / exp_dir
+        experience_library = ExperienceLibrary(exp_dir)
+
+    custom_proposer: Optional[Harness2ProposeProbeComposeProposer] = None
+    if parsed_args.proposal_mode == "harness2":
+        custom_proposer = Harness2ProposeProbeComposeProposer(
+            reflection_lm=reflection_lm,
+            probe_adapter=adapter,
+            probe_batch=trainset[: min(4, len(trainset))] if trainset else None,
+            experience_library=experience_library,
+            seed_candidate=seed_candidate,
+            max_growth_ratio=parsed_args.max_growth_ratio,
+            forbidden_literals=forbidden_literals,
+            forbid_template_vars=parsed_args.forbid_template_vars,
+            forbid_mermaid_diagrams=parsed_args.forbid_mermaid,
+            forbid_interactive_pseudotools=parsed_args.forbid_pseudotools,
+            max_words=parsed_args.max_words,
+        )
+
     effective_max_metric_calls = int(parsed_args.max_metric_calls)
     if effective_max_metric_calls <= len(valset):
         effective_max_metric_calls = len(valset) + 4 * max(1, effective_max_metric_calls)
 
     print(
-        f"Starting GEPA optimization (max_metric_calls={effective_max_metric_calls} "
+        f"Starting GEPA optimization (mode={parsed_args.proposal_mode}, max_metric_calls={effective_max_metric_calls} "
         f"[requested={parsed_args.max_metric_calls}], seed={parsed_args.seed})..."
     )
-    result = gepa.optimize(
-        seed_candidate=seed_candidate,
-        trainset=trainset,
-        valset=valset,
-        adapter=adapter,
-        reflection_lm=reflection_lm,
-        max_metric_calls=effective_max_metric_calls,
-        reflection_prompt_template=reflection_prompt_template,
-        candidate_selection_strategy="pareto",
-        seed=parsed_args.seed,
-    )
+    optimize_kwargs: Dict[str, Any] = {
+        "seed_candidate": seed_candidate,
+        "trainset": trainset,
+        "valset": valset,
+        "adapter": adapter,
+        "reflection_lm": reflection_lm,
+        "max_metric_calls": effective_max_metric_calls,
+        "reflection_prompt_template": reflection_prompt_template,
+        "candidate_selection_strategy": "pareto",
+        "seed": parsed_args.seed,
+    }
+    if custom_proposer is not None:
+        optimize_kwargs["custom_candidate_proposer"] = custom_proposer
+    result = gepa.optimize(**optimize_kwargs)
 
     # GEPA scores align with candidate indices; best_idx can refer to a candidate
     # rejected by our anti-memorization validation. Rank only valid candidates.
@@ -1859,7 +2240,7 @@ def main(args: Optional[List[str]] = None) -> int:
                     tau_accept=tau_accept,
                     decision="KEPT",
                     rationale="Seed candidate baseline.",
-                    metadata={"task_lm": parsed_args.task_lm},
+                    metadata={"task_lm": parsed_args.task_lm, "proposal_mode": parsed_args.proposal_mode},
                 )
             continue
 
@@ -1872,7 +2253,7 @@ def main(args: Optional[List[str]] = None) -> int:
                 tau_accept=tau_accept,
                 decision="REJECTED_INVALID",
                 rationale="; ".join(violations),
-                metadata={"task_lm": parsed_args.task_lm},
+                metadata={"task_lm": parsed_args.task_lm, "proposal_mode": parsed_args.proposal_mode},
             )
             continue
 
@@ -1906,7 +2287,7 @@ def main(args: Optional[List[str]] = None) -> int:
                         }
                 else:
                     cand_subscores = {_case_key(i): float(score) for i in range(len(valset))}
-                
+
         acc = evaluate_candidate_acceptance(
             baseline_scores=baseline_subscores,
             candidate_scores=cand_subscores,
@@ -1914,7 +2295,23 @@ def main(args: Optional[List[str]] = None) -> int:
             baseline_telemetry=baseline_telemetry,
             candidate_telemetry=cand_telemetry,
         )
-        
+
+        comp_attributions = attribute_candidate_edits(
+            base_candidate=seed_candidate,
+            candidate=candidate,
+            baseline_scores=baseline_subscores,
+            candidate_scores=cand_subscores,
+            tau_accept=tau_accept,
+            baseline_telemetry=baseline_telemetry,
+            candidate_telemetry=cand_telemetry,
+        )
+        attr_map = {name: attr.label for name, attr in comp_attributions.items()}
+        confounded_components = sorted(
+            name
+            for name, attr in comp_attributions.items()
+            if attr.changed and attr.label == "confounded"
+        )
+
         ledger.append_entry(
             iteration=index,
             harness_sha256=composite_sha,
@@ -1923,9 +2320,39 @@ def main(args: Optional[List[str]] = None) -> int:
             tau_accept=tau_accept,
             decision=acc.status,
             rationale=acc.reason,
-            metadata={"task_lm": parsed_args.task_lm, "regressed_cases": acc.regressed_cases, "categorical_violations": getattr(acc, "categorical_violations", []), "zero_tool_cases": getattr(acc, "zero_tool_cases", [])},
+            metadata={
+                "task_lm": parsed_args.task_lm,
+                "proposal_mode": parsed_args.proposal_mode,
+                "regressed_cases": acc.regressed_cases,
+                "categorical_violations": getattr(acc, "categorical_violations", []),
+                "zero_tool_cases": getattr(acc, "zero_tool_cases", []),
+                "component_attributions": attr_map,
+                "confounded_components": confounded_components,
+            },
         )
-        
+
+        if experience_library is not None and acc.accepted:
+            helped_comps = [
+                attr
+                for attr in comp_attributions.values()
+                if attr.changed and attr.label == "helped"
+            ]
+            if helped_comps and not confounded_components:
+                best_helped = max(helped_comps, key=lambda a: a.mean_delta)
+                experience_library.record_from_attributions(
+                    attributions=comp_attributions,
+                    cue=f"Runbook refinement for {best_helped.component_name}",
+                    lesson=(
+                        f"Isolated update to {best_helped.component_name} improved validation "
+                        f"fitness by {best_helped.mean_delta:+.4f} with zero regressions."
+                    ),
+                    evidence=(
+                        f"Candidate {index} ({parsed_args.proposal_mode}) cleared tau_accept "
+                        f"({tau_accept:.4f}) on {len(best_helped.evaluated_cases)} evaluated cases."
+                    ),
+                    scope="COMPOSED" if parsed_args.proposal_mode == "harness2" else "SINGLE",
+                )
+
         if acc.accepted and (selected_score is None or score > selected_score):
             selected_index = index
             selected_score = float(score)
@@ -1936,6 +2363,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "run_id": run_id,
         "task_lm": parsed_args.task_lm,
         "reflection_lm": parsed_args.reflection_lm,
+        "proposal_mode": parsed_args.proposal_mode,
         "max_metric_calls": parsed_args.max_metric_calls,
         "seed": parsed_args.seed,
         "evalset": str(evalset_path) if parsed_args.evalset else None,

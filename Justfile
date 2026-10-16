@@ -40,6 +40,7 @@ default:
     @printf "  \033[1;32mjust eval-gen3 [flavor] [endpoint]\033[0m     \033[2mRun Gen 3 interactive eval with SDT & loss metrics\033[0m\n"
     @printf "  \033[1;32mjust eval-gen3-live [flavor] [project]\033[0m \033[2mRun Gen 3 live interactive eval with SecOps MCP\033[0m\n"
     @printf "  \033[1;32mjust gepa-evolve [max_calls] [task_lm]\033[0m \033[2mEvolve SOC runbooks via GEPA Pareto optimization\033[0m\n"
+    @printf "  \033[1;32mjust gepa-evolve-harness2 [task_lm]\033[0m   \033[2mEvolve SOC runbooks via Harness^2 Propose-Probe-Compose\033[0m\n"
     @printf "  \033[1;32mjust gepa-compare [task_lm]\033[0m             \033[2mEvaluate SOC agent with GEPA-evolved runbooks\033[0m\n"
     @printf "  \033[1;32mjust agent-soc-deploy\033[0m                  \033[2mDeploy SOC Tier 1 Agent to Agent Engine\033[0m\n\n"
     @printf "\033[1;33mVERTEX AI CUSTOM JOBS (Ephemeral Benchmarks & \$0 Idle):\033[0m\n"
@@ -256,6 +257,10 @@ aqua-diagnose input="docs/soc_eval_results":
 # Evolve SOC runbooks with GEPA guided by AQuA diagnostic clustering and frozen passing runbooks
 gepa-evolve-guided task_lm="gemini-2.5-flash-lite" max_calls="15" reflection_lm="gemini-2.5-pro":
     @uv run python3 -m agent.gepa_runbook_optimizer --max-metric-calls {{max_calls}} --task-lm "{{task_lm}}" --reflection-lm "{{reflection_lm}}" --freeze-passing-runbooks --judge-backend jev --jev-backend gliner_decide --output-dir configs/runbooks/gepa_evolved
+
+# Evolve SOC runbooks with Harness^2 Propose-Probe-Compose (scoped INV/DOM editors + EXPERIENCE.md)
+gepa-evolve-harness2 task_lm="gemini-2.5-flash-lite" max_calls="15" reflection_lm="gemini-2.5-pro":
+    @uv run python3 -m agent.gepa_runbook_optimizer --proposal-mode harness2 --max-metric-calls {{max_calls}} --task-lm "{{task_lm}}" --reflection-lm "{{reflection_lm}}" --freeze-passing-runbooks --judge-backend jev --jev-backend gliner_decide --output-dir configs/runbooks/gepa_evolved
 
 # Run SOC Agent evaluation with Jev System-One judge
 eval-soc-jev flavor="gemini-2.5-flash-lite" gen="3":

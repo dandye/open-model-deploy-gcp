@@ -609,3 +609,192 @@ def test_filter_balanced_traces_balances_verdict_classes():
   assert counts == {"BENIGN": 2, "MALICIOUS": 2, "SUSPICIOUS": 2}
 
 
+def test_attribute_candidate_edits_marks_multi_component_overlapping_edit_confounded():
+  from agent.hillclimb_harness import (
+      HARNESS2_ATTRIBUTION_LABELS,
+      attribute_candidate_edits,
+  )
+
+  assert HARNESS2_ATTRIBUTION_LABELS == (
+      "helped",
+      "hurt",
+      "no_observed_effect",
+      "confounded",
+  )
+
+  base = {
+      "basic_ioc_enrichment.md": "# Seed IOC",
+      "malware_triage.md": "# Seed Malware",
+      "suspicious_login_triage.md": "# Seed Login",
+  }
+  cand = {
+      "basic_ioc_enrichment.md": "# Edited IOC",
+      "malware_triage.md": "# Edited Malware",
+      "suspicious_login_triage.md": "# Seed Login",
+  }
+  base_scores = {"CASE-01": 0.60, "CASE-02": 0.60}
+  cand_scores = {"CASE-01": 0.90, "CASE-02": 0.90}
+
+  # Without isolated per-component telemetry (or with overlapping case mappings),
+  # changing two components together must be labeled confounded.
+  attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=cand,
+      baseline_scores=base_scores,
+      candidate_scores=cand_scores,
+      tau_accept=0.02,
+  )
+  assert attrs["basic_ioc_enrichment.md"].changed is True
+  assert attrs["basic_ioc_enrichment.md"].label == "confounded"
+  assert attrs["malware_triage.md"].changed is True
+  assert attrs["malware_triage.md"].label == "confounded"
+  assert attrs["suspicious_login_triage.md"].changed is False
+  assert attrs["suspicious_login_triage.md"].label == "no_observed_effect"
+
+
+def test_attribute_candidate_edits_labels_isolated_helped_hurt_and_disjoint_cases():
+  from agent.hillclimb_harness import attribute_candidate_edits
+
+  base = {
+      "basic_ioc_enrichment.md": "# Seed IOC",
+      "malware_triage.md": "# Seed Malware",
+  }
+  # 1. Single-component helped
+  cand_helped = {
+      "basic_ioc_enrichment.md": "# Better IOC",
+      "malware_triage.md": "# Seed Malware",
+  }
+  helped_attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=cand_helped,
+      baseline_scores={"CASE-01": 0.60, "CASE-02": 0.80},
+      candidate_scores={"CASE-01": 0.85, "CASE-02": 0.80},
+      tau_accept=0.02,
+  )
+  assert helped_attrs["basic_ioc_enrichment.md"].label == "helped"
+  assert helped_attrs["basic_ioc_enrichment.md"].mean_delta == pytest.approx(0.125)
+  assert helped_attrs["malware_triage.md"].label == "no_observed_effect"
+
+  # 2. Single-component hurt via regression
+  cand_hurt = {
+      "basic_ioc_enrichment.md": "# Regressed IOC",
+      "malware_triage.md": "# Seed Malware",
+  }
+  hurt_attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=cand_hurt,
+      baseline_scores={"CASE-01": 0.85, "CASE-02": 0.60},
+      candidate_scores={"CASE-01": 0.50, "CASE-02": 0.95},
+      tau_accept=0.02,
+  )
+  assert hurt_attrs["basic_ioc_enrichment.md"].label == "hurt"
+  assert "CASE-01" in hurt_attrs["basic_ioc_enrichment.md"].regressed_cases
+
+  # 3. Single-component no_observed_effect within noise floor
+  cand_flat = {
+      "basic_ioc_enrichment.md": "# Slightly reworded IOC",
+      "malware_triage.md": "# Seed Malware",
+  }
+  flat_attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=cand_flat,
+      baseline_scores={"CASE-01": 0.80},
+      candidate_scores={"CASE-01": 0.805},
+      tau_accept=0.02,
+  )
+  assert flat_attrs["basic_ioc_enrichment.md"].label == "no_observed_effect"
+
+  # 4. Two changed components with strictly disjoint evaluated case sets in telemetry
+  cand_disjoint = {
+      "basic_ioc_enrichment.md": "# Better IOC",
+      "malware_triage.md": "# Worse Malware",
+  }
+  base_tel = {
+      "CASE-01": {"case_id": "CASE-01", "implicated_runbook": "basic_ioc_enrichment.md"},
+      "CASE-02": {"case_id": "CASE-02", "implicated_runbook": "malware_triage.md"},
+  }
+  cand_tel = {
+      "CASE-01": {"case_id": "CASE-01", "implicated_runbook": "basic_ioc_enrichment.md"},
+      "CASE-02": {"case_id": "CASE-02", "implicated_runbook": "malware_triage.md"},
+  }
+  disjoint_attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=cand_disjoint,
+      baseline_scores={"CASE-01": 0.60, "CASE-02": 0.80},
+      candidate_scores={"CASE-01": 0.90, "CASE-02": 0.50},
+      tau_accept=0.02,
+      baseline_telemetry=base_tel,
+      candidate_telemetry=cand_tel,
+  )
+  assert disjoint_attrs["basic_ioc_enrichment.md"].label == "helped"
+  assert disjoint_attrs["basic_ioc_enrichment.md"].evaluated_cases == ("CASE-01",)
+  assert disjoint_attrs["malware_triage.md"].label == "hurt"
+  assert disjoint_attrs["malware_triage.md"].evaluated_cases == ("CASE-02",)
+
+
+def test_experience_library_records_only_isolated_helped_and_renders_markdown(tmp_path: Path):
+  from agent.hillclimb_harness import (
+      ExperienceLibrary,
+      attribute_candidate_edits,
+  )
+
+  lib = ExperienceLibrary(tmp_path / "experience")
+  base = {
+      "basic_ioc_enrichment.md": "# Seed IOC",
+      "malware_triage.md": "# Seed Malware",
+  }
+  confounded_cand = {
+      "basic_ioc_enrichment.md": "# Edited IOC",
+      "malware_triage.md": "# Edited Malware",
+  }
+  confounded_attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=confounded_cand,
+      baseline_scores={"CASE-01": 0.60},
+      candidate_scores={"CASE-01": 0.95},
+      tau_accept=0.02,
+  )
+  skipped = lib.record_from_attributions(
+      attributions=confounded_attrs,
+      cue="RFC-5737 documentation subnet check",
+      lesson="Verify routing scope before containment.",
+      evidence="Score rose on CASE-01.",
+  )
+  assert skipped is None
+  assert lib.read_entries() == []
+
+  helped_cand = {
+      "basic_ioc_enrichment.md": "# Seed IOC\nCheck Stage B network routing before isolation.",
+      "malware_triage.md": "# Seed Malware",
+  }
+  helped_attrs = attribute_candidate_edits(
+      base_candidate=base,
+      candidate=helped_cand,
+      baseline_scores={"CASE-01": 0.55},
+      candidate_scores={"CASE-01": 0.92},
+      tau_accept=0.02,
+  )
+  saved = lib.record_from_attributions(
+      attributions=helped_attrs,
+      cue="Documentation IP false alarm",
+      lesson="Query get_ip_address_report in Stage B before host containment.",
+      evidence="Baseline 0.55 -> Probe 0.92 (+0.37) on CASE-01 with sk-1234567890abcdef1234.",
+      scope="DOM",
+  )
+  assert saved is not None
+  assert saved.component_name == "basic_ioc_enrichment.md"
+  assert saved.attribution_label == "helped"
+  assert "sk-[REDACTED]" in saved.evidence
+
+  md_path = tmp_path / "experience" / "EXPERIENCE.md"
+  assert md_path.exists()
+  md_text = md_path.read_text(encoding="utf-8")
+  assert "Documentation IP false alarm" in md_text
+  assert "Query get_ip_address_report" in md_text
+
+  hits = lib.retrieve_for_component("basic_ioc_enrichment.md")
+  assert len(hits) == 1
+  assert hits[0].cue == "Documentation IP false alarm"
+
+
+

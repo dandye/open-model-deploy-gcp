@@ -1680,6 +1680,202 @@ def test_context_debt_penalty_rewards_compressed_clean_runbooks():
     ) == pytest.approx(0.016)
 
 
+def test_scoped_reflection_prompt_templates_separate_inv_and_dom():
+    from gepa.strategies.instruction_proposal import InstructionProposalSignature
+    from agent.gepa_runbook_optimizer import (
+        build_domain_reflection_prompt_template,
+        build_invariant_reflection_prompt_template,
+    )
+
+    inv_tmpl = build_invariant_reflection_prompt_template()
+    dom_tmpl = build_domain_reflection_prompt_template()
+
+    InstructionProposalSignature.validate_prompt_template(inv_tmpl)
+    InstructionProposalSignature.validate_prompt_template(dom_tmpl)
+
+    assert "INVARIANT" in inv_tmpl.upper()
+    assert "step-0" in inv_tmpl.lower() or "0 tool calls" in inv_tmpl.lower()
+    assert "DOMAIN" in dom_tmpl.upper()
+    assert "cmdb" in dom_tmpl.lower()
+    assert "168h" in dom_tmpl.lower() or "lolbin" in dom_tmpl.lower()
+
+    from agent.gepa_runbook_optimizer import build_arg_parser
+    help_text = build_arg_parser().format_help()
+    assert "--proposal-mode" in help_text
+    assert "--experience-dir" in help_text
+
+
+def test_harness2_proposer_proposes_probes_and_composes_or_keeps_base(tmp_path: Path):
+    import gepa
+    from agent.gepa_runbook_optimizer import Harness2ProposeProbeComposeProposer
+    from agent.hillclimb_harness import ExperienceEntry, ExperienceLibrary
+
+    comp = "basic_ioc_enrichment.md"
+    base_candidate = {comp: "# Seed IOC\n1. Investigate available evidence and verify scope before acting."}
+    reflective_dataset = {
+        comp: [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate alert"},
+                "Generated Outputs": {"actual_verdict": "MALICIOUS"},
+                "Feedback": "Verify routing scope and step-0 lookup_entity.",
+            }
+        ]
+    }
+    probe_batch = [{"eval_id": "CASE-01", "prompt": "Investigate alert"}]
+
+    lib = ExperienceLibrary(tmp_path / "exp_lib")
+    lib._write_entry(
+        ExperienceEntry(
+            cue="Documentation IP check",
+            lesson="Query get_ip_address_report in Stage B before containment.",
+            evidence="Baseline 0.55 -> Probe 0.92",
+            confidence="high",
+            scope="DOM",
+            component_name=comp,
+            attribution_label="helped",
+            mean_delta=0.37,
+            created_at_utc="2026-10-16T17:00:00Z",
+        )
+    )
+
+    seen_prompts: list[str] = []
+
+    def fake_lm_both_help(prompt: str) -> str:
+        seen_prompts.append(str(prompt))
+        p_upper = str(prompt).upper()
+        if "COMPOSE EDITOR" in p_upper:
+            return "```markdown\n# Composed IOC\n1. Stage A lookup_entity.\n2. Stage B get_ip_address_report.\n```"
+        if "INVARIANT (INV)" in p_upper:
+            return "```markdown\n# INV IOC\n1. Stage A lookup_entity.\n```"
+        return "```markdown\n# DOM IOC\n1. Stage B get_ip_address_report.\n```"
+
+    class FakeProbeAdapter:
+        def __init__(self, score_map):
+            self.score_map = score_map
+
+        def evaluate(self, batch, candidate, capture_traces=False):
+            text = candidate[comp]
+            sc = self.score_map.get(text, 0.50)
+            return gepa.EvaluationBatch(
+                outputs=["ok"],
+                scores=[sc],
+                trajectories=[{"case_id": "CASE-01", "score": sc, "loss_penalty": 1.0, "assert_passed": True}]
+                if capture_traces
+                else None,
+            )
+
+        def get_cached_telemetry(self, candidate, batch=None):
+            return None
+
+    # Scenario A: Both INV and DOM improve -> Composer merges them
+    adapter_both = FakeProbeAdapter({
+        base_candidate[comp]: 0.55,
+        "# INV IOC\n1. Stage A lookup_entity.": 0.80,
+        "# DOM IOC\n1. Stage B get_ip_address_report.": 0.85,
+        "# Composed IOC\n1. Stage A lookup_entity.\n2. Stage B get_ip_address_report.": 0.92,
+    })
+    proposer_both = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm_both_help,
+        probe_adapter=adapter_both,
+        probe_batch=probe_batch,
+        experience_library=lib,
+        seed_candidate=base_candidate,
+    )
+    out_both = proposer_both(base_candidate, reflective_dataset, [comp])
+    assert out_both[comp] == "# Composed IOC\n1. Stage A lookup_entity.\n2. Stage B get_ip_address_report."
+    assert any("Documentation IP check" in p for p in seen_prompts)
+
+    # Scenario B: INV helps (0.85), DOM hurts (0.30) -> Adopts INV without broken DOM
+    adapter_inv_only = FakeProbeAdapter({
+        base_candidate[comp]: 0.55,
+        "# INV IOC\n1. Stage A lookup_entity.": 0.85,
+        "# DOM IOC\n1. Stage B get_ip_address_report.": 0.30,
+    })
+    proposer_inv = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm_both_help,
+        probe_adapter=adapter_inv_only,
+        probe_batch=probe_batch,
+        seed_candidate=base_candidate,
+    )
+    out_inv = proposer_inv(base_candidate, reflective_dataset, [comp])
+    assert out_inv[comp] == "# INV IOC\n1. Stage A lookup_entity."
+
+    # Scenario C: Both INV and DOM regress below baseline (0.80 -> 0.40, 0.35) -> KEEP_BASE
+    adapter_none = FakeProbeAdapter({
+        base_candidate[comp]: 0.80,
+        "# INV IOC\n1. Stage A lookup_entity.": 0.40,
+        "# DOM IOC\n1. Stage B get_ip_address_report.": 0.35,
+    })
+    proposer_none = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm_both_help,
+        probe_adapter=adapter_none,
+        probe_batch=probe_batch,
+        seed_candidate=base_candidate,
+    )
+    out_none = proposer_none(base_candidate, reflective_dataset, [comp])
+    assert out_none[comp] == base_candidate[comp]
+
+
+def test_cli_harness2_mode_records_component_attributions_and_experience_library(optimizer_cli):
+    run, output_dir, seed, optimize, _, _, _ = optimizer_cli
+
+    # Candidate 1 edits one runbook cleanly and improves (helped).
+    # Candidate 2 edits two runbooks together without isolated case mapping (confounded).
+    cand1 = dict(seed)
+    cand1["basic_ioc_enrichment.md"] = "# Improved\n1. Stage A lookup_entity."
+
+    cand2 = dict(seed)
+    cand2["basic_ioc_enrichment.md"] = "# Confounded\n1. Check entity."
+    cand2["malware_triage.md"] = "# Confounded\n1. Check file."
+
+    rc = run(
+        [seed, cand1, cand2],
+        [0.60, 0.92, 0.90],
+        extra=["--proposal-mode", "harness2", "--noise-runs", "0"],
+    )
+    assert rc == 0
+
+    # Verify gepa.optimize received custom_candidate_proposer in harness2 mode
+    opt_kwargs = optimize.call_args.kwargs
+    assert opt_kwargs.get("custom_candidate_proposer") is not None
+
+    ledger_entries = [
+        json.loads(line)
+        for line in (output_dir / "hillclimb_ledger.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(ledger_entries) == 3
+
+    # Entry 1 (cand1): isolated single-component improvement -> helped
+    meta1 = ledger_entries[1]["metadata"]
+    assert meta1["component_attributions"]["basic_ioc_enrichment.md"] == "helped"
+    assert meta1["confounded_components"] == []
+
+    # Entry 2 (cand2): two components changed together -> confounded
+    meta2 = ledger_entries[2]["metadata"]
+    assert meta2["component_attributions"]["basic_ioc_enrichment.md"] == "confounded"
+    assert meta2["component_attributions"]["malware_triage.md"] == "confounded"
+    assert sorted(meta2["confounded_components"]) == [
+        "basic_ioc_enrichment.md",
+        "malware_triage.md",
+    ]
+
+    # Verify EXPERIENCE.md was written from cand1 (helped) and excluded cand2 (confounded)
+    exp_md = output_dir / "EXPERIENCE.md"
+    exp_jsonl = output_dir / "experience_library.jsonl"
+    assert exp_md.exists()
+    assert exp_jsonl.exists()
+    saved_entries = [
+        json.loads(line)
+        for line in exp_jsonl.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(saved_entries) == 1
+    assert saved_entries[0]["component_name"] == "basic_ioc_enrichment.md"
+    assert saved_entries[0]["attribution_label"] == "helped"
+
+
+
 
 
 
