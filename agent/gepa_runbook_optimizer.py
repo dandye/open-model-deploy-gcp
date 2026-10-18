@@ -1367,6 +1367,7 @@ class Harness2ProposeProbeComposeProposer:
         reflection_lm: Callable[[Union[str, List[Dict[str, Any]]]], str],
         probe_adapter: Optional[Any] = None,
         probe_batch: Optional[List[Dict[str, Any]]] = None,
+        probe_limit: int = 4,
         experience_library: Optional[ExperienceLibrary] = None,
         seed_candidate: Optional[Dict[str, str]] = None,
         max_growth_ratio: float = 1.35,
@@ -1379,6 +1380,7 @@ class Harness2ProposeProbeComposeProposer:
         self.reflection_lm = reflection_lm
         self.probe_adapter = probe_adapter
         self.probe_batch = list(probe_batch) if probe_batch else None
+        self.probe_limit = max(1, int(probe_limit))
         self.experience_library = experience_library
         self.seed_candidate = seed_candidate
         self.max_growth_ratio = max_growth_ratio
@@ -1388,6 +1390,19 @@ class Harness2ProposeProbeComposeProposer:
         self.forbid_interactive_pseudotools = bool(forbid_interactive_pseudotools)
         self.max_words = max_words
         self.last_probe_records: List[Dict[str, Any]] = []
+
+    def _select_probe_batch(self, comp_name: str) -> List[Dict[str, Any]]:
+        """Selects up to probe_limit cases matching comp_name, with prefix fallback."""
+        if not self.probe_batch:
+            return []
+        matched = [
+            c
+            for c in self.probe_batch
+            if isinstance(c, Mapping) and resolve_implicated_runbook(c) == comp_name
+        ]
+        if matched:
+            return matched[: self.probe_limit]
+        return self.probe_batch[: self.probe_limit]
 
     def _enrich_dataset_with_experience(
         self,
@@ -1435,21 +1450,30 @@ class Harness2ProposeProbeComposeProposer:
         )
         return ok
 
-    def _probe_score(self, cand: Dict[str, str]) -> Optional[float]:
-        if self.probe_adapter is None or not self.probe_batch:
+    def _probe_score(
+        self,
+        cand: Dict[str, str],
+        batch: Optional[List[Dict[str, Any]]] = None,
+    ) -> Optional[float]:
+        active_batch = (
+            batch
+            if batch is not None
+            else (self.probe_batch[: self.probe_limit] if self.probe_batch else [])
+        )
+        if self.probe_adapter is None or not active_batch:
             return None
         cached_fn = getattr(self.probe_adapter, "get_cached_telemetry", None)
         if callable(cached_fn):
-            cached = cached_fn(cand, self.probe_batch)
+            cached = cached_fn(cand, active_batch)
             if isinstance(cached, Mapping) and cached:
                 vals = [
                     float(v.get("score", 0.0))
                     for v in cached.values()
                     if isinstance(v, Mapping) and isinstance(v.get("score"), (int, float))
                 ]
-                if len(vals) == len(self.probe_batch):
+                if len(vals) == len(active_batch):
                     return sum(vals) / len(vals)
-        batch_res = self.probe_adapter.evaluate(self.probe_batch, cand, capture_traces=False)
+        batch_res = self.probe_adapter.evaluate(active_batch, cand, capture_traces=False)
         scores = list(getattr(batch_res, "scores", None) or [])
         if not scores:
             return 0.0
@@ -1501,15 +1525,16 @@ class Harness2ProposeProbeComposeProposer:
             dom_valid = self._validate_component_candidate(candidate, comp_name, dom_text)
 
             # 2. Probe under matched container/sandbox settings (when probe_adapter is wired)
-            if self.probe_adapter is not None and self.probe_batch:
-                base_score = self._probe_score(candidate) or 0.0
+            comp_probe_batch = self._select_probe_batch(comp_name)
+            if self.probe_adapter is not None and comp_probe_batch:
+                base_score = self._probe_score(candidate, batch=comp_probe_batch) or 0.0
                 inv_score = (
-                    self._probe_score({**candidate, comp_name: inv_text})
+                    self._probe_score({**candidate, comp_name: inv_text}, batch=comp_probe_batch)
                     if inv_valid
                     else -1.0
                 )
                 dom_score = (
-                    self._probe_score({**candidate, comp_name: dom_text})
+                    self._probe_score({**candidate, comp_name: dom_text}, batch=comp_probe_batch)
                     if dom_valid
                     else -1.0
                 )
@@ -1534,7 +1559,10 @@ class Harness2ProposeProbeComposeProposer:
                     if "KEEP_BASE" not in comp_raw:
                         comp_text = InstructionProposalSignature.output_extractor(comp_raw)["new_instruction"]
                         if self._validate_component_candidate(candidate, comp_name, comp_text):
-                            composed_score = self._probe_score({**candidate, comp_name: comp_text})
+                            composed_score = self._probe_score(
+                                {**candidate, comp_name: comp_text},
+                                batch=comp_probe_batch,
+                            )
                             if composed_score is not None and composed_score >= max(inv_score, dom_score) - 1e-6:
                                 selected_text = comp_text
                                 selected_scope = "COMPOSED"
@@ -1554,6 +1582,10 @@ class Harness2ProposeProbeComposeProposer:
 
                 self.last_probe_records.append({
                     "component_name": comp_name,
+                    "probe_case_ids": [
+                        str(c.get("eval_id") or c.get("case_id") or idx)
+                        for idx, c in enumerate(comp_probe_batch)
+                    ],
                     "base_score": base_score,
                     "inv_score": inv_score,
                     "dom_score": dom_score,
@@ -2075,7 +2107,8 @@ def main(args: Optional[List[str]] = None) -> int:
         custom_proposer = Harness2ProposeProbeComposeProposer(
             reflection_lm=reflection_lm,
             probe_adapter=adapter,
-            probe_batch=trainset[: min(4, len(trainset))] if trainset else None,
+            probe_batch=trainset if trainset else None,
+            probe_limit=4,
             experience_library=experience_library,
             seed_candidate=seed_candidate,
             max_growth_ratio=parsed_args.max_growth_ratio,

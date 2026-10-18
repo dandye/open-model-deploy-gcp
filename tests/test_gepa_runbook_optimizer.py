@@ -1875,6 +1875,117 @@ def test_cli_harness2_mode_records_component_attributions_and_experience_library
     assert saved_entries[0]["attribution_label"] == "helped"
 
 
+def test_harness2_proposer_selects_component_scoped_probe_batch():
+    import gepa
+    from agent.gepa_runbook_optimizer import Harness2ProposeProbeComposeProposer
+
+    base_candidate = {
+        "basic_ioc_enrichment.md": "# IOC\n1. Investigate available evidence and verify scope before acting.",
+        "malware_triage.md": "# Malware\n1. Investigate available evidence and verify scope before acting.",
+        "suspicious_login_triage.md": "# Login\n1. Investigate available evidence and verify scope before acting.",
+    }
+    reflective_dataset = {
+        "malware_triage.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate ransomware"},
+                "Generated Outputs": {"actual_verdict": "BENIGN"},
+                "Feedback": "Check file hash reputation in Stage B.",
+            }
+        ],
+        "basic_ioc_enrichment.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate scanner"},
+                "Generated Outputs": {"actual_verdict": "MALICIOUS"},
+                "Feedback": "Check scanner role in Stage A.",
+            }
+        ],
+        "suspicious_login_triage.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate login"},
+                "Generated Outputs": {"actual_verdict": "BENIGN"},
+                "Feedback": "Check travel velocity.",
+            }
+        ],
+    }
+
+    # First 4 cases route to basic_ioc_enrichment.md; next 2 route to malware_triage.md;
+    # none route to suspicious_login_triage.md.
+    probe_batch = [
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-01", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-02", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-03", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-04", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-01", "prompt": "Investigate ransomware encryption alert"},
+        {"eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-02", "prompt": "Investigate malware payload execution"},
+    ]
+
+    def fake_lm(prompt: str) -> str:
+        p_upper = str(prompt).upper()
+        if "INVARIANT (INV)" in p_upper:
+            return "```markdown\n# INV Updated\n1. Stage A lookup_entity.\n```"
+        if "DOMAIN (DOM)" in p_upper:
+            return "```markdown\n# DOM Updated\n1. Stage B get_file_report.\n```"
+        return "```markdown\n# Composed Updated\n1. Stage A lookup_entity.\n2. Stage B get_file_report.\n```"
+
+    seen_batches: list[list[str]] = []
+
+    class RecordingProbeAdapter:
+        def evaluate(self, batch, candidate, capture_traces=False):
+            eval_ids = [str(c.get("eval_id")) for c in batch]
+            seen_batches.append(eval_ids)
+            is_malware_batch = all("RANSOMWARE" in eid for eid in eval_ids)
+            malware_text = candidate["malware_triage.md"]
+            if is_malware_batch and malware_text != base_candidate["malware_triage.md"]:
+                sc = 0.90
+            else:
+                sc = 0.50
+            return gepa.EvaluationBatch(
+                outputs=["ok" for _ in batch],
+                scores=[sc for _ in batch],
+                trajectories=None,
+            )
+
+        def get_cached_telemetry(self, candidate, batch=None):
+            return None
+
+    proposer = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm,
+        probe_adapter=RecordingProbeAdapter(),
+        probe_batch=probe_batch,
+        probe_limit=2,
+        seed_candidate=base_candidate,
+    )
+
+    # 1. Updating malware_triage.md probes only the 2 matching malware cases (not the first 4 scanner cases)
+    out = proposer(base_candidate, reflective_dataset, ["malware_triage.md"])
+    assert out["malware_triage.md"] != base_candidate["malware_triage.md"]
+    assert seen_batches[0] == [
+        "CASE-GEN5-RANSOMWARE-CRITICAL-01",
+        "CASE-GEN5-RANSOMWARE-CRITICAL-02",
+    ]
+    assert proposer.last_probe_records[-1]["probe_case_ids"] == [
+        "CASE-GEN5-RANSOMWARE-CRITICAL-01",
+        "CASE-GEN5-RANSOMWARE-CRITICAL-02",
+    ]
+
+    # 2. Updating basic_ioc_enrichment.md caps matching cases at probe_limit=2
+    seen_batches.clear()
+    proposer(base_candidate, reflective_dataset, ["basic_ioc_enrichment.md"])
+    assert seen_batches[0] == [
+        "CASE-GEN5-AUTHORIZED-SCANNER-01",
+        "CASE-GEN5-AUTHORIZED-SCANNER-02",
+    ]
+
+    # 3. Updating suspicious_login_triage.md (0 matches) falls back to probe_batch[:probe_limit]
+    seen_batches.clear()
+    proposer(base_candidate, reflective_dataset, ["suspicious_login_triage.md"])
+    assert seen_batches[0] == [
+        "CASE-GEN5-AUTHORIZED-SCANNER-01",
+        "CASE-GEN5-AUTHORIZED-SCANNER-02",
+    ]
+
+
+
 
 
 
