@@ -2194,6 +2194,83 @@ def test_cli_harness2_multi_round_warm_starts_from_helped_components(optimizer_c
     assert (output_dir / "lateral_movement_hunt_psexec_wmi.md").read_text(encoding="utf-8") == cand2["lateral_movement_hunt_psexec_wmi.md"]
 
 
+def test_gen5_harness2_transfer_helpers():
+    from scripts.eval_gen5_harness2_transfer import (
+        aggregate_arm_metrics,
+        compute_w350_context_debt_penalty,
+        load_arm_runbooks,
+    )
+
+    runbooks, wc = load_arm_runbooks("harness2_k2_evolved")
+    assert set(runbooks.keys()) == {
+        "basic_ioc_enrichment.md",
+        "malware_triage.md",
+        "suspicious_login_triage.md",
+        "lateral_movement_hunt_psexec_wmi.md",
+    }
+    assert wc["malware_triage.md"] <= 350
+    assert wc["lateral_movement_hunt_psexec_wmi.md"] <= 350
+    assert compute_w350_context_debt_penalty(runbooks) == 0.0
+
+    seed_rb, _ = load_arm_runbooks("seed_runbooks")
+    assert compute_w350_context_debt_penalty(seed_rb) == 0.016
+
+    sample_traces = [
+        {
+            "case_id": "CASE-1",
+            "expected_verdict": "MALICIOUS",
+            "actual_verdict": "MALICIOUS",
+            "verdict_exact_match": True,
+            "harbor_reward": 0.98,
+            "score": 0.98,
+            "loss_penalty": 1.0,
+            "implicated_runbook": "malware_triage.md",
+            "decision_outcome": "TRUE_POSITIVE",
+            "criticality": "CRITICAL",
+            "usage": {"prompt_tokens": 1000, "completion_tokens": 200, "total_tokens": 1200},
+            "token_cost_usd": 0.0002,
+            "tool_call_count": 3,
+            "epistemic_step_count": 2,
+            "latency_ms": 1500,
+            "safety_gate_triggered": False,
+            "zero_tool_hesitation": False,
+            "inert": False,
+        },
+        {
+            "case_id": "CASE-2",
+            "expected_verdict": "BENIGN",
+            "actual_verdict": "BENIGN",
+            "verdict_exact_match": True,
+            "harbor_reward": 1.0,
+            "score": 1.0,
+            "loss_penalty": 1.0,
+            "implicated_runbook": "basic_ioc_enrichment.md",
+            "decision_outcome": "TRUE_NEGATIVE",
+            "criticality": "STANDARD",
+            "usage": {"prompt_tokens": 800, "completion_tokens": 150, "total_tokens": 950},
+            "token_cost_usd": 0.0001,
+            "tool_call_count": 3,
+            "epistemic_step_count": 1,
+            "latency_ms": 1200,
+            "safety_gate_triggered": False,
+            "zero_tool_hesitation": False,
+            "inert": False,
+        },
+    ]
+    agg = aggregate_arm_metrics(
+        traces=sample_traces,
+        model="gemini-2.5-flash-lite",
+        arm_name="harness2_k2_evolved",
+        word_counts=wc,
+        context_debt_penalty=0.0,
+    )
+    assert agg["harbor_60_20_20"] == 0.99
+    assert agg["gepa_fitness"] == 0.99
+    assert agg["verdict_accuracy"] == 1.0
+    assert agg["sdt_metrics"]["hits"] == 1
+    assert agg["sdt_metrics"]["correct_rejections"] == 1
+
+
 
 
 

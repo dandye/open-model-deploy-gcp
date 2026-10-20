@@ -55,6 +55,14 @@ RAW_CLINERULES_HUNT_PATH = (
 COMPRESSED_TRACK_B_HUNT_PATH = (
     ROOT_DIR / "configs" / "runbooks" / "gti_collection_threat_hunt.md"
 )
+HARNESS2_EVOLVED_HUNT_PATH = (
+    ROOT_DIR
+    / "docs"
+    / "soc_eval_results"
+    / "harness2_8h_campaign"
+    / "threat_hunt"
+    / "gti_collection_threat_hunt.md"
+)
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "results" / "threat_hunt_multi_model"
 
 DEFAULT_MODELS = [
@@ -194,6 +202,60 @@ def analyze_hunt_trajectory(
   }
 
 
+def load_arm_config(
+    arm_name: str,
+    raw_hunt_text: Optional[str] = None,
+    compressed_hunt_text: Optional[str] = None,
+    evolved_hunt_text: Optional[str] = None,
+    evolved_hunt_path: Optional[Path] = None,
+) -> Dict[str, Any]:
+  """Resolves use_runbooks, strip_scaffolding, and runbooks_dict for a Threat Hunt arm."""
+  raw_text = (
+      raw_hunt_text
+      if raw_hunt_text is not None
+      else RAW_CLINERULES_HUNT_PATH.read_text(encoding="utf-8")
+  )
+  comp_text = (
+      compressed_hunt_text
+      if compressed_hunt_text is not None
+      else COMPRESSED_TRACK_B_HUNT_PATH.read_text(encoding="utf-8")
+  )
+  evol_text = evolved_hunt_text
+  if evol_text is None:
+    cand_path = Path(evolved_hunt_path) if evolved_hunt_path else HARNESS2_EVOLVED_HUNT_PATH
+    if cand_path.exists():
+      evol_text = cand_path.read_text(encoding="utf-8")
+
+  if arm_name == "no_runbook":
+    return {
+        "use_runbooks": False,
+        "strip_scaffolding": True,
+        "runbooks_dict": None,
+    }
+  elif arm_name == "raw_clinerules_hunt":
+    return {
+        "use_runbooks": True,
+        "strip_scaffolding": False,
+        "runbooks_dict": {"gti_collection_threat_hunt.md": raw_text},
+    }
+  elif arm_name == "compressed_track_b_hunt":
+    return {
+        "use_runbooks": True,
+        "strip_scaffolding": True,
+        "runbooks_dict": {"gti_collection_threat_hunt.md": comp_text},
+    }
+  elif arm_name == "harness2_evolved_hunt":
+    return {
+        "use_runbooks": True,
+        "strip_scaffolding": True,
+        "runbooks_dict": {
+            "gti_collection_threat_hunt.md": evol_text or comp_text
+        },
+    }
+  else:
+    raise ValueError(f"Unknown arm: {arm_name}")
+
+
 def run_single_arm_case(
     model_name: str,
     arm_name: str,
@@ -202,24 +264,19 @@ def run_single_arm_case(
     compressed_hunt_text: str,
     project_id: Optional[str] = None,
     max_iterations: int = 8,
+    evolved_hunt_text: Optional[str] = None,
 ) -> Dict[str, Any]:
   """Executes one (model, arm, scenario) evaluation and returns full diagnostic telemetry."""
   env = ThreatHuntEnvironment(initial_state=case.get("initial_state"))
-
-  if arm_name == "no_runbook":
-    use_runbooks = False
-    strip_scaffolding = True
-    runbooks_dict: Optional[Dict[str, str]] = None
-  elif arm_name == "raw_clinerules_hunt":
-    use_runbooks = True
-    strip_scaffolding = False
-    runbooks_dict = {"gti_collection_threat_hunt.md": raw_hunt_text}
-  elif arm_name == "compressed_track_b_hunt":
-    use_runbooks = True
-    strip_scaffolding = True
-    runbooks_dict = {"gti_collection_threat_hunt.md": compressed_hunt_text}
-  else:
-    raise ValueError(f"Unknown arm: {arm_name}")
+  arm_cfg = load_arm_config(
+      arm_name=arm_name,
+      raw_hunt_text=raw_hunt_text,
+      compressed_hunt_text=compressed_hunt_text,
+      evolved_hunt_text=evolved_hunt_text,
+  )
+  use_runbooks = arm_cfg["use_runbooks"]
+  strip_scaffolding = arm_cfg["strip_scaffolding"]
+  runbooks_dict = arm_cfg["runbooks_dict"]
 
   agent = HierarchicalSOCTier1Agent(
       project_id=project_id,
@@ -329,6 +386,7 @@ def format_markdown_scorecard(summary: Dict[str, Any]) -> str:
       "no_runbook": "Zero procedural runbook (`use_runbooks=False`)",
       "raw_clinerules_hunt": "Raw upstream `.clinerules/run_books/investigate_a_gti_collection_id.md` (`1,100+` words, Mermaid, `${COLLECTION_ID}`, 13-rel loop)",
       "compressed_track_b_hunt": "Compressed Track 2 `configs/runbooks/gti_collection_threat_hunt.md` (`350` words, 72h->168h widening, second-hop pivot, LOLBin guard)",
+      "harness2_evolved_hunt": "Harness^2 Evolved Track 2 `gti_collection_threat_hunt.md` (`INV`/`DOM`/`COMPOSED`, dual-hash `get_file_report` verification, 503 SOAR `list_cases` pivot)",
   }
   for arm_stat in summary["overall_by_arm"]:
     desc = arm_descriptions.get(arm_stat["arm"], arm_stat["arm"])
@@ -406,6 +464,12 @@ def main() -> int:
       action="store_true",
       help="Merge newly evaluated (model, arm, eval_id) runs into existing summary.json.",
   )
+  parser.add_argument(
+      "--evolved-hunt-path",
+      type=Path,
+      default=HARNESS2_EVOLVED_HUNT_PATH,
+      help="Path to Harness^2-evolved gti_collection_threat_hunt.md runbook.",
+  )
   args = parser.parse_args()
 
   project_id = (
@@ -419,6 +483,11 @@ def main() -> int:
   scenarios = suite_data.get("scenarios", [])
   raw_hunt_text = RAW_CLINERULES_HUNT_PATH.read_text(encoding="utf-8")
   compressed_hunt_text = COMPRESSED_TRACK_B_HUNT_PATH.read_text(encoding="utf-8")
+  evolved_hunt_text = (
+      args.evolved_hunt_path.read_text(encoding="utf-8")
+      if args.evolved_hunt_path.exists()
+      else compressed_hunt_text
+  )
 
   args.output_dir.mkdir(parents=True, exist_ok=True)
   summary_json_path = args.output_dir / "summary.json"
@@ -461,6 +530,7 @@ def main() -> int:
             compressed_hunt_text=compressed_hunt_text,
             project_id=project_id,
             max_iterations=args.max_iterations,
+            evolved_hunt_text=evolved_hunt_text,
         ): (idx, m, a, c["eval_id"])
         for idx, (m, a, c) in enumerate(work_items)
     }

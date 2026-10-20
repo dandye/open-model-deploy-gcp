@@ -26,8 +26,16 @@ from agent.threat_hunt_environment import (
 from scripts.eval_threat_hunt_multi_model import (
     DEFAULT_SUITE_PATH,
     analyze_hunt_trajectory,
+    load_arm_config,
+)
+from scripts.evolve_threat_hunt_harness2 import (
+    HUNT_COMPONENT_NAME,
+    ThreatHuntGEPAAdapter,
+    run_threat_hunt_harness2_evolution,
 )
 from scripts.verify_harbor_soc import compose_soc_reward
+import gepa
+import tempfile
 
 
 class TestThreatHuntEnvironmentAndAgent(unittest.TestCase):
@@ -264,6 +272,102 @@ class TestThreatHuntEnvironmentAndAgent(unittest.TestCase):
     self.assertTrue(metrics["discovered_patient_zero"])
     self.assertEqual(metrics["hunt_composite_score"], 1.0)
     self.assertGreaterEqual(harbor_info["reward"], 0.95)
+
+  def test_threat_hunt_harness2_evolution_and_arm_loader(self) -> None:
+    """Verify k=2 Harness^2 threat-hunt evolution loop and harness2_evolved_hunt arm loader."""
+    with tempfile.TemporaryDirectory() as tmp:
+      tmp_dir = Path(tmp)
+
+      class _MockHuntAdapter(ThreatHuntGEPAAdapter):
+        def evaluate(self, batch, candidate, capture_traces=False):
+          text = candidate.get(HUNT_COMPONENT_NAME, "")
+          ck = self._cand_key(candidate)
+          self._telemetry_cache.setdefault(ck, {})
+          scores = []
+          trajs = []
+          for c in batch:
+            cid = str(c.get("eval_id"))
+            score = 0.85
+            if "list_cases" in text and "get_file_report" in text and "EVERY candidate file hash" in text:
+              score = 1.0
+            elif "list_cases" in text and cid == "HUNT-DEGRADED-503-04":
+              score = 0.98
+            t = {
+                "case_id": cid,
+                "eval_id": cid,
+                "component_name": HUNT_COMPONENT_NAME,
+                "alert_type": "THREAT_HUNT",
+                "prompt": c["prompt"],
+                "expected_verdict": c["ground_truth_label"],
+                "actual_verdict": c["ground_truth_label"],
+                "expected_actions": list(c.get("expected_actions", [])),
+                "prohibited_actions": list(c.get("prohibited_actions", [])),
+                "executed_actions": list(c.get("expected_actions", [])),
+                "score": score,
+                "hunt_composite_score": score,
+                "harbor_reward": score,
+                "loss_penalty": 1.0,
+                "assert_passed": True,
+                "safety_gate_triggered": False,
+                "zero_tool_hesitation": False,
+                "inert": False,
+                "tool_calls": 5,
+                "epistemic_steps": 3,
+                "failure_category": "FLAWLESS_CONTAINMENT" if score >= 0.95 else "DEGRADED_MODE_FAILURE",
+                "hunt_metrics": {
+                    "verdict_ok": True,
+                    "operator_ok": score >= 0.95,
+                    "widened_168h": True,
+                    "verified_lolbin_hash": score >= 0.99,
+                },
+                "summary": "mock summary",
+            }
+            self._telemetry_cache[ck][cid] = t
+            scores.append(score)
+            trajs.append(t)
+          return gepa.EvaluationBatch(
+              outputs=["mock"] * len(batch),
+              scores=scores,
+              trajectories=trajs if capture_traces else None,
+          )
+
+      def _fake_reflection_lm(prompt: str) -> str:
+        base_rb = load_arm_config("compressed_track_b_hunt")["runbooks_dict"][HUNT_COMPONENT_NAME]
+        if "You are the INVARIANT (INV)" in prompt:
+          return (
+              "```markdown\n"
+              + base_rb
+              + "\n- On HTTP 503 outage, call list_cases once to verify open <case_id> before update_case_comment.\n```"
+          )
+        if "You are the DOMAIN (DOM)" in prompt:
+          return (
+              "```markdown\n"
+              + base_rb
+              + "\n- Call get_file_report on EVERY candidate file hash before Stage C containment.\n```"
+          )
+        return (
+            "```markdown\n"
+            + base_rb
+            + "\n- On HTTP 503 outage, call list_cases once to verify open <case_id> before update_case_comment."
+            + "\n- Call get_file_report on EVERY candidate file hash before Stage C containment.\n```"
+        )
+
+      seed_rb = load_arm_config("compressed_track_b_hunt")["runbooks_dict"][HUNT_COMPONENT_NAME]
+      mock_adapter = _MockHuntAdapter(seed_candidate={HUNT_COMPONENT_NAME: seed_rb})
+      meta = run_threat_hunt_harness2_evolution(
+          output_dir=tmp_dir,
+          rounds=2,
+          reflection_lm_override=_fake_reflection_lm,
+          adapter_override=mock_adapter,
+      )
+      self.assertTrue(meta["promoted"])
+      self.assertGreater(meta["best_score"], meta["baseline_score"])
+      evolved_file = tmp_dir / HUNT_COMPONENT_NAME
+      self.assertTrue(evolved_file.exists())
+
+      arm_cfg = load_arm_config("harness2_evolved_hunt", evolved_hunt_path=evolved_file)
+      self.assertTrue(arm_cfg["use_runbooks"])
+      self.assertIn("EVERY candidate file hash", arm_cfg["runbooks_dict"][HUNT_COMPONENT_NAME])
 
 
 if __name__ == "__main__":
