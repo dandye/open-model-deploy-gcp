@@ -16,6 +16,8 @@ To ensure consistency with prior Gemma benchmarks, all models are evaluated agai
 | `llama-4-scout-17b-16e-instruct-maas` | Llama 4 Scout 17B-16E | Meta | Vertex AI MaaS | 17B active MoE (16 experts) | `us-east5` |
 | `inkling-small` | Inkling Small | Thinking Machines | Model Garden | Multimodal Foundation Model | `us-central1` |
 | `nemotron-3.5-lightning-bf16` | Nemotron 3.5 Lightning BF16 | NVIDIA | Model Garden | 30B MoE (3B active) | `us-central1` |
+| `nemotron-3.5-super-vl-nvfp4` | Nemotron 3.5 Super VL 120B-A12B NVFP4 | NVIDIA | Model Garden OpenModel | 120B Multimodal Hybrid Mamba-Transformer MoE (12B active, NVFP4) | `us-central1` |
+| `nemotron-3.5-super-vl-bf16` | Nemotron 3.5 Super VL 120B-A12B BF16 | NVIDIA | Model Garden OpenModel | 120B Multimodal Hybrid Mamba-Transformer MoE (12B active, BF16) | `us-central1` |
 | `grok-4.6` | Grok 4.6 | xAI | Vertex AI MaaS | Frontier Reasoning Model | `global` |
 
 ---

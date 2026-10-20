@@ -51,6 +51,7 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 | **`7723656318510170112`** | `gemma-2-2b-it-model-garden` | `gemma-2-2b-it` | `g2-standard-4` (1x L4) | Gemma 2 2B Instruct in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-4). | 2026-08-25 01:25 |
 | **`540441301133295616`**  | `gemma-2-9b-it-model-garden` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct in Native BF16 with 4k Context Length on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
 | **`5242199312108093440`**  | `gemma-2-9b-it-model-garden-v3` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct v3 in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
+| **`nvidia-nemotron-3-5-nemotron-3-5-super-vl-nvfp4-1792530823`** | `nemotron_3_5_super_vl_nvfp4-1792530822704` | `nemotron-3.5-super-vl-nvfp4` | `g4-standard-48` (1x RTX PRO 6000) | NVIDIA Nemotron 3.5 Super VL (120B-A12B NVFP4) with FlashInfer Mamba and MTP=3 Speculative Decoding on 1x RTX PRO 6000 96GB (`secops-demo-env`). | 2026-10-20 21:13 |
 
 
 ---

@@ -351,6 +351,13 @@ All models were evaluated under identical conditions using the un-spoiled person
 - **Tool Invocations:** 11 total calls across 10 cases
 - **Token Footprint:** 88,598 total tokens (8859.8 tok/case)
 
+### `nemotron-3.5-super-vl-nvfp4` (NVIDIA Nemotron 3.5 Super VL 120B-A12B NVFP4 on 1x RTX PRO 6000)
+- **Hardware & Serving Cost:** `g4-standard-48` (`1x NVIDIA_RTX_PRO_6000` 96 GB Blackwell, 192 GB Host RAM, `100 GB /dev/shm`, **$3.85/hr**, **$4.52 / 1M output tokens** at `236.5 tok/s` benchmark speed)
+- **Score:** 83.0 / 100 (Pass Rate: 50.0%, `90–100/100` on 8/10 cases)
+- **Latency & Throughput:** 45.84 s latency | 186.87 gen tok/s (439.65 total tok/s; 236.5 tok/s single-stream and 233.4 tok/s 4-stream aggregate on `BenchmarkRunner`)
+- **Tool Invocations:** 20 total calls across 10 cases (Epistemic Efficiency: 0.85, Pragmatic Action Compliance: 90.0%, Counterfactual Consistency: 100.0%)
+- **Token Footprint:** 201,519 total tokens (20151.9 tok/case)
+
 ### `qwen3.8-27b` (Partner / OpenModel)
 - **Score:** 56.5 / 100 (Pass Rate: 20.0%)
 - **Latency & Throughput:** 16.92 s latency | 83.99 gen tok/s (508.52 total tok/s)
@@ -423,4 +430,5 @@ All models were evaluated under identical conditions using the un-spoiled person
 - Detailed llama-guard-3-8b Report: [`soc_eval_results/llama-guard-3-8b_report.md`](soc_eval_results/llama-guard-3-8b_report.md)
 - Detailed muse-spark-1.3 Report: [`soc_eval_results/muse-spark-1.3_report.md`](soc_eval_results/muse-spark-1.3_report.md)
 - Detailed nemotron-3.5-lightning-bf16 Report: [`soc_eval_results/nemotron-3.5-lightning-bf16_report.md`](soc_eval_results/nemotron-3.5-lightning-bf16_report.md)
+- Detailed nemotron-3.5-super-vl-nvfp4 Report: [`soc_eval_results/nemotron-3.5-super-vl-nvfp4_report.md`](soc_eval_results/nemotron-3.5-super-vl-nvfp4_report.md)
 - Detailed qwen3.8-27b Report: [`soc_eval_results/qwen3.8-27b_report.md`](soc_eval_results/qwen3.8-27b_report.md)

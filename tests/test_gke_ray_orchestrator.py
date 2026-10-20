@@ -97,6 +97,8 @@ def test_catalog_completeness_and_shapes() -> None:
         "gemma-4-31b-it",
         "inkling-small",
         "nemotron-3.5-lightning-bf16",
+        "nemotron-3.5-super-vl-nvfp4",
+        "nemotron-3.5-super-vl-bf16",
         "qwen2.5-coder-32b-instruct",
         "ministral-3b-2410",
         "phi-4",
@@ -115,7 +117,7 @@ def test_catalog_completeness_and_shapes() -> None:
         assert target.flavor, "Target flavor must not be empty"
         assert target.hf_repo, f"Target {target.flavor} must have a non-empty hf_repo"
         assert target.gpu_count in [1, 2, 4], f"Target {target.flavor} has invalid gpu_count: {target.gpu_count}"
-        assert target.gpu_type in ["nvidia-l4", "nvidia-tesla-a100", "nvidia-a100-80gb"], (
+        assert target.gpu_type in ["nvidia-l4", "nvidia-tesla-a100", "nvidia-a100-80gb", "nvidia-rtx-pro-6000"], (
             f"Target {target.flavor} has unexpected gpu_type: {target.gpu_type}"
         )
         assert target.tensor_parallel_size in [1, 2, 4], (

@@ -72,17 +72,20 @@ def deploy_open_model(
     model = model_garden.OpenModel(open_model_id)
 
     print(">>> Deploying model to dedicated endpoint (this may take 10-15 minutes)...")
-    endpoint = model.deploy(
-        accept_eula=True,
-        machine_type=machine_type,
-        accelerator_type=accelerator_type,
-        accelerator_count=accelerator_count,
-        serving_container_image_uri=container_image,
-        endpoint_display_name=endpoint_display_name,
-        model_display_name=model_display_name,
-        use_dedicated_endpoint=True,
-        reservation_affinity_type="NO_RESERVATION",
-    )
+    deploy_kwargs = {
+        "accept_eula": True,
+        "machine_type": machine_type,
+        "accelerator_type": accelerator_type,
+        "accelerator_count": accelerator_count,
+        "endpoint_display_name": endpoint_display_name,
+        "model_display_name": model_display_name,
+        "use_dedicated_endpoint": True,
+        "reservation_affinity_type": "NO_RESERVATION",
+    }
+    if not str(open_model_id).startswith("publishers/"):
+        deploy_kwargs["serving_container_image_uri"] = container_image
+
+    endpoint = model.deploy(**deploy_kwargs)
 
     print(">>> Deployment complete!")
     print(f"Endpoint Resource Name: {endpoint.resource_name}")

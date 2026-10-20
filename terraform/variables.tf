@@ -32,6 +32,8 @@ variable "model_flavor" {
       "gemma-4-e4b-it",
       "inkling-small",
       "nemotron-3.5-lightning-bf16",
+      "nemotron-3.5-super-vl-nvfp4",
+      "nemotron-3.5-super-vl-bf16",
       "qwen3.8-27b",
       "qwen2.5-coder-32b-instruct",
       "ministral-3b-2410",

@@ -11,7 +11,7 @@ Configurations dynamically resolve compute, accelerator count, VRAM, context len
 Supported dedicated GPU models:
 * **Google Gemma**: `gemma-2-2b-it` (1x L4), `gemma-2-9b-it` (1x L4), `gemma-2-27b-it` (4x L4), `gemma-3-1b-it` (1x L4), `gemma-3-4b-it` (1x L4), `gemma-3-12b-it` (4x L4), `gemma-3-27b-it` (4x L4), `gemma-4-e2b-it` (1x L4), `gemma-4-e4b-it` (1x L4), `gemma-4-31b-it` (2x A100 80GB)
 * **Meta Llama**: `llama-3.2-3b-instruct` (1x L4), `llama-guard-3-8b` (1x L4), `llama-3.1-nemotron-70b-instruct` (4x L4)
-* **OpenModels & Partner Model Garden**: `qwen3.8-27b` (1x RTX 6000), `qwen2.5-coder-32b-instruct` (4x L4), `qwen3.8-flash-next` (1x L4), `qwen3.8-flash-next-fp8` (1x L4), `qwen3.8-2.4t-a95b-fp8` (1x RTX 6000), `glm-5.3-flash` (1x L4), `deepseek-v4-pro` (1x RTX 6000), `deepseek-r1-distill-qwen-32b` (4x L4), `kimi-k3` (1x RTX 6000), `inkling-small` (4x L4), `nemotron-3.5-lightning-bf16` (4x L4), `ministral-3b-2410` (1x L4), `phi-4` (1x L4)
+* **OpenModels & Partner Model Garden**: `qwen3.8-27b` (1x RTX 6000), `qwen2.5-coder-32b-instruct` (4x L4), `qwen3.8-flash-next` (1x L4), `qwen3.8-flash-next-fp8` (1x L4), `qwen3.8-2.4t-a95b-fp8` (1x RTX 6000), `glm-5.3-flash` (1x L4), `deepseek-v4-pro` (1x RTX 6000), `deepseek-r1-distill-qwen-32b` (4x L4), `kimi-k3` (1x RTX 6000), `inkling-small` (4x L4), `nemotron-3.5-lightning-bf16` (4x L4), `nemotron-3.5-super-vl-nvfp4` (1x RTX 6000), `nemotron-3.5-super-vl-bf16` (4x RTX 6000), `ministral-3b-2410` (1x L4), `phi-4` (1x L4)
 
 ---
 
@@ -19,7 +19,7 @@ Supported dedicated GPU models:
 
 | Target Environment | Supported Models | GPU Scaling | Notes |
 | :--- | :--- | :--- | :--- |
-| **Vertex AI Prediction** | All 26 dedicated compute models | 1x to 4x GPUs | Dedicated VM serving; requires undeploy to stop billing. |
+| **Vertex AI Prediction** | All 28 dedicated compute models | 1x to 4x GPUs | Dedicated VM serving; requires undeploy to stop billing. |
 | **Cloud Run with GPU** | Single-GPU models (1B to 9B, E2B, E4B) | 1x NVIDIA L4 | Scale-to-zero (`--min-instances=0`) for $0 idle cost. Multi-GPU models are automatically skipped. |
 
 ---

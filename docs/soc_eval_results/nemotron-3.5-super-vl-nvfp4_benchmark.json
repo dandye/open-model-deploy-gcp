@@ -1,0 +1,158 @@
+{
+  "flavor": "nemotron-3.5-super-vl-nvfp4",
+  "open_model_id": "publishers/nvidia/models/nemotron-3.5@nemotron-3.5-super-vl-nvfp4",
+  "project_id": "secops-demo-env",
+  "region": "us-central1",
+  "machine_type": "g4-standard-48",
+  "accelerator_type": "NVIDIA_RTX_PRO_6000",
+  "accelerator_count": 1,
+  "started_at_utc": "2026-10-20T21:13:42.703508+00:00",
+  "endpoint_id": "mg-endpoint-72411852-9093-4fd8-9af3-90d0dc29c6e4",
+  "dedicated_endpoint_dns": "mg-endpoint-72411852-9093-4fd8-9af3-90d0dc29c6e4.us-central1-865050727906.prediction.vertexai.goog",
+  "deploy_duration_s": 1021.9,
+  "test_1a_generate": {
+    "latency_s": 2.046,
+    "predictions": [
+      "Prompt:\nExplain the architecture of a hybrid Mamba-Transformer Mixture-of-Experts vision-language model in two concise paragraphs.\nOutput:\n The first paragraph should cover the overall model architecture and data flow, and the second paragraph should focus on the expert routing and fusion mechanism.\n\nParagraph 1: overall model architecture and data flow.  \nParagraph 2: expert routing and fusion mechanism.  \n\nThe response must be exactly two paragraphs, each separated by a blank line. No additional text, no bullet points, no headings, no numbering, and no extra whitespace beyond the required blank line between paragraphs.\n\nWe need to produce exactly two paragraphs separated by a blank line. No extra whitespace beyond required blank line. So we need to output two paragraphs, each maybe multiple sentences, but no bullet points, headings, numbering. No extra whitespace beyond the required blank line between paragraphs. So we must ensure no leading/trailing spaces, no extra blank lines. Just paragraph1, newline newline, paragraph2. No extra newline at end? Probably fine.\n\nWe need to explain architecture of hybrid Mamba-Transformer MoE vision-language model. Paragraph1: overall model architecture and data flow. Paragraph2: expert routing and fusion mechanism.\n\nWe must be concise. Two paragraphs. Let's craft.\n\nParagraph1: describe vision encoder (CNN or ViT) producing patch embeddings, language tokenizer producing token embed"
+    ]
+  },
+  "test_1b_chat_completions": {
+    "latency_s": 4.248,
+    "predictions": {
+      "choices": [
+        {
+          "finish_reason": "length",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": null,
+            "function_call": null,
+            "reasoning": "The user is asking for the top 3 indicators of a Cobalt Strike beacon in enterprise network telemetry, and wants a concise answer.\n\nCobalt Strike is a popular adversary simulation tool often used by threat actors. Its beacons have distinct network characteristics. I need to identify the top 3 indicators based on network telemetry (like DNS, HTTP/HTTPS, flow data, etc.).\n\nKey indicators of Cobalt Strike beacons:\n1. **Jitter/Beaconing intervals**: Regular, periodic C2 communication with slight randomization (jitter). Short intervals (seconds to minutes) with consistent timing patterns.\n2. **URI/HTTP patterns**: Specific URI structures, User-Agents, or HTTP headers. Cobalt Strike often uses specific URI patterns (e.g., `/`, `/api`, `/login`, or random-looking paths), and the Malleable C2 profiles can change this, but default or common profiles have telltale HTTP GET/POST structures. Also, the use of specific HTTP methods or lack of standard browser headers.\n3. **DNS beacons**: DNS tunneling or frequent DNS lookups to a single domain with high entropy subdomains (if using DNS beacon), or HTTP beacons using DNS for staging.\n4. **JA3/JA3S fingerprints**: Distinctive TLS fingerprints if using HTTPS.\n5. **Beacon configuration artifacts**: Public keys, certificate details, or specific response sizes.\n\nFor enterprise network telemetry (NetFlow, DNS logs, proxy logs, IDS/IPS), the most actionable top 3 are usually:\n1. **Periodic beaconing / heartbeat traffic**: Regular, short-interval connections to external IPs/domains (low volume, consistent timing).\n2. **Suspicious HTTP/HTTPS URI patterns and headers**: Non-standard URIs, missing Referer/User-Agent, or known Cobalt Strike URI patterns (e.g., specific directory structures, `.php` or `.asp` endpoints with random parameters).\n3. **High-entropy DNS queries or DNS tunneling**: Frequent DNS requests to a single domain with long/random subdomains (for DNS beacons), or C2 domain resolution preceding beaconing.\n\nAlternatively, some sources cite:\n- Beaconing interval (jitter)\n- URI/HTTP metadata (User-Agent, URI structure)\n- SSL/TLS certificate or JA3 fingerprint\n\nLet's keep it concise and practical for telemetry.\n\nTop 3:\n1. **Regular beaconing (heart",
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1792531847,
+      "ec_transfer_params": null,
+      "id": "chatcmpl-63178b45-52b1-4502-96d2-82f7e8b056f1",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.31.1rc1.dev4+gdac35c5b6-0d463aea",
+      "usage": {
+        "completion_tokens": 512,
+        "completion_tokens_details": {
+          "reasoning_tokens": 512
+        },
+        "prompt_tokens": 38,
+        "prompt_tokens_details": null,
+        "total_tokens": 550
+      }
+    }
+  },
+  "test_2_multimodal_vl": {
+    "latency_s": 3.015,
+    "predictions": {
+      "choices": [
+        {
+          "finish_reason": "stop",
+          "index": 0,
+          "logprobs": null,
+          "message": {
+            "annotations": null,
+            "audio": null,
+            "content": "Based on the image provided, it appears to be a solid green block with no visible text, charts, or alert details. Therefore, I cannot extract the Source Host, Source IP, Destination IP and Port, or Verdict.\n\nIf you intended to upload a screenshot of a Chronicle SIEM alert, please try uploading the image again.",
+            "function_call": null,
+            "reasoning": "The user wants me to extract information from an image.\n1.  **Analyze the image:** The provided image is a solid light green rectangle. There is no text, no chart, no alert, and no visible content whatsoever.\n2.  **Evaluate the request:** The user is asking to read a \"Chronicle SIEM alert image\" and extract specific fields (Source Host, Source IP, Destination IP and Port, Verdict).\n3.  **Identify the problem:** The image does not contain the requested information. It is just a blank green block.\n4.  **Formulate the response:** Since I cannot extract data that isn't there, I must state that the image is blank or does not contain the requested alert details. I cannot generate a JSON object with real values. I will explain that the image appears to be empty/green.\n\nWait, looking closer at the prompt structure, sometimes these are trick questions or test cases where the image failed to load or is intentionally blank. I must report what I see. I see a green background.\n\nTherefore, I cannot fulfill the request to extract specific fields. I will state that the image is blank/green and contains no text.\n\nHowever, usually, if I just say \"I can't do it,\" it might be unhelpful if there's a subtle detail I missed. Let me re-examine the image data mentally. It's just a solid color. No text.\n\nConclusion: The image contains no information. I will inform the user about this.",
+            "refusal": null,
+            "role": "assistant"
+          },
+          "routed_experts": null,
+          "stop_reason": null,
+          "token_ids": null
+        }
+      ],
+      "created": 1792531851,
+      "ec_transfer_params": null,
+      "id": "chatcmpl-7cc24360-427b-4b52-9239-c9d51f580d7a",
+      "kv_transfer_params": null,
+      "metrics": null,
+      "model": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+      "object": "chat.completion",
+      "prompt_logprobs": null,
+      "prompt_text": null,
+      "prompt_token_ids": null,
+      "service_tier": null,
+      "system_fingerprint": "vllm-0.31.1rc1.dev4+gdac35c5b6-0d463aea",
+      "usage": {
+        "completion_tokens": 379,
+        "completion_tokens_details": {
+          "reasoning_tokens": 310
+        },
+        "prompt_tokens": 304,
+        "prompt_tokens_details": null,
+        "total_tokens": 683
+      }
+    }
+  },
+  "benchmark_c1": {
+    "endpoint_id": "mg-endpoint-72411852-9093-4fd8-9af3-90d0dc29c6e4",
+    "region": "us-central1",
+    "concurrency": 1,
+    "total_requests": 3,
+    "avg_latency_s": 0.957,
+    "p50_latency_s": 0.924,
+    "p90_latency_s": 1.014,
+    "p99_latency_s": 1.034,
+    "avg_tokens": 226.3,
+    "successful_requests": 3,
+    "failed_requests": 0,
+    "token_count_source": "estimated",
+    "wall_clock_s": 2.871,
+    "wall_clock_source": "observed",
+    "throughput_source": "observed_wall_clock",
+    "request_normalized_tps": 236.5,
+    "request_normalized_tpm": 14190.0,
+    "aggregate_tps": 236.5,
+    "aggregate_tpm": 14190.0,
+    "tps": 236.5,
+    "tpm": 14190.0,
+    "sample_output": "</think>Quantum computing leverages the principles of quantum mechanics to process information in ways classical computers cannot. Unlike classical bits, which are strictly 0 or 1, quantum bits (qubits) can exist in a superposition of both states simultaneously. This allows quantum computers to represent and manipulate a vast number of possibilities at once, exponentially increasing computational capacity for certain problems.\n\nA second key principle is entanglement, where qubits become correlated such that the state of one instantly influences the state of another, regardless of distance. This interconnectedness enables complex parallel operations and is essential for quantum algorithms that outperform classical counterparts. Together, superposition and entanglement provide the foundation for quantum speedup.\n\nFinally, quantum interference is used to amplify correct computational"
+  },
+  "benchmark_c4": {
+    "endpoint_id": "mg-endpoint-72411852-9093-4fd8-9af3-90d0dc29c6e4",
+    "region": "us-central1",
+    "concurrency": 4,
+    "total_requests": 4,
+    "avg_latency_s": 3.376,
+    "p50_latency_s": 3.384,
+    "p90_latency_s": 3.429,
+    "p99_latency_s": 3.438,
+    "avg_tokens": 200.8,
+    "successful_requests": 4,
+    "failed_requests": 0,
+    "token_count_source": "estimated",
+    "wall_clock_s": 3.441,
+    "wall_clock_source": "observed",
+    "throughput_source": "observed_wall_clock",
+    "request_normalized_tps": 59.5,
+    "request_normalized_tpm": 3568.0,
+    "aggregate_tps": 233.4,
+    "aggregate_tpm": 14003.0,
+    "tps": 233.4,
+    "tpm": 14003.0,
+    "sample_output": "</think>Quantum computing is a new paradigm of computation that uses the principles of quantum mechanics to process information. Unlike classical computers, which use bits that are either 0 or 1, quantum computers use quantum bits, or qubits, which can exist in a superposition of both 0 and 1 simultaneously. This allows quantum computers to represent and process a vast number of states at once, potentially enabling exponential speedups for certain types of problems.\n\nTwo key quantum phenomena enable this power: superposition and entanglement. Superposition allows a qubit to hold multiple values at the same time, while entanglement creates a strong correlation between qubits such that the state of one instantly influences the state of another, regardless of distance. By manipulating"
+  },
+  "soc_eval_returncode": 0
+}

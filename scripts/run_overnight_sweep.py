@@ -544,6 +544,27 @@ class SweepOrchestrator:
                 max_model_len=8192,
                 notes="Gemma 4 31B + Gemma 4 E4B Draft (2x A100)",
             ),
+            # Phase 5: NVIDIA Nemotron 3.5 Super VL Family (120B-A12B Multimodal MoE)
+            ModelTarget(
+                flavor="nemotron-3.5-super-vl-nvfp4",
+                target_type="vertex",
+                region="us-central1",
+                machine_type="g4-standard-48",
+                gpu_count=1,
+                gpu_type="NVIDIA_RTX_PRO_6000",
+                max_model_len=32768,
+                notes="NVIDIA Nemotron 3.5 Super VL 120B-A12B NVFP4 (1x RTX PRO 6000)",
+            ),
+            ModelTarget(
+                flavor="nemotron-3.5-super-vl-bf16",
+                target_type="vertex",
+                region="us-central1",
+                machine_type="g4-standard-192",
+                gpu_count=4,
+                gpu_type="NVIDIA_RTX_PRO_6000",
+                max_model_len=32768,
+                notes="NVIDIA Nemotron 3.5 Super VL 120B-A12B BF16 (4x RTX PRO 6000)",
+            ),
         ]
 
 
