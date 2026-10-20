@@ -57,6 +57,8 @@ NEW_MODELS_QUEUE = [
     "phi-4",
     "inkling-small",
     "nemotron-3.5-lightning-bf16",
+    "nemotron-3.5-super-vl-nvfp4",
+    "nemotron-3.5-super-vl-bf16",
     # Advanced Frontier & OpenModels (DeepSeek, GLM, Moonshot, xAI)
     "deepseek-r1-distill-qwen-32b",
     "deepseek-v4-pro",
@@ -158,17 +160,20 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
             timestamp = int(time.time() * 1000)
             safe_flavor = flavor.replace("-", "_").replace(".", "_")
 
-            endpoint = model.deploy(
-                accept_eula=True,
-                machine_type=machine_type,
-                accelerator_type=accelerator_type,
-                accelerator_count=accelerator_count,
-                serving_container_image_uri=container_image,
-                endpoint_display_name=f"{safe_flavor}-sweep-endpoint",
-                model_display_name=f"{safe_flavor}-{timestamp}",
-                use_dedicated_endpoint=True,
-                reservation_affinity_type="NO_RESERVATION",
-            )
+            deploy_kwargs = {
+                "accept_eula": True,
+                "machine_type": machine_type,
+                "accelerator_type": accelerator_type,
+                "accelerator_count": accelerator_count,
+                "endpoint_display_name": f"{safe_flavor}-sweep-endpoint",
+                "model_display_name": f"{safe_flavor}-{timestamp}",
+                "use_dedicated_endpoint": True,
+                "reservation_affinity_type": "NO_RESERVATION",
+            }
+            if not str(open_model_id).startswith("publishers/"):
+                deploy_kwargs["serving_container_image_uri"] = container_image
+
+            endpoint = model.deploy(**deploy_kwargs)
             endpoint_id = endpoint.resource_name.split("/")[-1]
         else:
             logger.info(f"Deploying Model Garden flavor via scripts/vertex_deploy.sh: {flavor}...")

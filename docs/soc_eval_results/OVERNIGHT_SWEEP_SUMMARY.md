@@ -35,6 +35,7 @@ Generated at: 2026-09-03T08:57:24.809462+00:00
 | **gemma-4-e4b-it-speculative-cloudrun** | 80.0% | 88.0 / 100 | 10.50s | 55.00 tok/s | 180.00 tok/s | 6 |
 | **gemma-2-2b-it-cloudrun** | 80.0% | 88.0 / 100 | 10.50s | 55.00 tok/s | 180.00 tok/s | 6 |
 | **gemma-2-9b-it-fp8-cloudrun** | 80.0% | 88.0 / 100 | 10.50s | 55.00 tok/s | 180.00 tok/s | 6 |
+| **nemotron-3.5-super-vl-nvfp4** | 50.0% | 83.0 / 100 | 45.84s | 186.87 tok/s | 439.65 tok/s | 20 |
 | **gemma-3-1b-it** | 70.0% | 80.5 / 100 | 15.11s | 75.61 tok/s | 587.99 tok/s | 12 |
 | **llama-3.1-nemotron-70b-instruct** | 50.0% | 77.8 / 100 | 18.21s | 79.76 tok/s | 463.51 tok/s | 10 |
 | **gemma-2-9b-it** | 50.0% | 76.5 / 100 | 15.13s | 74.74 tok/s | 558.15 tok/s | 12 |

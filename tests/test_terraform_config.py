@@ -124,6 +124,8 @@ class TestTerraformConfig(unittest.TestCase):
             "qwen3.8-27b",
             "llama-3.2-3b-instruct",
             "deepseek-v4-pro",
+            "nemotron-3.5-super-vl-nvfp4",
+            "nemotron-3.5-super-vl-bf16",
         ]:
             self.assertIn(f'"{model_key}"', content, f"variables.tf missing model flavor {model_key}")
 

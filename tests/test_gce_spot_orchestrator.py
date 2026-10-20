@@ -209,6 +209,8 @@ def test_catalog_completeness():
     # Partner and Open models
     assert "inkling-small" in flavors
     assert "nemotron-3.5-lightning-bf16" in flavors
+    assert "nemotron-3.5-super-vl-nvfp4" in flavors
+    assert "nemotron-3.5-super-vl-bf16" in flavors
     assert "qwen2.5-coder-32b-instruct" in flavors
     assert "deepseek-r1-distill-qwen-32b" in flavors
     assert "ministral-3b-2410" in flavors

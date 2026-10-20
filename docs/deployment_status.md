@@ -34,6 +34,8 @@ The table below summarizes the catalog status, compute profile, and environment 
 | `gemma-4-e2b-it` | Gemma 4 | 2.3B eff (5.1B total) | ~5.1 GB | `g2-standard-4` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | **Registered & Ready** |
 | `gemma-4-e4b-it` | Gemma 4 | 4.5B eff (8.0B total) | ~8.0 GB | `g2-standard-8` | 1x L4 (24GB) | 1 | 8,192 | Compatible | Compatible (Scale-to-0) | **Registered & Ready** |
 | `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
+| `nemotron-3.5-super-vl-nvfp4` | Nemotron 3.5 (Vision MoE) | 12B eff (120B total, NVFP4) | ~80.0 GB | `g4-standard-48` | 1x RTX PRO 6000 (96GB) | 1 | 65,536 | Compatible | Incompatible (Requires 100GB `/dev/shm`) | **Live & Verified** |
+| `nemotron-3.5-super-vl-bf16` | Nemotron 3.5 (Vision MoE) | 12B eff (120B total, BF16) | ~240.0 GB | `g4-standard-192` | 4x RTX PRO 6000 (384GB) | 4 | 65,536 | Compatible | Incompatible (>1 GPU) | **Registered & Ready** |
 
 
 ---
@@ -45,6 +47,7 @@ The following metrics were measured directly on active Google Cloud Vertex AI de
 | Model Flavor Key | Generation & Size | Machine Type | GPU Configuration | TP Size | Avg Latency | Avg Output | Tokens / Sec (TPS) | Tokens / Min (TPM) | Hourly Cost |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`gemma-3-1b-it`** | Gemma 3 1.0B | **`g2-standard-4`** | 1x NVIDIA L4 (24 GB) | 1 | **2.05 s** | 219 tokens | **107.9 tok/s** | **6,471 tok/min** | $0.70/hr |
+| **`nemotron-3.5-super-vl-nvfp4`** | Nemotron 3.5 120B-A12B (NVFP4, MTP=3) | **`g4-standard-48`** | 1x RTX PRO 6000 (96 GB) | 1 | **0.96 s** | 226 tokens | **236.5 tok/s** | **14,190 tok/min** | $3.85/hr |
 | **`gemma-2-2b-it`** | Gemma 2 2.6B | **`g2-standard-4`** | 1x NVIDIA L4 (24 GB) | 1 | **3.99 s** | 236 tokens | **59.3 tok/s** | **3,556 tok/min** | $0.70/hr |
 | **`gemma-3-12b-it`** | Gemma 3 12B (Vision) | **`g2-standard-48`** | 4x NVIDIA L4 (96 GB) | 4 | **4.90 s** | 226 tokens | **46.2 tok/s** | **2,769 tok/min** | $3.36/hr |
 | **`gemma-3-4b-it`** | Gemma 3 4B | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 1 | **5.45 s** | 246 tokens | **45.2 tok/s** | **2,710 tok/min** | $0.76/hr |
@@ -224,6 +227,41 @@ Explain the key advantages of open models in 2 paragraphs.
 * **Avg Output Length**: 243 tokens
 * **Generation Speed**: **26.3 tokens/sec (TPS)**
 * **Throughput**: **1,576 tokens/min (TPM)**
+
+### NVIDIA Nemotron 3.5 Super VL 120B-A12B NVFP4 (`nemotron-3.5-super-vl-nvfp4`)
+
+* **Deployment Environment**: Vertex AI Online Prediction (Dedicated Endpoint)
+* **Region**: `us-central1` (Iowa)
+* **Endpoint Name**: `nemotron_3_5_super_vl_nvfp4-mg-one-click-deploy`
+* **Endpoint ID**: `mg-endpoint-72411852-9093-4fd8-9af3-90d0dc29c6e4`
+* **Dedicated Endpoint DNS**: `mg-endpoint-72411852-9093-4fd8-9af3-90d0dc29c6e4.us-central1-865050727906.prediction.vertexai.goog`
+* **Deployed Model ID**: `1098951426601648128`
+* **Model Registry ID**: `nvidia-nemotron-3-5-nemotron-3-5-super-vl-nvfp4-1792530823`
+* **Publisher Model**: `publishers/nvidia/models/nemotron-3.5@nemotron-3.5-super-vl-nvfp4`
+* **Container Image**: `us-docker.pkg.dev/agent-platform-mg-public/containers/pytorch-vllm-serve:model-garden.pytorch-vllm-serve-release_20261006.00_p0`
+* **Machine Type**: `g4-standard-48` (48 vCPUs, 192 GB Host RAM, `100 GB /dev/shm`, 1 x NVIDIA RTX PRO 6000 96GB Blackwell GPU)
+* **Tensor Parallelism**: `tensor-parallel-size=1`
+* **Hourly Cost**: $3.85/hour ($4.52 / 1M output tokens at 236.5 tok/s)
+* **vLLM Engine Configuration**:
+  * `gpu-memory-utilization`: `0.90`
+  * `sharedMemorySizeMb`: `102400` (`LOCAL_MODEL_DIR=/dev/shm/model_dir`)
+  * `mamba-backend`: `flashinfer` (`--mamba-ssm-cache-dtype=float16`, `--enable-mamba-cache-stochastic-rounding`)
+  * `speculative_config`: `method=mtp`, `num_speculative_tokens=3`
+  * `parsers`: `--reasoning-parser=nemotron_v3`, `--tool-call-parser=qwen3_coder`, `--enable-auto-tool-choice`
+
+#### Verified Live Test Output & Benchmark
+
+* **Single-Stream Benchmark (`Concurrency=1`, 3 runs)**:
+  * **Avg Latency**: 0.96 s (P50: 0.92 s, P99: 1.03 s)
+  * **Avg Output Length**: 226 tokens
+  * **Generation Speed**: **236.5 tokens/sec (TPS)**
+  * **Throughput**: **14,190 tokens/min (TPM)**
+* **Concurrent Benchmark (`Concurrency=4`, 4 streams)**:
+  * **Avg Stream Latency**: 3.38 s (Wall-clock: 3.44 s for 803 tokens)
+  * **Per-Stream Speed**: **59.5 tokens/sec (TPS)**
+  * **Aggregate Speed**: **233.4 tokens/sec (TPS)** (**14,003 TPM**)
+* **Gen 3 Interactive SOC Tier 1 Evaluation (10 Cases)**:
+  * **Pass Rate**: **50.0% (5/10)** | **Avg Rubric**: **83.0 / 100** | **Output TPS**: **186.87 tok/s** (**439.65 total tok/s**) | **Counterfactual Consistency**: **100.0% (2/2)**
 
 ---
 

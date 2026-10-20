@@ -109,7 +109,11 @@ def test_build_model_queue_contains_all_models():
     assert "gemma-2-27b-it-fp8" in flavors
     assert "gemma-2-27b-it-speculative" in flavors
 
-    assert len(queue) == 38
+    # NVIDIA Nemotron 3.5 Super VL
+    assert "nemotron-3.5-super-vl-nvfp4" in flavors
+    assert "nemotron-3.5-super-vl-bf16" in flavors
+
+    assert len(queue) == 40
 
 
 

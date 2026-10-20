@@ -47,8 +47,10 @@ fi
 
 # Load parameters from catalog
 SOURCE_URI=$(catalog_get_source_uri "$MODEL_FLAVOR")
+HF_REPO=$(catalog_get_hf_repo "$MODEL_FLAVOR")
 TP_SIZE=$(catalog_get_tp_size "$MODEL_FLAVOR")
 SWAP_SPACE=$(catalog_get_swap_space "$MODEL_FLAVOR")
+SHARED_MEM_MB=$(catalog_get_shared_memory_mb "$MODEL_FLAVOR")
 GPU_MEM_UTIL=$(catalog_get_gpu_mem_util "$MODEL_FLAVOR")
 MAX_LEN=$(catalog_get_max_len "$MODEL_FLAVOR")
 EXTRA_ARGS_JSON=$(catalog_get "$MODEL_FLAVOR" ".runtime.extraArgs")
@@ -64,10 +66,13 @@ ARGS_ARRAY=(
   "--model=${SOURCE_URI}"
   "--tensor-parallel-size=${TP_SIZE}"
   "--gpu-memory-utilization=${GPU_MEM_UTIL}"
-  "--max-model-len=${MAX_LEN}"
 )
 
-if [[ -n "$SWAP_SPACE" && "$SWAP_SPACE" -gt 0 ]]; then
+if [[ -n "$MAX_LEN" && "$MAX_LEN" != "null" && "$MAX_LEN" -gt 0 ]]; then
+  ARGS_ARRAY+=("--max-model-len=${MAX_LEN}")
+fi
+
+if [[ -n "$SWAP_SPACE" && "$SWAP_SPACE" != "null" && "$SWAP_SPACE" -gt 0 ]]; then
   ARGS_ARRAY+=("--swap-space=${SWAP_SPACE}")
 fi
 
@@ -118,6 +123,19 @@ if [[ -z "$MODEL_DESC" ]]; then
   fi
 fi
 
+if [[ -n "$HF_REPO" && "$HF_REPO" != "null" ]]; then
+  CONTAINER_MODEL_ID="$HF_REPO"
+else
+  CONTAINER_MODEL_ID="google/${MODEL_FLAVOR}"
+fi
+
+ENV_VARS="MODEL_ID=${CONTAINER_MODEL_ID},DEPLOY_SOURCE=UI_NATIVE_MODEL,VLLM_RPC_TIMEOUT=300,VLLM_TORCH_COMPILE_TIMEOUT=300"
+UPLOAD_EXTRA_FLAGS=()
+if [[ -n "$SHARED_MEM_MB" && "$SHARED_MEM_MB" != "null" && "$SHARED_MEM_MB" -gt 0 ]]; then
+  ENV_VARS="${ENV_VARS},LOCAL_MODEL_DIR=/dev/shm/model_dir"
+  UPLOAD_EXTRA_FLAGS+=("--container-shared-memory-size-mb=${SHARED_MEM_MB}")
+fi
+
 gcloud ai models upload \
   --project="$PROJECT_ID" \
   --region="$REGION" \
@@ -125,10 +143,11 @@ gcloud ai models upload \
   --description="$MODEL_DESC" \
   --container-image-uri="$CONTAINER_IMAGE" \
   --container-args="$CONTAINER_ARGS" \
-  --container-env-vars="MODEL_ID=google/${MODEL_FLAVOR},DEPLOY_SOURCE=UI_NATIVE_MODEL,VLLM_RPC_TIMEOUT=300,VLLM_TORCH_COMPILE_TIMEOUT=300" \
+  --container-env-vars="$ENV_VARS" \
   --container-ports="8080" \
   --container-predict-route="/generate" \
-  --container-health-route="/ping" >/dev/null 2>&1 || true
+  --container-health-route="/ping" \
+  "${UPLOAD_EXTRA_FLAGS[@]}" >/dev/null 2>&1 || true
 
 gcloud ai models list \
   --project="$PROJECT_ID" \

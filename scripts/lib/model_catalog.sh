@@ -67,6 +67,10 @@ catalog_get_swap_space() {
   catalog_get "$1" ".runtime.swapSpaceGb"
 }
 
+catalog_get_shared_memory_mb() {
+  catalog_get "$1" ".runtime.sharedMemorySizeMb"
+}
+
 catalog_get_max_len() {
   catalog_get "$1" ".runtime.maxModelLen"
 }

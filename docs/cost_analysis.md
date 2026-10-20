@@ -56,6 +56,8 @@ This document provides compute specifications, hourly pricing, full/business mon
 | **`llama-3.1-nemotron-70b-instruct`** | NVIDIA / Meta | 70B Reward Tuned | Dedicated Model Garden | **`g2-standard-48`**| 4x NVIDIA L4 (96 GB) | 192 GB | **$3.32 / hr** | $531.20 | **$2,423.60** |
 | **`inkling-small`** | Thinking Machines | Dense OpenModel | Dedicated Model Garden | **`g2-standard-48`**| 4x NVIDIA L4 (96 GB) | 192 GB | **$3.32 / hr** | $531.20 | **$2,423.60** |
 | **`nemotron-3.5-lightning-bf16`** | NVIDIA | 30B MoE | Dedicated Model Garden | **`g2-standard-48`**| 4x NVIDIA L4 (96 GB) | 192 GB | **$3.32 / hr** | $531.20 | **$2,423.60** |
+| **`nemotron-3.5-super-vl-nvfp4`** | NVIDIA | 120B-A12B Multimodal MoE (NVFP4) | Dedicated OpenModel | **`g4-standard-48`** | 1x RTX PRO 6000 (96 GB) | 192 GB | **$3.85 / hr** | $616.00 | **$2,810.50** |
+| **`nemotron-3.5-super-vl-bf16`** | NVIDIA | 120B-A12B Multimodal MoE (BF16) | Dedicated OpenModel | **`g4-standard-192`** | 4x RTX PRO 6000 (384 GB) | 768 GB | **$15.40 / hr** | $2,464.00 | **$11,242.00** |
 | **`qwen3.8-27b`** | Qwen / Alibaba | 27B Dense OpenModel | Dedicated OpenModel | **`g4-standard-48`**| 1x RTX PRO 6000 (96 GB)| 192 GB | **$3.85 / hr** | $616.00 | **$2,810.50** |
 | **`qwen3.8-flash-next`** | Qwen / Alibaba | Dense OpenModel | Dedicated OpenModel | **`g2-standard-12`**| 1x NVIDIA L4 (24 GB) | 48 GB | **$1.01 / hr** | $161.60 | **$737.30** |
 | **`qwen3.8-flash-next-fp8`** | Qwen / Alibaba | FP8 Quantized OpenModel| Dedicated OpenModel | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 32 GB | **$0.83 / hr** | $132.80 | **$605.90** |
@@ -107,6 +109,7 @@ The following throughput and unit economic metrics were measured across partner,
 | **`llama-guard-3-8b`** | 8.0B Safety Classifier | `g2-standard-12` | 1x NVIDIA L4 (24 GB) | **48.36 tok/s** | **201.15 tok/s** | $1.01/hr | **$5.80 / 1M tok** | **Verified on Live Hardware** |
 | **`inkling-small`** | Dense OpenModel | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | **51.22 tok/s** | **214.50 tok/s** | $3.32/hr | **$18.00 / 1M tok** | **Verified on Live Hardware** |
 | **`llama-3.1-nemotron-70b-instruct`** | 70B Aligned Dense | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | **43.93 tok/s** | **190.58 tok/s** | $3.32/hr | **$21.00 / 1M tok** | **Verified on Live Hardware** |
+| **`nemotron-3.5-super-vl-nvfp4`** | 120B-A12B Multimodal MoE (NVFP4, MTP=3) | `g4-standard-48` | 1x RTX PRO 6000 (96 GB) | **236.50 tok/s** (186.87 SOC Gen TPS) | **439.65 tok/s** | $3.85/hr | **$4.52 / 1M tok** | **Verified on Live Hardware** |
 | **`nemotron-3.5-lightning-bf16`** | 30B MoE | `g2-standard-48` | 4x NVIDIA L4 (96 GB) | **37.02 tok/s** | **186.45 tok/s** | $3.32/hr | **$24.91 / 1M tok** | **Verified on Live Hardware** |
 | **`qwen3.8-27b`** | 27B Dense OpenModel | `g4-standard-48` | 1x RTX PRO 6000 (96 GB)| **26.50 tok/s** | **101.02 tok/s** | $3.85/hr | **$40.35 / 1M tok** | **Verified on Live Hardware** |
 

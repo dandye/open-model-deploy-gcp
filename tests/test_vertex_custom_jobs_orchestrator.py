@@ -210,6 +210,8 @@ def test_all_custom_job_targets_catalog_completeness():
 
     # Partner / Open Models
     assert "nemotron-3.5-lightning-bf16" in flavors
+    assert "nemotron-3.5-super-vl-nvfp4" in flavors
+    assert "nemotron-3.5-super-vl-bf16" in flavors
     assert "qwen2.5-coder-32b-instruct" in flavors
     assert "ministral-3b-2410" in flavors
     assert "phi-4" in flavors
@@ -223,8 +225,16 @@ def test_all_custom_job_targets_catalog_completeness():
 
     # Validate target attributes
     for t in ALL_CUSTOM_JOB_TARGETS:
-        assert t.machine_type in ["g2-standard-4", "g2-standard-8", "g2-standard-12", "g2-standard-48", "a2-highgpu-2g"]
-        assert t.accelerator_type in ["NVIDIA_L4", "NVIDIA_TESLA_A100"]
+        assert t.machine_type in [
+            "g2-standard-4",
+            "g2-standard-8",
+            "g2-standard-12",
+            "g2-standard-48",
+            "g4-standard-48",
+            "g4-standard-192",
+            "a2-highgpu-2g",
+        ]
+        assert t.accelerator_type in ["NVIDIA_L4", "NVIDIA_TESLA_A100", "NVIDIA_RTX_PRO_6000"]
         assert t.accelerator_count in [1, 2, 4]
         assert t.tensor_parallel_size in [1, 2, 4]
         assert t.hf_repo.strip() != ""

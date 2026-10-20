@@ -260,13 +260,27 @@ class GemmaAgent:
 
         if active_endpoint:
             vertex_max_tokens = 8192 if max_tokens is None else max_tokens
-            instances = [
-                {
-                    "prompt": f"<start_of_turn>user\n{self.system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
-                    "max_tokens": vertex_max_tokens,
-                    "temperature": temperature,
-                }
-            ]
+            use_chat_completions = os.environ.get("VERTEX_USE_CHAT_COMPLETIONS", "").lower() in ("1", "true", "yes")
+            if use_chat_completions:
+                instances = [
+                    {
+                        "@requestFormat": "chatCompletions",
+                        "messages": [
+                            {"role": "system", "content": self.system_instruction},
+                            {"role": "user", "content": prompt},
+                        ],
+                        "max_tokens": vertex_max_tokens,
+                        "temperature": temperature,
+                    }
+                ]
+            else:
+                instances = [
+                    {
+                        "prompt": f"<start_of_turn>user\n{self.system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
+                        "max_tokens": vertex_max_tokens,
+                        "temperature": temperature,
+                    }
+                ]
             try:
                 from google.cloud import aiplatform
                 endpoint = aiplatform.Endpoint(
@@ -276,11 +290,34 @@ class GemmaAgent:
                 )
                 res = endpoint.predict(instances=instances)
                 predictions = res.predictions
-                reply = predictions[0] if predictions else "No prediction returned."
-                if isinstance(reply, str) and "Output:\n" in reply:
-                    reply = reply.split("Output:\n", 1)[1].strip()
-                prompt_est = int(len(f"{self.system_instruction} {prompt}".split()) * 1.3)
-                comp_est = int(len(str(reply).split()) * 1.3)
+                raw_usage: Dict[str, Any] = {}
+                if isinstance(predictions, dict) and "choices" in predictions:
+                    choices = predictions.get("choices") or []
+                    msg = choices[0].get("message", {}) if choices else {}
+                    reply = msg.get("content") or msg.get("reasoning_content") or ""
+                    raw_usage = predictions.get("usage") or {}
+                elif (
+                    isinstance(predictions, list)
+                    and predictions
+                    and isinstance(predictions[0], dict)
+                    and "choices" in predictions[0]
+                ):
+                    pred0 = predictions[0]
+                    choices = pred0.get("choices") or []
+                    msg = choices[0].get("message", {}) if choices else {}
+                    reply = msg.get("content") or msg.get("reasoning_content") or ""
+                    raw_usage = pred0.get("usage") or {}
+                else:
+                    reply = predictions[0] if predictions else "No prediction returned."
+                    if isinstance(reply, str) and "Output:\n" in reply:
+                        reply = reply.split("Output:\n", 1)[1].strip()
+                if isinstance(reply, str) and "</think>" in reply:
+                    after_think = reply.split("</think>", 1)[1].strip()
+                    if after_think:
+                        reply = after_think
+                prompt_est = int(raw_usage.get("prompt_tokens") or int(len(f"{self.system_instruction} {prompt}".split()) * 1.3))
+                comp_est = int(raw_usage.get("completion_tokens") or int(len(str(reply).split()) * 1.3))
+                total_est = int(raw_usage.get("total_tokens") or (prompt_est + comp_est))
                 return {
                     "response": str(reply),
                     "backend": "Vertex AI Online Prediction",
@@ -289,7 +326,7 @@ class GemmaAgent:
                     "usage": {
                         "prompt_tokens": prompt_est,
                         "completion_tokens": comp_est,
-                        "total_tokens": prompt_est + comp_est,
+                        "total_tokens": total_est,
                     },
                 }
             except Exception:

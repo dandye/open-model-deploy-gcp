@@ -754,12 +754,51 @@ class BenchmarkRunner:
         self.stream = stream
         self.prefix_prompt = prefix_prompt
         self._token: Optional[str] = None
+        self.dedicated_endpoint_dns: Optional[str] = os.environ.get("VERTEX_DEDICATED_ENDPOINT_DNS", "").strip() or None
 
     def get_token(self) -> str:
         """Get or refresh ADC access token."""
         if not self._token:
             self._token = get_adc_token()
         return self._token
+
+    def get_predict_url(self, endpoint_id: str) -> str:
+        """Resolve Vertex AI prediction URL, using dedicatedEndpointDns when applicable."""
+        if self.dedicated_endpoint_dns:
+            return (
+                f"https://{self.dedicated_endpoint_dns}/v1/projects/{self.project_id}"
+                f"/locations/{self.region}/endpoints/{endpoint_id}:predict"
+            )
+        if endpoint_id and endpoint_id.isdigit() and len(endpoint_id) >= 15:
+            try:
+                res = subprocess.run(
+                    [
+                        "gcloud",
+                        "ai",
+                        "endpoints",
+                        "describe",
+                        endpoint_id,
+                        f"--region={self.region}",
+                        f"--project={self.project_id}",
+                        "--format=value(dedicatedEndpointDns)",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                dns = (res.stdout or "").strip()
+                if dns:
+                    self.dedicated_endpoint_dns = dns
+                    return (
+                        f"https://{dns}/v1/projects/{self.project_id}"
+                        f"/locations/{self.region}/endpoints/{endpoint_id}:predict"
+                    )
+            except Exception:
+                pass
+        return (
+            f"https://{self.region}-aiplatform.googleapis.com/v1/projects/{self.project_id}"
+            f"/locations/{self.region}/endpoints/{endpoint_id}:predict"
+        )
 
     def discover_endpoint_id(self) -> str:
         """Discover active Vertex AI Endpoint ID if not explicitly specified."""
@@ -901,7 +940,7 @@ class BenchmarkRunner:
             return None
 
         token = self.get_token()
-        url = f"https://{self.region}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.region}/endpoints/{endpoint_id}:predict"
+        url = self.get_predict_url(endpoint_id)
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
@@ -1122,7 +1161,7 @@ Operational Guidelines: Provide concise, technically rigorous, step-by-step diag
         ]
 
         token = self.get_token()
-        url = f"https://{self.region}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.region}/endpoints/{endpoint_id}:predict"
+        url = self.get_predict_url(endpoint_id)
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",

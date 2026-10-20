@@ -700,6 +700,104 @@
       "extraArgs": []
     },
     "supportedTargets": ["vertex_model_garden"]
+  },
+  "nemotron-3.5-super-vl-nvfp4": {
+    "displayName": "NVIDIA Nemotron 3.5 Super VL 120B-A12B NVFP4",
+    "family": "nemotron",
+    "provider": "nvidia",
+    "type": "open_model",
+    "params": "120B total / 12B active (Hybrid Mamba-Transformer MoE VL, NVFP4)",
+    "publisherModel": "publishers/nvidia/models/nemotron-3.5",
+    "openModelId": "publishers/nvidia/models/nemotron-3.5@nemotron-3.5-super-vl-nvfp4",
+    "version": "nemotron-3.5-super-vl-nvfp4",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+    "hfRepo": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4",
+    "compute": {
+      "machineType": "g4-standard-48",
+      "acceleratorType": "NVIDIA_RTX_PRO_6000",
+      "acceleratorCount": 1,
+      "hostRamGb": 192,
+      "hourlyCostUsd": 3.85
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/agent-platform-mg-public/containers/pytorch-vllm-serve:model-garden.pytorch-vllm-serve-release_20261006.00_p0",
+      "tensorParallelSize": 1,
+      "swapSpaceGb": 0,
+      "sharedMemorySizeMb": 102400,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 32768,
+      "extraArgs": [
+        "--allowed-local-media-path=/",
+        "--trust-remote-code",
+        "--async-scheduling",
+        "--max-num-seqs=32",
+        "--limit-mm-per-prompt.video=1",
+        "--limit-mm-per-prompt.image=1",
+        "--video-pruning-rate=0.5",
+        "--media-io-kwargs.video.fps=2",
+        "--media-io-kwargs.video.num_frames=256",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser=qwen3_coder",
+        "--reasoning-parser=nemotron_v3",
+        "--mamba-backend=flashinfer",
+        "--mamba-ssm-cache-dtype=float16",
+        "--enable-mamba-cache-stochastic-rounding",
+        "--mamba-cache-philox-rounds=5",
+        "--speculative_config.method=mtp",
+        "--speculative_config.num_speculative_tokens=3",
+        "--enable-prefix-caching"
+      ]
+    },
+    "supportedTargets": ["vertex", "vertex_open_model"]
+  },
+  "nemotron-3.5-super-vl-bf16": {
+    "displayName": "NVIDIA Nemotron 3.5 Super VL 120B-A12B BF16",
+    "family": "nemotron",
+    "provider": "nvidia",
+    "type": "open_model",
+    "params": "120B total / 12B active (Hybrid Mamba-Transformer MoE VL, BF16)",
+    "publisherModel": "publishers/nvidia/models/nemotron-3.5",
+    "openModelId": "publishers/nvidia/models/nemotron-3.5@nemotron-3.5-super-vl-bf16",
+    "version": "nemotron-3.5-super-vl-bf16",
+    "sourceUri": "gs://vertex-model-garden-restricted-us/nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+    "hfRepo": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+    "compute": {
+      "machineType": "g4-standard-192",
+      "acceleratorType": "NVIDIA_RTX_PRO_6000",
+      "acceleratorCount": 4,
+      "hostRamGb": 768,
+      "hourlyCostUsd": 15.40
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/agent-platform-mg-public/containers/pytorch-vllm-serve:model-garden.pytorch-vllm-serve-release_20261006.00_p0",
+      "tensorParallelSize": 4,
+      "swapSpaceGb": 0,
+      "sharedMemorySizeMb": 327680,
+      "gpuMemoryUtilization": 0.85,
+      "maxModelLen": 32768,
+      "extraArgs": [
+        "--allowed-local-media-path=/",
+        "--trust-remote-code",
+        "--async-scheduling",
+        "--max-num-seqs=32",
+        "--limit-mm-per-prompt.video=1",
+        "--limit-mm-per-prompt.image=1",
+        "--video-pruning-rate=0.5",
+        "--media-io-kwargs.video.fps=2",
+        "--media-io-kwargs.video.num_frames=256",
+        "--enable-auto-tool-choice",
+        "--tool-call-parser=qwen3_coder",
+        "--reasoning-parser=nemotron_v3",
+        "--mamba-backend=flashinfer",
+        "--mamba-ssm-cache-dtype=float16",
+        "--enable-mamba-cache-stochastic-rounding",
+        "--mamba-cache-philox-rounds=5",
+        "--speculative_config.method=mtp",
+        "--speculative_config.num_speculative_tokens=3",
+        "--enable-prefix-caching"
+      ]
+    },
+    "supportedTargets": ["vertex", "vertex_open_model"]
   }
 }
 

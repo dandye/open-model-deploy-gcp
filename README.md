@@ -37,6 +37,8 @@ The repository uses a single declarative source of truth at [`configs/models.jso
 | **`llama-3.2-3b-instruct`** | Meta | 3.2B Compact Dense | `g2-standard-8` | 1x NVIDIA L4 ($0.83/hr) |
 | **`inkling-small`** | Thinking Machines | OpenModel | `g2-standard-48` | 4x NVIDIA L4 ($3.32/hr) |
 | **`nemotron-3.5-lightning-bf16`** | NVIDIA | 30B MoE | `g2-standard-48` | 4x NVIDIA L4 ($3.32/hr) |
+| **`nemotron-3.5-super-vl-nvfp4`** | NVIDIA | 120B-A12B Multimodal MoE (NVFP4) | `g4-standard-48` | 1x RTX PRO 6000 ($3.85/hr) |
+| **`nemotron-3.5-super-vl-bf16`** | NVIDIA | 120B-A12B Multimodal MoE (BF16) | `g4-standard-192` | 4x RTX PRO 6000 ($15.40/hr) |
 | **`qwen3.8-27b`** | Qwen / HF | 27B OpenModel | `g4-standard-48` | 1x RTX PRO 6000 ($3.85/hr) |
 | **`qwen3.8-flash-next`** | Qwen / HF | OpenModel | `g2-standard-12` | 1x NVIDIA L4 ($1.01/hr) |
 | **`qwen3.8-flash-next-fp8`** | Qwen / HF | FP8 OpenModel | `g2-standard-8` | 1x NVIDIA L4 ($0.83/hr) |
@@ -62,12 +64,13 @@ All models evaluated on the un-spoiled SOC Tier 1 Benchmark Suite (expanded 10-c
 | 7 | **`llama-4-scout-17b-16e-instruct-maas`** | Meta Serverless MaaS (`us-east5`) | **60.0% (3/5)** | **85.0 / 100** | 12.21 s | 66.70 tok/s | 332.76 tok/s | 10 |
 | 8 | **`gemma-4-31b-it`** | Vertex AI Dedicated (2x A100) | **60.0% (3/5)** | **85.0 / 100** | 17.45 s | 51.23 tok/s | 233.48 tok/s | 8 |
 | 9 | **`llama-guard-3-8b`** | Dedicated Model Garden (1x L4) | **80.0% (4/5)** | **84.0 / 100** | 16.32 s | 49.06 tok/s | 235.33 tok/s | 8 |
-| 10 | **`llama-3.2-3b-instruct`** | Dedicated Model Garden (1x L4) | **40.0% (2/5)** | **84.0 / 100** | 22.63 s | 44.96 tok/s | 250.51 tok/s | 11 |
-| 11 | **`gemma-4-31b-it-speculative`** | Vertex AI Dedicated (2x A100) | **60.0% (3/5)** | **82.4 / 100** | 14.81 s | 54.45 tok/s | 223.31 tok/s | 6 |
-| 12 | **`nemotron-3.5-lightning-bf16`** | Dedicated Model Garden (4x L4) | **40.0% (2/5)** | **79.0 / 100** | 17.98 s | 37.02 tok/s | 186.45 tok/s | 6 |
-| 13 | **`gemma-3-12b-it-fp8`** | Vertex AI Dedicated (4x L4) | **60.0% (3/5)** | **79.0 / 100** | 14.21 s | 61.76 tok/s | 216.37 tok/s | 4 |
-| 14 | **`gemini-2.5-flash`** | Google MaaS | **60.0% (3/5)** | **75.2 / 100** | 11.74 s | 59.64 tok/s | 271.41 tok/s | 6 |
-| 15 | **`llama-4-maverick-17b-128e-instruct-maas`** | Meta Serverless MaaS (`us-east5`) | 0.0% (0/5) | 53.0 / 100 | 12.94 s | 58.73 tok/s | 124.25 tok/s | 0 |
+| 10 | **`nemotron-3.5-super-vl-nvfp4`** | Dedicated Model Garden (1x RTX PRO 6000) | **50.0% (5/10)** | **83.0 / 100** | 45.84 s | 186.87 tok/s | 439.65 tok/s | 20 |
+| 11 | **`llama-3.2-3b-instruct`** | Dedicated Model Garden (1x L4) | **40.0% (2/5)** | **84.0 / 100** | 22.63 s | 44.96 tok/s | 250.51 tok/s | 11 |
+| 12 | **`gemma-4-31b-it-speculative`** | Vertex AI Dedicated (2x A100) | **60.0% (3/5)** | **82.4 / 100** | 14.81 s | 54.45 tok/s | 223.31 tok/s | 6 |
+| 13 | **`nemotron-3.5-lightning-bf16`** | Dedicated Model Garden (4x L4) | **40.0% (2/5)** | **79.0 / 100** | 17.98 s | 37.02 tok/s | 186.45 tok/s | 6 |
+| 14 | **`gemma-3-12b-it-fp8`** | Vertex AI Dedicated (4x L4) | **60.0% (3/5)** | **79.0 / 100** | 14.21 s | 61.76 tok/s | 216.37 tok/s | 4 |
+| 15 | **`gemini-2.5-flash`** | Google MaaS | **60.0% (3/5)** | **75.2 / 100** | 11.74 s | 59.64 tok/s | 271.41 tok/s | 6 |
+| 16 | **`llama-4-maverick-17b-128e-instruct-maas`** | Meta Serverless MaaS (`us-east5`) | 0.0% (0/5) | 53.0 / 100 | 12.94 s | 58.73 tok/s | 124.25 tok/s | 0 |
 
 ---
 
@@ -107,6 +110,14 @@ just cloudrun-deploy gemma-2-2b-it
 
 # Deploy Hugging Face / Model Garden OpenModel via Vertex AI SDK
 just openmodel-deploy qwen3.8-27b
+
+# Deploy NVIDIA Nemotron 3.5 Super VL (120B-A12B NVFP4 on 1x RTX PRO 6000, $3.85/hr)
+python3 scripts/deploy_open_model.py \
+  --flavor nemotron-3.5-super-vl-nvfp4 \
+  --open-model-id publishers/nvidia/models/nemotron-3.5@nemotron-3.5-super-vl-nvfp4 \
+  --machine-type g4-standard-48 \
+  --accelerator-type NVIDIA_RTX_PRO_6000 \
+  --accelerator-count 1
 
 # Query the active model endpoint
 just predict "Explain phishing triage in two paragraphs."

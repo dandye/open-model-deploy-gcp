@@ -14,7 +14,7 @@ region     = "us-central1"
 #   "llama-3.2-3b-instruct", "llama-guard-3-8b", "llama-3.1-nemotron-70b-instruct"
 #   "qwen3.8-27b", "qwen2.5-coder-32b-instruct", "qwen3.8-flash-next", "qwen3.8-flash-next-fp8", "qwen3.8-2.4t-a95b-fp8"
 #   "deepseek-v4-pro", "deepseek-r1-distill-qwen-32b", "glm-5.3-flash", "kimi-k3"
-#   "nemotron-3.5-lightning-bf16", "inkling-small", "ministral-3b-2410", "phi-4"
+#   "nemotron-3.5-lightning-bf16", "nemotron-3.5-super-vl-nvfp4", "nemotron-3.5-super-vl-bf16", "inkling-small", "ministral-3b-2410", "phi-4"
 model_flavor = "gemma-2-9b-it"
 
 # Feature toggles
