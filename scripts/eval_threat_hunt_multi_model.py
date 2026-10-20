@@ -57,10 +57,9 @@ COMPRESSED_TRACK_B_HUNT_PATH = (
 )
 HARNESS2_EVOLVED_HUNT_PATH = (
     ROOT_DIR
-    / "docs"
-    / "soc_eval_results"
-    / "harness2_8h_campaign"
-    / "threat_hunt"
+    / "configs"
+    / "runbooks"
+    / "harness2_evolved"
     / "gti_collection_threat_hunt.md"
 )
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "results" / "threat_hunt_multi_model"

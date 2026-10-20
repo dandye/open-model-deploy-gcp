@@ -1,7 +1,7 @@
 # Harness^2 Recursive Runbook Evolution Campaign Report
 
 - **Branch**: `harness2__recursive-runbook-evolution`
-- **Paper Reference**: Xu et al., *Harness^2: Recursive Harness Evolution via Scoped Propose-Probe-Compose and Non-Confounded Attribution* (`arXiv:2610.14224`)
+- **Paper Reference**: *Harness^2: Recursive Agent Harnessing for an Open World* (`arXiv:2610.14224`, `https://github.com/google-research/harness2`)
 - **Evaluation Harness Lock**: Verified across all 33 protected files (`composite_sha256=038639ae9c6839146f0ecad07b0ecfc6c48ea47b8a49d507c7dab237619218df`, zero locked-file modifications, `final_test.json` sealed)
 - **Cumulative Campaign Spend**: `\$2.28` across all live evolution, probing, and cross-model transfer benchmarks (hard budget ceiling: `\$15.00`)
 
@@ -64,10 +64,12 @@ Prior to this campaign, `run_id=20261019T004640Z-68a18137` (commit `a5a0c4e`) de
 
 - **Evolution Script**: `scripts/evolve_threat_hunt_harness2.py`
 - **Artifacts Directory**: `docs/soc_eval_results/harness2_8h_campaign/threat_hunt/` and `docs/soc_eval_results/harness2_8h_campaign/threat_hunt_multi_model/`
-- **Target Runbook**: `configs/runbooks/gti_collection_threat_hunt.md` (`340` words, zero Mermaid, zero `${VAR_NAME}`, zero interactive pseudo-tools)
+- **Seed Baseline Runbook**: `configs/runbooks/gti_collection_threat_hunt.md` (`350` words)
+- **Evolved Target Runbook**: `configs/runbooks/harness2_evolved/gti_collection_threat_hunt.md` (`347` words raw / `266` words stripped, zero Mermaid, zero `${VAR_NAME}`, zero interactive pseudo-tools)
+- **Evaluation Scope**: In-distribution 4-scenario diagnostic CTI threat-hunt benchmark (`configs/evals/hunt/ursnif_gti_hunt_suite.json`, `N=4` scenarios evaluated across 3 models $\times$ 4 arms = `48` trajectories)
 - **Evolution Summary (`evolution_metadata.json`)**:
   - Baseline score (`compressed_track_b_hunt` on `gemini-2.5-flash-lite`): `0.8998` (`HUNT-DEGRADED-503-04`: `0.7275`, `HUNT-URSNIF-DOMAIN-PIVOT-02`: `0.9573`).
-  - Round 1 `Harness^2` Propose-Probe-Compose: `INV` scored `0.9683` (`+0.0685`), `DOM` scored **`0.9780`** (`+0.0782`), `COMPOSED` scored `0.9683`. The proposer selected `DOM` (`decision=KEPT`, `+0.0782 >= tau_accept 0.0150`, `attribution=helped`, zero regressions).
+  - Round 1 `Harness^2` Propose-Probe-Compose: `INV` scored `-1.0` (rejected by inner categorical gate), `DOM` scored **`0.9780`** (`+0.0782`), `COMPOSED` was skipped (`composed_score: null`). The proposer selected `DOM` (`decision=KEPT`, `+0.0782 >= tau_accept 0.0100`, `attribution=helped`, zero regressions). Round 2 selected `KEEP_BASE` (`0.9780` retained).
 
 ### 3.1 Track 2 Multi-Model x 4-Arm Transfer Scorecard (`48` Trajectories)
 
@@ -99,10 +101,10 @@ Prior to this campaign, `run_id=20261019T004640Z-68a18137` (commit `a5a0c4e`) de
 
 ## 4. Phase 3B: Gen 5 Cross-Model Transfer & Cost Staircase Benchmark
 
-- **Run ID**: `20261020T091548Z-652c8d98`
+- **Run ID**: `20261020T092042Z-88248e1f`
 - **Artifacts Directory**: `docs/soc_eval_results/harness2_8h_campaign/gen5_transfer/`
 - **Dataset**: Gen 5 `validation` split (`20` cases across 10 scenario families, loaded via `scripts/gen5_exposure.py`)
-- **Total Trajectories Executed**: `180` (`3` models $\times$ `3` arms $\times$ `20` validation cases)
+- **Total Trajectories Executed**: `180` (`3` models $\times$ `3` arms $\times$ `20` validation cases, all evaluated on the identical runtime agent harness to isolate runbook effect from runtime agent guardrails)
 
 ### 4.1 Cross-Model Transfer Matrix (3 Models $\times$ 3 Arms)
 
@@ -141,15 +143,15 @@ Prior to this campaign, `run_id=20261019T004640Z-68a18137` (commit `a5a0c4e`) de
 
 ## 5. Distilled Experience Library Rules (`EXPERIENCE.md` & `experience_library.jsonl`)
 
-1. **Gen 5 Tier 1 (`docs/soc_eval_results/harness2_8h_campaign/gen5_flash_lite/EXPERIENCE.md`)**:
-   - **Cue**: Runbook refinement for `lateral_movement_hunt_psexec_wmi.md` (and `malware_triage.md`)
-   - **Scope**: `COMPOSED` | **Attribution**: `helped` | **Confidence**: `high` | **Mean Delta**: `+0.2187` (`lateral_movement_hunt_psexec_wmi.md`), `+0.0528` (`malware_triage.md`)
-   - **Distilled Rule**: In Stage A of `malware_triage.md` and Stage C of `lateral_movement_hunt_psexec_wmi.md`, require calling `secops-mcp.lookup_entity` on the alerted `<hostname>` to populate `AFFECTED_HOSTS` and verify CMDB criticality; in Stage D, execute `isolate_host` on each bare `<hostname>` in `AFFECTED_HOSTS` (without parenthetical IP suffixes) when active execution or lateral movement is corroborated.
+1. **Gen 5 Tier 1 (`docs/soc_eval_results/harness2_8h_campaign/gen5_flash_lite/EXPERIENCE.md` & `configs/runbooks/harness2_evolved/EXPERIENCE.md`)**:
+   - **Entry 1 (`lateral_movement_hunt_psexec_wmi.md`)**:
+     - **Scope**: `COMPOSED` | **Attribution**: `helped` | **Confidence**: `high` | **Mean Delta**: `+0.2187`
+     - **Recorded Lesson**: `Updated lateral_movement_hunt_psexec_wmi.md (1074 -> 281 words) lifting validation fitness by +0.2187 with zero regressions: Use secops-mcp.get_threat_intel on T1021.002 (Remote Services: SMB/Windows Admin Shares) and T1047 (Windows Management Instrumentation) to inform query logic.; Formulate and execute UDM hunt queries using secops-mc...`
+   - **Entry 2 (`malware_triage.md`)**:
+     - **Scope**: `COMPOSED` | **Attribution**: `helped` | **Confidence**: `high` | **Mean Delta**: `+0.0528`
+     - **Recorded Lesson**: `Updated malware_triage.md (843 -> 336 words) lifting validation fitness by +0.0528 with zero regressions: Get File Reputation:** Call gti-mcp.get_file_report with hash=<file_hash> to get the file's threat intelligence report (<gti_report>).; Check Host & Execution Context:** Call secops-mcp.lookup_entity on the al...`
 
 2. **Track 2 Proactive Threat Hunting (`docs/soc_eval_results/harness2_8h_campaign/threat_hunt/EXPERIENCE.md`)**:
-   - **Cue**: Track 2 Threat Hunt evolution (`gti_collection_threat_hunt.md`, Round 1)
+   - **Cue**: `Track 2 Threat Hunt refinement (round 1)` (`gti_collection_threat_hunt.md`)
    - **Scope**: `DOM` | **Attribution**: `helped` | **Confidence**: `high` | **Mean Delta**: `+0.0782`
-   - **Distilled Rule**:
-     1. In Stage B second-hop pivoting, inspect every candidate file hash returned by `get_entities_related_to_a_domain` with `get_file_report` (`hash=<sha256>`) to separate signed Microsoft Windows LOLBins (`VALID_CERTIFICATE`, e.g., `rundll32.exe` — never block) from malicious payloads (`itsIt.db`).
-     2. In Stage C SIEM sweeping, when a `72h` `search_security_events` query returns 0 hits, automatically widen `hours_back` from `72` to `168` (`7d`) before concluding no internal exposure.
-     3. In Stage A/D degraded-mode outages (`HTTP 503 Service Unavailable`), query `list_cases(status="OPEN")` once to correlate open SOAR tracking tickets before issuing an `INCONCLUSIVE` verdict and `update_case_comment`.
+   - **Recorded Lesson**: `Updated gti_collection_threat_hunt.md (350 -> 347 words) lifting validation fitness by +0.0782 with zero regressions: Call get_collection_report and get_entities_related_to_a_collection (or get_domain_report and get_entities_related_to_a_domain) to extract indicators.; Call get_ioc_matches and search_security_events for e...`

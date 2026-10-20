@@ -2,7 +2,7 @@
 
 ## 1. Repository & Worktree Conventions
 
-- **Worktree Layout**: All worktrees live under `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/<branch>/` with `main` holding `.git/`.
+- **Worktree Layout**: All worktrees live under `<projects_root>/gemma_deploy__worktrees/<branch>/` with `main` holding `.git/`.
 - **Branch Naming**: Never use `/` in branch names and never use `feat` as a prefix. Use `__` as the delimiter (for example, `dspy__context-engineering` or `blog__aqua_secops_flywheel`).
 - **Git Staging**: Never run `git add .`, `git add -A`, or `git add --all`. Always inspect `git status` and stage files by explicit path (`git add <file1> <file2>`). Never stage `.env` files or credentials.
 - **Zero Emojis**: Never use emojis in code, comments, docstrings, markdown reports, blog posts, commit messages, or pull request descriptions.
@@ -14,7 +14,7 @@
 Never edit any of the 33 protected evaluation files (`agent/soc_environment.py`, `scripts/eval_trajectory_verifier.py`, `scripts/eval_cost_engine.py`, `scripts/eval_soc_agent.py`, `scripts/verify_harbor_soc.py`, `configs/evals/gen3/soc_tier1_interactive.json`, or `configs/evals/gen5/**`) during prompt, skill, or runbook optimization. Verify the cryptographic lock before and after runs:
 
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/dspy__context-engineering"
+WORKTREE_DIR="$(git rev-parse --show-toplevel)"
 cd "$WORKTREE_DIR"
 just harness-verify
 ```
@@ -39,7 +39,7 @@ Every SOC runbook created, edited, or evolved with GEPA (`agent/gepa_runbook_opt
 10. **Pre-Commit Validation Gate**: Run `just lint-runbooks` before committing runbook changes:
 
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/dspy__context-engineering"
+WORKTREE_DIR="$(git rev-parse --show-toplevel)"
 cd "$WORKTREE_DIR"
 just lint-runbooks
 ```

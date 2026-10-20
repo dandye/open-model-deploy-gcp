@@ -1551,6 +1551,43 @@ def build_compose_prompt(
     )
 
 
+def summarize_runbook_diff_lesson(
+    component_name: str,
+    base_text: str,
+    new_text: str,
+    mean_delta: float,
+) -> str:
+    """Synthesize a concise experience lesson from the structural diff between base and evolved runbooks."""
+    base_words = len((base_text or "").split())
+    new_words = len((new_text or "").split())
+    base_lines = {line.strip() for line in (base_text or "").splitlines() if line.strip()}
+    workflow_section = (new_text or "").split("## Workflow Steps", 1)[-1]
+    candidate_lines = [
+        line.strip().lstrip("*-0123456789. ").strip()
+        for line in workflow_section.splitlines()
+        if line.strip() and line.strip() not in base_lines and not line.strip().startswith("#")
+    ]
+    if not candidate_lines:
+        candidate_lines = [
+            line.strip().lstrip("*-0123456789. ").strip()
+            for line in (new_text or "").splitlines()
+            if line.strip() and line.strip() not in base_lines and not line.strip().startswith("#")
+        ]
+    highlights = "; ".join(candidate_lines[:2])
+    if len(highlights) > 220:
+        highlights = highlights[:217].rstrip() + "..."
+    word_summary = f"({base_words} -> {new_words} words)"
+    if highlights:
+        return (
+            f"Updated {component_name} {word_summary} lifting validation fitness by "
+            f"{mean_delta:+.4f} with zero regressions: {highlights}"
+        )
+    return (
+        f"Updated {component_name} {word_summary} lifting validation fitness by "
+        f"{mean_delta:+.4f} with zero regressions."
+    )
+
+
 class Harness2ProposeProbeComposeProposer:
     """Contrastive Propose-Probe-Compose proposer with scoped INV and DOM editors.
 
@@ -1572,6 +1609,8 @@ class Harness2ProposeProbeComposeProposer:
         forbid_mermaid_diagrams: bool = True,
         forbid_interactive_pseudotools: bool = True,
         max_words: Optional[int] = None,
+        inv_prompt_template: Optional[str] = None,
+        dom_prompt_template: Optional[str] = None,
     ) -> None:
         self.reflection_lm = reflection_lm
         self.probe_adapter = probe_adapter
@@ -1585,6 +1624,8 @@ class Harness2ProposeProbeComposeProposer:
         self.forbid_mermaid_diagrams = bool(forbid_mermaid_diagrams)
         self.forbid_interactive_pseudotools = bool(forbid_interactive_pseudotools)
         self.max_words = max_words
+        self.inv_prompt_template = inv_prompt_template
+        self.dom_prompt_template = dom_prompt_template
         self.last_probe_records: List[Dict[str, Any]] = []
 
     def _select_probe_batch(self, comp_name: str) -> List[Dict[str, Any]]:
@@ -1738,8 +1779,8 @@ class Harness2ProposeProbeComposeProposer:
         from gepa.strategies.instruction_proposal import InstructionProposalSignature
 
         proposed: Dict[str, str] = {}
-        inv_tmpl = build_invariant_reflection_prompt_template()
-        dom_tmpl = build_domain_reflection_prompt_template()
+        inv_tmpl = self.inv_prompt_template or build_invariant_reflection_prompt_template()
+        dom_tmpl = self.dom_prompt_template or build_domain_reflection_prompt_template()
 
         for comp_name in components_to_update:
             base_text = candidate.get(comp_name, "")
@@ -2742,20 +2783,24 @@ def main(args: Optional[List[str]] = None) -> int:
                             candidate[attr.component_name],
                         )
                 if experience_library is not None and helped_comps:
-                    best_helped = max(helped_comps, key=lambda a: a.mean_delta)
-                    experience_library.record_from_attributions(
-                        attributions=comp_attributions,
-                        cue=f"Runbook refinement for {best_helped.component_name}",
-                        lesson=(
-                            f"Isolated update to {best_helped.component_name} improved validation "
-                            f"fitness by {best_helped.mean_delta:+.4f} with zero regressions."
-                        ),
-                        evidence=(
-                            f"Candidate {global_index} (round {round_idx + 1}, {parsed_args.proposal_mode}) "
-                            f"cleared tau_accept ({tau_accept:.4f}) on {len(best_helped.evaluated_cases)} evaluated cases."
-                        ),
-                        scope="COMPOSED" if parsed_args.proposal_mode == "harness2" else "SINGLE",
-                    )
+                    for helped_attr in helped_comps:
+                        comp_key = helped_attr.component_name
+                        single_attr_map = {comp_key: helped_attr}
+                        experience_library.record_from_attributions(
+                            attributions=single_attr_map,
+                            cue=f"Runbook refinement for {comp_key}",
+                            lesson=summarize_runbook_diff_lesson(
+                                component_name=comp_key,
+                                base_text=seed_candidate.get(comp_key, ""),
+                                new_text=candidate.get(comp_key, ""),
+                                mean_delta=helped_attr.mean_delta,
+                            ),
+                            evidence=(
+                                f"Candidate {global_index} (round {round_idx + 1}, {parsed_args.proposal_mode}) "
+                                f"cleared tau_accept ({tau_accept:.4f}) on {len(helped_attr.evaluated_cases)} evaluated cases."
+                            ),
+                            scope="COMPOSED" if parsed_args.proposal_mode == "harness2" else "SINGLE",
+                        )
 
             if acc.accepted and (selected_score is None or score > selected_score):
                 selected_index = global_index

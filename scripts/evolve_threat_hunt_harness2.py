@@ -30,6 +30,7 @@ from agent.gepa_runbook_optimizer import (
     GoogleGenAILM,
     Harness2ProposeProbeComposeProposer,
     WordLimitReflectionLM,
+    summarize_runbook_diff_lesson,
     validate_runbook_candidate,
 )
 from agent.hierarchical_soc_agent import (
@@ -97,7 +98,7 @@ def build_hunt_inv_prompt_template() -> str:
         "You are the INVARIANT (INV) agent harness editor in a Harness^2 Propose-Probe-Compose loop\n"
         "for Track 2 Proactive Threat Hunting (`gti_collection_threat_hunt.md`).\n"
         "Your scope is strictly cross-domain agentic workflow, multi-horizon lookback sequencing,\n"
-        "degraded HTTP 503 fallback pivots, and compact runbook structure.\n\n"
+        "degraded service-outage fallback handling, and compact runbook structure.\n\n"
         "Active Runbook Component:\n"
         "```markdown\n"
         "<curr_param>\n"
@@ -108,10 +109,8 @@ def build_hunt_inv_prompt_template() -> str:
         "```\n\n"
         "INV Editor Rules:\n"
         "1. Preserve the 6-section markdown skeleton (`# Proactive GTI Collection & Campaign Threat Hunt`, `## Objective`, `## Scope`, `## Inputs`, `## Tools`, `## Workflow Steps` with `### Stage A`, `### Stage B`, `### Stage C`).\n"
-        "2. In Stage A, instruct the worker to query `list_cases` alongside the initial GTI collection/domain lookup so active hunt tracking cases (`<case_id>`) are always correlated in the trajectory even if GTI or SIEM endpoints return `HTTP 503`.\n"
-        "3. In Stage A, enforce automatic `72h -> 168h` horizon widening: when `get_ioc_matches(hours_back=72)` or `search_security_events(hours_back=72)` returns zero hits, immediately re-run with `hours_back=168` (`7` days).\n"
-        "4. On `HTTP 503` service outages across GTI/SIEM tools, instruct the worker to stop retrying failing endpoints, call `list_cases` once to confirm the open `<case_id>`, set verdict to `INCONCLUSIVE`, and call `update_case_comment` on `<case_id>` (never `isolate_host`, `block_indicator`, or `close_case`).\n"
-        "5. Keep total length <= 320 words, use `<angle_bracket>` input slots (never `${VAR_NAME}`), never include Mermaid blocks or interactive pseudo-tools, never hardcode campaign domains/hashes/hostnames/CASE IDs, and never use emojis.\n\n"
+        "2. Inspect `<side_info>` for workflow sequencing gaps (such as missing lookback horizon widening when initial SIEM queries return empty, or missing SOAR case correlation during upstream service outages) and refine the stage ordering to address them.\n"
+        "3. Keep total length <= 320 words, use `<angle_bracket>` input slots (never `${VAR_NAME}`), never include Mermaid blocks or interactive pseudo-tools, never hardcode campaign domains/hashes/hostnames/CASE IDs, and never use emojis.\n\n"
         "Provide the complete revised runbook inside ```markdown blocks."
     )
 
@@ -121,9 +120,8 @@ def build_hunt_dom_prompt_template() -> str:
     return (
         "You are the DOMAIN (DOM) SecOps threat-hunting editor in a Harness^2 Propose-Probe-Compose loop\n"
         "for Track 2 Proactive Threat Hunting (`gti_collection_threat_hunt.md`).\n"
-        "Your scope is strictly CTI graph pivoting (`communicating_files`), mandatory per-hash\n"
-        "`get_file_report` verification (separating unsigned malware DLLs from signed OS LOLBins\n"
-        "and benign web files), CMDB change-window (`CHG-...`) verification, and containment safety.\n\n"
+        "Your scope is strictly CTI graph pivoting, file reputation and digital signature verification,\n"
+        "CMDB change-window verification, and 4-way verdict containment safety.\n\n"
         "Active Runbook Component:\n"
         "```markdown\n"
         "<curr_param>\n"
@@ -134,14 +132,9 @@ def build_hunt_dom_prompt_template() -> str:
         "```\n\n"
         "DOM Editor Rules:\n"
         "1. Preserve the 6-section markdown skeleton (`# Proactive GTI Collection & Campaign Threat Hunt`, `## Objective`, `## Scope`, `## Inputs`, `## Tools`, `## Workflow Steps` with `### Stage A`, `### Stage B`, `### Stage C`).\n"
-        "2. In Stage B, when starting from a seed domain or matched C2 domain, call `get_entities_related_to_a_domain` (`relationship_name=\"communicating_files\"`) to enumerate ALL candidate file hashes, and MUST call `get_file_report` on EVERY candidate file hash returned by the collection, domain pivot, or `PROCESS_MODULE_LOAD` telemetry (both suspected malicious payload hashes AND suspected signed OS LOLBin / benign web file hashes) to verify `cert_status` and `verdict` before containment.\n"
-        "3. In Stage B, on `<matched_hostname>`, call `lookup_entity` and `list_cases` to check CMDB `CHG-...` maintenance records and open SOAR cases (`<case_id>`).\n"
-        "4. In Stage C, enforce the 4-way verdict matrix:\n"
-        "   - `MALICIOUS`: Call `isolate_host` on `<matched_hostname>`, `block_indicator` ONLY on verified malicious C2 domains/IPs/unsigned payload hashes (strictly NEVER block `VALID_CERTIFICATE` signed OS LOLBins like `rundll32.exe` or benign web files), and `update_case_comment` on `<case_id>`.\n"
-        "   - `SUSPICIOUS`: Call `update_case_comment` on `<case_id>`; never `isolate_host` or `close_case`.\n"
-        "   - `INCONCLUSIVE`: On `HTTP 503` outage, call `list_cases` to verify `<case_id>` and `update_case_comment` on `<case_id>`; never `isolate_host`, `block_indicator`, or `close_case`.\n"
-        "   - `BENIGN`: When `72h` and `168h` sweeps show only signed OS LOLBins under authorized `CHG-...` maintenance, call `update_case_comment` and `close_case` on `<case_id>`.\n"
-        "5. Keep total length <= 320 words, use `<angle_bracket>` input slots (never `${VAR_NAME}`), never hardcode campaign domains/hashes/hostnames/CASE IDs, and never use emojis.\n\n"
+        "2. Inspect `<side_info>` for domain verification gaps (such as unverified file hashes from second-hop domain pivots, unverified certificate status on OS binaries, or missing CMDB/SOAR correlation) and tighten the Stage B/C domain contracts accordingly.\n"
+        "3. Preserve the 4-way verdict disposition matrix (`MALICIOUS`, `SUSPICIOUS`, `INCONCLUSIVE`, `BENIGN`) and containment safety constraints.\n"
+        "4. Keep total length <= 320 words, use `<angle_bracket>` input slots (never `${VAR_NAME}`), never hardcode campaign domains/hashes/hostnames/CASE IDs, and never use emojis.\n\n"
         "Provide the complete revised runbook inside ```markdown blocks."
     )
 
@@ -311,11 +304,15 @@ class ThreatHuntGEPAAdapter:
             inert = bool(harbor_info.get("inert", False))
             zero_tools = epistemic_steps == 0 and not inert
 
+            is_outage_case = (
+                str(case.get("ground_truth_label", "")).upper() == "INCONCLUSIVE"
+                or any("503" in str(s.get("observation", "")) for s in res.trajectory)
+            )
             if safety_gate:
                 failure_cat = "OVER_CONTAINMENT_FALSE_ALARM"
             elif zero_tools:
                 failure_cat = "PREMATURE_TERMINATION_ZERO_TOOLS"
-            elif cid == "HUNT-DEGRADED-503-04" and combined_score < 0.90:
+            elif is_outage_case and combined_score < 0.90:
                 failure_cat = "DEGRADED_MODE_FAILURE"
             elif combined_score < 0.90:
                 failure_cat = "RUNBOOK_PROCEDURAL_VIOLATION"
@@ -373,26 +370,29 @@ class ThreatHuntGEPAAdapter:
         for t in trajs:
             hm = t.get("hunt_metrics") or {}
             fb_parts: List[str] = []
+            is_degraded_outage = (
+                str(t.get("expected_verdict", "")).upper() == "INCONCLUSIVE"
+                or t.get("failure_category") == "DEGRADED_MODE_FAILURE"
+            )
             if not hm.get("verdict_ok", True):
                 fb_parts.append(
                     f"Verdict mismatch: expected {t.get('expected_verdict')}, got {t.get('actual_verdict')}."
                 )
             if not hm.get("operator_ok", True):
                 fb_parts.append(
-                    f"Missing required SOAR/containment actions: expected {t.get('expected_actions')}, executed {t.get('executed_actions')}. "
-                    "When GTI/SIEM tools return HTTP 503, call list_cases once in Stage A/C so the trajectory has verified SOAR context and update_case_comment executes on <case_id>."
+                    f"Missing required SOAR/containment actions: expected {t.get('expected_actions')}, executed {t.get('executed_actions')}."
                 )
-            if not hm.get("widened_168h", True) and t.get("case_id") != "HUNT-DEGRADED-503-04":
+            if not hm.get("widened_168h", True) and not is_degraded_outage:
                 fb_parts.append(
-                    "Did not widen SIEM lookback from 72h to 168h when 72h returned 0 hits. Always re-run get_ioc_matches and search_security_events with hours_back=168."
+                    "Did not widen SIEM lookback from 72h to 168h when 72h returned 0 hits."
                 )
-            if not hm.get("verified_lolbin_hash", True) and t.get("case_id") != "HUNT-DEGRADED-503-04":
+            if not hm.get("verified_lolbin_hash", True) and not is_degraded_outage:
                 fb_parts.append(
-                    "Did not call get_file_report on ALL candidate file hashes (including both payload hashes and suspected signed OS LOLBin / benign web hashes from communicating_files or PROCESS_MODULE_LOAD) to verify cert_status before containment."
+                    "Did not call get_file_report on all candidate file hashes to verify certificate status before containment."
                 )
-            if t.get("case_id") == "HUNT-URSNIF-COLLECTION-01" and float(t.get("harbor_reward", 1.0)) < 0.99:
+            if float(t.get("harbor_reward", 1.0)) < 0.99 and not is_degraded_outage:
                 fb_parts.append(
-                    "In Stage A/B, verify all extracted file hashes with get_file_report (both malicious payload hashes and signed OS LOLBin hashes) and ensure Stage C reports Patient Zero hostname, verified C2 domain, and unalerted SOAR <case_id>."
+                    f"Incomplete entity/action coverage (harbor_reward={float(t.get('harbor_reward', 0.0)):.4f})."
                 )
             if float(t.get("score", 1.0)) < 0.995 or fb_parts:
                 raw_rec = {
@@ -410,11 +410,7 @@ class ThreatHuntGEPAAdapter:
                         "hunt_composite_score": t.get("hunt_composite_score", 0.0),
                         "harbor_reward": t.get("harbor_reward", 0.0),
                     },
-                    "Feedback": " ".join(fb_parts) or (
-                        "Ensure Stage A calls list_cases alongside initial GTI lookup (and pivots to list_cases on HTTP 503), "
-                        "Stage A widens 72h -> 168h on zero hits, and Stage B calls get_file_report on EVERY candidate file hash "
-                        "(both malicious payloads and signed OS LOLBins / benign web files) before Stage C containment."
-                    ),
+                    "Feedback": " ".join(fb_parts) or "All scenario checks passed.",
                 }
                 dataset[HUNT_COMPONENT_NAME].append(
                     sanitize_payload(raw_rec, forbidden_literals=self.forbidden_literals)
@@ -484,8 +480,6 @@ def run_threat_hunt_harness2_evolution(
     experience_library = ExperienceLibrary(output_dir)
     ledger = HillclimbLedger(output_dir / "hillclimb_ledger.jsonl")
 
-    # Monkey-patch build_invariant_reflection_prompt_template / build_domain_reflection_prompt_template
-    # on proposer call via custom proposer subclass
     class ThreatHuntProposer(Harness2ProposeProbeComposeProposer):
         def _validate_component_candidate(
             self,
@@ -508,24 +502,6 @@ def run_threat_hunt_harness2_evolution(
                 print(f"[ThreatHuntProposer] Validation rejected candidate for {comp_name}: {v}", flush=True)
             return ok
 
-        def __call__(
-            self,
-            candidate: Dict[str, str],
-            reflective_dataset: Mapping[str, Sequence[Mapping[str, Any]]],
-            components_to_update: List[str],
-        ) -> Dict[str, str]:
-            import agent.gepa_runbook_optimizer as opt_mod
-
-            orig_inv = opt_mod.build_invariant_reflection_prompt_template
-            orig_dom = opt_mod.build_domain_reflection_prompt_template
-            try:
-                opt_mod.build_invariant_reflection_prompt_template = build_hunt_inv_prompt_template
-                opt_mod.build_domain_reflection_prompt_template = build_hunt_dom_prompt_template
-                return super().__call__(candidate, reflective_dataset, components_to_update)
-            finally:
-                opt_mod.build_invariant_reflection_prompt_template = orig_inv
-                opt_mod.build_domain_reflection_prompt_template = orig_dom
-
     proposer = ThreatHuntProposer(
         reflection_lm=reflection_lm,
         probe_adapter=adapter,
@@ -539,6 +515,8 @@ def run_threat_hunt_harness2_evolution(
         forbid_mermaid_diagrams=True,
         forbid_interactive_pseudotools=True,
         max_words=max_words,
+        inv_prompt_template=build_hunt_inv_prompt_template(),
+        dom_prompt_template=build_hunt_dom_prompt_template(),
     )
 
     # Evaluate baseline seed
@@ -632,17 +610,24 @@ def run_threat_hunt_harness2_evolution(
             },
         )
 
-        if attr_map.get(HUNT_COMPONENT_NAME) == "helped":
+        last_probe = proposer.last_probe_records[-1] if proposer.last_probe_records else None
+        selected_scope = (
+            str(last_probe.get("selected_scope"))
+            if isinstance(last_probe, Mapping) and last_probe.get("selected_scope") in ("INV", "DOM", "COMPOSED")
+            else "COMPOSED"
+        )
+        if attr_map.get(HUNT_COMPONENT_NAME) == "helped" and cand != best_candidate:
             experience_library.record_from_attributions(
                 attributions=attributions,
                 cue=f"Track 2 Threat Hunt refinement (round {r_idx})",
-                lesson=(
-                    "Calling list_cases in Stage A/C on HTTP 503 and invoking get_file_report on "
-                    "every candidate hash (both malicious DLLs and signed OS LOLBins) lifted "
-                    f"Track 2 threat-hunt score by {cand_mean - base_mean:+.4f} with zero regressions."
+                lesson=summarize_runbook_diff_lesson(
+                    component_name=HUNT_COMPONENT_NAME,
+                    base_text=best_candidate.get(HUNT_COMPONENT_NAME, ""),
+                    new_text=cand.get(HUNT_COMPONENT_NAME, ""),
+                    mean_delta=cand_mean - base_mean,
                 ),
-                evidence=f"Round {r_idx} evaluated across {len(scenarios)} Ursnif GTI hunt scenarios.",
-                scope="COMPOSED",
+                evidence=f"Round {r_idx} ({selected_scope}) evaluated across {len(scenarios)} Ursnif GTI hunt scenarios.",
+                scope=selected_scope,
             )
 
         if acc.accepted and cand_mean > best_score:

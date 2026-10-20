@@ -634,7 +634,7 @@
   "balanced_trace_count": 72,
   "best_gen5_harbor_reward": 0.9898,
   "best_gen3_harbor_reward": 0.9801,
-  "best_runbooks_dir": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/dspy__context-engineering/docs/soc_eval_results/dspy_overnight/candidates/wave1_clean_seed",
+  "best_runbooks_dir": "docs/soc_eval_results/dspy_overnight/candidates/wave1_clean_seed",
   "gpu_audit": {
     "checked": true,
     "active_endpoints": 0,

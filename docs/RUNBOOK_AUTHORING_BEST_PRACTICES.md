@@ -146,7 +146,7 @@ Avoid negated verdict phrases in report templates (such as `"not a false positiv
 Run `validate_runbook_candidate()` with all structural and anti-memorization flags enabled before committing any runbook change:
 
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/dspy__context-engineering"
+WORKTREE_DIR="$(git rev-parse --show-toplevel)"
 cd "$WORKTREE_DIR"
 direnv exec "$WORKTREE_DIR" python3 -c '
 from pathlib import Path
