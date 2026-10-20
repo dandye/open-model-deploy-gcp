@@ -1351,8 +1351,16 @@ class SOCSupervisorAgent(GemmaAgent):
                 aliases.setdefault(ip_alias, set()).add(hostname)
 
         host_pattern = r"(?:DESKTOP|SRV|GW|WKS|LT|PC|BLD|CI|DEV|FS|BKP|DC|PAY|SCN|APP|PRX|VPN|DB|HR|WEB|MAIL|JUMP|BASTION)-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+        explicit_report_hostnames = {
+            str(item).strip().upper()
+            for item in worker_report.target_entities
+            if re.fullmatch(host_pattern, str(item).strip(), re.IGNORECASE)
+        }
 
-        def _extract_hosts(items: List[str]) -> Set[str]:
+        def _extract_hosts(
+            items: List[str],
+            allow_verified_parenthetical: bool = False,
+        ) -> Set[str]:
             found: Set[str] = set()
             for item in items:
                 cleaned = str(item).strip()
@@ -1362,9 +1370,27 @@ class SOCSupervisorAgent(GemmaAgent):
                     found.update(aliases[cleaned.lower()])
                 elif re.fullmatch(host_pattern, cleaned, re.IGNORECASE):
                     found.add(cleaned.upper())
+                elif allow_verified_parenthetical:
+                    paren_match = re.fullmatch(
+                        rf"({host_pattern})\s*\(([^()]+)\)",
+                        cleaned,
+                        re.IGNORECASE,
+                    )
+                    if paren_match:
+                        h_raw = paren_match.group(1).strip()
+                        inner_raw = paren_match.group(2).strip().lower()
+                        if h_raw.upper() in explicit_report_hostnames:
+                            h_set = aliases.get(h_raw.lower(), {h_raw.upper()})
+                            inner_set = aliases.get(inner_raw, h_set)
+                            if h_set == inner_set:
+                                found.update(h_set)
             return found
 
-        decision_hosts = _extract_hosts([str(decision.target_entity)]) if decision.target_entity else set()
+        decision_hosts = (
+            _extract_hosts([str(decision.target_entity)], allow_verified_parenthetical=True)
+            if decision.target_entity
+            else set()
+        )
         report_hosts = _extract_hosts(list(worker_report.target_entities))
 
         if decision.target_entity:

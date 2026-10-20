@@ -1184,4 +1184,38 @@ def test_supervisor_report_assertion_hygiene_and_gen3_case_resolution():
     assert resolved_case == "CASE-33279"
 
 
+def test_resolve_target_host_compound_hostname_ip_requires_explicit_worker_investigation():
+    """Verify _resolve_target_host resolves 'HOSTNAME (IP)' only when worker explicitly queried HOSTNAME."""
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    prompt = (
+        "Triage alert CASE-96682: workstation DESKTOP-FIN-08 (10.20.4.15) executed "
+        "d39b7e91c6e85997149aa1514998bd8fd8ac81092708d3aa7da7b09d447f869c."
+    )
+    decision = SocDecision(
+        verdict="MALICIOUS",
+        recommended_actions=["isolate_host"],
+        target_entity="DESKTOP-FIN-08 (10.20.4.15)",
+    )
+
+    # 1. Worker only queried IP or hash, never DESKTOP-FIN-08 by hostname -> does NOT resolve compound string
+    report_unverified = WorkerInvestigationReport(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        target_entities=["10.20.4.15", "d39b7e91c6e85997149aa1514998bd8fd8ac81092708d3aa7da7b09d447f869c"],
+        risk_level="MALICIOUS",
+    )
+    assert supervisor._resolve_target_host(decision, report_unverified, prompt) is None
+
+    # 2. Worker explicitly queried DESKTOP-FIN-08 in Stage A -> resolves compound 'DESKTOP-FIN-08 (10.20.4.15)' cleanly
+    report_verified = WorkerInvestigationReport(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        target_entities=["DESKTOP-FIN-08", "10.20.4.15", "d39b7e91c6e85997149aa1514998bd8fd8ac81092708d3aa7da7b09d447f869c"],
+        risk_level="MALICIOUS",
+    )
+    assert supervisor._resolve_target_host(decision, report_verified, prompt) == "DESKTOP-FIN-08"
+
+
+
 

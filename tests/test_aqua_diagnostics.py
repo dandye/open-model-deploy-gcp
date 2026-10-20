@@ -623,5 +623,31 @@ class TestAquaDiagnosticsEdgeCases:
             "Modify ONLY the implicated stage (STAGE_D_CONTAINMENT, STAGE_A_IDENTITY)" in block
         )
 
+    def test_passing_trace_ignores_noisy_jev_failure_category(self):
+        trace = {
+            "case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+            "component_name": "malware_triage.md",
+            "alert_type": "MALWARE_HASH",
+            "prompt": "Investigate cryptominer alert on SRV-SING-09",
+            "expected_verdict": "MALICIOUS",
+            "expected_actions": ["get_file_report", "isolate_host", "block_indicator"],
+            "actual_verdict": "MALICIOUS",
+            "executed_actions": ["get_file_report", "isolate_host", "block_indicator"],
+            "jev_choice": "E",
+            "jev_failure_category": "MISSED_MALICIOUS_BREACH",
+            "score": 0.985,
+            "loss_penalty": 1.0,
+            "assert_passed": True,
+            "trajectory": [
+                {"tool": "get_file_report", "input": {}},
+                {"tool": "isolate_host", "input": {}},
+                {"tool": "block_indicator", "input": {}},
+            ],
+        }
+        diag = extract_trace_diagnosis(trace)
+        assert diag.failure_category == "FLAWLESS_CONTAINMENT"
+        assert diag.implicated_stage == "STAGE_D_CONTAINMENT"
+
+
 
 
