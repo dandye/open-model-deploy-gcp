@@ -24,20 +24,20 @@ Covers fleet-wide CTI collection sweeps (GTI reports, C2 domains, and MITRE ATT&
 
 ### Stage A: CTI Collection & Multi-Horizon SIEM Sweep (`72h` to `168h`)
 
-1.  Call `get_collection_report` and `get_entities_related_to_a_collection` on `<collection_id>` (`relationship_name="all"`) to extract domains, hashes, IPs, and TTPs (or `get_domain_report` and `get_entities_related_to_a_domain` for a seed domain).
-2.  Call `get_ioc_matches` (`hours_back=72`) and `search_security_events` (`hours_back=72`) for extracted indicators.
-3.  If `72` hours returns zero matches, widen `hours_back` to `168` (`7` days) and run `get_ioc_matches` (`hours_back=168`) and `search_security_events` (`hours_back=168`) across DNS, network, `PROCESS_LAUNCH`, and `PROCESS_MODULE_LOAD`.
+1.  Call `get_collection_report` and `get_entities_related_to_a_collection` (or `get_domain_report` and `get_entities_related_to_a_domain`) to extract indicators.
+2.  Call `get_ioc_matches` and `search_security_events` for extracted indicators, starting with `hours_back=72`.
+3.  If the `72h` sweep returns zero matches, widen the lookback to `168h` and repeat searches across DNS, network, `PROCESS_LAUNCH`, and `PROCESS_MODULE_LOAD` events.
 
-### Stage B: Second-Hop Domain Pivot, LOLBin Filtering, & Case Correlation
+### Stage B: Second-Hop Pivot, Verification, & Correlation
 
-4.  For matched C2 domains, call `get_entities_related_to_a_domain` (`relationship_name="communicating_files"`) for second-hop payload hashes and search `PROCESS_MODULE_LOAD` over `168` hours.
-5.  Call `get_file_report` on matched hashes to separate malicious payloads from signed OS LOLBins (`rundll32.exe`, `wscript.exe`) or benign web files.
-6.  On `<matched_hostname>`, call `lookup_entity` and `list_cases` to verify lineage, `CHG-...` records, and unalerted cases.
+4.  For matched C2 domains, call `get_entities_related_to_a_domain` (`relationship_name="communicating_files"`) to find second-hop file hashes.
+5.  **Mandatory:** For **every** file hash from CTI or SIEM results, call `get_file_report`. Verify `cert_status` to separate unsigned malware from signed OS LOLBins (`rundll32.exe`) before containment.
+6.  On any `<matched_hostname>`, call `lookup_entity` and `list_cases` to check for authorized `CHG-...` maintenance records and existing SOAR cases (`<case_id>`).
 
 ### Stage C: Hunt Verdict, Containment, & Detection-Gap Handoff
 
-7.  Apply a verdict:
-    *   **MALICIOUS:** Campaign C2 or payload execution confirmed on `<matched_hostname>`. Call `isolate_host` on `<matched_hostname>`, `block_indicator` on verified C2 domains, IPs, and payload hashes (never block signed OS LOLBins), and `update_case_comment` with Patient Zero and detection gaps.
-    *   **SUSPICIOUS:** Unconfirmed LOLBin/TTP outlier or critical-asset activity where isolation is prohibited. Call `update_case_comment` with YARA-L 2.0 (`YL2`) criteria. Never call `isolate_host` or `close_case`.
-    *   **INCONCLUSIVE:** Tool outage (`HTTP 503`). Set `INCONCLUSIVE` and call `update_case_comment`.
-    *   **BENIGN:** Zero malicious hits across `72h` and `168h`, or authorized `CHG-...` maintenance. Call `update_case_comment` and `close_case`.
+7.  Apply a verdict on `<case_id>`:
+    *   **MALICIOUS:** Campaign C2 or unsigned payload execution confirmed. Call `isolate_host` on `<matched_hostname>`, `block_indicator` on verified C2s, IPs, and hashes (never block files with a `VALID_CERTIFICATE` status), and `update_case_comment`.
+    *   **SUSPICIOUS:** Unconfirmed LOLBin/TTP outlier or activity on a critical asset where isolation is prohibited. Call `update_case_comment` with YL2 criteria. Never `isolate_host` or `close_case`.
+    *   **INCONCLUSIVE:** Tool outage (`HTTP 503`). Call `list_cases` to get context, then `update_case_comment` to document the outage. Never `isolate_host`, `block_indicator`, or `close_case`.
+    *   **BENIGN:** Zero malicious hits, or activity is explained by an authorized `CHG-...` record. Call `update_case_comment` and `close_case`.

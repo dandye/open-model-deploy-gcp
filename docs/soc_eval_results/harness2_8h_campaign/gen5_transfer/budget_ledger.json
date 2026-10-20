@@ -1,0 +1,2206 @@
+{
+  "limit_usd": 4.0,
+  "spent_usd": 1.280531,
+  "entries": [
+    {
+      "ts": "2026-10-20T08:53:38.526560+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.002886,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:53:46.075219+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.006879,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T08:53:53.880561+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.006019,
+      "cumulative_usd": 0.012898,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 28151,
+      "completion_tokens": 8010
+    },
+    {
+      "ts": "2026-10-20T08:53:56.101069+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.006355,
+      "cumulative_usd": 0.019253,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 29101,
+      "completion_tokens": 8613
+    },
+    {
+      "ts": "2026-10-20T08:54:05.102058+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.022042,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T08:54:07.449683+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.006869,
+      "cumulative_usd": 0.028911,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 28011,
+      "completion_tokens": 10171
+    },
+    {
+      "ts": "2026-10-20T08:54:12.308777+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.030754,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T08:54:14.933414+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.007241,
+      "cumulative_usd": 0.037995,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 29824,
+      "completion_tokens": 10646
+    },
+    {
+      "ts": "2026-10-20T08:54:26.767816+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.042872,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T08:54:29.421222+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.046955,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:54:46.701334+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.012263,
+      "cumulative_usd": 0.059218,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 41087,
+      "completion_tokens": 20385
+    },
+    {
+      "ts": "2026-10-20T08:54:47.861723+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004967,
+      "cumulative_usd": 0.064185,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 27686,
+      "completion_tokens": 5495
+    },
+    {
+      "ts": "2026-10-20T08:54:57.105551+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.067008,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:55:01.919594+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.071265,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T08:55:07.531187+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.074254,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T08:55:18.433767+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.078603,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T08:55:18.901414+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.011823,
+      "cumulative_usd": 0.090426,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 40927,
+      "completion_tokens": 19326
+    },
+    {
+      "ts": "2026-10-20T08:55:25.341342+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004585,
+      "cumulative_usd": 0.095011,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 24082,
+      "completion_tokens": 5443
+    },
+    {
+      "ts": "2026-10-20T08:55:28.745997+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.097885,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T08:55:45.513404+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.001077,
+      "cumulative_usd": 0.098962,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 6602,
+      "completion_tokens": 1041
+    },
+    {
+      "ts": "2026-10-20T08:55:54.981570+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.101848,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:56:01.234684+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.105841,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T08:56:08.916521+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.006019,
+      "cumulative_usd": 0.11186,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 28151,
+      "completion_tokens": 8010
+    },
+    {
+      "ts": "2026-10-20T08:56:10.200066+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.006355,
+      "cumulative_usd": 0.118215,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 29101,
+      "completion_tokens": 8613
+    },
+    {
+      "ts": "2026-10-20T08:56:19.100145+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.121004,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T08:56:23.291254+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.006869,
+      "cumulative_usd": 0.127874,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 28011,
+      "completion_tokens": 10171
+    },
+    {
+      "ts": "2026-10-20T08:56:26.303478+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.129717,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T08:56:29.942213+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.007241,
+      "cumulative_usd": 0.136958,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 29824,
+      "completion_tokens": 10646
+    },
+    {
+      "ts": "2026-10-20T08:56:41.119453+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.141835,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T08:56:43.426454+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.145918,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:56:46.668055+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.004817,
+      "cumulative_usd": 0.150735,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 21089,
+      "completion_tokens": 6771
+    },
+    {
+      "ts": "2026-10-20T08:57:00.412639+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004967,
+      "cumulative_usd": 0.155702,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 27686,
+      "completion_tokens": 5495
+    },
+    {
+      "ts": "2026-10-20T08:57:00.958541+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.012263,
+      "cumulative_usd": 0.167965,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 41087,
+      "completion_tokens": 20385
+    },
+    {
+      "ts": "2026-10-20T08:57:01.395993+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.172222,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T08:57:09.688984+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.175045,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:57:15.342208+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.178034,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T08:57:17.362694+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.182383,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T08:57:25.127910+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.185257,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T08:57:27.346093+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004585,
+      "cumulative_usd": 0.189842,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 24082,
+      "completion_tokens": 5443
+    },
+    {
+      "ts": "2026-10-20T08:57:29.910673+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.011823,
+      "cumulative_usd": 0.201665,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 40927,
+      "completion_tokens": 19326
+    },
+    {
+      "ts": "2026-10-20T08:57:41.520715+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.204551,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:57:44.744189+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003383,
+      "cumulative_usd": 0.207934,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:57:47.104634+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.211927,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T08:57:52.163706+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.004733,
+      "cumulative_usd": 0.21666,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 20836,
+      "completion_tokens": 6624
+    },
+    {
+      "ts": "2026-10-20T08:57:53.443591+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002135,
+      "cumulative_usd": 0.218795,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12292,
+      "completion_tokens": 2265
+    },
+    {
+      "ts": "2026-10-20T08:58:00.973982+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.220638,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T08:58:01.569793+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.223427,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T08:58:01.759566+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.226801,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 16122,
+      "completion_tokens": 4405
+    },
+    {
+      "ts": "2026-10-20T08:58:15.925104+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.230884,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:58:23.691935+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002068,
+      "cumulative_usd": 0.232952,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12222,
+      "completion_tokens": 2115
+    },
+    {
+      "ts": "2026-10-20T08:58:25.282226+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.004794,
+      "cumulative_usd": 0.237746,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15763,
+      "completion_tokens": 8045
+    },
+    {
+      "ts": "2026-10-20T08:58:30.205718+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005573,
+      "cumulative_usd": 0.243319,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20392,
+      "completion_tokens": 8835
+    },
+    {
+      "ts": "2026-10-20T08:58:40.696103+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.246142,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:58:41.489552+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.250399,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T08:58:42.396020+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004967,
+      "cumulative_usd": 0.255366,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 27686,
+      "completion_tokens": 5495
+    },
+    {
+      "ts": "2026-10-20T08:58:51.371497+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.258355,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T08:58:58.475852+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.262703,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T08:59:01.336816+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.265577,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T08:59:02.770866+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004621,
+      "cumulative_usd": 0.270198,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 21279,
+      "completion_tokens": 6233
+    },
+    {
+      "ts": "2026-10-20T08:59:55.827009+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.275075,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T09:00:16.659062+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.007313,
+      "cumulative_usd": 0.282388,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 13778,
+      "completion_tokens": 1272
+    },
+    {
+      "ts": "2026-10-20T09:00:18.903890+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.010416,
+      "cumulative_usd": 0.292804,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 14945,
+      "completion_tokens": 2373
+    },
+    {
+      "ts": "2026-10-20T09:00:23.521383+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.009261,
+      "cumulative_usd": 0.302065,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18121,
+      "completion_tokens": 1530
+    },
+    {
+      "ts": "2026-10-20T09:00:34.503566+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.015557,
+      "cumulative_usd": 0.317622,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 27657,
+      "completion_tokens": 2904
+    },
+    {
+      "ts": "2026-10-20T09:00:43.012291+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.01273,
+      "cumulative_usd": 0.330352,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 19032,
+      "completion_tokens": 2808
+    },
+    {
+      "ts": "2026-10-20T09:00:43.199624+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.009764,
+      "cumulative_usd": 0.340116,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 14639,
+      "completion_tokens": 2149
+    },
+    {
+      "ts": "2026-10-20T09:00:53.940779+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.016245,
+      "cumulative_usd": 0.356361,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 22451,
+      "completion_tokens": 3804
+    },
+    {
+      "ts": "2026-10-20T09:00:56.908932+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.006297,
+      "cumulative_usd": 0.362658,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10107,
+      "completion_tokens": 1306
+    },
+    {
+      "ts": "2026-10-20T09:01:00.355630+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.010285,
+      "cumulative_usd": 0.372943,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 18734,
+      "completion_tokens": 1866
+    },
+    {
+      "ts": "2026-10-20T09:01:00.548225+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.008939,
+      "cumulative_usd": 0.381882,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 14423,
+      "completion_tokens": 1845
+    },
+    {
+      "ts": "2026-10-20T09:01:18.693055+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.00823,
+      "cumulative_usd": 0.390112,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 14117,
+      "completion_tokens": 1598
+    },
+    {
+      "ts": "2026-10-20T09:01:20.465303+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.010103,
+      "cumulative_usd": 0.400215,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15728,
+      "completion_tokens": 2154
+    },
+    {
+      "ts": "2026-10-20T09:01:31.332962+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.014033,
+      "cumulative_usd": 0.414248,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 23760,
+      "completion_tokens": 2762
+    },
+    {
+      "ts": "2026-10-20T09:01:35.886871+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.007962,
+      "cumulative_usd": 0.42221,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 14164,
+      "completion_tokens": 1485
+    },
+    {
+      "ts": "2026-10-20T09:01:39.618099+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.007354,
+      "cumulative_usd": 0.429564,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 13979,
+      "completion_tokens": 1264
+    },
+    {
+      "ts": "2026-10-20T09:01:52.601340+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.009281,
+      "cumulative_usd": 0.438845,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 17944,
+      "completion_tokens": 1559
+    },
+    {
+      "ts": "2026-10-20T09:01:54.156868+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.007473,
+      "cumulative_usd": 0.446318,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 13985,
+      "completion_tokens": 1311
+    },
+    {
+      "ts": "2026-10-20T09:02:12.500371+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.007481,
+      "cumulative_usd": 0.453799,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 14003,
+      "completion_tokens": 1312
+    },
+    {
+      "ts": "2026-10-20T09:02:12.510477+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.009581,
+      "cumulative_usd": 0.46338,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17670,
+      "completion_tokens": 1712
+    },
+    {
+      "ts": "2026-10-20T09:02:13.533747+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.013395,
+      "cumulative_usd": 0.476775,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 19592,
+      "completion_tokens": 3007
+    },
+    {
+      "ts": "2026-10-20T09:02:32.769584+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.007922,
+      "cumulative_usd": 0.484697,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 14024,
+      "completion_tokens": 1486
+    },
+    {
+      "ts": "2026-10-20T09:02:37.281849+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.01009,
+      "cumulative_usd": 0.494787,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18166,
+      "completion_tokens": 1856
+    },
+    {
+      "ts": "2026-10-20T09:02:40.129847+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.013788,
+      "cumulative_usd": 0.508575,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 23284,
+      "completion_tokens": 2721
+    },
+    {
+      "ts": "2026-10-20T09:02:52.293189+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.009841,
+      "cumulative_usd": 0.518416,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 14471,
+      "completion_tokens": 2200
+    },
+    {
+      "ts": "2026-10-20T09:02:54.714065+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.014644,
+      "cumulative_usd": 0.53306,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 27371,
+      "completion_tokens": 2573
+    },
+    {
+      "ts": "2026-10-20T09:03:04.244392+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.009864,
+      "cumulative_usd": 0.542924,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 14514,
+      "completion_tokens": 2204
+    },
+    {
+      "ts": "2026-10-20T09:03:07.868194+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.013793,
+      "cumulative_usd": 0.556717,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 18152,
+      "completion_tokens": 3339
+    },
+    {
+      "ts": "2026-10-20T09:03:08.717748+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.006372,
+      "cumulative_usd": 0.563089,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10107,
+      "completion_tokens": 1336
+    },
+    {
+      "ts": "2026-10-20T09:03:17.568540+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.009777,
+      "cumulative_usd": 0.572866,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 14674,
+      "completion_tokens": 2150
+    },
+    {
+      "ts": "2026-10-20T09:03:26.451316+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.009378,
+      "cumulative_usd": 0.582244,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 18303,
+      "completion_tokens": 1555
+    },
+    {
+      "ts": "2026-10-20T09:03:35.031183+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.010129,
+      "cumulative_usd": 0.592373,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 16563,
+      "completion_tokens": 2064
+    },
+    {
+      "ts": "2026-10-20T09:03:35.572839+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.010167,
+      "cumulative_usd": 0.60254,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 18505,
+      "completion_tokens": 1846
+    },
+    {
+      "ts": "2026-10-20T09:03:44.288264+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.011195,
+      "cumulative_usd": 0.613735,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 18541,
+      "completion_tokens": 2253
+    },
+    {
+      "ts": "2026-10-20T09:03:44.399134+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.007466,
+      "cumulative_usd": 0.621201,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 14003,
+      "completion_tokens": 1306
+    },
+    {
+      "ts": "2026-10-20T09:03:55.133538+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.007754,
+      "cumulative_usd": 0.628955,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 13788,
+      "completion_tokens": 1447
+    },
+    {
+      "ts": "2026-10-20T09:03:59.981222+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.007762,
+      "cumulative_usd": 0.636717,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 13981,
+      "completion_tokens": 1427
+    },
+    {
+      "ts": "2026-10-20T09:04:01.347361+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.005721,
+      "cumulative_usd": 0.642438,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 10045,
+      "completion_tokens": 1083
+    },
+    {
+      "ts": "2026-10-20T09:04:05.070814+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.007842,
+      "cumulative_usd": 0.65028,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 14014,
+      "completion_tokens": 1455
+    },
+    {
+      "ts": "2026-10-20T09:04:23.800690+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.0122,
+      "cumulative_usd": 0.66248,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 18899,
+      "completion_tokens": 2612
+    },
+    {
+      "ts": "2026-10-20T09:05:17.742868+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.008643,
+      "cumulative_usd": 0.671123,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17419,
+      "completion_tokens": 1367
+    },
+    {
+      "ts": "2026-10-20T09:05:35.845312+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.007922,
+      "cumulative_usd": 0.679045,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 14024,
+      "completion_tokens": 1486
+    },
+    {
+      "ts": "2026-10-20T09:05:56.082678+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.010067,
+      "cumulative_usd": 0.689112,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 14972,
+      "completion_tokens": 2230
+    },
+    {
+      "ts": "2026-10-20T09:05:56.546945+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.011171,
+      "cumulative_usd": 0.700283,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 16412,
+      "completion_tokens": 2499
+    },
+    {
+      "ts": "2026-10-20T09:05:58.224551+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.011624,
+      "cumulative_usd": 0.711906,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16445,
+      "completion_tokens": 2676
+    },
+    {
+      "ts": "2026-10-20T09:06:00.574740+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.009591,
+      "cumulative_usd": 0.721498,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 15905,
+      "completion_tokens": 1928
+    },
+    {
+      "ts": "2026-10-20T09:06:17.739551+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.009996,
+      "cumulative_usd": 0.731494,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 16096,
+      "completion_tokens": 2067
+    },
+    {
+      "ts": "2026-10-20T09:06:19.779075+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.009165,
+      "cumulative_usd": 0.740659,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 12584,
+      "completion_tokens": 2156
+    },
+    {
+      "ts": "2026-10-20T09:06:19.886411+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.006079,
+      "cumulative_usd": 0.746738,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10030,
+      "completion_tokens": 1228
+    },
+    {
+      "ts": "2026-10-20T09:06:29.176072+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.010938,
+      "cumulative_usd": 0.757676,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 18993,
+      "completion_tokens": 2096
+    },
+    {
+      "ts": "2026-10-20T09:06:44.855260+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.009718,
+      "cumulative_usd": 0.767394,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 18135,
+      "completion_tokens": 1711
+    },
+    {
+      "ts": "2026-10-20T09:06:57.163117+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.012952,
+      "cumulative_usd": 0.780346,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 18191,
+      "completion_tokens": 2998
+    },
+    {
+      "ts": "2026-10-20T09:06:59.614600+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.007651,
+      "cumulative_usd": 0.787997,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 13996,
+      "completion_tokens": 1381
+    },
+    {
+      "ts": "2026-10-20T09:07:03.809307+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.010337,
+      "cumulative_usd": 0.798334,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 16058,
+      "completion_tokens": 2208
+    },
+    {
+      "ts": "2026-10-20T09:07:11.576229+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.009067,
+      "cumulative_usd": 0.807401,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 17841,
+      "completion_tokens": 1486
+    },
+    {
+      "ts": "2026-10-20T09:07:13.383055+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.007795,
+      "cumulative_usd": 0.815196,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 13917,
+      "completion_tokens": 1448
+    },
+    {
+      "ts": "2026-10-20T09:07:15.858770+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.007412,
+      "cumulative_usd": 0.822608,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 13899,
+      "completion_tokens": 1297
+    },
+    {
+      "ts": "2026-10-20T09:07:18.089086+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.007736,
+      "cumulative_usd": 0.830344,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 14135,
+      "completion_tokens": 1398
+    },
+    {
+      "ts": "2026-10-20T09:07:28.595534+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.008799,
+      "cumulative_usd": 0.839143,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 18081,
+      "completion_tokens": 1350
+    },
+    {
+      "ts": "2026-10-20T09:07:43.304277+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.010125,
+      "cumulative_usd": 0.849268,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 15907,
+      "completion_tokens": 2141
+    },
+    {
+      "ts": "2026-10-20T09:07:51.188680+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.01303,
+      "cumulative_usd": 0.862298,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 21508,
+      "completion_tokens": 2631
+    },
+    {
+      "ts": "2026-10-20T09:07:59.432443+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.002094,
+      "cumulative_usd": 0.864392,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 13786,
+      "completion_tokens": 1789
+    },
+    {
+      "ts": "2026-10-20T09:08:00.950170+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002859,
+      "cumulative_usd": 0.867251,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18319,
+      "completion_tokens": 2568
+    },
+    {
+      "ts": "2026-10-20T09:08:03.681617+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003236,
+      "cumulative_usd": 0.870487,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 18425,
+      "completion_tokens": 3484
+    },
+    {
+      "ts": "2026-10-20T09:08:03.786752+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.003248,
+      "cumulative_usd": 0.873735,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 18581,
+      "completion_tokens": 3474
+    },
+    {
+      "ts": "2026-10-20T09:08:11.390784+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.00216,
+      "cumulative_usd": 0.875895,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 14128,
+      "completion_tokens": 1867
+    },
+    {
+      "ts": "2026-10-20T09:08:11.753045+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.00328,
+      "cumulative_usd": 0.879175,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 18321,
+      "completion_tokens": 3621
+    },
+    {
+      "ts": "2026-10-20T09:08:13.052652+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.003344,
+      "cumulative_usd": 0.882519,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 18446,
+      "completion_tokens": 3748
+    },
+    {
+      "ts": "2026-10-20T09:08:13.269759+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.002853,
+      "cumulative_usd": 0.885372,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 18450,
+      "completion_tokens": 2520
+    },
+    {
+      "ts": "2026-10-20T09:08:18.213866+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001972,
+      "cumulative_usd": 0.887344,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 13535,
+      "completion_tokens": 1546
+    },
+    {
+      "ts": "2026-10-20T09:08:22.066991+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.0026,
+      "cumulative_usd": 0.889944,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 17872,
+      "completion_tokens": 2031
+    },
+    {
+      "ts": "2026-10-20T09:08:22.832376+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.003433,
+      "cumulative_usd": 0.893377,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 22498,
+      "completion_tokens": 2959
+    },
+    {
+      "ts": "2026-10-20T09:08:27.480147+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.002917,
+      "cumulative_usd": 0.896294,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 19593,
+      "completion_tokens": 2395
+    },
+    {
+      "ts": "2026-10-20T09:08:29.080887+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.00186,
+      "cumulative_usd": 0.898154,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 13734,
+      "completion_tokens": 1216
+    },
+    {
+      "ts": "2026-10-20T09:08:29.379003+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.003138,
+      "cumulative_usd": 0.901292,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 18415,
+      "completion_tokens": 3240
+    },
+    {
+      "ts": "2026-10-20T09:08:31.718364+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.002667,
+      "cumulative_usd": 0.903959,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 17604,
+      "completion_tokens": 2266
+    },
+    {
+      "ts": "2026-10-20T09:08:35.117839+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.002112,
+      "cumulative_usd": 0.906071,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 920
+    },
+    {
+      "ts": "2026-10-20T09:08:37.627506+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002766,
+      "cumulative_usd": 0.908837,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 17844,
+      "completion_tokens": 2453
+    },
+    {
+      "ts": "2026-10-20T09:08:38.467700+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002662,
+      "cumulative_usd": 0.911499,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 17702,
+      "completion_tokens": 2230
+    },
+    {
+      "ts": "2026-10-20T09:08:46.467202+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.003967,
+      "cumulative_usd": 0.915466,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 22816,
+      "completion_tokens": 4214
+    },
+    {
+      "ts": "2026-10-20T09:08:49.317400+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.003674,
+      "cumulative_usd": 0.91914,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 21705,
+      "completion_tokens": 3758
+    },
+    {
+      "ts": "2026-10-20T09:08:55.552366+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.001758,
+      "cumulative_usd": 0.920898,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 13631,
+      "completion_tokens": 987
+    },
+    {
+      "ts": "2026-10-20T09:08:59.353020+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002841,
+      "cumulative_usd": 0.923739,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 17966,
+      "completion_tokens": 2612
+    },
+    {
+      "ts": "2026-10-20T09:09:02.980156+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.003895,
+      "cumulative_usd": 0.927634,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 22799,
+      "completion_tokens": 4037
+    },
+    {
+      "ts": "2026-10-20T09:09:05.649428+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.00427,
+      "cumulative_usd": 0.931904,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 23124,
+      "completion_tokens": 4895
+    },
+    {
+      "ts": "2026-10-20T09:09:10.900767+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.004203,
+      "cumulative_usd": 0.936107,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 22938,
+      "completion_tokens": 4772
+    },
+    {
+      "ts": "2026-10-20T09:09:11.920622+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.00331,
+      "cumulative_usd": 0.939417,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 18383,
+      "completion_tokens": 3679
+    },
+    {
+      "ts": "2026-10-20T09:09:15.615268+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003667,
+      "cumulative_usd": 0.943084,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 22705,
+      "completion_tokens": 3491
+    },
+    {
+      "ts": "2026-10-20T09:09:17.389284+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.003038,
+      "cumulative_usd": 0.946122,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 18391,
+      "completion_tokens": 2998
+    },
+    {
+      "ts": "2026-10-20T09:09:18.588095+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.002157,
+      "cumulative_usd": 0.948279,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 13751,
+      "completion_tokens": 1954
+    },
+    {
+      "ts": "2026-10-20T09:09:26.009385+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.003807,
+      "cumulative_usd": 0.952086,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 22399,
+      "completion_tokens": 3917
+    },
+    {
+      "ts": "2026-10-20T09:09:27.075714+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.002988,
+      "cumulative_usd": 0.955074,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 16142,
+      "completion_tokens": 3434
+    },
+    {
+      "ts": "2026-10-20T09:09:27.413435+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.0023,
+      "cumulative_usd": 0.957374,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 14272,
+      "completion_tokens": 2181
+    },
+    {
+      "ts": "2026-10-20T09:09:27.445518+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.002826,
+      "cumulative_usd": 0.9602,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 17991,
+      "completion_tokens": 2567
+    },
+    {
+      "ts": "2026-10-20T09:09:34.315977+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.002,
+      "cumulative_usd": 0.9622,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 13664,
+      "completion_tokens": 1583
+    },
+    {
+      "ts": "2026-10-20T09:09:34.775232+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.00257,
+      "cumulative_usd": 0.96477,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 17837,
+      "completion_tokens": 1965
+    },
+    {
+      "ts": "2026-10-20T09:09:36.534160+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002183,
+      "cumulative_usd": 0.966953,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 14006,
+      "completion_tokens": 1956
+    },
+    {
+      "ts": "2026-10-20T09:09:36.983628+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002683,
+      "cumulative_usd": 0.969636,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 17760,
+      "completion_tokens": 2268
+    },
+    {
+      "ts": "2026-10-20T09:09:43.925094+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002096,
+      "cumulative_usd": 0.971732,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 13287,
+      "completion_tokens": 1917
+    },
+    {
+      "ts": "2026-10-20T09:09:43.940532+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.00276,
+      "cumulative_usd": 0.974492,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 18006,
+      "completion_tokens": 2398
+    },
+    {
+      "ts": "2026-10-20T09:09:48.763514+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.00336,
+      "cumulative_usd": 0.977852,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 18258,
+      "completion_tokens": 3835
+    },
+    {
+      "ts": "2026-10-20T09:09:57.456943+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.002154,
+      "cumulative_usd": 0.980006,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 13813,
+      "completion_tokens": 1932
+    },
+    {
+      "ts": "2026-10-20T09:09:58.348268+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.002508,
+      "cumulative_usd": 0.982514,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 15682,
+      "completion_tokens": 2349
+    },
+    {
+      "ts": "2026-10-20T09:09:58.784758+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.002588,
+      "cumulative_usd": 0.985102,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 15820,
+      "completion_tokens": 2516
+    },
+    {
+      "ts": "2026-10-20T09:10:01.206767+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.00315,
+      "cumulative_usd": 0.988252,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18122,
+      "completion_tokens": 3345
+    },
+    {
+      "ts": "2026-10-20T09:10:07.304561+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.002706,
+      "cumulative_usd": 0.990958,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 15988,
+      "completion_tokens": 2767
+    },
+    {
+      "ts": "2026-10-20T09:10:07.473696+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.00186,
+      "cumulative_usd": 0.992818,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 13912,
+      "completion_tokens": 1171
+    },
+    {
+      "ts": "2026-10-20T09:10:07.676141+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002434,
+      "cumulative_usd": 0.995252,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 15335,
+      "completion_tokens": 2252
+    },
+    {
+      "ts": "2026-10-20T09:10:09.468427+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.002981,
+      "cumulative_usd": 0.998233,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 19483,
+      "completion_tokens": 2581
+    },
+    {
+      "ts": "2026-10-20T09:10:14.440910+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.002036,
+      "cumulative_usd": 1.000269,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 13747,
+      "completion_tokens": 1654
+    },
+    {
+      "ts": "2026-10-20T09:10:15.843123+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.002217,
+      "cumulative_usd": 1.002486,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 17739,
+      "completion_tokens": 1107
+    },
+    {
+      "ts": "2026-10-20T09:10:16.671725+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.002417,
+      "cumulative_usd": 1.004903,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15178,
+      "completion_tokens": 2247
+    },
+    {
+      "ts": "2026-10-20T09:10:18.037917+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.002944,
+      "cumulative_usd": 1.007847,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 18189,
+      "completion_tokens": 2812
+    },
+    {
+      "ts": "2026-10-20T09:10:21.852119+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002037,
+      "cumulative_usd": 1.009884,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12205,
+      "completion_tokens": 2042
+    },
+    {
+      "ts": "2026-10-20T09:10:22.802389+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.002165,
+      "cumulative_usd": 1.01205,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 17519,
+      "completion_tokens": 1034
+    },
+    {
+      "ts": "2026-10-20T09:10:27.298213+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.002859,
+      "cumulative_usd": 1.014909,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 17826,
+      "completion_tokens": 2691
+    },
+    {
+      "ts": "2026-10-20T09:10:28.630061+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002762,
+      "cumulative_usd": 1.017671,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 17685,
+      "completion_tokens": 2484
+    },
+    {
+      "ts": "2026-10-20T09:10:29.786293+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002364,
+      "cumulative_usd": 1.020036,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 17453,
+      "completion_tokens": 1548
+    },
+    {
+      "ts": "2026-10-20T09:10:33.076736+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.002825,
+      "cumulative_usd": 1.022861,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 17772,
+      "completion_tokens": 2619
+    },
+    {
+      "ts": "2026-10-20T09:10:36.562963+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.002412,
+      "cumulative_usd": 1.025273,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 15311,
+      "completion_tokens": 2203
+    },
+    {
+      "ts": "2026-10-20T09:10:38.536629+00:00",
+      "run_key": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002767,
+      "cumulative_usd": 1.02804,
+      "model": "gemini-3.5-flash-lite",
+      "note": "gen5_transfer:gemini-3.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17372,
+      "completion_tokens": 2574
+    },
+    {
+      "ts": "2026-10-20T09:15:59.896599+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 1.030926,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T09:16:03.399626+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.00339,
+      "cumulative_usd": 1.034316,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 16894,
+      "completion_tokens": 4251
+    },
+    {
+      "ts": "2026-10-20T09:16:06.944557+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 1.038309,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T09:16:08.154542+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.004048,
+      "cumulative_usd": 1.042357,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16327,
+      "completion_tokens": 6039
+    },
+    {
+      "ts": "2026-10-20T09:16:16.571289+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.003223,
+      "cumulative_usd": 1.04558,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 16904,
+      "completion_tokens": 3831
+    },
+    {
+      "ts": "2026-10-20T09:16:17.892096+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 1.048369,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T09:16:19.245072+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.004417,
+      "cumulative_usd": 1.052786,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20418,
+      "completion_tokens": 5939
+    },
+    {
+      "ts": "2026-10-20T09:16:24.159783+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 1.054629,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T09:16:27.342902+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.004672,
+      "cumulative_usd": 1.059301,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 20767,
+      "completion_tokens": 6488
+    },
+    {
+      "ts": "2026-10-20T09:16:36.880270+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 1.064178,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T09:16:39.175557+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 1.068261,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T09:16:43.724839+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.004794,
+      "cumulative_usd": 1.073055,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15763,
+      "completion_tokens": 8045
+    },
+    {
+      "ts": "2026-10-20T09:16:53.537250+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 1.075878,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T09:16:55.493817+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 1.080135,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T09:16:55.819607+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004967,
+      "cumulative_usd": 1.085102,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 27686,
+      "completion_tokens": 5495
+    },
+    {
+      "ts": "2026-10-20T09:17:04.504658+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 1.088091,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T09:17:13.348666+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 1.09244,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T09:17:14.520902+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.003289,
+      "cumulative_usd": 1.095729,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 15821,
+      "completion_tokens": 4266
+    },
+    {
+      "ts": "2026-10-20T09:17:15.254103+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 1.098603,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T09:18:01.080430+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.001021,
+      "cumulative_usd": 1.099624,
+      "model": "gemini-2.5-flash-lite",
+      "note": "gen5_transfer:gemini-2.5-flash-lite:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 5594,
+      "completion_tokens": 1154
+    },
+    {
+      "ts": "2026-10-20T09:18:21.096560+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.007874,
+      "cumulative_usd": 1.107498,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 14171,
+      "completion_tokens": 1449
+    },
+    {
+      "ts": "2026-10-20T09:18:22.232941+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.012444,
+      "cumulative_usd": 1.119942,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 15963,
+      "completion_tokens": 3062
+    },
+    {
+      "ts": "2026-10-20T09:18:22.395894+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.00788,
+      "cumulative_usd": 1.127822,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 14024,
+      "completion_tokens": 1469
+    },
+    {
+      "ts": "2026-10-20T09:18:27.125577+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.009076,
+      "cumulative_usd": 1.136898,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 15735,
+      "completion_tokens": 1742
+    },
+    {
+      "ts": "2026-10-20T09:18:43.673396+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.009676,
+      "cumulative_usd": 1.146574,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 15886,
+      "completion_tokens": 1964
+    },
+    {
+      "ts": "2026-10-20T09:18:44.312939+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.008491,
+      "cumulative_usd": 1.155065,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 12479,
+      "completion_tokens": 1899
+    },
+    {
+      "ts": "2026-10-20T09:18:45.599564+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.007989,
+      "cumulative_usd": 1.163054,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12287,
+      "completion_tokens": 1721
+    },
+    {
+      "ts": "2026-10-20T09:18:50.686621+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.00938,
+      "cumulative_usd": 1.172434,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 14534,
+      "completion_tokens": 2008
+    },
+    {
+      "ts": "2026-10-20T09:19:03.690170+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.006102,
+      "cumulative_usd": 1.178535,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10030,
+      "completion_tokens": 1237
+    },
+    {
+      "ts": "2026-10-20T09:19:10.087693+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.011217,
+      "cumulative_usd": 1.189752,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 22355,
+      "completion_tokens": 1804
+    },
+    {
+      "ts": "2026-10-20T09:19:11.878457+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.010117,
+      "cumulative_usd": 1.199869,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15983,
+      "completion_tokens": 2129
+    },
+    {
+      "ts": "2026-10-20T09:19:12.409488+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.010431,
+      "cumulative_usd": 1.210301,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 18580,
+      "completion_tokens": 1943
+    },
+    {
+      "ts": "2026-10-20T09:19:25.059516+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.00861,
+      "cumulative_usd": 1.218911,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12649,
+      "completion_tokens": 1926
+    },
+    {
+      "ts": "2026-10-20T09:19:27.443972+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.007502,
+      "cumulative_usd": 1.226413,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 13865,
+      "completion_tokens": 1337
+    },
+    {
+      "ts": "2026-10-20T09:19:28.264595+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.007601,
+      "cumulative_usd": 1.234014,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 14062,
+      "completion_tokens": 1353
+    },
+    {
+      "ts": "2026-10-20T09:19:29.652320+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.007356,
+      "cumulative_usd": 1.24137,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 13794,
+      "completion_tokens": 1287
+    },
+    {
+      "ts": "2026-10-20T09:19:43.852248+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.008742,
+      "cumulative_usd": 1.250112,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 17922,
+      "completion_tokens": 1346
+    },
+    {
+      "ts": "2026-10-20T09:19:51.091494+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.011398,
+      "cumulative_usd": 1.26151,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 17918,
+      "completion_tokens": 2409
+    },
+    {
+      "ts": "2026-10-20T09:19:52.419081+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.008958,
+      "cumulative_usd": 1.270468,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17309,
+      "completion_tokens": 1506
+    },
+    {
+      "ts": "2026-10-20T09:19:57.449973+00:00",
+      "run_key": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.010063,
+      "cumulative_usd": 1.280531,
+      "model": "gemini-2.5-flash",
+      "note": "gen5_transfer:gemini-2.5-flash:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 15802,
+      "completion_tokens": 2129
+    }
+  ]
+}

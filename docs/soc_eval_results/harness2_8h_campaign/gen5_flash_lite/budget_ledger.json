@@ -1,0 +1,2686 @@
+{
+  "limit_usd": 6.0,
+  "spent_usd": 0.994402,
+  "entries": [
+    {
+      "ts": "2026-10-20T05:51:45.619118+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.003993,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T05:52:52.090835+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.006879,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T05:54:09.547507+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.005463,
+      "cumulative_usd": 0.012342,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 24521,
+      "completion_tokens": 7528
+    },
+    {
+      "ts": "2026-10-20T05:55:29.244864+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.005155,
+      "cumulative_usd": 0.017497,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 24019,
+      "completion_tokens": 6882
+    },
+    {
+      "ts": "2026-10-20T05:56:42.380622+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005992,
+      "cumulative_usd": 0.023489,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 23306,
+      "completion_tokens": 9154
+    },
+    {
+      "ts": "2026-10-20T05:58:02.891986+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.006382,
+      "cumulative_usd": 0.029871,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 25760,
+      "completion_tokens": 9516
+    },
+    {
+      "ts": "2026-10-20T05:59:33.034007+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.006623,
+      "cumulative_usd": 0.036494,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 23641,
+      "completion_tokens": 10648
+    },
+    {
+      "ts": "2026-10-20T06:00:05.905107+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.039283,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T06:00:36.605639+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.041126,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T06:01:06.408303+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.046003,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T06:03:02.420633+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.001077,
+      "cumulative_usd": 0.04708,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 6602,
+      "completion_tokens": 1041
+    },
+    {
+      "ts": "2026-10-20T06:03:42.543359+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.051163,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T06:04:41.553320+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.007239,
+      "cumulative_usd": 0.058402,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 23854,
+      "completion_tokens": 12135
+    },
+    {
+      "ts": "2026-10-20T06:06:46.686431+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.002651,
+      "cumulative_usd": 0.061053,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 14639,
+      "completion_tokens": 2968
+    },
+    {
+      "ts": "2026-10-20T06:07:23.605034+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.06531,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T06:07:53.299149+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.068133,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T06:08:20.587163+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.071122,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T06:08:53.172553+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.075471,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T06:09:57.061439+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004585,
+      "cumulative_usd": 0.080056,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 24082,
+      "completion_tokens": 5443
+    },
+    {
+      "ts": "2026-10-20T06:10:43.912822+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.08293,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T06:11:20.568524+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.086923,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T06:11:54.261879+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.089809,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T06:12:58.584670+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.005463,
+      "cumulative_usd": 0.095272,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 24521,
+      "completion_tokens": 7528
+    },
+    {
+      "ts": "2026-10-20T06:14:06.751292+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.005155,
+      "cumulative_usd": 0.100427,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 24019,
+      "completion_tokens": 6882
+    },
+    {
+      "ts": "2026-10-20T06:15:04.771167+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005992,
+      "cumulative_usd": 0.106419,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 23306,
+      "completion_tokens": 9154
+    },
+    {
+      "ts": "2026-10-20T06:15:59.844799+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.006382,
+      "cumulative_usd": 0.112801,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 25760,
+      "completion_tokens": 9516
+    },
+    {
+      "ts": "2026-10-20T06:17:06.421614+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.006623,
+      "cumulative_usd": 0.119424,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 23641,
+      "completion_tokens": 10648
+    },
+    {
+      "ts": "2026-10-20T06:17:38.099286+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.122213,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T06:18:06.514224+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.124056,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T06:18:34.201457+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.128933,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T06:20:28.172539+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.001077,
+      "cumulative_usd": 0.13001,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 6602,
+      "completion_tokens": 1041
+    },
+    {
+      "ts": "2026-10-20T06:21:06.299765+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.134093,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T06:21:56.876368+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.007239,
+      "cumulative_usd": 0.141332,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 23854,
+      "completion_tokens": 12135
+    },
+    {
+      "ts": "2026-10-20T06:22:34.256995+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004352,
+      "cumulative_usd": 0.145684,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4911
+    },
+    {
+      "ts": "2026-10-20T06:23:08.719548+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.149941,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T06:23:35.070426+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.152764,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T06:24:00.127019+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.155753,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T06:24:30.513562+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.160102,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T06:25:06.814730+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004585,
+      "cumulative_usd": 0.164687,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 24082,
+      "completion_tokens": 5443
+    },
+    {
+      "ts": "2026-10-20T06:25:34.785855+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.167561,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T06:26:02.698715+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.171554,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T06:26:28.476367+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.17444,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T06:27:06.847103+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.005463,
+      "cumulative_usd": 0.179903,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 24521,
+      "completion_tokens": 7528
+    },
+    {
+      "ts": "2026-10-20T06:27:53.705191+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.005155,
+      "cumulative_usd": 0.185058,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 24019,
+      "completion_tokens": 6882
+    },
+    {
+      "ts": "2026-10-20T06:28:36.949942+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005992,
+      "cumulative_usd": 0.19105,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 23306,
+      "completion_tokens": 9154
+    },
+    {
+      "ts": "2026-10-20T06:29:21.783499+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.006382,
+      "cumulative_usd": 0.197432,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 25760,
+      "completion_tokens": 9516
+    },
+    {
+      "ts": "2026-10-20T06:30:29.150653+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.006623,
+      "cumulative_usd": 0.204055,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 23641,
+      "completion_tokens": 10648
+    },
+    {
+      "ts": "2026-10-20T06:31:00.931772+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.206844,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T06:31:31.715622+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.208687,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T06:32:01.193517+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.213564,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T06:33:56.508569+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.001077,
+      "cumulative_usd": 0.214641,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 6602,
+      "completion_tokens": 1041
+    },
+    {
+      "ts": "2026-10-20T06:34:31.359818+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.218724,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T06:35:22.776599+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.007239,
+      "cumulative_usd": 0.225963,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 23854,
+      "completion_tokens": 12135
+    },
+    {
+      "ts": "2026-10-20T06:36:04.024230+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004344,
+      "cumulative_usd": 0.230307,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4891
+    },
+    {
+      "ts": "2026-10-20T06:36:38.329673+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.234564,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T06:37:07.186860+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.237387,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T06:37:32.561587+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.240376,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T06:38:02.600794+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.244725,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T06:38:43.149734+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004585,
+      "cumulative_usd": 0.24931,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 24082,
+      "completion_tokens": 5443
+    },
+    {
+      "ts": "2026-10-20T06:39:14.063603+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.252184,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T06:39:53.795116+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.006389,
+      "cumulative_usd": 0.258573,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 25130,
+      "completion_tokens": 9690
+    },
+    {
+      "ts": "2026-10-20T06:40:49.190098+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.005925,
+      "cumulative_usd": 0.264498,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 25622,
+      "completion_tokens": 8407
+    },
+    {
+      "ts": "2026-10-20T06:43:10.055616+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.005534,
+      "cumulative_usd": 0.270032,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 20041,
+      "completion_tokens": 8825
+    },
+    {
+      "ts": "2026-10-20T06:43:40.726909+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-01",
+      "delta_usd": 0.003014,
+      "cumulative_usd": 0.273046,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-01",
+      "prompt_tokens": 18853,
+      "completion_tokens": 2823
+    },
+    {
+      "ts": "2026-10-20T06:45:03.212732+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.002773,
+      "cumulative_usd": 0.275819,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 12626,
+      "completion_tokens": 3775
+    },
+    {
+      "ts": "2026-10-20T06:45:33.636111+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003304,
+      "cumulative_usd": 0.279122,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 16811,
+      "completion_tokens": 4056
+    },
+    {
+      "ts": "2026-10-20T06:46:03.826001+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.002927,
+      "cumulative_usd": 0.282049,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 12862,
+      "completion_tokens": 4101
+    },
+    {
+      "ts": "2026-10-20T06:46:31.470151+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.00267,
+      "cumulative_usd": 0.284719,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 12969,
+      "completion_tokens": 3433
+    },
+    {
+      "ts": "2026-10-20T06:47:07.036668+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.004123,
+      "cumulative_usd": 0.288841,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 15749,
+      "completion_tokens": 6369
+    },
+    {
+      "ts": "2026-10-20T06:47:43.815312+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.004295,
+      "cumulative_usd": 0.293136,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 20352,
+      "completion_tokens": 5649
+    },
+    {
+      "ts": "2026-10-20T06:48:13.856821+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.002294,
+      "cumulative_usd": 0.29543,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 12125,
+      "completion_tokens": 2703
+    },
+    {
+      "ts": "2026-10-20T06:48:56.605764+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.004908,
+      "cumulative_usd": 0.300338,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 20649,
+      "completion_tokens": 7107
+    },
+    {
+      "ts": "2026-10-20T06:50:01.747511+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.003676,
+      "cumulative_usd": 0.304014,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 16040,
+      "completion_tokens": 5181
+    },
+    {
+      "ts": "2026-10-20T06:50:39.948406+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003981,
+      "cumulative_usd": 0.307995,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 15868,
+      "completion_tokens": 5986
+    },
+    {
+      "ts": "2026-10-20T06:51:07.910416+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.002493,
+      "cumulative_usd": 0.310488,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 12350,
+      "completion_tokens": 3144
+    },
+    {
+      "ts": "2026-10-20T06:51:42.466782+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.003257,
+      "cumulative_usd": 0.313745,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 16642,
+      "completion_tokens": 3983
+    },
+    {
+      "ts": "2026-10-20T06:52:08.715549+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.002773,
+      "cumulative_usd": 0.316518,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 12626,
+      "completion_tokens": 3775
+    },
+    {
+      "ts": "2026-10-20T06:52:21.062694+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003304,
+      "cumulative_usd": 0.319822,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 16811,
+      "completion_tokens": 4056
+    },
+    {
+      "ts": "2026-10-20T06:52:32.663247+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.002927,
+      "cumulative_usd": 0.322749,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 12862,
+      "completion_tokens": 4101
+    },
+    {
+      "ts": "2026-10-20T06:52:42.369223+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-01",
+      "delta_usd": 0.003014,
+      "cumulative_usd": 0.325763,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-01",
+      "prompt_tokens": 18853,
+      "completion_tokens": 2823
+    },
+    {
+      "ts": "2026-10-20T06:52:57.728003+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.329756,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T06:53:21.910214+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.332642,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T06:54:03.643668+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.004733,
+      "cumulative_usd": 0.337375,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 20836,
+      "completion_tokens": 6624
+    },
+    {
+      "ts": "2026-10-20T06:54:37.966138+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003383,
+      "cumulative_usd": 0.340758,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T06:55:15.507910+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005573,
+      "cumulative_usd": 0.346331,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20392,
+      "completion_tokens": 8835
+    },
+    {
+      "ts": "2026-10-20T06:55:42.712564+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002135,
+      "cumulative_usd": 0.348466,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12292,
+      "completion_tokens": 2265
+    },
+    {
+      "ts": "2026-10-20T06:56:18.050886+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.35184,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 16122,
+      "completion_tokens": 4405
+    },
+    {
+      "ts": "2026-10-20T06:56:45.765339+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.354629,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T06:57:15.139638+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.356472,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T06:57:43.357180+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.361349,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T06:59:37.999977+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.001077,
+      "cumulative_usd": 0.362426,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 6602,
+      "completion_tokens": 1041
+    },
+    {
+      "ts": "2026-10-20T07:00:10.193492+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.366509,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T07:00:36.443539+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002068,
+      "cumulative_usd": 0.368577,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12222,
+      "completion_tokens": 2115
+    },
+    {
+      "ts": "2026-10-20T07:01:16.573398+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004344,
+      "cumulative_usd": 0.372921,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4891
+    },
+    {
+      "ts": "2026-10-20T07:01:52.652127+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.377178,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T07:02:28.752393+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.380001,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T07:02:55.082809+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.38299,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T07:03:28.684790+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.387338,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T07:04:09.355856+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004621,
+      "cumulative_usd": 0.391959,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 21279,
+      "completion_tokens": 6233
+    },
+    {
+      "ts": "2026-10-20T07:04:32.700588+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.394833,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T07:04:58.374389+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003727,
+      "cumulative_usd": 0.39856,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 20247,
+      "completion_tokens": 4255
+    },
+    {
+      "ts": "2026-10-20T07:05:28.565487+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.003886,
+      "cumulative_usd": 0.402446,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 20516,
+      "completion_tokens": 4587
+    },
+    {
+      "ts": "2026-10-20T07:06:13.599320+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.006509,
+      "cumulative_usd": 0.408955,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 25304,
+      "completion_tokens": 9946
+    },
+    {
+      "ts": "2026-10-20T07:06:43.938638+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-01",
+      "delta_usd": 0.002959,
+      "cumulative_usd": 0.411915,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-01",
+      "prompt_tokens": 18355,
+      "completion_tokens": 2810
+    },
+    {
+      "ts": "2026-10-20T07:08:22.419341+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003073,
+      "cumulative_usd": 0.414988,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 16237,
+      "completion_tokens": 3624
+    },
+    {
+      "ts": "2026-10-20T07:08:56.894601+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.004324,
+      "cumulative_usd": 0.419312,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 15724,
+      "completion_tokens": 6880
+    },
+    {
+      "ts": "2026-10-20T07:09:25.576587+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.003018,
+      "cumulative_usd": 0.42233,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 15598,
+      "completion_tokens": 3645
+    },
+    {
+      "ts": "2026-10-20T07:10:00.948788+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003607,
+      "cumulative_usd": 0.425937,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15910,
+      "completion_tokens": 5039
+    },
+    {
+      "ts": "2026-10-20T07:10:29.969213+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003086,
+      "cumulative_usd": 0.429023,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 16379,
+      "completion_tokens": 3620
+    },
+    {
+      "ts": "2026-10-20T07:11:00.797767+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.002969,
+      "cumulative_usd": 0.431992,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 15653,
+      "completion_tokens": 3509
+    },
+    {
+      "ts": "2026-10-20T07:11:59.009342+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.004711,
+      "cumulative_usd": 0.436703,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 19722,
+      "completion_tokens": 6846
+    },
+    {
+      "ts": "2026-10-20T07:12:51.698468+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003051,
+      "cumulative_usd": 0.439754,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 16075,
+      "completion_tokens": 3609
+    },
+    {
+      "ts": "2026-10-20T07:14:16.991745+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003297,
+      "cumulative_usd": 0.443051,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 15876,
+      "completion_tokens": 4273
+    },
+    {
+      "ts": "2026-10-20T07:15:11.704632+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.003299,
+      "cumulative_usd": 0.44635,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 16718,
+      "completion_tokens": 4068
+    },
+    {
+      "ts": "2026-10-20T07:16:43.327681+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.004986,
+      "cumulative_usd": 0.451336,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 19494,
+      "completion_tokens": 7591
+    },
+    {
+      "ts": "2026-10-20T07:17:52.321101+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.004065,
+      "cumulative_usd": 0.455401,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15863,
+      "completion_tokens": 6197
+    },
+    {
+      "ts": "2026-10-20T07:18:25.857820+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003073,
+      "cumulative_usd": 0.458474,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 16237,
+      "completion_tokens": 3624
+    },
+    {
+      "ts": "2026-10-20T07:18:45.368381+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.004324,
+      "cumulative_usd": 0.462798,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 15724,
+      "completion_tokens": 6880
+    },
+    {
+      "ts": "2026-10-20T07:18:57.874517+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.003018,
+      "cumulative_usd": 0.465816,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 15598,
+      "completion_tokens": 3645
+    },
+    {
+      "ts": "2026-10-20T07:19:08.476381+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-01",
+      "delta_usd": 0.002959,
+      "cumulative_usd": 0.468776,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-01",
+      "prompt_tokens": 18355,
+      "completion_tokens": 2810
+    },
+    {
+      "ts": "2026-10-20T07:19:25.990507+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.472769,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T07:19:48.917340+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.475655,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T07:21:51.811417+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.002739,
+      "cumulative_usd": 0.478393,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 12797,
+      "completion_tokens": 3647
+    },
+    {
+      "ts": "2026-10-20T07:22:27.843044+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003383,
+      "cumulative_usd": 0.481776,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T07:23:08.562553+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005573,
+      "cumulative_usd": 0.487349,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20392,
+      "completion_tokens": 8835
+    },
+    {
+      "ts": "2026-10-20T07:23:39.084690+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002135,
+      "cumulative_usd": 0.489484,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12292,
+      "completion_tokens": 2265
+    },
+    {
+      "ts": "2026-10-20T07:24:16.488274+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.492858,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 16122,
+      "completion_tokens": 4405
+    },
+    {
+      "ts": "2026-10-20T07:24:47.193259+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.495647,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T07:25:21.007233+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.49749,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T07:25:49.398748+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.502367,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T07:26:34.428473+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.004794,
+      "cumulative_usd": 0.507161,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15763,
+      "completion_tokens": 8045
+    },
+    {
+      "ts": "2026-10-20T07:27:04.205914+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.511244,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T07:27:34.998859+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002068,
+      "cumulative_usd": 0.513312,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12222,
+      "completion_tokens": 2115
+    },
+    {
+      "ts": "2026-10-20T07:28:13.302856+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004344,
+      "cumulative_usd": 0.517656,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4891
+    },
+    {
+      "ts": "2026-10-20T07:28:48.824655+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.521913,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T07:29:15.452440+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.524736,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T07:30:15.185170+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.527725,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T07:30:44.536021+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.532073,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T07:31:23.412496+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004621,
+      "cumulative_usd": 0.536694,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 21279,
+      "completion_tokens": 6233
+    },
+    {
+      "ts": "2026-10-20T07:31:46.941089+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.539568,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T07:32:09.983086+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.00267,
+      "cumulative_usd": 0.542238,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 12969,
+      "completion_tokens": 3433
+    },
+    {
+      "ts": "2026-10-20T07:32:41.141917+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-03",
+      "delta_usd": 0.003316,
+      "cumulative_usd": 0.545554,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-03",
+      "prompt_tokens": 12622,
+      "completion_tokens": 5135
+    },
+    {
+      "ts": "2026-10-20T07:33:16.806251+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-03",
+      "delta_usd": 0.003537,
+      "cumulative_usd": 0.549091,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-03",
+      "prompt_tokens": 16402,
+      "completion_tokens": 4743
+    },
+    {
+      "ts": "2026-10-20T07:33:45.196589+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-01",
+      "delta_usd": 0.003704,
+      "cumulative_usd": 0.552795,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-01",
+      "prompt_tokens": 17765,
+      "completion_tokens": 4818
+    },
+    {
+      "ts": "2026-10-20T07:35:07.258911+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.002773,
+      "cumulative_usd": 0.555568,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 12626,
+      "completion_tokens": 3775
+    },
+    {
+      "ts": "2026-10-20T07:35:36.885980+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003304,
+      "cumulative_usd": 0.558871,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 16811,
+      "completion_tokens": 4056
+    },
+    {
+      "ts": "2026-10-20T07:36:05.687105+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.002927,
+      "cumulative_usd": 0.561798,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 12862,
+      "completion_tokens": 4101
+    },
+    {
+      "ts": "2026-10-20T07:36:32.273383+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.00267,
+      "cumulative_usd": 0.564468,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 12969,
+      "completion_tokens": 3433
+    },
+    {
+      "ts": "2026-10-20T07:36:46.546721+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.003389,
+      "cumulative_usd": 0.567857,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 12878,
+      "completion_tokens": 5252
+    },
+    {
+      "ts": "2026-10-20T07:37:21.057175+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003426,
+      "cumulative_usd": 0.571283,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 16501,
+      "completion_tokens": 4440
+    },
+    {
+      "ts": "2026-10-20T07:37:57.348772+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.003007,
+      "cumulative_usd": 0.57429,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 16281,
+      "completion_tokens": 3447
+    },
+    {
+      "ts": "2026-10-20T07:39:00.939670+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.004134,
+      "cumulative_usd": 0.578424,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 16555,
+      "completion_tokens": 6197
+    },
+    {
+      "ts": "2026-10-20T07:39:34.959331+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.003544,
+      "cumulative_usd": 0.581968,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 15907,
+      "completion_tokens": 4883
+    },
+    {
+      "ts": "2026-10-20T07:40:06.539918+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.00294,
+      "cumulative_usd": 0.584908,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 15841,
+      "completion_tokens": 3389
+    },
+    {
+      "ts": "2026-10-20T07:40:31.125590+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.001473,
+      "cumulative_usd": 0.586381,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 8763,
+      "completion_tokens": 1492
+    },
+    {
+      "ts": "2026-10-20T07:41:04.492544+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.003647,
+      "cumulative_usd": 0.590028,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 16150,
+      "completion_tokens": 5079
+    },
+    {
+      "ts": "2026-10-20T07:41:39.121650+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.004134,
+      "cumulative_usd": 0.594162,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 16555,
+      "completion_tokens": 6197
+    },
+    {
+      "ts": "2026-10-20T07:41:51.313324+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-03",
+      "delta_usd": 0.002928,
+      "cumulative_usd": 0.59709,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-03",
+      "prompt_tokens": 12521,
+      "completion_tokens": 4190
+    },
+    {
+      "ts": "2026-10-20T07:42:34.567063+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-03",
+      "delta_usd": 0.004978,
+      "cumulative_usd": 0.602068,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-03",
+      "prompt_tokens": 20539,
+      "completion_tokens": 7311
+    },
+    {
+      "ts": "2026-10-20T07:43:06.818348+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-01",
+      "delta_usd": 0.003704,
+      "cumulative_usd": 0.605772,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-01",
+      "prompt_tokens": 17765,
+      "completion_tokens": 4818
+    },
+    {
+      "ts": "2026-10-20T07:43:23.583305+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.609765,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T07:43:46.415451+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.612651,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T07:44:24.967515+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.004733,
+      "cumulative_usd": 0.617384,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 20836,
+      "completion_tokens": 6624
+    },
+    {
+      "ts": "2026-10-20T07:45:00.232225+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003383,
+      "cumulative_usd": 0.620767,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T07:47:05.443271+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005573,
+      "cumulative_usd": 0.62634,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20392,
+      "completion_tokens": 8835
+    },
+    {
+      "ts": "2026-10-20T07:47:32.257272+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002135,
+      "cumulative_usd": 0.628475,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12292,
+      "completion_tokens": 2265
+    },
+    {
+      "ts": "2026-10-20T07:48:05.981261+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.631849,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 16122,
+      "completion_tokens": 4405
+    },
+    {
+      "ts": "2026-10-20T07:48:34.255496+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.634638,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T07:49:02.936900+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.636481,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T07:49:33.365200+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.641358,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T07:50:15.399951+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.004794,
+      "cumulative_usd": 0.646152,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15763,
+      "completion_tokens": 8045
+    },
+    {
+      "ts": "2026-10-20T07:50:44.732549+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.650235,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T07:51:10.813115+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002068,
+      "cumulative_usd": 0.652303,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12222,
+      "completion_tokens": 2115
+    },
+    {
+      "ts": "2026-10-20T07:51:52.218187+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004344,
+      "cumulative_usd": 0.656647,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4891
+    },
+    {
+      "ts": "2026-10-20T07:52:23.462822+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.660904,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T07:52:50.603038+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.663727,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T07:53:14.050150+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.666716,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T07:53:45.574761+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.671064,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T07:54:22.124675+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004621,
+      "cumulative_usd": 0.675685,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 21279,
+      "completion_tokens": 6233
+    },
+    {
+      "ts": "2026-10-20T07:54:45.779151+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.678559,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T07:55:12.663893+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003607,
+      "cumulative_usd": 0.682166,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15910,
+      "completion_tokens": 5039
+    },
+    {
+      "ts": "2026-10-20T07:55:39.105828+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003073,
+      "cumulative_usd": 0.685239,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 16237,
+      "completion_tokens": 3624
+    },
+    {
+      "ts": "2026-10-20T07:56:13.487391+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.004324,
+      "cumulative_usd": 0.689563,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 15724,
+      "completion_tokens": 6880
+    },
+    {
+      "ts": "2026-10-20T07:56:42.779225+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-01",
+      "delta_usd": 0.004305,
+      "cumulative_usd": 0.693868,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-01",
+      "prompt_tokens": 23275,
+      "completion_tokens": 4943
+    },
+    {
+      "ts": "2026-10-20T07:58:51.467229+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003505,
+      "cumulative_usd": 0.697373,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 18907,
+      "completion_tokens": 4036
+    },
+    {
+      "ts": "2026-10-20T07:59:33.808061+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.0053,
+      "cumulative_usd": 0.702673,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 21351,
+      "completion_tokens": 7912
+    },
+    {
+      "ts": "2026-10-20T08:00:13.019627+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.003101,
+      "cumulative_usd": 0.705774,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 15620,
+      "completion_tokens": 3847
+    },
+    {
+      "ts": "2026-10-20T08:00:54.303516+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.005346,
+      "cumulative_usd": 0.71112,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 20940,
+      "completion_tokens": 8130
+    },
+    {
+      "ts": "2026-10-20T08:01:23.258454+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.00327,
+      "cumulative_usd": 0.71439,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 15781,
+      "completion_tokens": 4229
+    },
+    {
+      "ts": "2026-10-20T08:01:57.201415+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.003621,
+      "cumulative_usd": 0.718011,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 16364,
+      "completion_tokens": 4962
+    },
+    {
+      "ts": "2026-10-20T08:02:37.718779+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.004199,
+      "cumulative_usd": 0.72221,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 20760,
+      "completion_tokens": 5307
+    },
+    {
+      "ts": "2026-10-20T08:03:09.950245+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003086,
+      "cumulative_usd": 0.725295,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15871,
+      "completion_tokens": 3746
+    },
+    {
+      "ts": "2026-10-20T08:03:44.521068+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003086,
+      "cumulative_usd": 0.72838,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15871,
+      "completion_tokens": 3746
+    },
+    {
+      "ts": "2026-10-20T08:03:58.478189+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.00327,
+      "cumulative_usd": 0.73165,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 15781,
+      "completion_tokens": 4229
+    },
+    {
+      "ts": "2026-10-20T08:04:14.246490+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.003621,
+      "cumulative_usd": 0.735271,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 16364,
+      "completion_tokens": 4962
+    },
+    {
+      "ts": "2026-10-20T08:04:30.463370+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-01",
+      "delta_usd": 0.004305,
+      "cumulative_usd": 0.739576,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-01",
+      "prompt_tokens": 23275,
+      "completion_tokens": 4943
+    },
+    {
+      "ts": "2026-10-20T08:04:47.310877+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.743569,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T08:05:10.500016+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.746455,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:05:52.128291+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.004733,
+      "cumulative_usd": 0.751188,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 20836,
+      "completion_tokens": 6624
+    },
+    {
+      "ts": "2026-10-20T08:06:44.276819+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003383,
+      "cumulative_usd": 0.754571,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:07:20.820101+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005573,
+      "cumulative_usd": 0.760144,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20392,
+      "completion_tokens": 8835
+    },
+    {
+      "ts": "2026-10-20T08:07:48.728402+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002135,
+      "cumulative_usd": 0.762279,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12292,
+      "completion_tokens": 2265
+    },
+    {
+      "ts": "2026-10-20T08:08:23.235628+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.765653,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 16122,
+      "completion_tokens": 4405
+    },
+    {
+      "ts": "2026-10-20T08:08:54.661013+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.768442,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T08:09:22.554951+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.770285,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T08:09:50.710248+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.775162,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T08:10:31.283853+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.004158,
+      "cumulative_usd": 0.77932,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 19841,
+      "completion_tokens": 5436
+    },
+    {
+      "ts": "2026-10-20T08:11:06.081102+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.783403,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:11:31.901622+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002068,
+      "cumulative_usd": 0.785471,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12222,
+      "completion_tokens": 2115
+    },
+    {
+      "ts": "2026-10-20T08:12:09.377084+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004344,
+      "cumulative_usd": 0.789815,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4891
+    },
+    {
+      "ts": "2026-10-20T08:12:42.689743+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.794072,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T08:13:36.831006+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.796895,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:14:00.400443+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.799884,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T08:15:54.324894+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.002645,
+      "cumulative_usd": 0.802529,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 14414,
+      "completion_tokens": 3009
+    },
+    {
+      "ts": "2026-10-20T08:16:31.655881+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004621,
+      "cumulative_usd": 0.80715,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 21279,
+      "completion_tokens": 6233
+    },
+    {
+      "ts": "2026-10-20T08:16:55.903923+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.810024,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    },
+    {
+      "ts": "2026-10-20T08:17:21.488485+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-04",
+      "delta_usd": 0.003207,
+      "cumulative_usd": 0.813231,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-04",
+      "prompt_tokens": 12249,
+      "completion_tokens": 4955
+    },
+    {
+      "ts": "2026-10-20T08:17:52.244840+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-04",
+      "delta_usd": 0.002602,
+      "cumulative_usd": 0.815833,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-04",
+      "prompt_tokens": 12226,
+      "completion_tokens": 3449
+    },
+    {
+      "ts": "2026-10-20T08:18:19.226798+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.002773,
+      "cumulative_usd": 0.818606,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 12626,
+      "completion_tokens": 3775
+    },
+    {
+      "ts": "2026-10-20T08:18:47.380161+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "delta_usd": 0.002778,
+      "cumulative_usd": 0.821384,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "prompt_tokens": 14196,
+      "completion_tokens": 3397
+    },
+    {
+      "ts": "2026-10-20T08:20:40.655688+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.003792,
+      "cumulative_usd": 0.825176,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 16414,
+      "completion_tokens": 5376
+    },
+    {
+      "ts": "2026-10-20T08:21:22.182867+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003956,
+      "cumulative_usd": 0.829132,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 15904,
+      "completion_tokens": 5915
+    },
+    {
+      "ts": "2026-10-20T08:21:58.374682+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.004284,
+      "cumulative_usd": 0.833416,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 16096,
+      "completion_tokens": 6685
+    },
+    {
+      "ts": "2026-10-20T08:22:32.802691+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.003937,
+      "cumulative_usd": 0.837353,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 16199,
+      "completion_tokens": 5793
+    },
+    {
+      "ts": "2026-10-20T08:23:14.270842+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.004451,
+      "cumulative_usd": 0.841804,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 15472,
+      "completion_tokens": 7259
+    },
+    {
+      "ts": "2026-10-20T08:23:39.352901+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "delta_usd": 0.003059,
+      "cumulative_usd": 0.844862,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-01",
+      "prompt_tokens": 13785,
+      "completion_tokens": 4200
+    },
+    {
+      "ts": "2026-10-20T08:24:04.489923+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "delta_usd": 0.004433,
+      "cumulative_usd": 0.849295,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-02",
+      "prompt_tokens": 17126,
+      "completion_tokens": 6800
+    },
+    {
+      "ts": "2026-10-20T08:24:32.094569+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.852669,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-02",
+      "prompt_tokens": 17084,
+      "completion_tokens": 4165
+    },
+    {
+      "ts": "2026-10-20T08:25:04.363663+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-04",
+      "delta_usd": 0.003207,
+      "cumulative_usd": 0.855876,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-04",
+      "prompt_tokens": 12249,
+      "completion_tokens": 4955
+    },
+    {
+      "ts": "2026-10-20T08:25:15.601560+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-04",
+      "delta_usd": 0.002602,
+      "cumulative_usd": 0.858478,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-04",
+      "prompt_tokens": 12226,
+      "completion_tokens": 3449
+    },
+    {
+      "ts": "2026-10-20T08:25:26.655348+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "delta_usd": 0.002773,
+      "cumulative_usd": 0.861251,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-01",
+      "prompt_tokens": 12626,
+      "completion_tokens": 3775
+    },
+    {
+      "ts": "2026-10-20T08:25:39.971546+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "delta_usd": 0.002778,
+      "cumulative_usd": 0.864029,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "prompt_tokens": 14196,
+      "completion_tokens": 3397
+    },
+    {
+      "ts": "2026-10-20T08:25:51.975653+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.003018,
+      "cumulative_usd": 0.867047,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 15598,
+      "completion_tokens": 3645
+    },
+    {
+      "ts": "2026-10-20T08:26:29.552022+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003607,
+      "cumulative_usd": 0.870654,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15910,
+      "completion_tokens": 5039
+    },
+    {
+      "ts": "2026-10-20T08:27:27.291795+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003073,
+      "cumulative_usd": 0.873727,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 16237,
+      "completion_tokens": 3624
+    },
+    {
+      "ts": "2026-10-20T08:27:52.703276+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "delta_usd": 0.002778,
+      "cumulative_usd": 0.876505,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "prompt_tokens": 14196,
+      "completion_tokens": 3397
+    },
+    {
+      "ts": "2026-10-20T08:29:35.138839+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.003281,
+      "cumulative_usd": 0.879786,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 15890,
+      "completion_tokens": 4229
+    },
+    {
+      "ts": "2026-10-20T08:30:49.351670+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.003731,
+      "cumulative_usd": 0.883517,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 20346,
+      "completion_tokens": 4242
+    },
+    {
+      "ts": "2026-10-20T08:31:23.564238+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.004059,
+      "cumulative_usd": 0.887576,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 19773,
+      "completion_tokens": 5204
+    },
+    {
+      "ts": "2026-10-20T08:31:53.168487+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.003017,
+      "cumulative_usd": 0.890593,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 16029,
+      "completion_tokens": 3536
+    },
+    {
+      "ts": "2026-10-20T08:32:49.364345+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.00424,
+      "cumulative_usd": 0.894833,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 19963,
+      "completion_tokens": 5609
+    },
+    {
+      "ts": "2026-10-20T08:33:21.909870+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "delta_usd": 0.003914,
+      "cumulative_usd": 0.898747,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-02",
+      "prompt_tokens": 19615,
+      "completion_tokens": 4881
+    },
+    {
+      "ts": "2026-10-20T08:34:00.926829+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.004898,
+      "cumulative_usd": 0.903645,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 19046,
+      "completion_tokens": 7484
+    },
+    {
+      "ts": "2026-10-20T08:34:37.280847+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.00402,
+      "cumulative_usd": 0.907665,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15865,
+      "completion_tokens": 6084
+    },
+    {
+      "ts": "2026-10-20T08:36:23.618849+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "delta_usd": 0.004898,
+      "cumulative_usd": 0.912563,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-03",
+      "prompt_tokens": 19046,
+      "completion_tokens": 7484
+    },
+    {
+      "ts": "2026-10-20T08:36:43.087638+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "delta_usd": 0.00402,
+      "cumulative_usd": 0.916583,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-04",
+      "prompt_tokens": 15865,
+      "completion_tokens": 6084
+    },
+    {
+      "ts": "2026-10-20T08:37:01.523759+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "delta_usd": 0.00424,
+      "cumulative_usd": 0.920823,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-01",
+      "prompt_tokens": 19963,
+      "completion_tokens": 5609
+    },
+    {
+      "ts": "2026-10-20T08:37:13.336399+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "delta_usd": 0.002778,
+      "cumulative_usd": 0.923601,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-02",
+      "prompt_tokens": 14196,
+      "completion_tokens": 3397
+    },
+    {
+      "ts": "2026-10-20T08:37:30.368090+00:00",
+      "run_key": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "delta_usd": 0.003993,
+      "cumulative_usd": 0.927594,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "prompt_tokens": 18434,
+      "completion_tokens": 5374
+    },
+    {
+      "ts": "2026-10-20T08:37:53.761591+00:00",
+      "run_key": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "delta_usd": 0.002886,
+      "cumulative_usd": 0.93048,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-C2-INFOSTEALER-05",
+      "prompt_tokens": 18709,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:38:35.644197+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "delta_usd": 0.004733,
+      "cumulative_usd": 0.935213,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-01",
+      "prompt_tokens": 20836,
+      "completion_tokens": 6624
+    },
+    {
+      "ts": "2026-10-20T08:39:06.513458+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "delta_usd": 0.003383,
+      "cumulative_usd": 0.938596,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-02",
+      "prompt_tokens": 16701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:39:44.170056+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "delta_usd": 0.005573,
+      "cumulative_usd": 0.944169,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-03",
+      "prompt_tokens": 20392,
+      "completion_tokens": 8835
+    },
+    {
+      "ts": "2026-10-20T08:40:08.473766+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "delta_usd": 0.002135,
+      "cumulative_usd": 0.946304,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-04",
+      "prompt_tokens": 12292,
+      "completion_tokens": 2265
+    },
+    {
+      "ts": "2026-10-20T08:40:41.073695+00:00",
+      "run_key": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "delta_usd": 0.003374,
+      "cumulative_usd": 0.949678,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-CRYPTOMINER-DEV-05",
+      "prompt_tokens": 16122,
+      "completion_tokens": 4405
+    },
+    {
+      "ts": "2026-10-20T08:41:07.952920+00:00",
+      "run_key": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "delta_usd": 0.002789,
+      "cumulative_usd": 0.952467,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "prompt_tokens": 19086,
+      "completion_tokens": 2202
+    },
+    {
+      "ts": "2026-10-20T08:41:37.366571+00:00",
+      "run_key": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "delta_usd": 0.001843,
+      "cumulative_usd": 0.95431,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "prompt_tokens": 10362,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T08:42:04.811123+00:00",
+      "run_key": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "delta_usd": 0.004877,
+      "cumulative_usd": 0.959187,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-DUPLICATE-CASE-05",
+      "prompt_tokens": 23300,
+      "completion_tokens": 6367
+    },
+    {
+      "ts": "2026-10-20T08:42:32.956497+00:00",
+      "run_key": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "delta_usd": 0.002808,
+      "cumulative_usd": 0.961994,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-LATERAL-PSEXEC-05",
+      "prompt_tokens": 15335,
+      "completion_tokens": 3185
+    },
+    {
+      "ts": "2026-10-20T08:43:04.588614+00:00",
+      "run_key": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "delta_usd": 0.004083,
+      "cumulative_usd": 0.966077,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "prompt_tokens": 23701,
+      "completion_tokens": 4283
+    },
+    {
+      "ts": "2026-10-20T08:43:30.487498+00:00",
+      "run_key": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "delta_usd": 0.002068,
+      "cumulative_usd": 0.968145,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "prompt_tokens": 12222,
+      "completion_tokens": 2115
+    },
+    {
+      "ts": "2026-10-20T08:44:07.208087+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "delta_usd": 0.004344,
+      "cumulative_usd": 0.972489,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "prompt_tokens": 23874,
+      "completion_tokens": 4891
+    },
+    {
+      "ts": "2026-10-20T08:44:42.038748+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "delta_usd": 0.004257,
+      "cumulative_usd": 0.976746,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "prompt_tokens": 22790,
+      "completion_tokens": 4946
+    },
+    {
+      "ts": "2026-10-20T08:45:08.749460+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "delta_usd": 0.002823,
+      "cumulative_usd": 0.979569,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "prompt_tokens": 18079,
+      "completion_tokens": 2538
+    },
+    {
+      "ts": "2026-10-20T08:45:33.860057+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "delta_usd": 0.002989,
+      "cumulative_usd": 0.982558,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "prompt_tokens": 18339,
+      "completion_tokens": 2888
+    },
+    {
+      "ts": "2026-10-20T08:46:07.577017+00:00",
+      "run_key": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "delta_usd": 0.004348,
+      "cumulative_usd": 0.986907,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "prompt_tokens": 22813,
+      "completion_tokens": 5168
+    },
+    {
+      "ts": "2026-10-20T08:46:45.773102+00:00",
+      "run_key": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "delta_usd": 0.004621,
+      "cumulative_usd": 0.991528,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "prompt_tokens": 21279,
+      "completion_tokens": 6233
+    },
+    {
+      "ts": "2026-10-20T08:47:11.546969+00:00",
+      "run_key": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "delta_usd": 0.002874,
+      "cumulative_usd": 0.994402,
+      "model": "gemini-2.5-flash-lite",
+      "note": "eval:CASE-GEN5-TOOL-OUTAGE-503-05",
+      "prompt_tokens": 17440,
+      "completion_tokens": 2825
+    }
+  ]
+}

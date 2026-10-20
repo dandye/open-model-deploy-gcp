@@ -1,0 +1,203 @@
+{
+  "model": "gemini-2.5-flash-lite",
+  "split": "validation",
+  "run_id": "20261020T055127Z-64c54d88",
+  "git_sha": "8547f38cea90abffbc7852e423a7fcdd5e99fdd3",
+  "gate_mean_spread_max": 0.02,
+  "gate_passed": true,
+  "runs": 2,
+  "run_means": [
+    0.92599,
+    0.9251999999999999
+  ],
+  "run1_mean": 0.92599,
+  "run2_mean": 0.9251999999999999,
+  "mean_spread": 0.0007900000000000684,
+  "aggregate_noise": 0.0007900000000000684,
+  "mean_case_noise": 0.0007900000000000019,
+  "mean_case_std": 0.00039500000000000093,
+  "tau_accept": 0.015,
+  "per_case": [
+    {
+      "case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+      "scores": [
+        0.9519,
+        0.9519
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+      "scores": [
+        0.954,
+        0.954
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+      "scores": [
+        0.9368,
+        0.9368
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+      "scores": [
+        0.9347,
+        0.9347
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+      "scores": [
+        0.9529,
+        0.9529
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+      "scores": [
+        0.9347,
+        0.9347
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+      "scores": [
+        0.9525,
+        0.9525
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+      "scores": [
+        0.9455,
+        0.9455
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+      "scores": [
+        0.9516,
+        0.9516
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-DUPLICATE-CASE-05",
+      "scores": [
+        0.9496,
+        0.9496
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-LATERAL-PSEXEC-05",
+      "scores": [
+        0.7501,
+        0.7501
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-PHISHING-CREDENTIAL-05",
+      "scores": [
+        0.9444,
+        0.9444
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+      "scores": [
+        0.7576999999999999,
+        0.7576999999999999
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+      "scores": [
+        0.9404,
+        0.9246
+      ],
+      "spread": 0.015800000000000036,
+      "std": 0.007900000000000018
+    },
+    {
+      "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+      "scores": [
+        0.94,
+        0.94
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+      "scores": [
+        0.9432999999999999,
+        0.9432999999999999
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+      "scores": [
+        0.9413,
+        0.9413
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+      "scores": [
+        0.9428,
+        0.9428
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+      "scores": [
+        0.9511,
+        0.9511
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    },
+    {
+      "case_id": "CASE-GEN5-TOOL-OUTAGE-503-05",
+      "scores": [
+        0.9445,
+        0.9445
+      ],
+      "spread": 0.0,
+      "std": 0.0
+    }
+  ],
+  "generated_at_utc": "2026-10-20T06:25:45.969789+00:00"
+}
