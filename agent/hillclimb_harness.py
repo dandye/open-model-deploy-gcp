@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import re
+import threading
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from agent.jev_evaluator import SOC_FAILURE_TAXONOMY
@@ -824,3 +826,564 @@ def run_cost_staircase_walk(
       tolerance=tolerance,
       rungs=rungs,
   )
+
+
+class BudgetExceeded(RuntimeError):
+  """Raised when cumulative optimization or evaluation spend exceeds the hard USD limit."""
+
+
+_SECRET_PATTERNS: Tuple[Tuple[re.Pattern, str], ...] = (
+    (re.compile(r"sk-[A-Za-z0-9_\-]{12,}"), "sk-[REDACTED]"),
+    (re.compile(r"AIza[0-9A-Za-z_\-]{20,}"), "AIza[REDACTED]"),
+    (re.compile(r"ya29\.[0-9A-Za-z_\-.]+"), "ya29.[REDACTED]"),
+    (re.compile(r"(Bearer\s+)[A-Za-z0-9._\-]{16,}", re.IGNORECASE), r"\1[REDACTED]"),
+    (
+        re.compile(
+            r"((?:OPENAI|GEMINI|ANTHROPIC|GOOGLE|VERTEX)_API_KEY\s*=\s*)[^\s\"']+"
+        ),
+        r"\1[REDACTED]",
+    ),
+)
+
+# Per-1M-token USD pricing table for Vertex AI Gemini and self-hosted Gemma tiers.
+DEFAULT_MODEL_PRICING_PER_1M: Dict[str, Tuple[float, float]] = {
+    "gemini-2.5-pro": (1.25, 10.00),
+    "gemini-2.5-flash": (0.30, 2.50),
+    "gemini-2.5-flash-lite": (0.10, 0.40),
+    "gemini-3.5-flash-lite": (0.10, 0.40),
+    "gemini-3.7-flash": (0.30, 2.50),
+    "gemini-3.8-flash": (0.30, 2.50),
+    "gemma-4-31b-it": (0.00, 0.00),
+    "gemma-4-e4b-it": (0.00, 0.00),
+    "gemma-3-4b-it": (0.00, 0.00),
+    "gemma-3-1b-it": (0.00, 0.00),
+}
+
+
+def redact(text: str) -> str:
+  """Strip API keys and bearer tokens from text before writing to logs or ledgers."""
+  if not text:
+    return ""
+  out = str(text)
+  for pat, repl in _SECRET_PATTERNS:
+    out = pat.sub(repl, out)
+  return out
+
+
+def estimate_model_cost_usd(
+    model: str,
+    prompt_tokens: int = 0,
+    completion_tokens: int = 0,
+    pricing_table: Optional[Mapping[str, Tuple[float, float]]] = None,
+) -> float:
+  """Estimate USD cost for a single call or batch from token counts."""
+  table = pricing_table or DEFAULT_MODEL_PRICING_PER_1M
+  norm_model = (model or "").strip().lower()
+  rates = table.get(norm_model)
+  if rates is None:
+    for key, val in table.items():
+      if key in norm_model:
+        rates = val
+        break
+  if rates is None:
+    rates = (0.30, 2.50)
+  in_rate, out_rate = rates
+  p_tok = max(0, int(prompt_tokens or 0))
+  c_tok = max(0, int(completion_tokens or 0))
+  return (p_tok * in_rate + c_tok * out_rate) / 1_000_000.0
+
+
+class BudgetLedger:
+  """Thread-safe JSON cost ledger ported from Context Engineering with DSPy Chapter 6."""
+
+  def __init__(self, path: Path | str, limit_usd: float = 25.0) -> None:
+    self.path = Path(path)
+    self.limit_usd = float(limit_usd)
+    self._lock = threading.Lock()
+    self._state: Dict[str, Any] = {
+        "limit_usd": self.limit_usd,
+        "spent_usd": 0.0,
+        "entries": [],
+    }
+    if self.path.exists():
+      try:
+        loaded = json.loads(self.path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+          loaded["limit_usd"] = self.limit_usd
+          loaded.setdefault("spent_usd", 0.0)
+          loaded.setdefault("entries", [])
+          self._state = loaded
+      except Exception:
+        pass
+    self._flush()
+
+  def _flush(self) -> None:
+    self.path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = self.path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(self._state, indent=2), encoding="utf-8")
+    tmp.replace(self.path)
+
+  @property
+  def spent_usd(self) -> float:
+    with self._lock:
+      return float(self._state["spent_usd"])
+
+  @property
+  def remaining_usd(self) -> float:
+    with self._lock:
+      return max(0.0, self.limit_usd - float(self._state["spent_usd"]))
+
+  def assert_can_spend(self, reserve_usd: float = 0.05) -> None:
+    with self._lock:
+      spent = float(self._state["spent_usd"])
+      if spent + float(reserve_usd) > self.limit_usd:
+        raise BudgetExceeded(
+            f"Hard budget cap reached: spent=${spent:.4f} + reserve=${reserve_usd:.4f} "
+            f"> limit=${self.limit_usd:.2f}"
+        )
+
+  def record(
+      self,
+      run_key: str = "",
+      delta_usd: Optional[float] = None,
+      meta: Optional[Dict[str, Any]] = None,
+      *,
+      model: Optional[str] = None,
+      prompt_tokens: int = 0,
+      completion_tokens: int = 0,
+      note: str = "",
+  ) -> Dict[str, Any]:
+    if delta_usd is None:
+      delta_usd = estimate_model_cost_usd(
+          model=model or run_key or "gemini-2.5-flash",
+          prompt_tokens=prompt_tokens,
+          completion_tokens=completion_tokens,
+      )
+    effective_key = run_key or note or model or "eval_call"
+    sanitized_meta: Dict[str, Any] = {}
+    if meta:
+      for k, v in meta.items():
+        sanitized_meta[redact(str(k))] = redact(str(v)) if isinstance(v, str) else v
+    if model:
+      sanitized_meta["model"] = redact(str(model))
+    if note:
+      sanitized_meta["note"] = redact(str(note))
+    if prompt_tokens or completion_tokens:
+      sanitized_meta["prompt_tokens"] = int(prompt_tokens)
+      sanitized_meta["completion_tokens"] = int(completion_tokens)
+    with self._lock:
+      self._state["spent_usd"] = round(
+          float(self._state["spent_usd"]) + max(0.0, float(delta_usd)), 6
+      )
+      entry = {
+          "ts": datetime.now(timezone.utc).isoformat(),
+          "run_key": redact(str(effective_key)),
+          "delta_usd": round(float(delta_usd), 6),
+          "cumulative_usd": self._state["spent_usd"],
+          **(sanitized_meta),
+      }
+      self._state["entries"].append(entry)
+      self._flush()
+      return entry
+
+
+def filter_balanced_traces(
+    traces: Sequence[Mapping[str, Any]],
+    min_examples_per_class: int = 1,
+    max_examples_per_class: Optional[int] = None,
+    label_key: str = "expected_verdict",
+    actual_key: str = "actual_verdict",
+    min_score: float = 0.80,
+    require_exact_verdict: bool = True,
+    required_classes: Optional[Sequence[str]] = None,
+) -> List[Dict[str, Any]]:
+  """Filter and class-balance teacher trajectories before student SFT/LoRA distillation.
+
+  Ported from BalancedBootstrapFinetune in Context Engineering with DSPy Chapter 6
+  (optimizer_runtime.py) to prevent single-class collapse when distilling Gemini
+  SOC trajectories into smaller 1B-4B Gemma models.
+  """
+  by_label: Dict[str, List[Dict[str, Any]]] = {}
+  for raw_trace in traces:
+    if not isinstance(raw_trace, Mapping):
+      continue
+    score = float(raw_trace.get("score", 0.0) or 0.0)
+    if score < min_score:
+      continue
+    if raw_trace.get("inert") or raw_trace.get("zero_tool_hesitation"):
+      continue
+    if raw_trace.get("safety_gate_triggered"):
+      continue
+    expected = str(raw_trace.get(label_key, "") or "").strip().upper()
+    actual = str(raw_trace.get(actual_key, "") or "").strip().upper()
+    if not expected:
+      continue
+    if require_exact_verdict and actual != expected:
+      continue
+    by_label.setdefault(expected, []).append(dict(raw_trace))
+
+  target_classes = (
+      [str(c).strip().upper() for c in required_classes]
+      if required_classes is not None
+      else sorted(by_label.keys())
+  )
+  if not target_classes:
+    raise ValueError(
+        "Balanced trace filter found 0 passing teacher traces across all verdict classes."
+    )
+
+  counts = {label: len(by_label.get(label, [])) for label in target_classes}
+  underfilled = {
+      label: cnt for label, cnt in counts.items() if cnt < min_examples_per_class
+  }
+  if underfilled:
+    raise ValueError(
+        f"Balanced trace filter requires at least {min_examples_per_class} traces per class; "
+        f"got {counts} (underfilled: {underfilled})."
+    )
+
+  cap = min(counts.values()) if max_examples_per_class is None else min(
+      min(counts.values()), int(max_examples_per_class)
+  )
+  balanced: List[Dict[str, Any]] = []
+  for label in sorted(target_classes):
+    ranked = sorted(
+        by_label[label],
+        key=lambda t: (float(t.get("score", 0.0) or 0.0), -int(t.get("latency_ms", 0) or 0)),
+        reverse=True,
+    )
+    balanced.extend(ranked[:cap])
+  return balanced
+
+
+HARNESS2_ATTRIBUTION_LABELS: Tuple[str, ...] = (
+    "helped",
+    "hurt",
+    "no_observed_effect",
+    "confounded",
+)
+
+
+@dataclass(frozen=True)
+class ComponentAttribution:
+  """Per-component edit attribution against the clean base harness H_0."""
+
+  component_name: str
+  label: str
+  changed: bool
+  mean_delta: float
+  evaluated_cases: Tuple[str, ...] = ()
+  regressed_cases: Tuple[str, ...] = ()
+  reason: str = ""
+
+  def to_dict(self) -> Dict[str, Any]:
+    return asdict(self)
+
+
+def _extract_case_component_map(
+    baseline_telemetry: Optional[Mapping[str, Any]],
+    candidate_telemetry: Optional[Mapping[str, Any]],
+    common_cases: Sequence[str],
+) -> Dict[str, List[str]]:
+  """Map component_name -> sorted list of evaluated case IDs from trace telemetry."""
+  comp_to_cases: Dict[str, set[str]] = {}
+  common_set = set(common_cases)
+  for tel_map in (baseline_telemetry, candidate_telemetry):
+    if not isinstance(tel_map, Mapping):
+      continue
+    for raw_cid, entry in tel_map.items():
+      cid = str(raw_cid)
+      if cid not in common_set:
+        continue
+      comp = ""
+      if isinstance(entry, Mapping):
+        comp = str(
+            entry.get("implicated_runbook")
+            or entry.get("component_name")
+            or ""
+        ).strip()
+      else:
+        comp = str(
+            getattr(entry, "implicated_runbook", "")
+            or getattr(entry, "component_name", "")
+            or ""
+        ).strip()
+      if comp:
+        comp_to_cases.setdefault(comp, set()).add(cid)
+  return {comp: sorted(cases) for comp, cases in comp_to_cases.items()}
+
+
+def attribute_candidate_edits(
+    base_candidate: Mapping[str, str],
+    candidate: Mapping[str, str],
+    baseline_scores: Mapping[str, float],
+    candidate_scores: Mapping[str, float],
+    tau_accept: float,
+    baseline_telemetry: Optional[Mapping[str, Any]] = None,
+    candidate_telemetry: Optional[Mapping[str, Any]] = None,
+    pass_threshold: float = 0.70,
+) -> Dict[str, ComponentAttribution]:
+  """Label each component edit as helped, hurt, no_observed_effect, or confounded.
+
+  Matches Harness^2 (Xu et al., arXiv:2610.14224): when multiple components
+  change together without isolated disjoint per-component rollouts, each changed
+  component is labeled 'confounded' so multi-edit changes cannot poison credit
+  assignment or the experience library.
+  """
+  norm_base = {str(k): float(v) for k, v in baseline_scores.items()}
+  norm_cand = {str(k): float(v) for k, v in candidate_scores.items()}
+  common_cases = sorted(set(norm_base) & set(norm_cand))
+
+  all_components = sorted(set(base_candidate.keys()) | set(candidate.keys()))
+  changed_components = [
+      comp
+      for comp in all_components
+      if base_candidate.get(comp) != candidate.get(comp)
+  ]
+
+  comp_to_cases = _extract_case_component_map(
+      baseline_telemetry, candidate_telemetry, common_cases
+  )
+
+  # Check whether multi-component changes have strictly disjoint, non-empty case sets.
+  disjoint_multi_isolated = False
+  if len(changed_components) > 1:
+    assigned_sets = [set(comp_to_cases.get(comp, [])) for comp in changed_components]
+    if all(bool(s) for s in assigned_sets):
+      union_len = len(set().union(*assigned_sets))
+      sum_len = sum(len(s) for s in assigned_sets)
+      disjoint_multi_isolated = (union_len == sum_len)
+
+  overall_delta = (
+      sum(norm_cand[c] - norm_base[c] for c in common_cases) / len(common_cases)
+      if common_cases
+      else 0.0
+  )
+
+  results: Dict[str, ComponentAttribution] = {}
+  for comp in all_components:
+    if comp not in changed_components:
+      results[comp] = ComponentAttribution(
+          component_name=comp,
+          label="no_observed_effect",
+          changed=False,
+          mean_delta=0.0,
+          evaluated_cases=tuple(comp_to_cases.get(comp, [])),
+          regressed_cases=(),
+          reason="Component unchanged from base harness.",
+      )
+      continue
+
+    if len(changed_components) > 1 and not disjoint_multi_isolated:
+      results[comp] = ComponentAttribution(
+          component_name=comp,
+          label="confounded",
+          changed=True,
+          mean_delta=overall_delta,
+          evaluated_cases=tuple(comp_to_cases.get(comp, common_cases)),
+          regressed_cases=(),
+          reason=(
+              f"Multiple components ({len(changed_components)}) changed together "
+              "without isolated per-component rollouts."
+          ),
+      )
+      continue
+
+    eval_cases = comp_to_cases.get(comp) or list(common_cases)
+    if not eval_cases:
+      results[comp] = ComponentAttribution(
+          component_name=comp,
+          label="no_observed_effect",
+          changed=True,
+          mean_delta=0.0,
+          evaluated_cases=(),
+          regressed_cases=(),
+          reason="No evaluated cases mapped to this component.",
+      )
+      continue
+
+    comp_delta = sum(norm_cand[c] - norm_base[c] for c in eval_cases) / len(eval_cases)
+    regressed = [
+        c
+        for c in eval_cases
+        if norm_base[c] >= pass_threshold and norm_cand[c] < pass_threshold
+    ]
+
+    safety_regressed = False
+    if isinstance(candidate_telemetry, Mapping):
+      for c in eval_cases:
+        c_tel = candidate_telemetry.get(c)
+        b_tel = baseline_telemetry.get(c) if isinstance(baseline_telemetry, Mapping) else None
+        if isinstance(c_tel, Mapping):
+          c_safety = bool(c_tel.get("safety_gate_triggered")) or bool(c_tel.get("zero_tool_hesitation"))
+          b_safety = (
+              (bool(b_tel.get("safety_gate_triggered")) or bool(b_tel.get("zero_tool_hesitation")))
+              if isinstance(b_tel, Mapping)
+              else False
+          )
+          if c_safety and not b_safety:
+            safety_regressed = True
+            if c not in regressed:
+              regressed.append(c)
+
+    if regressed or safety_regressed or comp_delta <= -float(tau_accept):
+      label = "hurt"
+      reason = (
+          f"Isolated edit hurt performance (delta={comp_delta:+.4f}, "
+          f"regressed_cases={regressed})."
+      )
+    elif comp_delta >= float(tau_accept):
+      label = "helped"
+      reason = (
+          f"Isolated edit helped performance (delta={comp_delta:+.4f} >= "
+          f"tau_accept={float(tau_accept):.4f}) with zero regressions."
+      )
+    else:
+      label = "no_observed_effect"
+      reason = (
+          f"Isolated edit delta ({comp_delta:+.4f}) stayed within noise band "
+          f"tau_accept ({float(tau_accept):.4f})."
+      )
+
+    results[comp] = ComponentAttribution(
+        component_name=comp,
+        label=label,
+        changed=True,
+        mean_delta=comp_delta,
+        evaluated_cases=tuple(eval_cases),
+        regressed_cases=tuple(sorted(regressed)),
+        reason=reason,
+    )
+
+  return results
+
+
+@dataclass(frozen=True)
+class ExperienceEntry:
+  """Transferable contrast-verified lesson stored in the continual harness R_t."""
+
+  cue: str
+  lesson: str
+  evidence: str
+  confidence: str
+  scope: str
+  component_name: str
+  attribution_label: str
+  mean_delta: float
+  created_at_utc: str
+
+  def to_dict(self) -> Dict[str, Any]:
+    return asdict(self)
+
+  @classmethod
+  def from_dict(cls, data: Mapping[str, Any]) -> "ExperienceEntry":
+    return cls(
+        cue=str(data.get("cue", "")),
+        lesson=str(data.get("lesson", "")),
+        evidence=str(data.get("evidence", "")),
+        confidence=str(data.get("confidence", "medium")),
+        scope=str(data.get("scope", "COMPOSED")),
+        component_name=str(data.get("component_name", "")),
+        attribution_label=str(data.get("attribution_label", "helped")),
+        mean_delta=float(data.get("mean_delta", 0.0) or 0.0),
+        created_at_utc=str(data.get("created_at_utc", "")),
+    )
+
+
+class ExperienceLibrary:
+  """Indexed continual improvement library (R_t) storing contrast-verified EXPERIENCE.md entries."""
+
+  def __init__(self, library_dir: Path | str) -> None:
+    self.library_dir = Path(library_dir)
+    self.jsonl_path = self.library_dir / "experience_library.jsonl"
+    self.markdown_path = self.library_dir / "EXPERIENCE.md"
+    self._lock = threading.Lock()
+
+  def read_entries(self) -> List[ExperienceEntry]:
+    if not self.jsonl_path.exists():
+      return []
+    entries: List[ExperienceEntry] = []
+    for line in self.jsonl_path.read_text(encoding="utf-8").splitlines():
+      if line.strip():
+        entries.append(ExperienceEntry.from_dict(json.loads(line)))
+    return entries
+
+  def _write_entry(self, entry: ExperienceEntry) -> ExperienceEntry:
+    with self._lock:
+      self.library_dir.mkdir(parents=True, exist_ok=True)
+      with open(self.jsonl_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry.to_dict()) + "\n")
+      self.markdown_path.write_text(self.render_markdown(), encoding="utf-8")
+    return entry
+
+  def record_from_attributions(
+      self,
+      attributions: Mapping[str, ComponentAttribution],
+      cue: str,
+      lesson: str,
+      evidence: str,
+      scope: str = "COMPOSED",
+      confidence: str = "high",
+  ) -> Optional[ExperienceEntry]:
+    """Write at most one transferable entry when an isolated edit helped; skip confounded edits."""
+    if any(attr.changed and attr.label == "confounded" for attr in attributions.values()):
+      return None
+
+    helped = [
+        attr
+        for attr in attributions.values()
+        if attr.changed and attr.label == "helped"
+    ]
+    if not helped:
+      return None
+
+    best_attr = max(helped, key=lambda a: a.mean_delta)
+    entry = ExperienceEntry(
+        cue=redact(cue).strip(),
+        lesson=redact(lesson).strip(),
+        evidence=redact(evidence).strip(),
+        confidence=confidence,
+        scope=scope,
+        component_name=best_attr.component_name,
+        attribution_label=best_attr.label,
+        mean_delta=round(best_attr.mean_delta, 6),
+        created_at_utc=datetime.now(timezone.utc).isoformat(),
+    )
+    return self._write_entry(entry)
+
+  def retrieve_for_component(
+      self, component_name: str, limit: int = 3
+  ) -> List[ExperienceEntry]:
+    """Return top contrast-verified lessons for a target component or invariant scope."""
+    all_entries = self.read_entries()
+    matched = [
+        e
+        for e in all_entries
+        if e.component_name == component_name or e.scope.upper() == "INV"
+    ]
+    matched.sort(key=lambda e: e.mean_delta, reverse=True)
+    return matched[: max(0, int(limit))]
+
+  def render_markdown(self) -> str:
+    """Render EXPERIENCE.md for human review and editor prompt conditioning."""
+    entries = self.read_entries()
+    lines = [
+        "# Continual Improvement Library (EXPERIENCE.md)",
+        "",
+        "Contrast-verified lessons extracted from isolated runbook probes.",
+        "Confounded multi-component edits are excluded.",
+        "",
+    ]
+    for idx, entry in enumerate(entries, start=1):
+      lines.extend([
+          f"## {idx}. {entry.cue}",
+          f"- **Component**: `{entry.component_name}` (`{entry.scope}`)",
+          f"- **Attribution**: `{entry.attribution_label}` (mean delta `{entry.mean_delta:+.4f}`)",
+          f"- **Lesson**: {entry.lesson}",
+          f"- **Evidence**: {entry.evidence}",
+          f"- **Confidence**: `{entry.confidence}`",
+          "",
+      ])
+    return "\n".join(lines).rstrip() + "\n"
+
+

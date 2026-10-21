@@ -1,0 +1,438 @@
+{
+  "limit_usd": 2.5,
+  "spent_usd": 0.391314,
+  "entries": [
+    {
+      "ts": "2026-10-20T06:02:31.322395+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.016314,
+      "cumulative_usd": 0.016314,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 45596,
+      "completion_tokens": 29386
+    },
+    {
+      "ts": "2026-10-20T06:03:07.492820+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.009141,
+      "cumulative_usd": 0.025455,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 40957,
+      "completion_tokens": 12613
+    },
+    {
+      "ts": "2026-10-20T06:03:51.775141+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.010826,
+      "cumulative_usd": 0.036281,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 43217,
+      "completion_tokens": 16262
+    },
+    {
+      "ts": "2026-10-20T06:04:05.181059+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.004015,
+      "cumulative_usd": 0.040296,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 26443,
+      "completion_tokens": 3428
+    },
+    {
+      "ts": "2026-10-20T06:06:00.006977+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.010856,
+      "cumulative_usd": 0.051152,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 38843,
+      "completion_tokens": 17429
+    },
+    {
+      "ts": "2026-10-20T06:06:28.248374+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.007835,
+      "cumulative_usd": 0.058987,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 39777,
+      "completion_tokens": 9644
+    },
+    {
+      "ts": "2026-10-20T06:07:20.058643+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.012207,
+      "cumulative_usd": 0.071194,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 38386,
+      "completion_tokens": 20920
+    },
+    {
+      "ts": "2026-10-20T06:07:27.673493+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.002354,
+      "cumulative_usd": 0.073548,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 15469,
+      "completion_tokens": 2018
+    },
+    {
+      "ts": "2026-10-20T06:08:17.634455+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.011393,
+      "cumulative_usd": 0.084941,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 39821,
+      "completion_tokens": 18528
+    },
+    {
+      "ts": "2026-10-20T06:09:03.285907+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.012397,
+      "cumulative_usd": 0.097338,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 48668,
+      "completion_tokens": 18825
+    },
+    {
+      "ts": "2026-10-20T06:09:56.634966+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.012171,
+      "cumulative_usd": 0.109509,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 40968,
+      "completion_tokens": 20185
+    },
+    {
+      "ts": "2026-10-20T06:10:09.313322+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.003847,
+      "cumulative_usd": 0.113356,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 26056,
+      "completion_tokens": 3103
+    },
+    {
+      "ts": "2026-10-20T06:12:24.386724+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.01205,
+      "cumulative_usd": 0.125406,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 38433,
+      "completion_tokens": 20517
+    },
+    {
+      "ts": "2026-10-20T06:13:21.253690+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.011874,
+      "cumulative_usd": 0.13728,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 37692,
+      "completion_tokens": 20263
+    },
+    {
+      "ts": "2026-10-20T06:13:58.314034+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.009022,
+      "cumulative_usd": 0.146302,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 37886,
+      "completion_tokens": 13084
+    },
+    {
+      "ts": "2026-10-20T06:14:04.863443+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.002023,
+      "cumulative_usd": 0.148325,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 15423,
+      "completion_tokens": 1202
+    },
+    {
+      "ts": "2026-10-20T06:14:43.575223+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.009642,
+      "cumulative_usd": 0.157967,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 43608,
+      "completion_tokens": 13203
+    },
+    {
+      "ts": "2026-10-20T06:15:31.658178+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.008758,
+      "cumulative_usd": 0.166725,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 39085,
+      "completion_tokens": 12124
+    },
+    {
+      "ts": "2026-10-20T06:16:13.533412+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.009493,
+      "cumulative_usd": 0.176218,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 40787,
+      "completion_tokens": 13536
+    },
+    {
+      "ts": "2026-10-20T06:16:22.936980+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.002664,
+      "cumulative_usd": 0.178882,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 18147,
+      "completion_tokens": 2122
+    },
+    {
+      "ts": "2026-10-20T06:23:34.108498+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.016314,
+      "cumulative_usd": 0.195196,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 45596,
+      "completion_tokens": 29386
+    },
+    {
+      "ts": "2026-10-20T06:24:14.054993+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.009141,
+      "cumulative_usd": 0.204337,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 40957,
+      "completion_tokens": 12613
+    },
+    {
+      "ts": "2026-10-20T06:24:56.977171+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.010826,
+      "cumulative_usd": 0.215163,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 43217,
+      "completion_tokens": 16262
+    },
+    {
+      "ts": "2026-10-20T06:25:09.690484+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.004015,
+      "cumulative_usd": 0.219178,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 26443,
+      "completion_tokens": 3428
+    },
+    {
+      "ts": "2026-10-20T06:25:47.399272+00:00",
+      "run_key": "reflection:gemini-2.5-pro",
+      "delta_usd": 0.006451,
+      "cumulative_usd": 0.225629,
+      "prompt_tokens": 1625,
+      "completion_tokens": 442
+    },
+    {
+      "ts": "2026-10-20T06:26:18.104722+00:00",
+      "run_key": "reflection:gemini-2.5-pro",
+      "delta_usd": 0.006694,
+      "cumulative_usd": 0.232323,
+      "prompt_tokens": 1731,
+      "completion_tokens": 453
+    },
+    {
+      "ts": "2026-10-20T06:27:26.028287+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.014625,
+      "cumulative_usd": 0.246948,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 40189,
+      "completion_tokens": 26515
+    },
+    {
+      "ts": "2026-10-20T06:28:03.208276+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.008859,
+      "cumulative_usd": 0.255807,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 38397,
+      "completion_tokens": 12548
+    },
+    {
+      "ts": "2026-10-20T06:29:37.153760+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.001449,
+      "cumulative_usd": 0.257256,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 9570,
+      "completion_tokens": 1231
+    },
+    {
+      "ts": "2026-10-20T06:29:51.137684+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.004229,
+      "cumulative_usd": 0.261485,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 30003,
+      "completion_tokens": 3073
+    },
+    {
+      "ts": "2026-10-20T06:30:42.642131+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.011927,
+      "cumulative_usd": 0.273412,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 42480,
+      "completion_tokens": 19198
+    },
+    {
+      "ts": "2026-10-20T06:31:32.355588+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.011485,
+      "cumulative_usd": 0.284897,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 39449,
+      "completion_tokens": 18851
+    },
+    {
+      "ts": "2026-10-20T06:32:17.661160+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.011249,
+      "cumulative_usd": 0.296146,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 44799,
+      "completion_tokens": 16922
+    },
+    {
+      "ts": "2026-10-20T06:32:33.554064+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.004811,
+      "cumulative_usd": 0.300957,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 30437,
+      "completion_tokens": 4419
+    },
+    {
+      "ts": "2026-10-20T06:33:19.626610+00:00",
+      "run_key": "reflection:gemini-2.5-pro",
+      "delta_usd": 0.006448,
+      "cumulative_usd": 0.307404,
+      "prompt_tokens": 1550,
+      "completion_tokens": 451
+    },
+    {
+      "ts": "2026-10-20T06:33:57.021790+00:00",
+      "run_key": "reflection:gemini-2.5-pro",
+      "delta_usd": 0.006381,
+      "cumulative_usd": 0.313785,
+      "prompt_tokens": 1657,
+      "completion_tokens": 431
+    },
+    {
+      "ts": "2026-10-20T06:34:51.630534+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.012769,
+      "cumulative_usd": 0.326554,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 40311,
+      "completion_tokens": 21845
+    },
+    {
+      "ts": "2026-10-20T06:35:33.245982+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.010313,
+      "cumulative_usd": 0.336867,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 41871,
+      "completion_tokens": 15314
+    },
+    {
+      "ts": "2026-10-20T06:36:31.264406+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.012383,
+      "cumulative_usd": 0.34925,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 39231,
+      "completion_tokens": 21150
+    },
+    {
+      "ts": "2026-10-20T06:36:50.626492+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.005104,
+      "cumulative_usd": 0.354354,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 29462,
+      "completion_tokens": 5394
+    },
+    {
+      "ts": "2026-10-20T06:37:44.721497+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-COLLECTION-01",
+      "delta_usd": 0.012496,
+      "cumulative_usd": 0.36685,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-COLLECTION-01",
+      "prompt_tokens": 42065,
+      "completion_tokens": 20723
+    },
+    {
+      "ts": "2026-10-20T06:38:18.277384+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "delta_usd": 0.00889,
+      "cumulative_usd": 0.37574,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "prompt_tokens": 41768,
+      "completion_tokens": 11784
+    },
+    {
+      "ts": "2026-10-20T06:39:03.594840+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-CLEAN-COUNTERFACTUAL-03",
+      "delta_usd": 0.010865,
+      "cumulative_usd": 0.386605,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "prompt_tokens": 42711,
+      "completion_tokens": 16485
+    },
+    {
+      "ts": "2026-10-20T06:39:21.357618+00:00",
+      "run_key": "hunt:gemini-2.5-flash-lite:HUNT-DEGRADED-503-04",
+      "delta_usd": 0.004709,
+      "cumulative_usd": 0.391314,
+      "model": "gemini-2.5-flash-lite",
+      "case_id": "HUNT-DEGRADED-503-04",
+      "prompt_tokens": 30549,
+      "completion_tokens": 4135
+    }
+  ]
+}

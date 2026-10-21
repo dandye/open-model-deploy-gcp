@@ -498,7 +498,7 @@ def extract_trace_diagnosis(
     ):
         failure_category = "DEGRADED_MODE_FAILURE"
         implicated_stage = "STAGE_C_THREAT_INTEL"
-    elif jev_category and jev_category in SOC_FAILURE_TAXONOMY.values() and jev_category != "FLAWLESS_CONTAINMENT":
+    elif case_failed and jev_category and jev_category in SOC_FAILURE_TAXONOMY.values() and jev_category != "FLAWLESS_CONTAINMENT":
         failure_category = jev_category
         stage_map = {
             "PREMATURE_TERMINATION_ZERO_TOOLS": "STAGE_A_IDENTITY",

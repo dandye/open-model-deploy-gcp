@@ -1067,3 +1067,155 @@ def test_hierarchical_agent_with_runbooks_dict():
         _, kwargs = mock_worker_cls.call_args
         assert kwargs["runbook_name"] == "malware_triage.md"
         assert "Custom EVOLVED Malware Runbook" in kwargs["runbook_content"]
+
+
+def test_strip_runbook_scaffolding_and_system_instruction_hygiene():
+    """Verify strip_runbook_scaffolding removes Mermaid diagrams, Cline pseudo-tools, and ${VAR} syntax."""
+    from agent.hierarchical_soc_agent import (
+        strip_runbook_scaffolding,
+        translate_runbook_to_system_instruction,
+    )
+
+    raw_runbook = (
+        "# Basic IOC Enrichment\n\n"
+        "```{mermaid}\n"
+        "sequenceDiagram\n"
+        "    participant User\n"
+        "    participant Agent\n"
+        "    User->>Agent: Provide ${IOC_VALUE}\n"
+        "```\n\n"
+        "1. Receive `${IOC_VALUE}` and `${ASSET_ROLE}` from the alert.\n"
+        "2. If missing, use `ask_followup_question` to clarify with the user.\n"
+        "3. Query `gti-mcp.get_ip_address_report` and `secops-mcp.lookup_entity`.\n"
+        "4. Follow [generate_report_file.md](./common_steps/generate_report_file.md) and call `attempt_completion`.\n"
+    )
+    cleaned = strip_runbook_scaffolding(raw_runbook)
+    assert "sequenceDiagram" not in cleaned
+    assert "```{mermaid}" not in cleaned
+    assert "ask_followup_question" not in cleaned
+    assert "attempt_completion" not in cleaned
+    assert "generate_report_file.md" not in cleaned
+    assert "${IOC_VALUE}" not in cleaned
+    assert "<ioc_value>" in cleaned
+    assert "<asset_role>" in cleaned
+
+    sys_inst = translate_runbook_to_system_instruction(raw_runbook, "C2_BEACON")
+    assert "sequenceDiagram" not in sys_inst
+    assert "${IOC_VALUE}" not in sys_inst
+    assert "get_ip_address_report" in sys_inst
+    assert "lookup_entity" in sys_inst
+    assert "gti-mcp." not in sys_inst
+    assert "secops-mcp." not in sys_inst
+
+
+def test_supervisor_resolves_gen5_host_and_indicator_despite_bystander_in_prompt():
+    """Verify Gen 5 prompts with bystander hosts, usernames, and filenames do not block explicit targets."""
+    val_cases = json.loads((ROOT_DIR / "configs/evals/gen5/validation.json").read_text(encoding="utf-8"))["eval_cases"]
+    c2_case = next(c for c in val_cases if c["eval_id"] == "CASE-GEN5-C2-INFOSTEALER-05")
+    env = SocEnvironment(initial_state=c2_case["environment_state"])
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+
+    decision = SocDecision(
+        verdict="MALICIOUS",
+        recommended_actions=["isolate_host", "update_case_comment"],
+        target_entity="LT-LON-06",
+        rationale="Confirmed Lumma Stealer C2 on LT-LON-06.",
+    )
+    report = WorkerInvestigationReport(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        target_entities=["LT-LON-06", "bd1098a3b1497fa954e2bc544fa1b3872e711334c213ed68173c053f348866ab"],
+        risk_level="MALICIOUS",
+    )
+    steps = supervisor._execute_containment_decisions(decision, report, c2_case["prompt"])
+    executed = [s["tool"] for s in steps if s.get("tool")]
+    assert "isolate_host" in executed
+    assert "update_case_comment" in executed
+    assert env.hosts["LT-LON-06"].isolated is True
+    assert env.hosts["PC-LON-78"].isolated is False
+
+
+def test_worker_parses_markdown_wrapped_actions():
+    """Verify worker _parse_action strips markdown bold and backtick formatting around Action lines."""
+    worker = SOCRunbookWorkerAgent(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        runbook_content="# Investigate",
+        managed_model="offline",
+    )
+    parsed_bold = worker._parse_action('Thought: Check hash.\n**Action:** `get_file_report(file_hash="abc123")`')
+    assert parsed_bold == ("get_file_report", {"file_hash": "abc123"})
+    parsed_bullet = worker._parse_action('- **Action**: lookup_entity(entity="LT-LON-06")')
+    assert parsed_bullet == ("lookup_entity", {"entity": "LT-LON-06"})
+
+
+def test_supervisor_report_assertion_hygiene_and_gen3_case_resolution():
+    """Verify _apply_report_assertion_hygiene removes negated substring collisions and preserves audited artifacts."""
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    prompt = (
+        "Triage alert CASE-64791: application server APP-DUB-48 (10.13.0.75) began contacting "
+        "cdn82.stream-cloud.net. [CMDB Asset Context: Host APP-DUB-48 (10.13.0.75)]."
+    )
+    report = WorkerInvestigationReport(
+        classification="C2_BEACON",
+        runbook_name="basic_ioc_enrichment.md",
+        target_entities=["APP-DUB-48", "cdn82.stream-cloud.net"],
+        evidence=["Change calendar: CHG-56911 deployed the Zendesk connector."],
+        risk_level="BENIGN",
+    )
+    raw_text = (
+        "[Context & Enrichment]\nInvestigated APP-DUB-48.\n\n"
+        "[Analysis & Verdict]\nThis is sanctioned traffic, not command and control, and no host isolated action was taken.\n\n"
+        "```soc_decision\n{\"verdict\": \"BENIGN\", \"recommended_actions\": [\"close_case\"]}\n```"
+    )
+    cleaned = supervisor._apply_report_assertion_hygiene(raw_text, "BENIGN", prompt, report)
+    assert "command and control" not in cleaned.lower()
+    assert "host isolated" not in cleaned.lower()
+    assert "cdn82.stream-cloud.net" in cleaned
+    assert "CHG-56911" in cleaned
+
+    # Also verify Gen 3 CMDB Asset Context case resolution when no literal CASE-XXXXX is in prompt
+    gen3_prompt = (
+        "Triage authentication log alert: Repeated connection attempts recorded from IP 192.0.2.100 "
+        "against gateway GW-CORE-VPN-01. [CMDB Asset Context: Host GW-CORE-VPN-01]."
+    )
+    resolved_case = supervisor._resolve_target_case(gen3_prompt, SocDecision(verdict="BENIGN", recommended_actions=["close_case"]), report)
+    assert resolved_case == "CASE-33279"
+
+
+def test_resolve_target_host_compound_hostname_ip_requires_explicit_worker_investigation():
+    """Verify _resolve_target_host resolves 'HOSTNAME (IP)' only when worker explicitly queried HOSTNAME."""
+    env = SocEnvironment()
+    supervisor = HierarchicalSOCTier1Agent(managed_model="offline", environment=env)
+    prompt = (
+        "Triage alert CASE-96682: workstation DESKTOP-FIN-08 (10.20.4.15) executed "
+        "d39b7e91c6e85997149aa1514998bd8fd8ac81092708d3aa7da7b09d447f869c."
+    )
+    decision = SocDecision(
+        verdict="MALICIOUS",
+        recommended_actions=["isolate_host"],
+        target_entity="DESKTOP-FIN-08 (10.20.4.15)",
+    )
+
+    # 1. Worker only queried IP or hash, never DESKTOP-FIN-08 by hostname -> does NOT resolve compound string
+    report_unverified = WorkerInvestigationReport(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        target_entities=["10.20.4.15", "d39b7e91c6e85997149aa1514998bd8fd8ac81092708d3aa7da7b09d447f869c"],
+        risk_level="MALICIOUS",
+    )
+    assert supervisor._resolve_target_host(decision, report_unverified, prompt) is None
+
+    # 2. Worker explicitly queried DESKTOP-FIN-08 in Stage A -> resolves compound 'DESKTOP-FIN-08 (10.20.4.15)' cleanly
+    report_verified = WorkerInvestigationReport(
+        classification="MALWARE_HASH",
+        runbook_name="malware_triage.md",
+        target_entities=["DESKTOP-FIN-08", "10.20.4.15", "d39b7e91c6e85997149aa1514998bd8fd8ac81092708d3aa7da7b09d447f869c"],
+        risk_level="MALICIOUS",
+    )
+    assert supervisor._resolve_target_host(decision, report_verified, prompt) == "DESKTOP-FIN-08"
+
+
+
+

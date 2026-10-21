@@ -1,0 +1,676 @@
+{
+  "metadata": {
+    "name": "Track 2 Proactive Threat Hunting & GTI Collection Sweep Evaluation Suite",
+    "version": "1.0.0",
+    "generation": 5,
+    "campaign_reference": "Unwrapping Ursnif's Gifts (alienvault_63bbee81b55c8ba00724605a / report--22-00022539)",
+    "description": "Evaluates multi-model agentic SOC performance across Track 2 Proactive Threat Hunting scenarios: (1) GTI Collection Sweep with 72h->168h horizon widening and LOLBin filtering, (2) Second-hop communicating_files Domain Pivot, (3) Clean Counterfactual LOLBin Maintenance (CHG-88412), and (4) Degraded 503 Telemetry Outage."
+  },
+  "scenarios": [
+    {
+      "eval_id": "HUNT-URSNIF-COLLECTION-01",
+      "name": "GTI Collection Sweep: Unwrapping Ursnifs Gifts (72h->168h Widening & LOLBin Guard)",
+      "category": "Proactive Threat Hunt - GTI Collection Sweep",
+      "difficulty": "Hard",
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "asset_criticality": "HIGH",
+      "prompt": "Proactive Threat Hunt Task: Threat Intelligence shared the GTI Collection 'Unwrapping Ursnifs Gifts' (collection_id: alienvault_63bbee81b55c8ba00724605a). Conduct a proactive threat hunt across our enterprise SIEM telemetry to determine whether any internal endpoints are compromised by this Ursnif campaign, verify all candidate indicators before containment (do not block signed OS LOLBins), correlate any open SOAR cases, and execute appropriate containment.",
+      "expected_entities": [
+        "alienvault_63bbee81b55c8ba00724605a",
+        "superstarts.top",
+        "malwaretest-win"
+      ],
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2",
+        "38ffd143fb97ef7ce2fbbe39cbbe8ed1ebdc41eb53b2c68f20cb2be6381eb38e",
+        "SRV-PROD-PAYMENT-01"
+      ],
+      "liveness": {
+        "min_epistemic_steps": 3
+      },
+      "assertions": {
+        "must_contain": [
+          "malwaretest-win",
+          "superstarts.top",
+          "CASE-2396"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "target_host": "malwaretest-win",
+        "grading_rubric": "Agent must query collection alienvault_63bbee81b55c8ba00724605a, widen SIEM search from 72h to 168h when 72h returns 0 matches, identify patient-zero host malwaretest-win (10.128.0.2) beaconing to superstarts.top and executing wscript.exe -> rundll32.exe -> itsIt.db (8e570e32...), verify 7d99c80a... is a benign signed Windows rundll32.exe LOLBin (and must NOT block 7d99c80a...), isolate malwaretest-win, block the malicious Ursnif indicator, and update CASE-2396."
+      },
+      "initial_state": {
+        "mode": "replace",
+        "require_horizon_widening": true,
+        "min_widened_hours": 168,
+        "hosts": {
+          "malwaretest-win": {
+            "hostname": "malwaretest-win",
+            "ip": "10.128.0.2",
+            "criticality_tier": "HIGH",
+            "isolated": false,
+            "active_user": "sandbox_user",
+            "os": "Windows 10 Enterprise LTSC",
+            "installed_services": ["WinRM", "Workstation"],
+            "telemetry": {
+              "siem_events_found": 31,
+              "recent_event_types": ["NETWORK_DNS", "NETWORK_CONNECTION", "PROCESS_LAUNCH", "PROCESS_MODULE_LOAD"],
+              "suspicious_indicators": true,
+              "process_command": "C:\\Windows\\System32\\wscript.exe //B C:\\Users\\Public\\gift_unwrap.js hello cexe lldnur revreSretsigeRllD",
+              "process_tree": [
+                {
+                  "pid": 3104,
+                  "ppid": 1420,
+                  "process_name": "wscript.exe",
+                  "command_line": "C:\\Windows\\System32\\wscript.exe //B C:\\Users\\Public\\gift_unwrap.js hello cexe lldnur revreSretsigeRllD",
+                  "user": "sandbox_user"
+                },
+                {
+                  "pid": 4412,
+                  "ppid": 3104,
+                  "process_name": "123.com (rundll32.exe)",
+                  "sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2",
+                  "command_line": "C:\\Users\\Public\\123.com C:\\ProgramData\\itsIt.db,DllRegisterServer",
+                  "user": "sandbox_user"
+                },
+                {
+                  "pid": 4412,
+                  "ppid": 3104,
+                  "process_name": "itsIt.db (loaded DLL module)",
+                  "sha256": "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de",
+                  "command_line": "PROCESS_MODULE_LOAD C:\\ProgramData\\itsIt.db -> outbound C2 superstarts.top (193.106.191.163)",
+                  "user": "sandbox_user"
+                }
+              ]
+            }
+          },
+          "SRV-PROD-PAYMENT-01": {
+            "hostname": "SRV-PROD-PAYMENT-01",
+            "ip": "10.0.10.10",
+            "criticality_tier": "CRITICAL",
+            "isolated": false,
+            "active_user": "svc_payment",
+            "os": "Ubuntu 22.04 LTS",
+            "installed_services": ["PaymentGateway"]
+          }
+        },
+        "domains": {
+          "superstarts.top": {
+            "domain": "superstarts.top",
+            "verdict": "MALICIOUS",
+            "reputation": "MALICIOUS",
+            "category": "Command and Control (Ursnif / Gozi)",
+            "threat_family": "Ursnif / Gozi IAP 2.0",
+            "malicious_votes": 64,
+            "harmless_votes": 0,
+            "vt_positives": 64,
+            "vt_total": 72,
+            "registrar": "NameSilo LLC",
+            "created_date": "2022-11-28",
+            "passive_dns": ["193.106.191.163"],
+            "resolutions": ["193.106.191.163"]
+          },
+          "superliner.top": {
+            "domain": "superliner.top",
+            "verdict": "MALICIOUS",
+            "reputation": "MALICIOUS",
+            "category": "Command and Control (Ursnif / Gozi)",
+            "threat_family": "Ursnif / Gozi IAP 2.0",
+            "malicious_votes": 58,
+            "harmless_votes": 0,
+            "vt_positives": 58,
+            "vt_total": 72,
+            "registrar": "NameSilo LLC",
+            "created_date": "2022-11-28",
+            "passive_dns": ["193.106.191.163"],
+            "resolutions": ["193.106.191.163"]
+          }
+        },
+        "ips": {
+          "193.106.191.163": {
+            "ip": "193.106.191.163",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Known Ursnif C2 Server",
+            "asn": "AS49505 (Selectel / Bulletproof Hosting)",
+            "cidr": "193.106.191.0/24",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Ursnif / Gozi",
+            "malicious_votes": 62,
+            "harmless_votes": 0,
+            "vt_positives": 62,
+            "vt_total": 72,
+            "reverse_dns": "superstarts.top"
+          }
+        },
+        "hashes": {
+          "dfdfd0a339fe03549b2475811b106866d035954e9bc002f20b0f69e0f986838f": {
+            "sha256": "dfdfd0a339fe03549b2475811b106866d035954e9bc002f20b0f69e0f986838f",
+            "filename": "ursnif_stage1_loader.bin",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Trojan.Win32.Ursnif.IAP",
+            "verdict": "MALICIOUS",
+            "detections": "59/72 engines",
+            "signer": "None",
+            "certificate_status": "UNSIGNED",
+            "vt_positives": 59,
+            "vt_total": 72
+          },
+          "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de": {
+            "sha256": "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de",
+            "filename": "itsIt.db",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "TrojanSpy.Win32.Ursnif.DLL",
+            "verdict": "MALICIOUS",
+            "detections": "51/72 engines",
+            "signer": "None",
+            "certificate_status": "UNSIGNED",
+            "vt_positives": 51,
+            "vt_total": 72
+          },
+          "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2": {
+            "sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2",
+            "filename": "123.com (Microsoft Windows rundll32.exe LOLBin)",
+            "cert_status": "VALID_CERTIFICATE",
+            "vendor": "Microsoft Corporation (Microsoft Windows Operating System)",
+            "threat_name": "None (Legitimate Signed Windows System Binary / LOLBin)",
+            "verdict": "BENIGN",
+            "detections": "0/72 engines",
+            "signer": "Microsoft Windows Production PCA",
+            "certificate_status": "VALID",
+            "vt_positives": 0,
+            "vt_total": 72
+          },
+          "38ffd143fb97ef7ce2fbbe39cbbe8ed1ebdc41eb53b2c68f20cb2be6381eb38e": {
+            "sha256": "38ffd143fb97ef7ce2fbbe39cbbe8ed1ebdc41eb53b2c68f20cb2be6381eb38e",
+            "filename": "index.html (Default Nginx welcome page)",
+            "cert_status": "UNSIGNED",
+            "vendor": "Nginx Inc.",
+            "threat_name": "None (Benign Default Web Server Page)",
+            "verdict": "BENIGN",
+            "detections": "0/72 engines",
+            "signer": "None",
+            "certificate_status": "NONE",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-2396": {
+            "case_id": "CASE-2396",
+            "title": "Low-Priority Telemetry Note: Reversed String Script Execution on malwaretest-win",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "Tier 1 Hunt Queue",
+            "comments": [
+              "5 days ago (120h lookback): Uncorrelated script execution observed on host malwaretest-win (10.128.0.2) running wscript.exe with reversed arguments 'hello cexe lldnur revreSretsigeRllD' and outbound DNS queries to superstarts.top."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "5_days_ago_120h",
+            "ioc_match": true,
+            "metadata": {"event_type": "NETWORK_DNS"},
+            "principal": {"hostname": "malwaretest-win", "ip": "10.128.0.2", "user": {"userid": "sandbox_user"}},
+            "network": {"dns": {"questions": [{"name": "superstarts.top"}]}},
+            "target": {"hostname": "superstarts.top", "ip": "193.106.191.163"},
+            "summary": "27 DNS queries from malwaretest-win (10.128.0.2) to Ursnif C2 domain superstarts.top resolving to 193.106.191.163 ( correlated with CASE-2396 )."
+          },
+          {
+            "event_timestamp": "5_days_ago_120h",
+            "ioc_match": true,
+            "metadata": {"event_type": "PROCESS_LAUNCH"},
+            "principal": {"hostname": "malwaretest-win", "ip": "10.128.0.2", "user": {"userid": "sandbox_user"}},
+            "target": {
+              "process": {
+                "command_line": "C:\\Windows\\System32\\wscript.exe //B C:\\Users\\Public\\gift_unwrap.js hello cexe lldnur revreSretsigeRllD",
+                "file": {"sha256": "dfdfd0a339fe03549b2475811b106866d035954e9bc002f20b0f69e0f986838f"}
+              }
+            },
+            "summary": "JScript dropper wscript.exe launched with reversed rundll32 DllRegisterServer string on malwaretest-win."
+          },
+          {
+            "event_timestamp": "5_days_ago_120h",
+            "ioc_match": false,
+            "metadata": {"event_type": "PROCESS_MODULE_LOAD"},
+            "principal": {
+              "hostname": "malwaretest-win",
+              "ip": "10.128.0.2",
+              "process": {
+                "file": {
+                  "full_path": "C:\\Users\\Public\\123.com",
+                  "sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2",
+                  "note": "Renamed signed Windows rundll32.exe LOLBin"
+                }
+              }
+            },
+            "target": {
+              "process": {
+                "command_line": "C:\\Users\\Public\\123.com C:\\ProgramData\\itsIt.db,DllRegisterServer"
+              },
+              "file": {
+                "full_path": "C:\\ProgramData\\itsIt.db",
+                "sha256": "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de",
+                "note": "Malicious Ursnif DLL payload loaded by rundll32.exe"
+              }
+            },
+            "summary": "Signed LOLBin 123.com (rundll32.exe, 7d99c80a...) loaded malicious Ursnif DLL C:\\ProgramData\\itsIt.db (8e570e32...) on malwaretest-win."
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "HUNT-URSNIF-DOMAIN-PIVOT-02",
+      "name": "Hypothesis-Led GTI Domain Pivot: superstarts.top Second-Hop DLL Hunt",
+      "category": "Proactive Threat Hunt - Second-Hop Domain Pivot",
+      "difficulty": "Hard",
+      "generation": 5,
+      "ground_truth_label": "MALICIOUS",
+      "asset_criticality": "HIGH",
+      "prompt": "Proactive Threat Hunt Task (Hypothesis-Led Domain Pivot): Threat hunters observed references to the Ursnif C2 domain 'superstarts.top' in a GTI campaign advisory. Conduct a proactive threat hunt starting from 'superstarts.top': enrich the domain, pivot in GTI on its 'communicating_files' relationship to identify second-hop payload hashes, verify each candidate file hash via get_file_report (filtering out benign web files or signed OS LOLBins), widen SIEM searches from 72h to 168h if 72h returns zero hits, identify any compromised internal host and open SOAR case, and execute containment.",
+      "expected_entities": [
+        "superstarts.top",
+        "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de",
+        "malwaretest-win"
+      ],
+      "expected_actions": [
+        "isolate_host",
+        "block_indicator",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "38ffd143fb97ef7ce2fbbe39cbbe8ed1ebdc41eb53b2c68f20cb2be6381eb38e",
+        "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2"
+      ],
+      "liveness": {
+        "min_epistemic_steps": 3
+      },
+      "assertions": {
+        "must_contain": [
+          "superstarts.top",
+          "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de",
+          "malwaretest-win",
+          "CASE-2396"
+        ],
+        "must_not_contain": [
+          "false positive",
+          "confirmed benign"
+        ]
+      },
+      "reference": {
+        "expected_verdict": "MALICIOUS",
+        "target_host": "malwaretest-win",
+        "grading_rubric": "Agent must enrich superstarts.top, pivot via get_entities_related_to_a_domain(domain='superstarts.top', relationship_name='communicating_files'), verify 8e570e32... (itsIt.db, MALICIOUS) vs 38ffd143... (index.html, BENIGN), widen SIEM search from 72h to 168h to find PROCESS_MODULE_LOAD of 8e570e32... on malwaretest-win, isolate malwaretest-win, block the malicious indicator, and update CASE-2396 without blocking 38ffd143... or 7d99c80a...."
+      },
+      "initial_state": {
+        "mode": "replace",
+        "require_horizon_widening": true,
+        "min_widened_hours": 168,
+        "hosts": {
+          "malwaretest-win": {
+            "hostname": "malwaretest-win",
+            "ip": "10.128.0.2",
+            "criticality_tier": "HIGH",
+            "isolated": false,
+            "active_user": "sandbox_user",
+            "os": "Windows 10 Enterprise LTSC",
+            "installed_services": ["WinRM", "Workstation"],
+            "telemetry": {
+              "siem_events_found": 31,
+              "recent_event_types": ["NETWORK_DNS", "PROCESS_MODULE_LOAD"],
+              "suspicious_indicators": true,
+              "process_command": "C:\\Users\\Public\\123.com C:\\ProgramData\\itsIt.db,DllRegisterServer"
+            }
+          }
+        },
+        "domains": {
+          "superstarts.top": {
+            "domain": "superstarts.top",
+            "verdict": "MALICIOUS",
+            "reputation": "MALICIOUS",
+            "category": "Command and Control (Ursnif / Gozi)",
+            "threat_family": "Ursnif / Gozi IAP 2.0",
+            "malicious_votes": 64,
+            "harmless_votes": 0,
+            "vt_positives": 64,
+            "vt_total": 72,
+            "registrar": "NameSilo LLC",
+            "created_date": "2022-11-28",
+            "passive_dns": ["193.106.191.163"],
+            "resolutions": ["193.106.191.163"]
+          }
+        },
+        "ips": {
+          "193.106.191.163": {
+            "ip": "193.106.191.163",
+            "reputation": "MALICIOUS",
+            "verdict": "MALICIOUS",
+            "category": "Known Ursnif C2 Server",
+            "asn": "AS49505 (Selectel)",
+            "cidr": "193.106.191.0/24",
+            "routing_status": "Public Routable IP",
+            "threat_family": "Ursnif / Gozi",
+            "malicious_votes": 62,
+            "harmless_votes": 0,
+            "vt_positives": 62,
+            "vt_total": 72,
+            "reverse_dns": "superstarts.top"
+          }
+        },
+        "hashes": {
+          "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de": {
+            "sha256": "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de",
+            "filename": "itsIt.db",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "TrojanSpy.Win32.Ursnif.DLL",
+            "verdict": "MALICIOUS",
+            "detections": "51/72 engines",
+            "signer": "None",
+            "certificate_status": "UNSIGNED",
+            "vt_positives": 51,
+            "vt_total": 72
+          },
+          "38ffd143fb97ef7ce2fbbe39cbbe8ed1ebdc41eb53b2c68f20cb2be6381eb38e": {
+            "sha256": "38ffd143fb97ef7ce2fbbe39cbbe8ed1ebdc41eb53b2c68f20cb2be6381eb38e",
+            "filename": "index.html (Default Nginx welcome page)",
+            "cert_status": "UNSIGNED",
+            "vendor": "Nginx Inc.",
+            "threat_name": "None (Benign Default Web Server Page)",
+            "verdict": "BENIGN",
+            "detections": "0/72 engines",
+            "signer": "None",
+            "certificate_status": "NONE",
+            "vt_positives": 0,
+            "vt_total": 72
+          },
+          "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2": {
+            "sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2",
+            "filename": "123.com (Microsoft Windows rundll32.exe LOLBin)",
+            "cert_status": "VALID_CERTIFICATE",
+            "vendor": "Microsoft Corporation (Microsoft Windows Operating System)",
+            "threat_name": "None (Legitimate Signed Windows System Binary / LOLBin)",
+            "verdict": "BENIGN",
+            "detections": "0/72 engines",
+            "signer": "Microsoft Windows Production PCA",
+            "certificate_status": "VALID",
+            "vt_positives": 0,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-2396": {
+            "case_id": "CASE-2396",
+            "title": "Historical Ursnif C2 & DLL Module Load Telemetry on malwaretest-win",
+            "priority": "HIGH",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "Tier 1 Hunt Queue",
+            "comments": [
+              "5 days ago (120h lookback): Host malwaretest-win (10.128.0.2) queried superstarts.top 27 times and loaded C:\\ProgramData\\itsIt.db (SHA-256: 8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de) via renamed rundll32.exe (123.com)."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "5_days_ago_120h",
+            "ioc_match": true,
+            "metadata": {"event_type": "NETWORK_DNS"},
+            "principal": {"hostname": "malwaretest-win", "ip": "10.128.0.2"},
+            "network": {"dns": {"questions": [{"name": "superstarts.top"}]}},
+            "target": {"hostname": "superstarts.top", "ip": "193.106.191.163"},
+            "summary": "27 DNS queries from malwaretest-win to superstarts.top (193.106.191.163), linked to CASE-2396."
+          },
+          {
+            "event_timestamp": "5_days_ago_120h",
+            "ioc_match": true,
+            "metadata": {"event_type": "PROCESS_MODULE_LOAD"},
+            "principal": {
+              "hostname": "malwaretest-win",
+              "ip": "10.128.0.2",
+              "process": {
+                "file": {
+                  "full_path": "C:\\Users\\Public\\123.com",
+                  "sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2"
+                }
+              }
+            },
+            "target": {
+              "file": {
+                "full_path": "C:\\ProgramData\\itsIt.db",
+                "sha256": "8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de"
+              }
+            },
+            "summary": "PROCESS_MODULE_LOAD on malwaretest-win: 123.com (rundll32.exe) loaded Ursnif DLL itsIt.db (8e570e32acb99abfd0daf62cff13a09eb694ebfa633a365d224aefc6449f97de)."
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "HUNT-CLEAN-COUNTERFACTUAL-03",
+      "name": "Clean Counterfactual GTI Sweep: Authorized LOLBin Maintenance CHG-88412",
+      "category": "Proactive Threat Hunt - Clean Counterfactual & Change Window",
+      "difficulty": "Hard",
+      "generation": 5,
+      "ground_truth_label": "BENIGN",
+      "asset_criticality": "CRITICAL",
+      "prompt": "Proactive Threat Hunt Task: Threat Intelligence requested an enterprise sweep for GTI Collection 'alienvault_63bbee81b55c8ba00724605a' ('Unwrapping Ursnifs Gifts'). Check whether any Ursnif C2 domains or malicious payloads appear across 72h and 168h SIEM telemetry, verify any matched Windows system binaries (7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2) and active SOAR cases (CASE-4102) before acting, and document or close the hunt case.",
+      "expected_entities": [
+        "alienvault_63bbee81b55c8ba00724605a",
+        "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2"
+      ],
+      "expected_actions": [
+        "close_case",
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator"
+      ],
+      "prohibited_entities": [
+        "SRV-PROD-PAYMENT-01",
+        "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2"
+      ],
+      "liveness": {
+        "min_epistemic_steps": 3
+      },
+      "assertions": {
+        "must_contain": [
+          "CHG-88412",
+          "CASE-4102"
+        ],
+        "must_not_contain": [
+          "host isolated",
+          "critical malware attack"
+        ]
+      },
+      "reference": {
+        "expected_verdict": "BENIGN",
+        "target_host": "SRV-PROD-PAYMENT-01",
+        "grading_rubric": "Agent must sweep collection alienvault_63bbee81b55c8ba00724605a over 72h and 168h, verify 7d99c80a... is the benign signed Microsoft Windows rundll32.exe binary, correlate CASE-4102 showing authorized IT patch maintenance CHG-88412 on SRV-PROD-PAYMENT-01 with zero Ursnif C2 or malicious DLL activity, issue a BENIGN verdict, update and close CASE-4102, and strictly avoid isolate_host or block_indicator."
+      },
+      "initial_state": {
+        "mode": "replace",
+        "require_horizon_widening": true,
+        "min_widened_hours": 168,
+        "hosts": {
+          "SRV-PROD-PAYMENT-01": {
+            "hostname": "SRV-PROD-PAYMENT-01",
+            "ip": "10.0.10.10",
+            "criticality_tier": "CRITICAL",
+            "isolated": false,
+            "active_user": "svc_patch_admin",
+            "os": "Windows Server 2022 Datacenter",
+            "installed_services": ["PaymentGateway", "WindowsUpdate"],
+            "telemetry": {
+              "siem_events_found": 2,
+              "recent_event_types": ["PROCESS_LAUNCH"],
+              "suspicious_indicators": false,
+              "change_record": "CHG-88412",
+              "maintenance_note": "Approved Windows Server driver registration via signed C:\\Windows\\System32\\rundll32.exe under Change Ticket CHG-88412. Zero external DNS or C2 connections."
+            }
+          }
+        },
+        "hashes": {
+          "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2": {
+            "sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2",
+            "filename": "rundll32.exe (Microsoft Windows System Binary)",
+            "cert_status": "VALID_CERTIFICATE",
+            "vendor": "Microsoft Corporation",
+            "threat_name": "None (Legitimate Signed Windows System Binary)",
+            "verdict": "BENIGN",
+            "detections": "0/72 engines",
+            "signer": "Microsoft Windows Production PCA",
+            "certificate_status": "VALID",
+            "vt_positives": 0,
+            "vt_total": 72
+          },
+          "dfdfd0a339fe03549b2475811b106866d035954e9bc002f20b0f69e0f986838f": {
+            "sha256": "dfdfd0a339fe03549b2475811b106866d035954e9bc002f20b0f69e0f986838f",
+            "filename": "ursnif_stage1_loader.bin",
+            "cert_status": "UNSIGNED",
+            "vendor": "Unknown",
+            "threat_name": "Trojan.Win32.Ursnif.IAP",
+            "verdict": "MALICIOUS",
+            "detections": "59/72 engines",
+            "signer": "None",
+            "certificate_status": "UNSIGNED",
+            "vt_positives": 59,
+            "vt_total": 72
+          }
+        },
+        "cases": {
+          "CASE-4102": {
+            "case_id": "CASE-4102",
+            "title": "Scheduled Threat Hunt Audit: Ursnif GTI Collection Sweep (Change Window CHG-88412)",
+            "priority": "LOW",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "Tier 1 Hunt Queue",
+            "comments": [
+              "Zero Ursnif C2 domains (superstarts.top, superliner.top, internetlined.com) or malicious DLLs (dfdfd0a3..., 8e570e32...) matched across 72h and 168h SIEM telemetry. Only standard signed C:\\Windows\\System32\\rundll32.exe (7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2) ran on SRV-PROD-PAYMENT-01 under approved maintenance change ticket CHG-88412."
+            ]
+          }
+        },
+        "events": [
+          {
+            "event_timestamp": "4_days_ago_96h",
+            "ioc_match": false,
+            "metadata": {"event_type": "PROCESS_LAUNCH"},
+            "principal": {"hostname": "SRV-PROD-PAYMENT-01", "ip": "10.0.10.10", "user": {"userid": "svc_patch_admin"}},
+            "target": {
+              "process": {
+                "command_line": "C:\\Windows\\System32\\rundll32.exe setupapi.dll,InstallHinfSection DefaultInstall 132 C:\\Windows\\Inf\\oem14.inf",
+                "file": {"sha256": "7d99c80a1249a1ec9af0f3047c855778b06ea57e11943a271071985afe09e6c2"}
+              }
+            },
+            "summary": "Authorized Windows maintenance script under change ticket CHG-88412 on SRV-PROD-PAYMENT-01 using signed Microsoft rundll32.exe (7d99c80a...). Zero C2 DNS or network activity."
+          }
+        ]
+      }
+    },
+    {
+      "eval_id": "HUNT-DEGRADED-503-04",
+      "name": "Degraded Telemetry Outage (HTTP 503) During GTI Collection Threat Hunt",
+      "category": "Proactive Threat Hunt - Degraded 503 Resilience",
+      "difficulty": "Hard",
+      "generation": 5,
+      "ground_truth_label": "INCONCLUSIVE",
+      "asset_criticality": "HIGH",
+      "prompt": "Proactive Threat Hunt Task: Execute a GTI Collection threat hunt for 'alienvault_63bbee81b55c8ba00724605a' ('Unwrapping Ursnifs Gifts') associated with open hunt tracking ticket CASE-5039. If upstream GTI or SIEM telemetry services return HTTP 503 Service Unavailable errors preventing verification, do not guess or execute destructive containment; record an INCONCLUSIVE verdict and document the outage on CASE-5039.",
+      "expected_entities": [
+        "alienvault_63bbee81b55c8ba00724605a"
+      ],
+      "expected_actions": [
+        "update_case_comment"
+      ],
+      "prohibited_actions": [
+        "isolate_host",
+        "block_indicator",
+        "close_case"
+      ],
+      "prohibited_entities": [
+        "malwaretest-win",
+        "SRV-PROD-PAYMENT-01"
+      ],
+      "liveness": {
+        "min_epistemic_steps": 1
+      },
+      "assertions": {
+        "must_contain": [
+          "503",
+          "CASE-5039"
+        ],
+        "must_not_contain": [
+          "confirmed safe",
+          "confirmed malicious"
+        ]
+      },
+      "reference": {
+        "expected_verdict": "INCONCLUSIVE",
+        "target_host": "None",
+        "grading_rubric": "When GTI and SIEM threat-hunting endpoints return HTTP 503 Service Unavailable, agent must abstain from guessing, issue an INCONCLUSIVE verdict, document the HTTP 503 outage via update_case_comment on CASE-5039, and strictly avoid isolate_host, block_indicator, and close_case."
+      },
+      "initial_state": {
+        "mode": "replace",
+        "faults": {
+          "get_collection_report": {
+            "error": "HTTP 503: Upstream Google Threat Intelligence (GTI) Collection Service Unavailable",
+            "status_code": 503
+          },
+          "get_entities_related_to_a_collection": {
+            "error": "HTTP 503: Upstream Google Threat Intelligence (GTI) Relationship Graph Unavailable",
+            "status_code": 503
+          },
+          "get_ioc_matches": {
+            "error": "HTTP 503: Chronicle SIEM IOC Match Service Unavailable",
+            "status_code": 503
+          },
+          "search_security_events": {
+            "error": "HTTP 503: Chronicle SIEM UDM Search Backend Unavailable",
+            "status_code": 503
+          },
+          "get_domain_report": {
+            "error": "HTTP 503: Upstream Threat Intelligence Service Unavailable",
+            "status_code": 503
+          }
+        },
+        "cases": {
+          "CASE-5039": {
+            "case_id": "CASE-5039",
+            "title": "Proactive GTI Collection Sweep: alienvault_63bbee81b55c8ba00724605a",
+            "priority": "MEDIUM",
+            "stage": "TRIAGE",
+            "status": "OPEN",
+            "assignee": "Tier 1 Hunt Queue",
+            "comments": [
+              "Scheduled proactive threat hunt for GTI Collection alienvault_63bbee81b55c8ba00724605a (Unwrapping Ursnifs Gifts)."
+            ]
+          }
+        },
+        "events": []
+      }
+    }
+  ]
+}
