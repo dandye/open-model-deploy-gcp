@@ -838,6 +838,11 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
                     for s in trajectory
                 )
                 has_outage = any("503" in str(s.get("observation", "")) for s in trajectory)
+                has_soar_check = any(
+                    s.get("tool") == "list_cases"
+                    and s.get("execution_status") == "SUCCESS"
+                    for s in trajectory
+                )
                 if not has_internal_telemetry and not has_outage:
                     final_answer = step_output.strip()
                     current_prompt += (
@@ -845,6 +850,15 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
                         "yet queried internal SIEM or SOAR telemetry (such as get_ioc_matches, search_security_events, "
                         "lookup_entity, or list_cases) to check whether internal hosts are affected. "
                         'Emit a tool call using: Action: <tool_name>(<arg_name>="<value>")\n'
+                    )
+                    continue
+                if has_outage and not has_soar_check:
+                    final_answer = step_output.strip()
+                    current_prompt += (
+                        "\nObservation: Upstream GTI/SIEM tool returned HTTP 503 Service Unavailable, "
+                        "but SOAR case correlation has not been checked yet. Query list_cases once to verify "
+                        "any open threat-hunt tracking case before concluding with INCONCLUSIVE. "
+                        'Emit a tool call using: Action: list_cases(status="OPEN")\n'
                     )
                     continue
 
@@ -1216,6 +1230,30 @@ class SOCSupervisorAgent(GemmaAgent):
                 prohibited_actions_avoided=prohibited_avoided,
             )
 
+        ev_lower_list = [str(e).lower() for e in (worker_report.evidence or [])]
+        has_503_outage = any(
+            "503" in e or "service unavailable" in e or "service_unavailable" in e
+            for e in ev_lower_list
+        )
+        has_corroborated_malicious = any(
+            '"verdict": "malicious"' in e
+            or '"reputation": "malicious"' in e
+            or '"threat_score": 9' in e
+            or '"threat_score": 100' in e
+            for e in ev_lower_list
+        )
+        if has_503_outage and not has_corroborated_malicious and decision.verdict in ("MALICIOUS", "SUSPICIOUS", "BENIGN"):
+            decision = SocDecision(
+                verdict="INCONCLUSIVE",
+                recommended_actions=["update_case_comment"],
+                target_entity=decision.target_entity,
+                rationale=(
+                    decision.rationale
+                    or "Upstream threat intelligence service returned HTTP 503 Service Unavailable; escalating as INCONCLUSIVE without disruptive containment."
+                ),
+                prohibited_actions_avoided=["isolate_host", "block_indicator", "close_case"],
+            )
+
         # Ensure response text contains standard sections and decision block
         final_text = step_output.strip()
         if not ("[Context & Enrichment]" in final_text and "[Analysis & Verdict]" in final_text):
@@ -1351,8 +1389,16 @@ class SOCSupervisorAgent(GemmaAgent):
                 aliases.setdefault(ip_alias, set()).add(hostname)
 
         host_pattern = r"(?:DESKTOP|SRV|GW|WKS|LT|PC|BLD|CI|DEV|FS|BKP|DC|PAY|SCN|APP|PRX|VPN|DB|HR|WEB|MAIL|JUMP|BASTION)-[A-Z0-9]+(?:-[A-Z0-9]+)*"
+        explicit_report_hostnames = {
+            str(item).strip().upper()
+            for item in worker_report.target_entities
+            if re.fullmatch(host_pattern, str(item).strip(), re.IGNORECASE)
+        }
 
-        def _extract_hosts(items: List[str]) -> Set[str]:
+        def _extract_hosts(
+            items: List[str],
+            allow_verified_parenthetical: bool = False,
+        ) -> Set[str]:
             found: Set[str] = set()
             for item in items:
                 cleaned = str(item).strip()
@@ -1362,9 +1408,27 @@ class SOCSupervisorAgent(GemmaAgent):
                     found.update(aliases[cleaned.lower()])
                 elif re.fullmatch(host_pattern, cleaned, re.IGNORECASE):
                     found.add(cleaned.upper())
+                elif allow_verified_parenthetical:
+                    paren_match = re.fullmatch(
+                        rf"({host_pattern})\s*\(([^()]+)\)",
+                        cleaned,
+                        re.IGNORECASE,
+                    )
+                    if paren_match:
+                        h_raw = paren_match.group(1).strip()
+                        inner_raw = paren_match.group(2).strip().lower()
+                        if h_raw.upper() in explicit_report_hostnames:
+                            h_set = aliases.get(h_raw.lower(), {h_raw.upper()})
+                            inner_set = aliases.get(inner_raw, h_set)
+                            if h_set == inner_set:
+                                found.update(h_set)
             return found
 
-        decision_hosts = _extract_hosts([str(decision.target_entity)]) if decision.target_entity else set()
+        decision_hosts = (
+            _extract_hosts([str(decision.target_entity)], allow_verified_parenthetical=True)
+            if decision.target_entity
+            else set()
+        )
         report_hosts = _extract_hosts(list(worker_report.target_entities))
 
         if decision.target_entity:

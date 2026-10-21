@@ -47,8 +47,16 @@ from scripts.verify_harbor_soc import compose_soc_reward
 
 
 DECISIONS_TSV = ROOT_DIR / "decisions.tsv"
-LOG_SH = Path(
-    "/usr/local/google/home/dandye/.gemini/config/plugins/pstack/skills/show-me-your-work/scripts/log.sh"
+LOG_SH = (
+    Path.home()
+    / ".gemini"
+    / "config"
+    / "plugins"
+    / "pstack"
+    / "skills"
+    / "show-me-your-work"
+    / "scripts"
+    / "log.sh"
 )
 
 

@@ -1680,6 +1680,623 @@ def test_context_debt_penalty_rewards_compressed_clean_runbooks():
     ) == pytest.approx(0.016)
 
 
+def test_scoped_reflection_prompt_templates_separate_inv_and_dom():
+    from gepa.strategies.instruction_proposal import InstructionProposalSignature
+    from agent.gepa_runbook_optimizer import (
+        build_domain_reflection_prompt_template,
+        build_invariant_reflection_prompt_template,
+    )
+
+    inv_tmpl = build_invariant_reflection_prompt_template()
+    dom_tmpl = build_domain_reflection_prompt_template()
+
+    InstructionProposalSignature.validate_prompt_template(inv_tmpl)
+    InstructionProposalSignature.validate_prompt_template(dom_tmpl)
+
+    assert "INVARIANT" in inv_tmpl.upper()
+    assert "step-0" in inv_tmpl.lower() or "0 tool calls" in inv_tmpl.lower()
+    assert "DOMAIN" in dom_tmpl.upper()
+    assert "cmdb" in dom_tmpl.lower()
+    assert "168h" in dom_tmpl.lower() or "lolbin" in dom_tmpl.lower()
+
+    from agent.gepa_runbook_optimizer import build_arg_parser
+    help_text = build_arg_parser().format_help()
+    assert "--proposal-mode" in help_text
+    assert "--experience-dir" in help_text
+
+
+def test_harness2_proposer_proposes_probes_and_composes_or_keeps_base(tmp_path: Path):
+    import gepa
+    from agent.gepa_runbook_optimizer import Harness2ProposeProbeComposeProposer
+    from agent.hillclimb_harness import ExperienceEntry, ExperienceLibrary
+
+    comp = "basic_ioc_enrichment.md"
+    base_candidate = {comp: "# Seed IOC\n1. Investigate available evidence and verify scope before acting."}
+    reflective_dataset = {
+        comp: [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate alert"},
+                "Generated Outputs": {"actual_verdict": "MALICIOUS"},
+                "Feedback": "Verify routing scope and step-0 lookup_entity.",
+            }
+        ]
+    }
+    probe_batch = [{"eval_id": "CASE-01", "prompt": "Investigate alert"}]
+
+    lib = ExperienceLibrary(tmp_path / "exp_lib")
+    lib._write_entry(
+        ExperienceEntry(
+            cue="Documentation IP check",
+            lesson="Query get_ip_address_report in Stage B before containment.",
+            evidence="Baseline 0.55 -> Probe 0.92",
+            confidence="high",
+            scope="DOM",
+            component_name=comp,
+            attribution_label="helped",
+            mean_delta=0.37,
+            created_at_utc="2026-10-16T17:00:00Z",
+        )
+    )
+
+    seen_prompts: list[str] = []
+
+    def fake_lm_both_help(prompt: str) -> str:
+        seen_prompts.append(str(prompt))
+        p_upper = str(prompt).upper()
+        if "COMPOSE EDITOR" in p_upper:
+            return "```markdown\n# Composed IOC\n1. Stage A lookup_entity.\n2. Stage B get_ip_address_report.\n```"
+        if "INVARIANT (INV)" in p_upper:
+            return "```markdown\n# INV IOC\n1. Stage A lookup_entity.\n```"
+        return "```markdown\n# DOM IOC\n1. Stage B get_ip_address_report.\n```"
+
+    class FakeProbeAdapter:
+        def __init__(self, score_map):
+            self.score_map = score_map
+
+        def evaluate(self, batch, candidate, capture_traces=False):
+            text = candidate[comp]
+            sc = self.score_map.get(text, 0.50)
+            return gepa.EvaluationBatch(
+                outputs=["ok"],
+                scores=[sc],
+                trajectories=[{"case_id": "CASE-01", "score": sc, "loss_penalty": 1.0, "assert_passed": True}]
+                if capture_traces
+                else None,
+            )
+
+        def get_cached_telemetry(self, candidate, batch=None):
+            return None
+
+    # Scenario A: Both INV and DOM improve -> Composer merges them
+    adapter_both = FakeProbeAdapter({
+        base_candidate[comp]: 0.55,
+        "# INV IOC\n1. Stage A lookup_entity.": 0.80,
+        "# DOM IOC\n1. Stage B get_ip_address_report.": 0.85,
+        "# Composed IOC\n1. Stage A lookup_entity.\n2. Stage B get_ip_address_report.": 0.92,
+    })
+    proposer_both = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm_both_help,
+        probe_adapter=adapter_both,
+        probe_batch=probe_batch,
+        experience_library=lib,
+        seed_candidate=base_candidate,
+    )
+    out_both = proposer_both(base_candidate, reflective_dataset, [comp])
+    assert out_both[comp] == "# Composed IOC\n1. Stage A lookup_entity.\n2. Stage B get_ip_address_report."
+    assert any("Documentation IP check" in p for p in seen_prompts)
+
+    # Scenario B: INV helps (0.85), DOM hurts (0.30) -> Adopts INV without broken DOM
+    adapter_inv_only = FakeProbeAdapter({
+        base_candidate[comp]: 0.55,
+        "# INV IOC\n1. Stage A lookup_entity.": 0.85,
+        "# DOM IOC\n1. Stage B get_ip_address_report.": 0.30,
+    })
+    proposer_inv = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm_both_help,
+        probe_adapter=adapter_inv_only,
+        probe_batch=probe_batch,
+        seed_candidate=base_candidate,
+    )
+    out_inv = proposer_inv(base_candidate, reflective_dataset, [comp])
+    assert out_inv[comp] == "# INV IOC\n1. Stage A lookup_entity."
+
+    # Scenario C: Both INV and DOM regress below baseline (0.80 -> 0.40, 0.35) -> KEEP_BASE
+    adapter_none = FakeProbeAdapter({
+        base_candidate[comp]: 0.80,
+        "# INV IOC\n1. Stage A lookup_entity.": 0.40,
+        "# DOM IOC\n1. Stage B get_ip_address_report.": 0.35,
+    })
+    proposer_none = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm_both_help,
+        probe_adapter=adapter_none,
+        probe_batch=probe_batch,
+        seed_candidate=base_candidate,
+    )
+    out_none = proposer_none(base_candidate, reflective_dataset, [comp])
+    assert out_none[comp] == base_candidate[comp]
+
+
+def test_cli_harness2_mode_records_component_attributions_and_experience_library(optimizer_cli):
+    run, output_dir, seed, optimize, _, _, _ = optimizer_cli
+
+    # Candidate 1 edits one runbook cleanly and improves (helped).
+    # Candidate 2 edits two runbooks together without isolated case mapping (confounded).
+    cand1 = dict(seed)
+    cand1["basic_ioc_enrichment.md"] = "# Improved\n1. Stage A lookup_entity."
+
+    cand2 = dict(seed)
+    cand2["basic_ioc_enrichment.md"] = "# Confounded\n1. Check entity."
+    cand2["malware_triage.md"] = "# Confounded\n1. Check file."
+
+    rc = run(
+        [seed, cand1, cand2],
+        [0.60, 0.92, 0.90],
+        extra=["--proposal-mode", "harness2", "--noise-runs", "0"],
+    )
+    assert rc == 0
+
+    # Verify gepa.optimize received custom_candidate_proposer in harness2 mode
+    opt_kwargs = optimize.call_args.kwargs
+    assert opt_kwargs.get("custom_candidate_proposer") is not None
+
+    ledger_entries = [
+        json.loads(line)
+        for line in (output_dir / "hillclimb_ledger.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(ledger_entries) == 3
+
+    # Entry 1 (cand1): isolated single-component improvement -> helped
+    meta1 = ledger_entries[1]["metadata"]
+    assert meta1["component_attributions"]["basic_ioc_enrichment.md"] == "helped"
+    assert meta1["confounded_components"] == []
+
+    # Entry 2 (cand2): two components changed together -> confounded
+    meta2 = ledger_entries[2]["metadata"]
+    assert meta2["component_attributions"]["basic_ioc_enrichment.md"] == "confounded"
+    assert meta2["component_attributions"]["malware_triage.md"] == "confounded"
+    assert sorted(meta2["confounded_components"]) == [
+        "basic_ioc_enrichment.md",
+        "malware_triage.md",
+    ]
+
+    # Verify EXPERIENCE.md was written from cand1 (helped) and excluded cand2 (confounded)
+    exp_md = output_dir / "EXPERIENCE.md"
+    exp_jsonl = output_dir / "experience_library.jsonl"
+    assert exp_md.exists()
+    assert exp_jsonl.exists()
+    saved_entries = [
+        json.loads(line)
+        for line in exp_jsonl.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(saved_entries) == 1
+    assert saved_entries[0]["component_name"] == "basic_ioc_enrichment.md"
+    assert saved_entries[0]["attribution_label"] == "helped"
+
+
+def test_harness2_proposer_selects_component_scoped_probe_batch():
+    import gepa
+    from agent.gepa_runbook_optimizer import Harness2ProposeProbeComposeProposer
+
+    base_candidate = {
+        "basic_ioc_enrichment.md": "# IOC\n1. Investigate available evidence and verify scope before acting.",
+        "malware_triage.md": "# Malware\n1. Investigate available evidence and verify scope before acting.",
+        "suspicious_login_triage.md": "# Login\n1. Investigate available evidence and verify scope before acting.",
+    }
+    reflective_dataset = {
+        "malware_triage.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate ransomware"},
+                "Generated Outputs": {"actual_verdict": "BENIGN"},
+                "Feedback": "Check file hash reputation in Stage B.",
+            }
+        ],
+        "basic_ioc_enrichment.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate scanner"},
+                "Generated Outputs": {"actual_verdict": "MALICIOUS"},
+                "Feedback": "Check scanner role in Stage A.",
+            }
+        ],
+        "suspicious_login_triage.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate login"},
+                "Generated Outputs": {"actual_verdict": "BENIGN"},
+                "Feedback": "Check travel velocity.",
+            }
+        ],
+    }
+
+    # First 4 cases route to basic_ioc_enrichment.md; next 2 route to malware_triage.md;
+    # none route to suspicious_login_triage.md.
+    probe_batch = [
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-01", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-02", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-03", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-04", "prompt": "Investigate outbound port scan from scanner"},
+        {"eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-01", "prompt": "Investigate ransomware encryption alert"},
+        {"eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-02", "prompt": "Investigate malware payload execution"},
+    ]
+
+    def fake_lm(prompt: str) -> str:
+        p_upper = str(prompt).upper()
+        if "INVARIANT (INV)" in p_upper:
+            return "```markdown\n# INV Updated\n1. Stage A lookup_entity.\n```"
+        if "DOMAIN (DOM)" in p_upper:
+            return "```markdown\n# DOM Updated\n1. Stage B get_file_report.\n```"
+        return "```markdown\n# Composed Updated\n1. Stage A lookup_entity.\n2. Stage B get_file_report.\n```"
+
+    seen_batches: list[list[str]] = []
+
+    class RecordingProbeAdapter:
+        def evaluate(self, batch, candidate, capture_traces=False):
+            eval_ids = [str(c.get("eval_id")) for c in batch]
+            seen_batches.append(eval_ids)
+            is_malware_batch = all("RANSOMWARE" in eid for eid in eval_ids)
+            malware_text = candidate["malware_triage.md"]
+            if is_malware_batch and malware_text != base_candidate["malware_triage.md"]:
+                sc = 0.90
+            else:
+                sc = 0.50
+            return gepa.EvaluationBatch(
+                outputs=["ok" for _ in batch],
+                scores=[sc for _ in batch],
+                trajectories=None,
+            )
+
+        def get_cached_telemetry(self, candidate, batch=None):
+            return None
+
+    proposer = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm,
+        probe_adapter=RecordingProbeAdapter(),
+        probe_batch=probe_batch,
+        probe_limit=2,
+        seed_candidate=base_candidate,
+    )
+
+    # 1. Updating malware_triage.md probes only the 2 matching malware cases (not the first 4 scanner cases)
+    out = proposer(base_candidate, reflective_dataset, ["malware_triage.md"])
+    assert out["malware_triage.md"] != base_candidate["malware_triage.md"]
+    assert seen_batches[0] == [
+        "CASE-GEN5-RANSOMWARE-CRITICAL-01",
+        "CASE-GEN5-RANSOMWARE-CRITICAL-02",
+    ]
+    assert proposer.last_probe_records[-1]["probe_case_ids"] == [
+        "CASE-GEN5-RANSOMWARE-CRITICAL-01",
+        "CASE-GEN5-RANSOMWARE-CRITICAL-02",
+    ]
+
+    # 2. Updating basic_ioc_enrichment.md caps matching cases at probe_limit=2
+    seen_batches.clear()
+    proposer(base_candidate, reflective_dataset, ["basic_ioc_enrichment.md"])
+    assert seen_batches[0] == [
+        "CASE-GEN5-AUTHORIZED-SCANNER-01",
+        "CASE-GEN5-AUTHORIZED-SCANNER-02",
+    ]
+
+    # 3. Updating suspicious_login_triage.md (0 matches) falls back to probe_batch[:probe_limit]
+    seen_batches.clear()
+    proposer(base_candidate, reflective_dataset, ["suspicious_login_triage.md"])
+    assert seen_batches[0] == [
+        "CASE-GEN5-AUTHORIZED-SCANNER-01",
+        "CASE-GEN5-AUTHORIZED-SCANNER-02",
+    ]
+
+
+def test_component_stratified_batch_sampler_and_non_frozen_selector():
+    from types import SimpleNamespace
+    from gepa.core.data_loader import ListDataLoader
+    from agent.gepa_runbook_optimizer import (
+        ComponentStratifiedBatchSampler,
+        NonFrozenRoundRobinSelector,
+        resolve_implicated_runbook,
+    )
+
+    trainset = [
+        {"eval_id": "CASE-GEN5-AUTHORIZED-SCANNER-01", "family_id": "AUTHORIZED-SCANNER", "ground_truth_label": "BENIGN", "prompt": "scanner 1"},
+        {"eval_id": "CASE-GEN5-DUPLICATE-CASE-01", "family_id": "DUPLICATE-CASE", "ground_truth_label": "SUSPICIOUS", "prompt": "duplicate 1"},
+        {"eval_id": "CASE-GEN5-CRYPTOMINER-DEV-01", "family_id": "CRYPTOMINER-DEV", "ground_truth_label": "MALICIOUS", "prompt": "cryptominer malware hash 1"},
+        {"eval_id": "CASE-GEN5-CRYPTOMINER-DEV-02", "family_id": "CRYPTOMINER-DEV", "ground_truth_label": "MALICIOUS", "prompt": "cryptominer malware hash 2"},
+        {"eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-01", "family_id": "RANSOMWARE-CRITICAL", "ground_truth_label": "MALICIOUS", "prompt": "ransomware 1"},
+        {"eval_id": "CASE-GEN5-RANSOMWARE-CRITICAL-02", "family_id": "RANSOMWARE-CRITICAL", "ground_truth_label": "MALICIOUS", "prompt": "ransomware 2"},
+        {"eval_id": "CASE-GEN5-LATERAL-PSEXEC-01", "family_id": "LATERAL-PSEXEC", "ground_truth_label": "MALICIOUS", "prompt": "psexec 1"},
+        {"eval_id": "CASE-GEN5-LATERAL-PSEXEC-02", "family_id": "LATERAL-PSEXEC", "ground_truth_label": "MALICIOUS", "prompt": "psexec 2"},
+        {"eval_id": "CASE-GEN5-LATERAL-PSEXEC-03", "family_id": "LATERAL-PSEXEC", "ground_truth_label": "MALICIOUS", "prompt": "psexec 3"},
+    ]
+    loader = ListDataLoader(trainset)
+    fake_adapter = SimpleNamespace(
+        freeze_passing_runbooks=True,
+        frozen_runbooks={"basic_ioc_enrichment.md", "suspicious_login_triage.md"},
+    )
+    sampler = ComponentStratifiedBatchSampler(
+        minibatch_size=4,
+        adapter=fake_adapter,
+        seed=42,
+        trainset=trainset,
+    )
+    selector = NonFrozenRoundRobinSelector(
+        batch_sampler=sampler,
+        adapter=fake_adapter,
+    )
+
+    candidate = {
+        "basic_ioc_enrichment.md": "# IOC",
+        "malware_triage.md": "# Malware",
+        "suspicious_login_triage.md": "# Login",
+        "lateral_movement_hunt_psexec_wmi.md": "# Lateral",
+    }
+
+    # Iteration 1: targets malware_triage.md (first non-frozen component)
+    state1 = SimpleNamespace(
+        i=1,
+        list_of_named_predictors=list(candidate.keys()),
+        named_predictor_id_to_update_next_for_program_candidate=[0],
+    )
+    batch_ids_1 = sampler.next_minibatch_ids(loader, state1)
+    chosen_1 = selector(state1, [], [1.0] * len(batch_ids_1), 0, candidate)
+    assert chosen_1 == ["malware_triage.md"]
+    assert len(batch_ids_1) == 4
+    batch_items_1 = loader.fetch(batch_ids_1)
+    matched_1 = [c for c in batch_items_1 if resolve_implicated_runbook(c) == "malware_triage.md"]
+    guards_1 = [c for c in batch_items_1 if resolve_implicated_runbook(c) != "malware_triage.md"]
+    assert len(matched_1) == 3
+    assert len(guards_1) == 1
+    # Verify family interleaving includes both CRYPTOMINER-DEV and RANSOMWARE-CRITICAL
+    families_1 = {c["family_id"] for c in matched_1}
+    assert families_1 == {"CRYPTOMINER-DEV", "RANSOMWARE-CRITICAL"}
+
+    # Iteration 2: advances to lateral_movement_hunt_psexec_wmi.md (second non-frozen component)
+    state2 = SimpleNamespace(
+        i=2,
+        list_of_named_predictors=list(candidate.keys()),
+        named_predictor_id_to_update_next_for_program_candidate=[0],
+    )
+    batch_ids_2 = sampler.next_minibatch_ids(loader, state2)
+    chosen_2 = selector(state2, [], [1.0] * len(batch_ids_2), 0, candidate)
+    assert chosen_2 == ["lateral_movement_hunt_psexec_wmi.md"]
+    batch_items_2 = loader.fetch(batch_ids_2)
+    matched_2 = [c for c in batch_items_2 if resolve_implicated_runbook(c) == "lateral_movement_hunt_psexec_wmi.md"]
+    guards_2 = [c for c in batch_items_2 if resolve_implicated_runbook(c) != "lateral_movement_hunt_psexec_wmi.md"]
+    assert len(matched_2) == 3
+    assert len(guards_2) == 1
+
+
+def test_harness2_proposer_rejects_inner_probe_categorical_violation():
+    import gepa
+    from agent.gepa_runbook_optimizer import Harness2ProposeProbeComposeProposer
+
+    base_candidate = {
+        "basic_ioc_enrichment.md": "# IOC\n1. Investigate available evidence and verify scope before acting.",
+    }
+    reflective_dataset = {
+        "basic_ioc_enrichment.md": [
+            {
+                "Inputs": {"case_id": "[CASE_ID_REDACTED]", "prompt": "Investigate C2"},
+                "Generated Outputs": {"actual_verdict": "BENIGN"},
+                "Feedback": "Correlate SOAR cases in Stage A.",
+            }
+        ],
+    }
+    probe_batch = [
+        {"eval_id": "CASE-GEN5-C2-BEACON-01", "prompt": "Investigate C2"},
+        {"eval_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01", "prompt": "Investigate SaaS"},
+    ]
+
+    def fake_lm(prompt: str) -> str:
+        p_upper = str(prompt).upper()
+        if "INVARIANT (INV)" in p_upper:
+            return "```markdown\n# Safe INV\n1. Stage A lookup_entity.\n```"
+        if "DOMAIN (DOM)" in p_upper:
+            return "```markdown\n# Overcontain DOM\n1. Isolate everything.\n```"
+        return "```markdown\n# Composed\n1. Combined.\n```"
+
+    class CategoricalGateProbeAdapter:
+        def evaluate(self, batch, candidate, capture_traces=False):
+            text = candidate["basic_ioc_enrichment.md"]
+            if "Safe INV" in text:
+                scores = [0.95, 0.98]
+                trajs = [
+                    {"case_id": "CASE-GEN5-C2-BEACON-01", "score": 0.95, "tool_calls": 2, "failure_category": "FLAWLESS_CONTAINMENT"},
+                    {"case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01", "score": 0.98, "tool_calls": 2, "failure_category": "FLAWLESS_CONTAINMENT"},
+                ]
+            elif "Overcontain DOM" in text:
+                # Higher mean scalar score (0.975 > 0.965), but triggers OVER_CONTAINMENT_FALSE_ALARM on case 2
+                scores = [1.00, 0.95]
+                trajs = [
+                    {"case_id": "CASE-GEN5-C2-BEACON-01", "score": 1.00, "tool_calls": 2, "failure_category": "FLAWLESS_CONTAINMENT"},
+                    {
+                        "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+                        "score": 0.95,
+                        "tool_calls": 2,
+                        "safety_gate_triggered": True,
+                        "failure_category": "OVER_CONTAINMENT_FALSE_ALARM",
+                    },
+                ]
+            else:
+                scores = [0.85, 0.98]
+                trajs = [
+                    {"case_id": "CASE-GEN5-C2-BEACON-01", "score": 0.85, "tool_calls": 2, "failure_category": "FLAWLESS_CONTAINMENT"},
+                    {"case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01", "score": 0.98, "tool_calls": 2, "failure_category": "FLAWLESS_CONTAINMENT"},
+                ]
+            return gepa.EvaluationBatch(outputs=["ok", "ok"], scores=scores, trajectories=trajs)
+
+        def get_cached_telemetry(self, candidate, batch=None):
+            return None
+
+    proposer = Harness2ProposeProbeComposeProposer(
+        reflection_lm=fake_lm,
+        probe_adapter=CategoricalGateProbeAdapter(),
+        probe_batch=probe_batch,
+        probe_limit=2,
+        seed_candidate=base_candidate,
+    )
+    out = proposer(base_candidate, reflective_dataset, ["basic_ioc_enrichment.md"])
+    # DOM must be rejected (-1.0) due to categorical safety violation; Safe INV is selected
+    assert out["basic_ioc_enrichment.md"] == "# Safe INV\n1. Stage A lookup_entity."
+    assert proposer.last_probe_records[-1]["dom_score"] == -1.0
+    assert proposer.last_probe_records[-1]["selected_scope"] == "INV"
+
+
+def test_cli_harness2_multi_round_warm_starts_from_helped_components(optimizer_cli):
+    from types import SimpleNamespace
+
+    run, output_dir, seed, optimize, _, _, _ = optimizer_cli
+
+    # Round 1: cand1 improves malware_triage.md, cand2 improves lateral_movement_hunt_psexec_wmi.md.
+    cand1 = dict(seed)
+    cand1["malware_triage.md"] = "# Malware Improved\n1. Stage A lookup_entity."
+
+    cand2 = dict(seed)
+    cand2["lateral_movement_hunt_psexec_wmi.md"] = "# Lateral Improved\n1. Stage A lookup_entity."
+
+    # Round 2 warm-starts from the grafted candidate combining both helped components.
+    grafted = dict(seed)
+    grafted["malware_triage.md"] = cand1["malware_triage.md"]
+    grafted["lateral_movement_hunt_psexec_wmi.md"] = cand2["lateral_movement_hunt_psexec_wmi.md"]
+
+    round_calls = []
+
+    def side_effect(**kwargs):
+        round_calls.append(dict(kwargs["seed_candidate"]))
+        if len(round_calls) == 1:
+            return SimpleNamespace(
+                candidates=[seed, cand1, cand2],
+                val_aggregate_scores=[0.80, 0.88, 0.89],
+                val_subscores=[
+                    {"CASE-GEN5-RANSOMWARE-CRITICAL-05": 0.60, "CASE-GEN5-LATERAL-PSEXEC-05": 0.60},
+                    {"CASE-GEN5-RANSOMWARE-CRITICAL-05": 0.95, "CASE-GEN5-LATERAL-PSEXEC-05": 0.60},
+                    {"CASE-GEN5-RANSOMWARE-CRITICAL-05": 0.60, "CASE-GEN5-LATERAL-PSEXEC-05": 0.96},
+                ],
+                best_idx=2,
+            )
+        return SimpleNamespace(
+            candidates=[kwargs["seed_candidate"]],
+            val_aggregate_scores=[0.96],
+            val_subscores=[
+                {"CASE-GEN5-RANSOMWARE-CRITICAL-05": 0.95, "CASE-GEN5-LATERAL-PSEXEC-05": 0.96},
+            ],
+            best_idx=0,
+        )
+
+    optimize.side_effect = side_effect
+    rc = run(
+        [seed],
+        [0.80],
+        extra=["--proposal-mode", "harness2", "--rounds", "2", "--noise-runs", "0"],
+    )
+    assert rc == 0
+    assert len(round_calls) == 2
+    assert round_calls[1]["malware_triage.md"] == cand1["malware_triage.md"]
+    assert round_calls[1]["lateral_movement_hunt_psexec_wmi.md"] == cand2["lateral_movement_hunt_psexec_wmi.md"]
+    assert (output_dir / "malware_triage.md").read_text(encoding="utf-8") == cand1["malware_triage.md"]
+    assert (output_dir / "lateral_movement_hunt_psexec_wmi.md").read_text(encoding="utf-8") == cand2["lateral_movement_hunt_psexec_wmi.md"]
+
+
+def test_gen5_harness2_transfer_helpers():
+    from scripts.eval_gen5_harness2_transfer import (
+        aggregate_arm_metrics,
+        compute_w350_context_debt_penalty,
+        load_arm_runbooks,
+    )
+
+    runbooks, wc = load_arm_runbooks("harness2_k2_evolved")
+    assert set(runbooks.keys()) == {
+        "basic_ioc_enrichment.md",
+        "malware_triage.md",
+        "suspicious_login_triage.md",
+        "lateral_movement_hunt_psexec_wmi.md",
+    }
+    assert wc["malware_triage.md"] <= 350
+    assert wc["lateral_movement_hunt_psexec_wmi.md"] <= 350
+    assert compute_w350_context_debt_penalty(runbooks) == 0.0
+
+    seed_rb, _ = load_arm_runbooks("seed_runbooks")
+    assert compute_w350_context_debt_penalty(seed_rb) == 0.016
+
+    sample_traces = [
+        {
+            "case_id": "CASE-1",
+            "expected_verdict": "MALICIOUS",
+            "actual_verdict": "MALICIOUS",
+            "verdict_exact_match": True,
+            "harbor_reward": 0.98,
+            "score": 0.98,
+            "loss_penalty": 1.0,
+            "implicated_runbook": "malware_triage.md",
+            "decision_outcome": "TRUE_POSITIVE",
+            "criticality": "CRITICAL",
+            "usage": {"prompt_tokens": 1000, "completion_tokens": 200, "total_tokens": 1200},
+            "token_cost_usd": 0.0002,
+            "tool_call_count": 3,
+            "epistemic_step_count": 2,
+            "latency_ms": 1500,
+            "safety_gate_triggered": False,
+            "zero_tool_hesitation": False,
+            "inert": False,
+        },
+        {
+            "case_id": "CASE-2",
+            "expected_verdict": "BENIGN",
+            "actual_verdict": "BENIGN",
+            "verdict_exact_match": True,
+            "harbor_reward": 1.0,
+            "score": 1.0,
+            "loss_penalty": 1.0,
+            "implicated_runbook": "basic_ioc_enrichment.md",
+            "decision_outcome": "TRUE_NEGATIVE",
+            "criticality": "STANDARD",
+            "usage": {"prompt_tokens": 800, "completion_tokens": 150, "total_tokens": 950},
+            "token_cost_usd": 0.0001,
+            "tool_call_count": 3,
+            "epistemic_step_count": 1,
+            "latency_ms": 1200,
+            "safety_gate_triggered": False,
+            "zero_tool_hesitation": False,
+            "inert": False,
+        },
+    ]
+    agg = aggregate_arm_metrics(
+        traces=sample_traces,
+        model="gemini-2.5-flash-lite",
+        arm_name="harness2_k2_evolved",
+        word_counts=wc,
+        context_debt_penalty=0.0,
+    )
+    assert agg["harbor_60_20_20"] == 0.99
+    assert agg["gepa_fitness"] == 0.99
+    assert agg["verdict_accuracy"] == 1.0
+    assert agg["sdt_metrics"]["hits"] == 1
+    assert agg["sdt_metrics"]["correct_rejections"] == 1
+
+
+def test_summarize_runbook_diff_lesson_preserves_bold_and_truncates_cleanly():
+    from agent.gepa_runbook_optimizer import summarize_runbook_diff_lesson
+
+    base_text = "# Malware Triage\n## Workflow Steps\n1. Old step one.\n"
+    new_text = (
+        "# Malware Triage\n"
+        "## Workflow Steps\n"
+        "1. **Get File Reputation:** Call `gti-mcp.get_file_report` with `hash=<file_hash>`.\n"
+        "2. **Check Host & Execution Context:** Call `secops-mcp.lookup_entity` on `<hostname>`.\n"
+    )
+    lesson = summarize_runbook_diff_lesson(
+        component_name="malware_triage.md",
+        base_text=base_text,
+        new_text=new_text,
+        mean_delta=0.0528,
+    )
+    assert "**Get File Reputation:**" in lesson
+    assert "**Check Host & Execution Context:**" in lesson
+    assert lesson.count("`") % 2 == 0
+    assert lesson.count("**") % 2 == 0
+
+
+
+
+
+
 
 
 

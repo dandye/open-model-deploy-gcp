@@ -258,6 +258,13 @@ class TestJustfileRecipes(unittest.TestCase):
         self.assertIn("forbid_mermaid_diagrams=True", content)
         self.assertIn("forbid_interactive_pseudotools=True", content)
 
+    def test_justfile_contains_gepa_evolve_harness2_recipe(self):
+        """gepa-evolve-harness2 recipe exists, appears in the help menu, and passes --proposal-mode harness2."""
+        content = (ROOT_DIR / "Justfile").read_text(encoding="utf-8")
+        self.assertIn("\ngepa-evolve-harness2 ", content, "Recipe 'gepa-evolve-harness2' not defined in Justfile")
+        self.assertIn("just gepa-evolve-harness2", content, "Help menu missing 'just gepa-evolve-harness2'")
+        self.assertIn("--proposal-mode harness2", content)
+
 
 if __name__ == "__main__":
     unittest.main()

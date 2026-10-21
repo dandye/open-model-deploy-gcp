@@ -1,0 +1,73 @@
+{
+  "timestamp_utc": "2026-10-20T06:39:21.379463+00:00",
+  "task_lm": "gemini-2.5-flash-lite",
+  "reflection_lm": "gemini-2.5-pro",
+  "rounds": 2,
+  "baseline_score": 0.899813,
+  "best_score": 0.978,
+  "delta": 0.078187,
+  "promoted": true,
+  "selected_round": 1,
+  "baseline_subscores": {
+    "HUNT-URSNIF-COLLECTION-01": 0.968,
+    "HUNT-URSNIF-DOMAIN-PIVOT-02": 0.95725,
+    "HUNT-CLEAN-COUNTERFACTUAL-03": 0.9465,
+    "HUNT-DEGRADED-503-04": 0.7275
+  },
+  "round_records": [
+    {
+      "round": 1,
+      "val_score": 0.978,
+      "decision": "KEPT",
+      "attribution": "helped",
+      "subscores": {
+        "HUNT-URSNIF-COLLECTION-01": 0.968,
+        "HUNT-URSNIF-DOMAIN-PIVOT-02": 0.968,
+        "HUNT-CLEAN-COUNTERFACTUAL-03": 0.976,
+        "HUNT-DEGRADED-503-04": 1.0
+      }
+    },
+    {
+      "round": 2,
+      "val_score": 0.978,
+      "decision": "KEPT",
+      "attribution": "helped",
+      "subscores": {
+        "HUNT-URSNIF-COLLECTION-01": 0.968,
+        "HUNT-URSNIF-DOMAIN-PIVOT-02": 0.968,
+        "HUNT-CLEAN-COUNTERFACTUAL-03": 0.976,
+        "HUNT-DEGRADED-503-04": 1.0
+      }
+    }
+  ],
+  "probe_records": [
+    {
+      "component_name": "gti_collection_threat_hunt.md",
+      "probe_case_ids": [
+        "HUNT-URSNIF-COLLECTION-01",
+        "HUNT-URSNIF-DOMAIN-PIVOT-02",
+        "HUNT-CLEAN-COUNTERFACTUAL-03",
+        "HUNT-DEGRADED-503-04"
+      ],
+      "base_score": 0.8998125,
+      "inv_score": -1.0,
+      "dom_score": 0.978,
+      "composed_score": null,
+      "selected_scope": "DOM"
+    },
+    {
+      "component_name": "gti_collection_threat_hunt.md",
+      "probe_case_ids": [
+        "HUNT-URSNIF-COLLECTION-01",
+        "HUNT-URSNIF-DOMAIN-PIVOT-02",
+        "HUNT-CLEAN-COUNTERFACTUAL-03",
+        "HUNT-DEGRADED-503-04"
+      ],
+      "base_score": 0.978,
+      "inv_score": 0.972625,
+      "dom_score": 0.968625,
+      "composed_score": null,
+      "selected_scope": "KEEP_BASE"
+    }
+  ]
+}

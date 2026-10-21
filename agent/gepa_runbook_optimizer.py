@@ -29,11 +29,16 @@ try:
     from agent.hillclimb_harness import (
         BudgetExceeded,
         BudgetLedger,
+        ComponentAttribution,
         DEFAULT_COST_STAIRCASE_TIERS,
         DEFAULT_PROTECTED_HARNESS_PATHS,
+        ExperienceEntry,
+        ExperienceLibrary,
+        HARNESS2_ATTRIBUTION_LABELS,
         HarnessIntegrityGuard,
         HarnessTamperError,
         HillclimbLedger,
+        attribute_candidate_edits,
         estimate_model_cost_usd,
         estimate_noise_floor,
         evaluate_candidate_acceptance,
@@ -67,11 +72,16 @@ except ModuleNotFoundError:
     from hillclimb_harness import (
         BudgetExceeded,
         BudgetLedger,
+        ComponentAttribution,
         DEFAULT_COST_STAIRCASE_TIERS,
         DEFAULT_PROTECTED_HARNESS_PATHS,
+        ExperienceEntry,
+        ExperienceLibrary,
+        HARNESS2_ATTRIBUTION_LABELS,
         HarnessIntegrityGuard,
         HarnessTamperError,
         HillclimbLedger,
+        attribute_candidate_edits,
         estimate_model_cost_usd,
         estimate_noise_floor,
         evaluate_candidate_acceptance,
@@ -1090,7 +1100,7 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 elif "MALICIOUS" in trace.get("expected_verdict", "").upper() and "isolate_host" not in executed_actions:
                     feedback_items.append(
                         "Missed containment: Confirmed active malware or C2 activity requires immediate host isolation. "
-                        "The runbook must mandate host isolation for confirmed malicious threats."
+                        "The runbook must mandate querying lookup_entity on the alerted <hostname> in Stage A and executing isolate_host on the single bare <hostname> (without parenthetical IP) in Stage D for confirmed malicious threats."
                     )
                 elif "SUSPICIOUS" in trace.get("expected_verdict", "").upper() and (
                     ("block_indicator" in executed_actions and "block_indicator" not in (trace.get("expected_actions") or []))
@@ -1249,6 +1259,688 @@ def build_reflection_prompt_template() -> str:
         "8. Diagnosis-Guided Surgical Stage Mutation: Modify ONLY the implicated stage indicated in the feedback while preserving all other stages and markdown headings verbatim.\n\n"
         "Provide the complete revised runbook inside ```markdown blocks."
     )
+
+
+def build_invariant_reflection_prompt_template() -> str:
+    """Build INVARIANT (INV) scoped reflection prompt targeting cross-domain agent procedure."""
+    return (
+        "You are the INVARIANT (INV) agent harness editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Your scope is strictly cross-domain agentic workflow, step-0 enrichment gating, tool-call\n"
+        "sequencing, degraded-mode pivot checks, and structural runbook hygiene.\n"
+        "Do NOT invent domain-specific threat intelligence rules; focus on procedural execution.\n\n"
+        "Here is the active runbook component (<curr_param>):\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "Diagnostic trace feedback and prior experience (<side_info>):\n"
+        "```\n"
+        "<side_info>\n"
+        "```\n\n"
+        "INVARIANT (INV) Refinement Rules:\n"
+        "1. Step-0 Epistemic Gate & Host Lookup: Require at least 1 enrichment tool call before any triage verdict (0 tool calls yields 0.0 reward). In Stage A, always query `lookup_entity` using the exact alerted `<hostname>` (not only an IP or hash) to establish asset context. Never allow 'skip all enrichment', 'skip step', or 'proceed directly to step'.\n"
+        "2. 4-Stage Procedural Skeleton: Keep `# <Title>`, `## Objective`, `## Scope`, `## Inputs`, `## Tools`, and `## Workflow Steps` (`Stage A` -> `Stage B` -> `Stage C` -> `Stage D`) in order.\n"
+        "3. Tool Budget, Degraded Mode, & Target Formatting: Gather corroborating evidence in <= 3 epistemic calls. On HTTP 503 / tool unavailability, do not retry the failing endpoint in a loop; pivot once to local lookup_entity. In Stage D, when recommending or executing `isolate_host`, specify only the single canonical `<hostname>` as target entity (never append parenthetical IP addresses).\n"
+        "4. Structural Hygiene: Use `<angle_bracket>` input slots, never `${VAR_NAME}` placeholders, never Mermaid `sequenceDiagram` blocks, and never interactive pseudo-tools (`ask_followup_question`, `attempt_completion`, `write_to_file`).\n"
+        "5. Output Standards: Output only the revised markdown runbook inside ```markdown blocks, with zero emojis.\n"
+    )
+
+
+def build_domain_reflection_prompt_template() -> str:
+    """Build DOMAIN (DOM) scoped reflection prompt targeting SecOps practitioner contracts."""
+    return (
+        "You are the DOMAIN (DOM) SecOps practitioner editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Your scope is strictly cybersecurity triage contracts, CMDB asset blast-radius checks,\n"
+        "network routing classifications, LOLBin vs payload discrimination, SIEM lookback horizons,\n"
+        "and mutually exclusive Stage D verdict/containment rules.\n\n"
+        "Here is the active runbook component (<curr_param>):\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "Diagnostic trace feedback and prior experience (<side_info>):\n"
+        "```\n"
+        "<side_info>\n"
+        "```\n\n"
+        "DOMAIN (DOM) SecOps Practitioner Rules:\n"
+        "1. Stage A CMDB & SOAR Correlation: Query `lookup_entity` on the alerted `<hostname>` for asset role, criticality (`CRITICAL` vs `STANDARD`), and change tickets (`CHG-...`). Query `list_cases` when checking duplicate SOAR incidents.\n"
+        "2. Stage B Network Routing Scope: Classify target IPs/domains as `PUBLIC`, `PRIVATE`, or RFC-5737 documentation space before any containment.\n"
+        "3. Stage C & D Threat Intel, LOLBin Safety, & SIEM Horizon: Check `get_file_report` certificate status to distinguish signed Windows LOLBins (never block signed OS binary hashes) from malicious payloads. When a `72h` SIEM search (`search_security_events`) returns 0 hits on a threat hunt, widen lookback to `168h` (`7d`).\n"
+        "4. Mutually Exclusive Stage D Verdicts:\n"
+        "   - `MALICIOUS`: Corroborated active threat on the alerted asset -> `isolate_host` (passing the bare `<hostname>` alone without parenthetical IP) and/or `block_indicator`.\n"
+        "   - `SUSPICIOUS`: Unverified anomaly -> `update_case_comment` only (never `isolate_host` or `close_case`).\n"
+        "   - `INCONCLUSIVE`: 503 outage after local pivot -> `update_case_comment` only (never contain or close).\n"
+        "   - `BENIGN`: Verified authorized scanner, change ticket `CHG-...`, or documentation IP -> `update_case_comment` + `close_case`.\n"
+        "5. Anti-Memorization & Hygiene: Never hardcode literal IPs, benchmark hostnames, or `CASE-` IDs. Never use `${VAR_NAME}`, Mermaid diagrams, interactive pseudo-tools, or emojis.\n"
+        "Provide the complete revised runbook inside ```markdown blocks.\n"
+    )
+
+
+def _interleave_by_family(cases: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Interleave cases across distinct family_id values when present, preserving relative order."""
+    if len(cases) <= 1 or not any(isinstance(c, Mapping) and c.get("family_id") for c in cases):
+        return list(cases)
+    buckets: Dict[str, List[Dict[str, Any]]] = {}
+    order: List[str] = []
+    for idx, case in enumerate(cases):
+        fam = str(case.get("family_id") or f"_idx_{idx}")
+        if fam not in buckets:
+            buckets[fam] = []
+            order.append(fam)
+        buckets[fam].append(case)
+    if len(order) <= 1:
+        return list(cases)
+    interleaved: List[Dict[str, Any]] = []
+    max_len = max(len(b) for b in buckets.values())
+    for pos in range(max_len):
+        for fam in order:
+            if pos < len(buckets[fam]):
+                interleaved.append(buckets[fam][pos])
+    return interleaved
+
+
+class ComponentStratifiedBatchSampler:
+    """Component-aware GEPA outer minibatch sampler.
+
+    Guarantees that when a target runbook component is scheduled for mutation,
+    the outer GEPA minibatch contains matched cases where
+    resolve_implicated_runbook(case) == target_comp (interleaved across scenario
+    families) plus at least 1 cross-runbook/benign guard case.
+    """
+
+    def __init__(
+        self,
+        minibatch_size: int = 4,
+        adapter: Optional[Any] = None,
+        seed: int = 42,
+        trainset: Optional[Sequence[Any]] = None,
+    ) -> None:
+        self.minibatch_size = max(2, int(minibatch_size))
+        self.adapter = adapter
+        self.seed = int(seed)
+        self.trainset = list(trainset) if trainset is not None else None
+        self.current_target_component: Optional[str] = None
+        self._comp_turn: int = 0
+        self._comp_cursors: Dict[str, int] = {}
+        self._guard_cursor: int = 0
+        self._current_iteration: Optional[int] = None
+
+    def get_active_components(self, all_components: Sequence[str]) -> List[str]:
+        all_list = list(all_components) if all_components else list(CORE_RUNBOOKS)
+        if self.adapter is not None and getattr(self.adapter, "freeze_passing_runbooks", False):
+            frozen = set(getattr(self.adapter, "frozen_runbooks", None) or set())
+            active = [c for c in all_list if c not in frozen]
+            if active:
+                return active
+        return all_list
+
+    def resolve_next_component(self, state: Any) -> str:
+        all_preds = list(getattr(state, "list_of_named_predictors", None) or CORE_RUNBOOKS)
+        active = self.get_active_components(all_preds)
+        iteration = getattr(state, "i", None)
+        if iteration != self._current_iteration or self.current_target_component not in active:
+            self._current_iteration = iteration
+            target_comp = active[self._comp_turn % len(active)]
+            self._comp_turn += 1
+            self.current_target_component = target_comp
+        return self.current_target_component or active[0]
+
+    def next_minibatch_ids(self, loader: Any, state: Any) -> List[Any]:
+        all_ids = list(loader.all_ids())
+        if not all_ids:
+            raise ValueError("Cannot sample a minibatch from an empty loader.")
+        items = loader.fetch(all_ids)
+        target_comp = self.resolve_next_component(state)
+
+        id_item_pairs = list(zip(all_ids, items))
+        matched_pairs = [
+            (did, item)
+            for did, item in id_item_pairs
+            if isinstance(item, Mapping) and resolve_implicated_runbook(item) == target_comp
+        ]
+        guard_pairs = [
+            (did, item)
+            for did, item in id_item_pairs
+            if not (isinstance(item, Mapping) and resolve_implicated_runbook(item) == target_comp)
+        ]
+
+        if not matched_pairs:
+            k = min(len(all_ids), self.minibatch_size)
+            start = (self._guard_cursor) % len(all_ids)
+            self._guard_cursor += k
+            return [all_ids[(start + j) % len(all_ids)] for j in range(k)]
+
+        # Interleave matched cases by family_id so multi-family components (e.g. malware_triage.md)
+        # cover both ransomware and cryptominer cases in every outer minibatch.
+        wrapped_matched = [
+            {"_data_id": did, **(dict(item) if isinstance(item, Mapping) else {})}
+            for did, item in matched_pairs
+        ]
+        ordered_matched_ids = [w["_data_id"] for w in _interleave_by_family(wrapped_matched)]
+
+        # Prioritize benign/duplicate guard families for the cross-runbook safety guard slot.
+        benign_guard_pairs = [
+            (did, item)
+            for did, item in guard_pairs
+            if isinstance(item, Mapping)
+            and (
+                str(item.get("ground_truth_label", "")).upper() in ("BENIGN", "SUSPICIOUS")
+                or any(
+                    tok in str(item.get("eval_id") or item.get("case_id") or "").upper()
+                    for tok in ("DUPLICATE", "BENIGN", "SCANNER", "DOC-IP")
+                )
+            )
+        ]
+        effective_guards = benign_guard_pairs if benign_guard_pairs else guard_pairs
+        wrapped_guards = [
+            {"_data_id": did, **(dict(item) if isinstance(item, Mapping) else {})}
+            for did, item in effective_guards
+        ]
+        ordered_guard_ids = [w["_data_id"] for w in _interleave_by_family(wrapped_guards)]
+
+        target_slots = self.minibatch_size - (1 if ordered_guard_ids else 0)
+        target_slots = max(1, min(target_slots, len(ordered_matched_ids)))
+
+        cursor = self._comp_cursors.get(target_comp, 0)
+        selected_ids: List[Any] = [
+            ordered_matched_ids[(cursor + j) % len(ordered_matched_ids)]
+            for j in range(target_slots)
+        ]
+        self._comp_cursors[target_comp] = cursor + target_slots
+
+        if ordered_guard_ids and len(selected_ids) < self.minibatch_size:
+            guard_id = ordered_guard_ids[self._guard_cursor % len(ordered_guard_ids)]
+            self._guard_cursor += 1
+            if guard_id not in selected_ids:
+                selected_ids.append(guard_id)
+
+        return selected_ids
+
+
+class NonFrozenRoundRobinSelector:
+    """GEPA ReflectionComponentSelector that skips frozen 100%-passing runbooks
+    and synchronizes with ComponentStratifiedBatchSampler.
+    """
+
+    def __init__(
+        self,
+        batch_sampler: Optional[ComponentStratifiedBatchSampler] = None,
+        adapter: Optional[Any] = None,
+    ) -> None:
+        self.batch_sampler = batch_sampler
+        self.adapter = adapter
+
+    def __call__(
+        self,
+        state: Any,
+        trajectories: List[Any],
+        subsample_scores: List[float],
+        candidate_idx: int,
+        candidate: Dict[str, str],
+    ) -> List[str]:
+        all_preds = list(getattr(state, "list_of_named_predictors", None) or list(candidate.keys()))
+        if (
+            self.batch_sampler is not None
+            and self.batch_sampler.current_target_component in candidate
+        ):
+            chosen = self.batch_sampler.current_target_component
+            if hasattr(state, "named_predictor_id_to_update_next_for_program_candidate") and chosen in all_preds:
+                idx = all_preds.index(chosen)
+                state.named_predictor_id_to_update_next_for_program_candidate[candidate_idx] = (
+                    idx + 1
+                ) % len(all_preds)
+            return [chosen]
+
+        frozen = (
+            set(getattr(self.adapter, "frozen_runbooks", None) or set())
+            if (self.adapter is not None and getattr(self.adapter, "freeze_passing_runbooks", False))
+            else set()
+        )
+        active = [p for p in all_preds if p not in frozen] or all_preds
+        pid = 0
+        if hasattr(state, "named_predictor_id_to_update_next_for_program_candidate"):
+            pid = state.named_predictor_id_to_update_next_for_program_candidate[candidate_idx]
+        for offset in range(len(all_preds)):
+            idx = (pid + offset) % len(all_preds)
+            cand_name = all_preds[idx]
+            if cand_name in active:
+                if hasattr(state, "named_predictor_id_to_update_next_for_program_candidate"):
+                    state.named_predictor_id_to_update_next_for_program_candidate[candidate_idx] = (
+                        idx + 1
+                    ) % len(all_preds)
+                return [cand_name]
+        return [active[0]]
+
+
+def build_compose_prompt(
+    component_name: str,
+    base_text: str,
+    inv_text: str,
+    dom_text: str,
+    base_score: Optional[float] = None,
+    inv_score: Optional[float] = None,
+    dom_score: Optional[float] = None,
+) -> str:
+    """Build COMPOSE prompt to merge supported INV and DOM edits or return KEEP_BASE."""
+    score_line = ""
+    if base_score is not None and inv_score is not None and dom_score is not None:
+        score_line = (
+            f"Matched Probe Scores on `{component_name}`: "
+            f"Base={base_score:.4f}, INV={inv_score:.4f}, DOM={dom_score:.4f}.\n\n"
+        )
+    return (
+        "You are the COMPOSE editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Inspect the clean base runbook, the INVARIANT (INV) candidate, and the DOMAIN (DOM) candidate.\n"
+        "Selectively merge the supported, non-conflicting improvements from INV and DOM into one\n"
+        "cohesive runbook. If neither candidate offers a safe improvement over Base, output `KEEP_BASE`.\n\n"
+        f"{score_line}"
+        "### Base Runbook\n"
+        "```markdown\n"
+        f"{base_text}\n"
+        "```\n\n"
+        "### INV Candidate (Workflow & Procedure)\n"
+        "```markdown\n"
+        f"{inv_text}\n"
+        "```\n\n"
+        "### DOM Candidate (SecOps Domain Contracts)\n"
+        "```markdown\n"
+        f"{dom_text}\n"
+        "```\n\n"
+        "COMPOSE Rules:\n"
+        "1. Preserve the 6-section markdown skeleton and 4-stage flow (`Stage A`..`Stage D`).\n"
+        "2. Do not exceed word limits, and never include `${VAR_NAME}`, Mermaid blocks, interactive pseudo-tools, hardcoded IPs/hostnames/CASE IDs, or emojis.\n"
+        "3. Output either `KEEP_BASE` or the merged markdown runbook inside ```markdown blocks.\n"
+    )
+
+
+def _clean_diff_highlight_line(raw_line: str) -> str:
+    """Strip leading markdown list bullets or numbers without breaking bold spans."""
+    cleaned = re.sub(r"^(?:\d+\.|[*+-])\s+", "", raw_line.strip()).strip()
+    return cleaned
+
+
+def _truncate_at_word_boundary(text: str, max_chars: int = 450) -> str:
+    """Truncate text at a word boundary and close any unbalanced markdown tokens."""
+    if len(text) <= max_chars:
+        return text
+    prefix = text[: max_chars - 3]
+    if " " in prefix:
+        prefix = prefix.rsplit(" ", 1)[0]
+    prefix = prefix.rstrip(".,;:")
+    if prefix.count("`") % 2 == 1:
+        prefix += "`"
+    if prefix.count("**") % 2 == 1:
+        prefix += "**"
+    return prefix + "..."
+
+
+def summarize_runbook_diff_lesson(
+    component_name: str,
+    base_text: str,
+    new_text: str,
+    mean_delta: float,
+) -> str:
+    """Synthesize a concise experience lesson from the structural diff between base and evolved runbooks."""
+    base_words = len((base_text or "").split())
+    new_words = len((new_text or "").split())
+    base_lines = {line.strip() for line in (base_text or "").splitlines() if line.strip()}
+    workflow_section = (new_text or "").split("## Workflow Steps", 1)[-1]
+    candidate_lines = [
+        _clean_diff_highlight_line(line)
+        for line in workflow_section.splitlines()
+        if line.strip() and line.strip() not in base_lines and not line.strip().startswith("#")
+    ]
+    candidate_lines = [line for line in candidate_lines if line]
+    if not candidate_lines:
+        candidate_lines = [
+            _clean_diff_highlight_line(line)
+            for line in (new_text or "").splitlines()
+            if line.strip() and line.strip() not in base_lines and not line.strip().startswith("#")
+        ]
+        candidate_lines = [line for line in candidate_lines if line]
+    highlights = _truncate_at_word_boundary("; ".join(candidate_lines[:2]), max_chars=450)
+    word_summary = f"({base_words} -> {new_words} words)"
+    if highlights:
+        return (
+            f"Updated {component_name} {word_summary} lifting validation fitness by "
+            f"{mean_delta:+.4f} with zero regressions: {highlights}"
+        )
+    return (
+        f"Updated {component_name} {word_summary} lifting validation fitness by "
+        f"{mean_delta:+.4f} with zero regressions."
+    )
+
+
+class Harness2ProposeProbeComposeProposer:
+    """Contrastive Propose-Probe-Compose proposer with scoped INV and DOM editors.
+
+    Implements GEPA's ProposalFn contract:
+        (candidate, reflective_dataset, components_to_update) -> dict[str, str]
+    """
+
+    def __init__(
+        self,
+        reflection_lm: Callable[[Union[str, List[Dict[str, Any]]]], str],
+        probe_adapter: Optional[Any] = None,
+        probe_batch: Optional[List[Dict[str, Any]]] = None,
+        probe_limit: int = 4,
+        experience_library: Optional[ExperienceLibrary] = None,
+        seed_candidate: Optional[Dict[str, str]] = None,
+        max_growth_ratio: float = 1.35,
+        forbidden_literals: Optional[Sequence[str]] = None,
+        forbid_template_vars: bool = True,
+        forbid_mermaid_diagrams: bool = True,
+        forbid_interactive_pseudotools: bool = True,
+        max_words: Optional[int] = None,
+        inv_prompt_template: Optional[str] = None,
+        dom_prompt_template: Optional[str] = None,
+    ) -> None:
+        self.reflection_lm = reflection_lm
+        self.probe_adapter = probe_adapter
+        self.probe_batch = list(probe_batch) if probe_batch else None
+        self.probe_limit = max(1, int(probe_limit))
+        self.experience_library = experience_library
+        self.seed_candidate = seed_candidate
+        self.max_growth_ratio = max_growth_ratio
+        self.forbidden_literals = list(forbidden_literals or [])
+        self.forbid_template_vars = bool(forbid_template_vars)
+        self.forbid_mermaid_diagrams = bool(forbid_mermaid_diagrams)
+        self.forbid_interactive_pseudotools = bool(forbid_interactive_pseudotools)
+        self.max_words = max_words
+        self.inv_prompt_template = inv_prompt_template
+        self.dom_prompt_template = dom_prompt_template
+        self.last_probe_records: List[Dict[str, Any]] = []
+
+    def _select_probe_batch(self, comp_name: str) -> List[Dict[str, Any]]:
+        """Selects up to probe_limit cases matching comp_name, interleaved across families."""
+        if not self.probe_batch:
+            return []
+        matched = [
+            c
+            for c in self.probe_batch
+            if isinstance(c, Mapping) and resolve_implicated_runbook(c) == comp_name
+        ]
+        if matched:
+            interleaved = _interleave_by_family(matched)
+            return interleaved[: self.probe_limit]
+        return self.probe_batch[: self.probe_limit]
+
+    def _enrich_dataset_with_experience(
+        self,
+        comp_name: str,
+        records: Sequence[Mapping[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        enriched = [dict(r) for r in records]
+        if self.experience_library is None:
+            return enriched
+        lessons = self.experience_library.retrieve_for_component(comp_name, limit=3)
+        if not lessons:
+            return enriched
+        exp_lines = [
+            f"- [{entry.scope}] {entry.cue}: {entry.lesson} (delta={entry.mean_delta:+.3f})"
+            for entry in lessons
+        ]
+        exp_block = "\n".join(exp_lines)
+        if enriched:
+            first = dict(enriched[0])
+            first["Prior Experience (R_t)"] = exp_block
+            enriched[0] = first
+        else:
+            enriched.append({"Prior Experience (R_t)": exp_block})
+        return enriched
+
+    def _validate_component_candidate(
+        self,
+        candidate: Dict[str, str],
+        comp_name: str,
+        new_text: str,
+    ) -> bool:
+        if not new_text or "KEEP_BASE" in new_text:
+            return False
+        trial = dict(candidate)
+        trial[comp_name] = new_text
+        ok, _ = validate_runbook_candidate(
+            {comp_name: new_text},
+            seed_candidate=self.seed_candidate,
+            max_growth_ratio=self.max_growth_ratio,
+            forbidden_literals=self.forbidden_literals,
+            forbid_template_vars=self.forbid_template_vars,
+            forbid_mermaid_diagrams=self.forbid_mermaid_diagrams,
+            forbid_interactive_pseudotools=self.forbid_interactive_pseudotools,
+            max_words=self.max_words,
+        )
+        return ok
+
+    def _probe_eval(
+        self,
+        cand: Dict[str, str],
+        batch: List[Dict[str, Any]],
+    ) -> Tuple[Optional[Dict[str, float]], Optional[Dict[str, Dict[str, Any]]]]:
+        if self.probe_adapter is None or not batch:
+            return None, None
+        case_keys = [
+            str(c.get("eval_id") or c.get("case_id") or c.get("id") or f"probe-{i}")
+            for i, c in enumerate(batch)
+        ]
+        cached_fn = getattr(self.probe_adapter, "get_cached_telemetry", None)
+        if callable(cached_fn):
+            cached = cached_fn(cand, batch)
+            if isinstance(cached, Mapping) and len(cached) == len(batch):
+                scores_map: Dict[str, float] = {}
+                tel_map: Dict[str, Dict[str, Any]] = {}
+                for idx, (k, v) in enumerate(cached.items()):
+                    if isinstance(v, Mapping) and isinstance(v.get("score"), (int, float)):
+                        ck = str(k) if str(k) in case_keys else case_keys[idx]
+                        scores_map[ck] = float(v["score"])
+                        tel_map[ck] = dict(v)
+                if len(scores_map) == len(batch):
+                    return scores_map, tel_map
+
+        try:
+            batch_res = self.probe_adapter.evaluate(batch, cand, capture_traces=True)
+        except TypeError:
+            batch_res = self.probe_adapter.evaluate(batch, cand)
+        raw_scores = list(getattr(batch_res, "scores", None) or [])
+        if not raw_scores:
+            return {ck: 0.0 for ck in case_keys}, None
+        scores_map = {
+            case_keys[i]: float(raw_scores[i])
+            for i in range(min(len(case_keys), len(raw_scores)))
+        }
+        trajs = getattr(batch_res, "trajectories", None)
+        tel_map_out: Optional[Dict[str, Dict[str, Any]]] = None
+        if isinstance(trajs, list) and len(trajs) == len(scores_map) and all(isinstance(t, Mapping) for t in trajs):
+            tel_map_out = {
+                case_keys[i]: dict(trajs[i])
+                for i in range(len(scores_map))
+            }
+        return scores_map, tel_map_out
+
+    def _probe_score(
+        self,
+        cand: Dict[str, str],
+        batch: Optional[List[Dict[str, Any]]] = None,
+        base_cand: Optional[Dict[str, str]] = None,
+    ) -> Optional[float]:
+        active_batch = (
+            batch
+            if batch is not None
+            else (self.probe_batch[: self.probe_limit] if self.probe_batch else [])
+        )
+        if self.probe_adapter is None or not active_batch:
+            return None
+        cand_scores, cand_tel = self._probe_eval(cand, active_batch)
+        if not cand_scores:
+            return 0.0
+        if base_cand is not None:
+            base_scores, base_tel = self._probe_eval(base_cand, active_batch)
+            if base_scores:
+                acc = evaluate_candidate_acceptance(
+                    baseline_scores=base_scores,
+                    candidate_scores=cand_scores,
+                    tau_accept=0.0,
+                    baseline_telemetry=base_tel,
+                    candidate_telemetry=cand_tel,
+                )
+                if acc.status in (
+                    "REVERTED_CATEGORICAL_ZERO_TOOLS",
+                    "REVERTED_CATEGORICAL_INERT",
+                    "REVERTED_CATEGORICAL_SAFETY",
+                    "REVERTED_CATEGORICAL_TAXONOMY",
+                    "REVERTED_REGRESSION",
+                ):
+                    return -1.0
+        vals = list(cand_scores.values())
+        return sum(vals) / len(vals)
+
+    def __call__(
+        self,
+        candidate: Dict[str, str],
+        reflective_dataset: Mapping[str, Sequence[Mapping[str, Any]]],
+        components_to_update: List[str],
+    ) -> Dict[str, str]:
+        from gepa.strategies.instruction_proposal import InstructionProposalSignature
+
+        proposed: Dict[str, str] = {}
+        inv_tmpl = self.inv_prompt_template or build_invariant_reflection_prompt_template()
+        dom_tmpl = self.dom_prompt_template or build_domain_reflection_prompt_template()
+
+        for comp_name in components_to_update:
+            base_text = candidate.get(comp_name, "")
+            raw_records = reflective_dataset.get(comp_name) or []
+            if not raw_records and self.experience_library is None:
+                proposed[comp_name] = base_text
+                continue
+
+            enriched_records = self._enrich_dataset_with_experience(comp_name, raw_records)
+            if not enriched_records:
+                proposed[comp_name] = base_text
+                continue
+
+            # 1. Propose INV and DOM candidates
+            inv_prompt = InstructionProposalSignature.prompt_renderer({
+                "current_instruction_doc": base_text,
+                "dataset_with_feedback": enriched_records,
+                "prompt_template": inv_tmpl,
+            })
+            dom_prompt = InstructionProposalSignature.prompt_renderer({
+                "current_instruction_doc": base_text,
+                "dataset_with_feedback": enriched_records,
+                "prompt_template": dom_tmpl,
+            })
+
+            inv_raw = self.reflection_lm(inv_prompt)
+            dom_raw = self.reflection_lm(dom_prompt)
+
+            inv_text = InstructionProposalSignature.output_extractor(str(inv_raw))["new_instruction"]
+            dom_text = InstructionProposalSignature.output_extractor(str(dom_raw))["new_instruction"]
+
+            inv_valid = self._validate_component_candidate(candidate, comp_name, inv_text)
+            dom_valid = self._validate_component_candidate(candidate, comp_name, dom_text)
+
+            # 2. Probe under matched container/sandbox settings (when probe_adapter is wired)
+            comp_probe_batch = self._select_probe_batch(comp_name)
+            if self.probe_adapter is not None and comp_probe_batch:
+                base_score = self._probe_score(candidate, batch=comp_probe_batch) or 0.0
+                inv_score = (
+                    self._probe_score(
+                        {**candidate, comp_name: inv_text},
+                        batch=comp_probe_batch,
+                        base_cand=candidate,
+                    )
+                    if inv_valid
+                    else -1.0
+                )
+                dom_score = (
+                    self._probe_score(
+                        {**candidate, comp_name: dom_text},
+                        batch=comp_probe_batch,
+                        base_cand=candidate,
+                    )
+                    if dom_valid
+                    else -1.0
+                )
+                inv_helps = inv_valid and (inv_score is not None) and (inv_score > base_score + 1e-6)
+                dom_helps = dom_valid and (dom_score is not None) and (dom_score > base_score + 1e-6)
+
+                selected_scope = "KEEP_BASE"
+                selected_text = base_text
+                composed_score: Optional[float] = None
+
+                if inv_helps and dom_helps:
+                    comp_prompt = build_compose_prompt(
+                        component_name=comp_name,
+                        base_text=base_text,
+                        inv_text=inv_text,
+                        dom_text=dom_text,
+                        base_score=base_score,
+                        inv_score=inv_score,
+                        dom_score=dom_score,
+                    )
+                    comp_raw = str(self.reflection_lm(comp_prompt))
+                    if "KEEP_BASE" not in comp_raw:
+                        comp_text = InstructionProposalSignature.output_extractor(comp_raw)["new_instruction"]
+                        if self._validate_component_candidate(candidate, comp_name, comp_text):
+                            composed_score = self._probe_score(
+                                {**candidate, comp_name: comp_text},
+                                batch=comp_probe_batch,
+                                base_cand=candidate,
+                            )
+                            if composed_score is not None and composed_score >= max(inv_score, dom_score) - 1e-6:
+                                selected_text = comp_text
+                                selected_scope = "COMPOSED"
+                    if selected_scope == "KEEP_BASE":
+                        if (inv_score or 0.0) >= (dom_score or 0.0):
+                            selected_text = inv_text
+                            selected_scope = "INV"
+                        else:
+                            selected_text = dom_text
+                            selected_scope = "DOM"
+                elif inv_helps:
+                    selected_text = inv_text
+                    selected_scope = "INV"
+                elif dom_helps:
+                    selected_text = dom_text
+                    selected_scope = "DOM"
+
+                self.last_probe_records.append({
+                    "component_name": comp_name,
+                    "probe_case_ids": [
+                        str(c.get("eval_id") or c.get("case_id") or idx)
+                        for idx, c in enumerate(comp_probe_batch)
+                    ],
+                    "base_score": base_score,
+                    "inv_score": inv_score,
+                    "dom_score": dom_score,
+                    "composed_score": composed_score,
+                    "selected_scope": selected_scope,
+                })
+                proposed[comp_name] = selected_text
+                continue
+
+            # 3. Verifier-free / un-probed fallback composition
+            if inv_valid and dom_valid:
+                comp_prompt = build_compose_prompt(
+                    component_name=comp_name,
+                    base_text=base_text,
+                    inv_text=inv_text,
+                    dom_text=dom_text,
+                )
+                comp_raw = str(self.reflection_lm(comp_prompt))
+                if "KEEP_BASE" in comp_raw:
+                    proposed[comp_name] = base_text
+                    continue
+                comp_text = InstructionProposalSignature.output_extractor(comp_raw)["new_instruction"]
+                if self._validate_component_candidate(candidate, comp_name, comp_text):
+                    proposed[comp_name] = comp_text
+                else:
+                    proposed[comp_name] = inv_text
+            elif inv_valid:
+                proposed[comp_name] = inv_text
+            elif dom_valid:
+                proposed[comp_name] = dom_text
+            else:
+                proposed[comp_name] = base_text
+
+        return proposed
 
 def build_arg_parser() -> argparse.ArgumentParser:
     """Build command-line argument parser for GEPA runbook optimization.
@@ -1424,7 +2116,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--freeze-passing-runbooks",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Freeze runbooks that have 100% pass rate in the baseline.",
+        help="Freeze runbooks that have 100%% pass rate in the baseline.",
     )
     parser.add_argument(
         "--max-words",
@@ -1455,6 +2147,24 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help="Hard USD budget ceiling enforced via BudgetLedger across the optimization run.",
+    )
+    parser.add_argument(
+        "--proposal-mode",
+        choices=["single", "harness2"],
+        default="single",
+        help="Reflection proposal mode: 'single' (default GEPA) or 'harness2' (scoped INV/DOM Propose-Probe-Compose).",
+    )
+    parser.add_argument(
+        "--experience-dir",
+        type=str,
+        default=None,
+        help="Directory for EXPERIENCE.md and experience_library.jsonl (defaults to --output-dir when --proposal-mode=harness2).",
+    )
+    parser.add_argument(
+        "--rounds",
+        type=int,
+        default=1,
+        help="Number of outer recursive Harness^2 optimization rounds (default: 1).",
     )
     return parser
 
@@ -1708,38 +2418,16 @@ def main(args: Optional[List[str]] = None) -> int:
 
     reflection_prompt_template = build_reflection_prompt_template()
 
-    effective_max_metric_calls = int(parsed_args.max_metric_calls)
-    if effective_max_metric_calls <= len(valset):
-        effective_max_metric_calls = len(valset) + 4 * max(1, effective_max_metric_calls)
-
-    print(
-        f"Starting GEPA optimization (max_metric_calls={effective_max_metric_calls} "
-        f"[requested={parsed_args.max_metric_calls}], seed={parsed_args.seed})..."
-    )
-    result = gepa.optimize(
-        seed_candidate=seed_candidate,
-        trainset=trainset,
-        valset=valset,
-        adapter=adapter,
-        reflection_lm=reflection_lm,
-        max_metric_calls=effective_max_metric_calls,
-        reflection_prompt_template=reflection_prompt_template,
-        candidate_selection_strategy="pareto",
-        seed=parsed_args.seed,
-    )
-
-    # GEPA scores align with candidate indices; best_idx can refer to a candidate
-    # rejected by our anti-memorization validation. Rank only valid candidates.
-    candidates = result.candidates
-    scores = result.val_aggregate_scores
-    if len(candidates) != len(scores):
-        print("GEPA returned mismatched candidate and validation score counts.", file=sys.stderr)
-        return 1
-
-    for index, score in enumerate(scores):
-        if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
-            print(f"GEPA returned an invalid validation score for candidate {index}.", file=sys.stderr)
-            return 1
+    experience_library: Optional[ExperienceLibrary] = None
+    if parsed_args.proposal_mode == "harness2" or parsed_args.experience_dir:
+        exp_dir = (
+            Path(parsed_args.experience_dir)
+            if parsed_args.experience_dir
+            else output_dir
+        )
+        if not exp_dir.is_absolute():
+            exp_dir = ROOT_DIR / exp_dir
+        experience_library = ExperienceLibrary(exp_dir)
 
     def _case_key(idx: int) -> str:
         if 0 <= idx < len(valset):
@@ -1773,47 +2461,15 @@ def main(args: Optional[List[str]] = None) -> int:
             return cached
         return None
 
-    ledger = HillclimbLedger(output_dir / "hillclimb_ledger.jsonl")
-    composite_sha = harness_guard.compute_composite_sha256()
-    val_subscores = getattr(result, "val_subscores", None) or []
-
-    baseline_subscores: Optional[Dict[str, float]] = None
-    baseline_telemetry: Optional[Dict[str, Dict[str, Any]]] = None
     seed_frozen_runbooks = set()
     seed_aqua_report: Optional[AquaDiagnosticReport] = None
-
-    base_traces: Optional[List[Dict[str, Any]]] = None
-    if first_noise_batch is not None and isinstance(getattr(first_noise_batch, "trajectories", None), list) and first_noise_batch.trajectories:
-        base_traces = list(first_noise_batch.trajectories)
-    else:
-        cached_seed_tel = _get_valid_cached_telemetry(seed_candidate)
-        if cached_seed_tel is not None:
-            base_traces = list(cached_seed_tel.values())
-
-    if len(val_subscores) > 0 and isinstance(val_subscores[0], dict) and val_subscores[0]:
-        baseline_subscores = _normalize_subscores_dict(val_subscores[0])
-        if base_traces is None and first_noise_batch is None:
-            base_batch = adapter.evaluate(valset, seed_candidate, capture_traces=True)
-            if isinstance(getattr(base_batch, "trajectories", None), list) and base_batch.trajectories:
-                base_traces = list(base_batch.trajectories)
-    elif first_noise_batch is not None and isinstance(getattr(first_noise_batch, "scores", None), list) and len(first_noise_batch.scores) == len(valset):
-        baseline_subscores = {_case_key(i): float(sc) for i, sc in enumerate(first_noise_batch.scores)}
-    else:
-        base_batch = adapter.evaluate(valset, seed_candidate, capture_traces=True)
-        scores_list = getattr(base_batch, "scores", None)
-        if isinstance(scores_list, list) and len(scores_list) == len(valset) and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in scores_list):
-            baseline_subscores = {_case_key(i): float(sc) for i, sc in enumerate(scores_list)}
-            if isinstance(getattr(base_batch, "trajectories", None), list) and base_batch.trajectories:
-                base_traces = list(base_batch.trajectories)
-        else:
-            baseline_subscores = {_case_key(i): float(scores[0] if scores else 0.0) for i in range(len(valset))}
-
-    if base_traces:
-        baseline_telemetry = {
-            str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(base_traces)
-        }
+    if (
+        first_noise_batch is not None
+        and isinstance(getattr(first_noise_batch, "trajectories", None), list)
+        and first_noise_batch.trajectories
+    ):
         seed_aqua_report = cluster_trace_diagnoses(
-            base_traces,
+            list(first_noise_batch.trajectories),
             all_runbooks=list(seed_candidate.keys()),
             forbidden_literals=forbidden_literals,
         )
@@ -1821,121 +2477,375 @@ def main(args: Optional[List[str]] = None) -> int:
         if parsed_args.freeze_passing_runbooks and hasattr(adapter, "lock_frozen_runbooks"):
             adapter.lock_frozen_runbooks(seed_frozen_runbooks)
 
-    valid_count = 0
-    selected_index: Optional[int] = None
-    selected_score: Optional[float] = None
-    for index, (candidate, score) in enumerate(zip(candidates, scores)):
-        if not isinstance(candidate, dict) or not candidate or not all(
-            isinstance(name, str) and isinstance(text, str)
-            for name, text in candidate.items()
-        ):
-            continue
-
-        if index > 0 and parsed_args.freeze_passing_runbooks and seed_frozen_runbooks:
-            candidate = enforce_frozen_runbooks(candidate, seed_candidate, seed_frozen_runbooks)
-            candidates[index] = candidate
-
-        is_valid, violations = validate_runbook_candidate(
-            candidate,
+    custom_proposer: Optional[Harness2ProposeProbeComposeProposer] = None
+    stratified_sampler: Optional[ComponentStratifiedBatchSampler] = None
+    component_selector: Optional[NonFrozenRoundRobinSelector] = None
+    if parsed_args.proposal_mode == "harness2":
+        custom_proposer = Harness2ProposeProbeComposeProposer(
+            reflection_lm=reflection_lm,
+            probe_adapter=adapter,
+            probe_batch=trainset if trainset else None,
+            probe_limit=4,
+            experience_library=experience_library,
             seed_candidate=seed_candidate,
             max_growth_ratio=parsed_args.max_growth_ratio,
             forbidden_literals=forbidden_literals,
-            forbid_template_vars=parsed_args.forbid_template_vars if index > 0 else False,
-            forbid_mermaid_diagrams=parsed_args.forbid_mermaid if index > 0 else False,
-            forbid_interactive_pseudotools=parsed_args.forbid_pseudotools if index > 0 else False,
-            max_words=parsed_args.max_words if index > 0 else None,
+            forbid_template_vars=parsed_args.forbid_template_vars,
+            forbid_mermaid_diagrams=parsed_args.forbid_mermaid,
+            forbid_interactive_pseudotools=parsed_args.forbid_pseudotools,
+            max_words=parsed_args.max_words,
         )
+        if trainset:
+            stratified_sampler = ComponentStratifiedBatchSampler(
+                minibatch_size=min(4, len(trainset)),
+                adapter=adapter,
+                seed=parsed_args.seed,
+                trainset=trainset,
+            )
+            component_selector = NonFrozenRoundRobinSelector(
+                adapter=adapter,
+                batch_sampler=stratified_sampler,
+            )
 
-        if index == 0:
-            if is_valid:
-                selected_index = 0
-                selected_score = float(score)
-                valid_count += 1
+    effective_max_metric_calls = int(parsed_args.max_metric_calls)
+    if effective_max_metric_calls <= len(valset):
+        effective_max_metric_calls = len(valset) + 4 * max(1, effective_max_metric_calls)
+
+    num_rounds = max(1, int(getattr(parsed_args, "rounds", 1) or 1))
+    ledger = HillclimbLedger(output_dir / "hillclimb_ledger.jsonl")
+    composite_sha = harness_guard.compute_composite_sha256()
+
+    baseline_subscores: Optional[Dict[str, float]] = None
+    baseline_telemetry: Optional[Dict[str, Dict[str, Any]]] = None
+    base_traces: Optional[List[Dict[str, Any]]] = None
+    if (
+        first_noise_batch is not None
+        and isinstance(getattr(first_noise_batch, "trajectories", None), list)
+        and first_noise_batch.trajectories
+    ):
+        base_traces = list(first_noise_batch.trajectories)
+
+    valid_count = 0
+    selected_index: Optional[int] = None
+    selected_score: Optional[float] = None
+    all_candidates: List[Dict[str, str]] = []
+    best_helped_components: Dict[str, Tuple[float, str]] = {}
+    round_summaries: List[Dict[str, Any]] = []
+
+    for round_idx in range(num_rounds):
+        if round_idx == 0:
+            round_seed_candidate = dict(seed_candidate)
+        else:
+            current_best = (
+                dict(seed_candidate)
+                if selected_index in (None, 0) or selected_index >= len(all_candidates)
+                else dict(all_candidates[selected_index])
+            )
+            for comp_name, (_delta, comp_text) in best_helped_components.items():
+                if not (parsed_args.freeze_passing_runbooks and comp_name in seed_frozen_runbooks):
+                    current_best[comp_name] = comp_text
+            if parsed_args.freeze_passing_runbooks and seed_frozen_runbooks:
+                current_best = enforce_frozen_runbooks(
+                    current_best, seed_candidate, seed_frozen_runbooks
+                )
+            round_seed_candidate = current_best
+
+        print(
+            f"Starting GEPA optimization (round={round_idx + 1}/{num_rounds}, mode={parsed_args.proposal_mode}, "
+            f"max_metric_calls={effective_max_metric_calls} [requested={parsed_args.max_metric_calls}], "
+            f"seed={parsed_args.seed + round_idx})..."
+        )
+        optimize_kwargs: Dict[str, Any] = {
+            "seed_candidate": round_seed_candidate,
+            "trainset": trainset,
+            "valset": valset,
+            "adapter": adapter,
+            "reflection_lm": reflection_lm,
+            "max_metric_calls": effective_max_metric_calls,
+            "reflection_prompt_template": reflection_prompt_template,
+            "candidate_selection_strategy": "pareto",
+            "seed": parsed_args.seed + round_idx,
+        }
+        if custom_proposer is not None:
+            optimize_kwargs["custom_candidate_proposer"] = custom_proposer
+        if stratified_sampler is not None:
+            optimize_kwargs["batch_sampler"] = stratified_sampler
+        if component_selector is not None:
+            optimize_kwargs["module_selector"] = component_selector
+
+        try:
+            result = gepa.optimize(**optimize_kwargs)
+        except TypeError:
+            # Fallback if a mock/older gepa.optimize does not accept batch_sampler/module_selector
+            fallback_kwargs = {
+                k: v
+                for k, v in optimize_kwargs.items()
+                if k not in ("batch_sampler", "module_selector")
+            }
+            result = gepa.optimize(**fallback_kwargs)
+
+        # GEPA scores align with candidate indices; best_idx can refer to a candidate
+        # rejected by our anti-memorization validation. Rank only valid candidates.
+        candidates = list(result.candidates)
+        scores = list(result.val_aggregate_scores)
+        if len(candidates) != len(scores):
+            print("GEPA returned mismatched candidate and validation score counts.", file=sys.stderr)
+            return 1
+
+        for index, score in enumerate(scores):
+            if isinstance(score, bool) or not isinstance(score, (int, float)) or not math.isfinite(score):
+                print(f"GEPA returned an invalid validation score for candidate {index}.", file=sys.stderr)
+                return 1
+
+        val_subscores = getattr(result, "val_subscores", None) or []
+
+        if round_idx == 0:
+            if base_traces is None:
+                cached_seed_tel = _get_valid_cached_telemetry(seed_candidate)
+                if cached_seed_tel is not None:
+                    base_traces = list(cached_seed_tel.values())
+
+            if len(val_subscores) > 0 and isinstance(val_subscores[0], dict) and val_subscores[0]:
+                baseline_subscores = _normalize_subscores_dict(val_subscores[0])
+                if base_traces is None and first_noise_batch is None:
+                    base_batch = adapter.evaluate(valset, seed_candidate, capture_traces=True)
+                    if isinstance(getattr(base_batch, "trajectories", None), list) and base_batch.trajectories:
+                        base_traces = list(base_batch.trajectories)
+            elif first_noise_batch is not None and isinstance(getattr(first_noise_batch, "scores", None), list) and len(first_noise_batch.scores) == len(valset):
+                baseline_subscores = {_case_key(i): float(sc) for i, sc in enumerate(first_noise_batch.scores)}
+            else:
+                base_batch = adapter.evaluate(valset, seed_candidate, capture_traces=True)
+                scores_list = getattr(base_batch, "scores", None)
+                if isinstance(scores_list, list) and len(scores_list) == len(valset) and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in scores_list):
+                    baseline_subscores = {_case_key(i): float(sc) for i, sc in enumerate(scores_list)}
+                    if isinstance(getattr(base_batch, "trajectories", None), list) and base_batch.trajectories:
+                        base_traces = list(base_batch.trajectories)
+                else:
+                    baseline_subscores = {_case_key(i): float(scores[0] if scores else 0.0) for i in range(len(valset))}
+
+            if base_traces:
+                baseline_telemetry = {
+                    str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(base_traces)
+                }
+                if seed_aqua_report is None:
+                    seed_aqua_report = cluster_trace_diagnoses(
+                        base_traces,
+                        all_runbooks=list(seed_candidate.keys()),
+                        forbidden_literals=forbidden_literals,
+                    )
+                    seed_frozen_runbooks = set(seed_aqua_report.frozen_runbooks)
+                    if parsed_args.freeze_passing_runbooks and hasattr(adapter, "lock_frozen_runbooks"):
+                        adapter.lock_frozen_runbooks(seed_frozen_runbooks)
+
+        assert baseline_subscores is not None
+
+        for index, (candidate, score) in enumerate(zip(candidates, scores)):
+            if not isinstance(candidate, dict) or not candidate or not all(
+                isinstance(name, str) and isinstance(text, str)
+                for name, text in candidate.items()
+            ):
+                continue
+
+            if round_idx > 0 and index == 0 and candidate == seed_candidate:
+                continue
+
+            global_index = len(all_candidates)
+            if global_index > 0 and parsed_args.freeze_passing_runbooks and seed_frozen_runbooks:
+                candidate = enforce_frozen_runbooks(candidate, seed_candidate, seed_frozen_runbooks)
+            all_candidates.append(candidate)
+
+            is_valid, violations = validate_runbook_candidate(
+                candidate,
+                seed_candidate=seed_candidate,
+                max_growth_ratio=parsed_args.max_growth_ratio,
+                forbidden_literals=forbidden_literals,
+                forbid_template_vars=parsed_args.forbid_template_vars if global_index > 0 else False,
+                forbid_mermaid_diagrams=parsed_args.forbid_mermaid if global_index > 0 else False,
+                forbid_interactive_pseudotools=parsed_args.forbid_pseudotools if global_index > 0 else False,
+                max_words=parsed_args.max_words if global_index > 0 else None,
+            )
+
+            if global_index == 0:
+                if is_valid:
+                    selected_index = 0
+                    selected_score = float(score)
+                    valid_count += 1
+                    ledger.append_entry(
+                        iteration=0,
+                        harness_sha256=composite_sha,
+                        train_score=None,
+                        val_score=float(score),
+                        tau_accept=tau_accept,
+                        decision="KEPT",
+                        rationale="Seed candidate baseline.",
+                        metadata={
+                            "task_lm": parsed_args.task_lm,
+                            "proposal_mode": parsed_args.proposal_mode,
+                            "round": round_idx + 1,
+                        },
+                    )
+                continue
+
+            if not is_valid:
                 ledger.append_entry(
-                    iteration=0,
+                    iteration=global_index,
                     harness_sha256=composite_sha,
                     train_score=None,
                     val_score=float(score),
                     tau_accept=tau_accept,
-                    decision="KEPT",
-                    rationale="Seed candidate baseline.",
-                    metadata={"task_lm": parsed_args.task_lm},
+                    decision="REJECTED_INVALID",
+                    rationale="; ".join(violations),
+                    metadata={
+                        "task_lm": parsed_args.task_lm,
+                        "proposal_mode": parsed_args.proposal_mode,
+                        "round": round_idx + 1,
+                    },
                 )
-            continue
+                continue
 
-        if not is_valid:
+            valid_count += 1
+
+            cand_subscores = None
+            cand_telemetry = None
+            if index < len(val_subscores) and isinstance(val_subscores[index], dict) and val_subscores[index]:
+                cand_subscores = _normalize_subscores_dict(val_subscores[index])
+                val_traj = getattr(result, "val_trajectories", None)
+                if isinstance(val_traj, list) and index < len(val_traj) and isinstance(val_traj[index], list) and val_traj[index]:
+                    cand_telemetry = {
+                        str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(val_traj[index])
+                    }
+                else:
+                    cand_telemetry = _get_valid_cached_telemetry(candidate)
+            else:
+                cand_telemetry = _get_valid_cached_telemetry(candidate)
+                if cand_telemetry is not None and len(cand_telemetry) == len(valset):
+                    cand_subscores = {
+                        cid: float(t.get("score", score)) for cid, t in cand_telemetry.items()
+                    }
+                else:
+                    cand_batch = adapter.evaluate(valset, candidate, capture_traces=True)
+                    scores_list = getattr(cand_batch, "scores", None)
+                    if isinstance(scores_list, list) and len(scores_list) == len(valset) and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in scores_list):
+                        cand_subscores = {_case_key(i): float(sc) for i, sc in enumerate(scores_list)}
+                        if isinstance(getattr(cand_batch, "trajectories", None), list) and cand_batch.trajectories:
+                            cand_telemetry = {
+                                str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(cand_batch.trajectories)
+                            }
+                    else:
+                        cand_subscores = {_case_key(i): float(score) for i in range(len(valset))}
+
+            acc = evaluate_candidate_acceptance(
+                baseline_scores=baseline_subscores,
+                candidate_scores=cand_subscores,
+                tau_accept=tau_accept,
+                baseline_telemetry=baseline_telemetry,
+                candidate_telemetry=cand_telemetry,
+            )
+
+            comp_attributions = attribute_candidate_edits(
+                base_candidate=seed_candidate,
+                candidate=candidate,
+                baseline_scores=baseline_subscores,
+                candidate_scores=cand_subscores,
+                tau_accept=tau_accept,
+                baseline_telemetry=baseline_telemetry,
+                candidate_telemetry=cand_telemetry,
+            )
+            attr_map = {name: attr.label for name, attr in comp_attributions.items()}
+            confounded_components = sorted(
+                name
+                for name, attr in comp_attributions.items()
+                if attr.changed and attr.label == "confounded"
+            )
+
             ledger.append_entry(
-                iteration=index,
+                iteration=global_index,
                 harness_sha256=composite_sha,
                 train_score=None,
                 val_score=float(score),
                 tau_accept=tau_accept,
-                decision="REJECTED_INVALID",
-                rationale="; ".join(violations),
-                metadata={"task_lm": parsed_args.task_lm},
+                decision=acc.status,
+                rationale=acc.reason,
+                metadata={
+                    "task_lm": parsed_args.task_lm,
+                    "proposal_mode": parsed_args.proposal_mode,
+                    "round": round_idx + 1,
+                    "regressed_cases": acc.regressed_cases,
+                    "categorical_violations": getattr(acc, "categorical_violations", []),
+                    "zero_tool_cases": getattr(acc, "zero_tool_cases", []),
+                    "component_attributions": attr_map,
+                    "confounded_components": confounded_components,
+                },
             )
-            continue
 
-        valid_count += 1
+            has_any_regression = bool(
+                acc.regressed_cases
+                or getattr(acc, "categorical_violations", [])
+                or getattr(acc, "zero_tool_cases", [])
+                or acc.status in (
+                    "REVERTED_CATEGORICAL_ZERO_TOOLS",
+                    "REVERTED_CATEGORICAL_INERT",
+                    "REVERTED_CATEGORICAL_SAFETY",
+                    "REVERTED_CATEGORICAL_TAXONOMY",
+                    "REVERTED_REGRESSION",
+                )
+            )
+            if not confounded_components and not has_any_regression:
+                helped_comps = [
+                    attr
+                    for attr in comp_attributions.values()
+                    if attr.changed and attr.label == "helped" and not attr.regressed_cases
+                ]
+                for attr in helped_comps:
+                    prev_best = best_helped_components.get(attr.component_name)
+                    if prev_best is None or attr.mean_delta > prev_best[0]:
+                        best_helped_components[attr.component_name] = (
+                            attr.mean_delta,
+                            candidate[attr.component_name],
+                        )
+                if experience_library is not None and helped_comps:
+                    for helped_attr in helped_comps:
+                        comp_key = helped_attr.component_name
+                        single_attr_map = {comp_key: helped_attr}
+                        experience_library.record_from_attributions(
+                            attributions=single_attr_map,
+                            cue=f"Runbook refinement for {comp_key}",
+                            lesson=summarize_runbook_diff_lesson(
+                                component_name=comp_key,
+                                base_text=seed_candidate.get(comp_key, ""),
+                                new_text=candidate.get(comp_key, ""),
+                                mean_delta=helped_attr.mean_delta,
+                            ),
+                            evidence=(
+                                f"Candidate {global_index} (round {round_idx + 1}, {parsed_args.proposal_mode}) "
+                                f"cleared tau_accept ({tau_accept:.4f}) on {len(helped_attr.evaluated_cases)} evaluated cases."
+                            ),
+                            scope="COMPOSED" if parsed_args.proposal_mode == "harness2" else "SINGLE",
+                        )
 
-        cand_subscores = None
-        cand_telemetry = None
-        if index < len(val_subscores) and isinstance(val_subscores[index], dict) and val_subscores[index]:
-            cand_subscores = _normalize_subscores_dict(val_subscores[index])
-            val_traj = getattr(result, "val_trajectories", None)
-            if isinstance(val_traj, list) and index < len(val_traj) and isinstance(val_traj[index], list) and val_traj[index]:
-                cand_telemetry = {
-                    str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(val_traj[index])
-                }
-            else:
-                cand_telemetry = _get_valid_cached_telemetry(candidate)
-        else:
-            cand_telemetry = _get_valid_cached_telemetry(candidate)
-            if cand_telemetry is not None and len(cand_telemetry) == len(valset):
-                cand_subscores = {
-                    cid: float(t.get("score", score)) for cid, t in cand_telemetry.items()
-                }
-            else:
-                cand_batch = adapter.evaluate(valset, candidate, capture_traces=True)
-                scores_list = getattr(cand_batch, "scores", None)
-                if isinstance(scores_list, list) and len(scores_list) == len(valset) and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in scores_list):
-                    cand_subscores = {_case_key(i): float(sc) for i, sc in enumerate(scores_list)}
-                    if isinstance(getattr(cand_batch, "trajectories", None), list) and cand_batch.trajectories:
-                        cand_telemetry = {
-                            str(t.get("case_id") or _case_key(i)): t for i, t in enumerate(cand_batch.trajectories)
-                        }
-                else:
-                    cand_subscores = {_case_key(i): float(score) for i in range(len(valset))}
-                
-        acc = evaluate_candidate_acceptance(
-            baseline_scores=baseline_subscores,
-            candidate_scores=cand_subscores,
-            tau_accept=tau_accept,
-            baseline_telemetry=baseline_telemetry,
-            candidate_telemetry=cand_telemetry,
-        )
-        
-        ledger.append_entry(
-            iteration=index,
-            harness_sha256=composite_sha,
-            train_score=None,
-            val_score=float(score),
-            tau_accept=tau_accept,
-            decision=acc.status,
-            rationale=acc.reason,
-            metadata={"task_lm": parsed_args.task_lm, "regressed_cases": acc.regressed_cases, "categorical_violations": getattr(acc, "categorical_violations", []), "zero_tool_cases": getattr(acc, "zero_tool_cases", [])},
-        )
-        
-        if acc.accepted and (selected_score is None or score > selected_score):
-            selected_index = index
-            selected_score = float(score)
+            if acc.accepted and (selected_score is None or score > selected_score):
+                selected_index = global_index
+                selected_score = float(score)
+
+        round_summaries.append({
+            "round": round_idx + 1,
+            "candidates_evaluated": len(candidates),
+            "selected_candidate_index": selected_index,
+            "selected_validation_score": selected_score,
+            "helped_components": {
+                k: round(v[0], 6) for k, v in best_helped_components.items()
+            },
+        })
 
     reason, write_runbooks = select_candidate_outcome(selected_index, valid_count)
-    best_candidate = seed_candidate if selected_index in (None, 0) else candidates[selected_index]
+    best_candidate = seed_candidate if selected_index in (None, 0) else all_candidates[selected_index]
     metadata: Dict[str, Any] = {
         "run_id": run_id,
         "task_lm": parsed_args.task_lm,
         "reflection_lm": parsed_args.reflection_lm,
+        "proposal_mode": parsed_args.proposal_mode,
+        "rounds": num_rounds,
+        "round_summaries": round_summaries,
         "max_metric_calls": parsed_args.max_metric_calls,
         "seed": parsed_args.seed,
         "evalset": str(evalset_path) if parsed_args.evalset else None,
