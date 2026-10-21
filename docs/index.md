@@ -31,11 +31,22 @@ flowchart TD
 2. **Multi-Generational Agentic SOC Evaluation Suite (Gen 1 -> Gen 5 & Track 2 Threat Hunting)**:
    - Evaluates models on interactive SIEM/SOAR/GTI investigation and containment trajectories rather than static multiple-choice prompts ([Gen 5 Suite Guide](evals_gen5.md), [Gemma SOC Evaluation Plan](gemma_soc_agent_evaluation_plan.md)).
    - Measures **Signal Detection Theory** sensitivity ($d'$) and criterion bias ($c$), **asymmetric blast-radius financial loss** ($L(\text{FP, Critical}) = \$50\text{k}$, $L(\text{FN, Critical}) = \$250\text{k}$), **counterfactual twin consistency**, and **containerized Harbor v1.3 60/20/20 rewards**.
-3. **Disciplined Hillclimbing, DSPy Context Hygiene, & `Harness^2` Recursive Runbook Evolution**:
+3. **Disciplined Hillclimbing, DSPy Context Hygiene, & $\text{Harness}^2$ Recursive Runbook Evolution**:
    - Enforces the 10 empirical Agentic Runbook Hygiene rules ([Runbook Authoring Best Practices](RUNBOOK_AUTHORING_BEST_PRACTICES.md)) and anti-memorization guards ([Evolving SecOps Runbooks Without Cheating](blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md)).
-   - Compresses verbose human SOPs by `35% - 65%` while lifting `gemini-2.5-flash-lite` and `gemini-2.5-flash` to `0.9869 - 0.9898` Harbor 60/20/20 on Gen 5 validation and `1.0000` Hunt Composite on the multi-step Ursnif GTI collection hunt ([DSPy Overnight Report](soc_eval_results/dspy_overnight/MORNING_REPORT.md), [`Harness^2` 8-Hour Campaign Report](soc_eval_results/harness2_8h_campaign/MORNING_REPORT.md)).
+   - Uses $\text{Harness}^2$ (`arXiv:2610.14224`, [google-research/harness2](https://github.com/google-research/harness2)) contrastive `INV`/`DOM` Propose-Probe-Compose, `ComponentStratifiedBatchSampler`, categorical inner-probe gating, and `ExperienceLibrary` to compress verbose human SOPs by `52.2% - 65.5%` while lifting 3-model Gen 5 validation Harbor reward to `0.9804` (`\$1,834.24` mean loss, `-89.1%` vs. seed and `-94.5%` vs. single-proposer GEPA) and Track 2 Ursnif threat hunting to `0.9813` mean Hunt Composite ([`Harness^2` 8-Hour Campaign Report](soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md), [Gen 5 Transfer Scorecard](soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md), [Track 2 Threat-Hunt Scorecard](soc_eval_results/harness2_8h_campaign/threat_hunt_multi_model/THREAT_HUNT_MULTI_MODEL_SCORECARD.md), [DSPy Overnight Report](soc_eval_results/dspy_overnight/MORNING_REPORT.md)).
 4. **MCP Tool Description Optimization**:
    - Evolves MCP tool schemas across `secops-mcp`, `gti-mcp`, and `secops-soar-mcp` to eliminate routing collisions and boost multi-server tool selection accuracy ([Evolving SecOps MCP Tool Descriptions](blog/gepa_mcp_tool_description_optimization.md)).
+
+### $\text{Harness}^2$ Cross-Model Transfer Highlights (`228` Total Trajectories)
+
+| Benchmark Suite | Runbook Arm | Words | Mean Harbor 60/20/20 | Primary Composite / Fitness | Mean Operational Loss ($L$, USD) | Safety Violations |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: |
+| **Gen 5 Tier 1 (`180` trajectories, 3 models)** | `seed_runbooks` (`.clinerules`) | `3,648` | `0.9744` | `0.9584` (GEPA Fitness) | `\$16,834.40` | `0` |
+| **Gen 5 Tier 1 (`180` trajectories, 3 models)** | `gepa_single_proposer` | `1,988` | `0.9787` | `0.9627` (GEPA Fitness) | `\$33,417.74` | `0` |
+| **Gen 5 Tier 1 (`180` trajectories, 3 models)** | **`harness2_k2_evolved`** | **`1,743`** (`-52.2%`) | **`0.9804`** | **`0.9804`** (GEPA Fitness) | **`\$1,834.24`** (**`-89.1%`** vs seed, **`-94.5%`** vs single-proposer) | **`0`** |
+| **Track 2 Threat Hunt (`48` trajectories, 3 models)** | `raw_clinerules_hunt` | `892` | `0.8575` | `0.8295` (Hunt Composite) | n/a (`56%` `168h` widening) | `0` |
+| **Track 2 Threat Hunt (`48` trajectories, 3 models)** | `compressed_track_b_hunt` | `350` | `0.9337` | `0.9510` (Hunt Composite) | n/a (`100%` `168h` widening) | `0` |
+| **Track 2 Threat Hunt (`48` trajectories, 3 models)** | **`harness2_evolved_hunt`** | **`347`** | **`0.9587`** | **`0.9813`** (Hunt Composite) | n/a (**`100%` `168h` widening & LOLBin safe**) | **`0`** |
 
 ---
 
@@ -126,6 +137,12 @@ just lint-runbooks
 # Verify Gen 5 family-instanced SOC bundles and harness lock
 just gen5-check
 just harness-verify
+
+# Run Harness^2 Propose-Probe-Compose recursive evolution on Gen 5 (train -> validation)
+just gepa-evolve-harness2 gemini-2.5-flash-lite 15 gemini-2.5-pro
+
+# Run Gen 5 SOC evaluation on validation split through the exposure ledger
+just eval-gen5 gemini-2.5-flash-lite validation
 ```
 
 ### Model Deployment Recipes
@@ -184,11 +201,14 @@ just vertex-undeploy
   - [Gemma vs. Gemini Comparative Evaluations](soc_model_comparative_evals.md)
   - [Llama & Partner Model Comparative Evaluations](llama_model_comparative_evals.md)
   - [Gen 5 Family-Instanced SOC Evaluation Suite](evals_gen5.md)
-- **GEPA, DSPy Context Hygiene, & `Harness^2` Evolution**:
+- **GEPA, DSPy Context Hygiene, & $\text{Harness}^2$ Evolution**:
   - [Empirical Runbook Authoring Best Practices (`RB-01`..`RB-05`)](RUNBOOK_AUTHORING_BEST_PRACTICES.md)
   - [DSPy Context Engineering & 9-Hour Overnight Report](soc_eval_results/dspy_overnight/MORNING_REPORT.md)
-  - [`Harness^2` 8-Hour Recursive Runbook Evolution Report](soc_eval_results/harness2_8h_campaign/MORNING_REPORT.md)
-  - [Disciplined Hillclimber vs. RRSI & Harness-Delta Attribution Crosswalk](hillclimber_rrsi_crosswalk.md)
+  - [$\text{Harness}^2$ 8-Hour Recursive Runbook Evolution Report (`arXiv:2610.14224`)](soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md)
+  - [Gen 5 Cross-Model Transfer & Cost Staircase Scorecard (`180` Trajectories)](soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md)
+  - [Track 2 Proactive Threat Hunting Multi-Model Scorecard (`48` Trajectories)](soc_eval_results/harness2_8h_campaign/threat_hunt_multi_model/THREAT_HUNT_MULTI_MODEL_SCORECARD.md)
+  - [Disciplined Hillclimber vs. RRSI & $\text{Harness}^2$ Crosswalk](hillclimber_rrsi_crosswalk.md)
+  - [Annotated Agent Harness Literature Bibliography](references_agent_harness_literature.md)
 - **Blog Series**:
   - [Part 1: Zero-Idle GPU Infrastructure for Security Agents](blog/part1_zero_idle_gpu_infrastructure.md)
   - [Evolving SecOps Runbooks Without Cheating: GEPA, Verbosity Bias, & Disciplined Hillclimbing](blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md)

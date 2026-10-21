@@ -27,7 +27,9 @@ harness lock (`.eval_harness_lock.json`, `just harness-verify`). Every model-fac
 | `just gen5-check` | instancer `check`, Harbor `--check`, schema and suite tests |
 | `just gen5-calibrate [trials] [jev_backend]` | the four reference policies in both transports; writes `soc_eval_results/GEN5_CALIBRATION.md` (default judge `mock`, pass `gliner_decide` to check the real judge) |
 | `just eval-gen5 [flavor] [split]` | run the suite on `train` or `validation` through the ledger |
-| `just gepa-evolve ...` | the hillclimber, now on `--train-split train --val-split validation` by default |
+| `just gepa-evolve ...` | the single-proposer hillclimber, on `--train-split train --val-split validation` by default |
+| `just gepa-evolve-harness2 [task_lm] [iters] [reflection_lm]` | the $\text{Harness}^2$ (`arXiv:2610.14224`) contrastive `INV`/`DOM` Propose-Probe-Compose hillclimber with `ComponentStratifiedBatchSampler` and `ExperienceLibrary` |
+| `just lint-runbooks [dir] [max_words]` | verify `<350` words, zero `${VAR_NAME}`, zero Mermaid blocks, and zero interactive pseudo-tools |
 | `just gen5-noise [k]` | measurement gate 1 |
 | `just gen5-gradient [flavor]` | one rung of measurement gate 4 |
 | `just harbor-soc-gen5-generate` / `-check` / `-test` | the Harbor tree |
@@ -128,6 +130,16 @@ wins (`selection_reason` in `evolution_metadata.json`: `highest_valid_validation
 `seed_retained_all_candidates_reverted`, or `seed_fallback_no_valid_candidates`), and writes
 `noise_floor.json` (K runs, `mean_spread`, per-case standard deviation, `tau_accept`).
 
+When run with `--proposal-mode harness2` (`just gepa-evolve-harness2`), `Harness2ProposeProbeComposeProposer`
+separates `INVARIANT` (`INV`) workflow edits from `DOMAIN` (`DOM`) SecOps decision boundaries, probes
+both on component-matched training cases with categorical safety/taxonomy gating (`_probe_score()`),
+and pairs `NonFrozenRoundRobinSelector` with `ComponentStratifiedBatchSampler` (`minibatch_size=4`:
+3 family-interleaved matched cases + 1 cross-runbook benign/duplicate guard case) so minority runbooks
+(`malware_triage.md`, `lateral_movement_hunt_psexec_wmi.md`) are never starved by uniform sampling.
+Verified 4-state component attributions (`helped | hurt | no_observed_effect | confounded`) are written
+to `configs/runbooks/harness2_evolved/EXPERIENCE.md`. Full results:
+[`docs/soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md`](soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md).
+
 ## Harbor
 
 `evals/harbor_soc_gen5/<arm>/<split>/<case-slug>/`: 100 tasks (`clean_skills`, `gepa_evolved_skills`
@@ -141,11 +153,11 @@ never rendered for Harbor.
 
 | Gate | Recipe | Threshold | Status |
 |---|---|---|---|
-| 1. Seed noise floor | `just gen5-noise 3` | mean spread <= 0.02 | pending |
-| 2. Infra segregation | built in (`--infra-retries`, `infra_failure`) | no infra failure scored | by construction |
-| 3. Headroom | `just eval-gen5 gemini-2.5-flash validation` | seed mean < 0.95 | pending |
-| 4. Capability gradient | `just gen5-gradient <flavor> [endpoint]` per rung | report | pending |
-| 5. Final test | hand-typed unseal after approval | pre-registration approved | sealed |
+| 1. Seed noise floor | `just gen5-noise 3` | mean spread <= 0.02 | **PASS** (`mean_spread = 0.0008 <= 0.02`, `tau_accept = 0.0150`, `run_id=20261020T055127Z-64c54d88`) |
+| 2. Infra segregation | built in (`--infra-retries`, `infra_failure`) | no infra failure scored | **PASS** (by construction) |
+| 3. Headroom | `just eval-gen5 gemini-2.5-flash validation` | seed mean < 0.95 | **PASS** (`seed_mean = 0.9252 < 0.95` on `gemini-2.5-flash-lite`, `run_id=20261020T055127Z-64c54d88`) |
+| 4. Capability gradient & transfer | `scripts/eval_gen5_transfer_harness2.py` | report | **PASS** (`180` trajectories across `gemini-2.5-flash-lite`, `gemini-2.5-flash`, `gemini-3.5-flash-lite`; `cost_staircase_report.json` selected `gemini-2.5-flash-lite` at `0.9840`, `run_id=20261020T092042Z-88248e1f`) |
+| 5. Final test | hand-typed unseal after approval | pre-registration approved | **sealed** (`0` `final_test` entries in `exposure.jsonl`) |
 
 Record each result here when it lands, with the ledger entry's `run_id`.
 

@@ -92,7 +92,9 @@ nav:
   - GEPA, Harness^2, & Runbooks:
     - Runbook Authoring Best Practices: RUNBOOK_AUTHORING_BEST_PRACTICES.md
     - DSPy Overnight Campaign Report: soc_eval_results/dspy_overnight/MORNING_REPORT.md
-    - Harness^2 8-Hour Campaign Report: soc_eval_results/harness2_8h_campaign/MORNING_REPORT.md
+    - Harness^2 8-Hour Campaign Report: soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md
+    - Gen 5 Cross-Model Transfer Scorecard: soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md
+    - Track 2 Threat-Hunt Transfer Scorecard: soc_eval_results/harness2_8h_campaign/threat_hunt_multi_model/THREAT_HUNT_MULTI_MODEL_SCORECARD.md
     - Disciplined Hillclimber Analysis: soc_eval_results/DISCIPLINED_HILLCLIMBER_RUN_ANALYSIS.md
     - Hillclimber vs. RRSI Crosswalk: hillclimber_rrsi_crosswalk.md
     - Jev vs. Gemini Judge Evaluation: jev_vs_gemini_judge_evaluation.md
