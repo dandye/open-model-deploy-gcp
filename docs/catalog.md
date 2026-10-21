@@ -70,5 +70,4 @@ This catalog indexes all architecture specifications, multi-model benchmark repo
 | [`benchmarking_gce_ephemeral_spot_vms.md`](benchmarking_gce_ephemeral_spot_vms.md) | `guide` | Compute Engine Ephemeral Spot GPU VMs runner, NVMe caching & multi-zone failover |
 | [`benchmarking_vertex_custom_jobs.md`](benchmarking_vertex_custom_jobs.md) | `guide` | Vertex AI Custom Jobs ephemeral container runner & worker pool sizing |
 | [`benchmarking_gke_ray_serve.md`](benchmarking_gke_ray_serve.md) | `guide` | GKE Ray Serve and Kueue dynamic batch queuing & distributed sweep runner |
-| [`handoff.md`](handoff.md) | `guide` | Operational session handoff, active cloud infrastructure state & next milestones |
 | [`references.md`](references.md) | `reference` | Curated external guides, Google Cloud community articles & ADK references |
