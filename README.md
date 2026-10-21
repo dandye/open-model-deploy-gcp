@@ -1,5 +1,7 @@
 # Gemma & Multi-Model Deployment on Google Cloud
 
+**Documentation Site**: [https://dandye.github.io/open-model-deploy-gcp/](https://dandye.github.io/open-model-deploy-gcp/)
+
 Automated deployment scripts, Terraform modules, and Justfile recipes for deploying the entire Google Gemma family (Gemma 2 2B/9B/27B, Gemma 3 1B/4B/12B/27B, Gemma 4 E2B/E4B/31B, FP8, and Speculative Decoding variants), Meta Llama models (Llama 4, Llama 3.x, Llama Guard), and frontier open-weight partner models (Thinking Machines Inkling, NVIDIA Nemotron, Qwen 3.8 / 2.5, Zhipu GLM, DeepSeek V4, Moonshot Kimi) across Vertex AI Online Prediction and Cloud Run with GPU, alongside managed Gemini comparative evaluation benchmarks.
 
 
@@ -179,6 +181,7 @@ just vertex-undeploy
 
 ## 5. Documentation Reference
 
+* **Published Static Site (GitHub Pages)**: [https://dandye.github.io/open-model-deploy-gcp/](https://dandye.github.io/open-model-deploy-gcp/)
 * [Future Work & Strategic Roadmap](docs/future_work.md)
 * [Master Dynamic Benchmark Leaderboard](docs/soc_eval_results/OVERNIGHT_SWEEP_SUMMARY.md)
 * [Gemma SOC Tier 1 Evaluation Plan & Methodology (10-Case Benchmark Suite)](docs/gemma_soc_agent_evaluation_plan.md)
