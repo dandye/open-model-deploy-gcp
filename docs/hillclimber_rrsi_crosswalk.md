@@ -1,24 +1,27 @@
 ---
-title: "Disciplined Hillclimber vs RRSI: mechanism crosswalk and gap list"
-description: "Mechanism-by-mechanism comparison of the Disciplined Hillclimber's five guards against the proposer and selector regularizers in RRSI (Xia et al., 2026), read through Harness-Delta Attribution, with evidence from the 2026-10-02 run and Campaign 5, and a prioritized gap list."
+title: "Disciplined Hillclimber vs RRSI and Harness^2: mechanism crosswalk and gap list"
+description: "Mechanism-by-mechanism comparison of the Disciplined Hillclimber's guards, DSPy context hygiene, and Harness^2 Propose-Probe-Compose against the proposer and selector regularizers in RRSI (Xia et al., 2026) and Harness^2 (Xu et al., 2026), read through Harness-Delta Attribution."
 type: "analysis"
 tags:
   - gepa
   - rrsi
+  - harness2
   - hillclimbing
   - harness-evolution
   - evaluation
   - soc
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-21
 ---
 
-# Disciplined Hillclimber vs RRSI: mechanism crosswalk and gap list
+# Disciplined Hillclimber vs RRSI and Harness^2: mechanism crosswalk and gap list
 
-The Disciplined Hillclimber (`agent/hillclimb_harness.py`, `agent/gepa_runbook_optimizer.py`) was designed in late September 2026 from Anthropic's hillclimbing guides, Lance Martin's invariants, and our own failures with naive GEPA. RRSI (Xia et al., arXiv:2609.24972) was published around the same time and names the same problem more precisely: a harness evolution loop is a statistical estimation procedure, and without regularization on both the proposer and the selector it overfits the evolve set, inflates cost, and loses out of distribution. This document lines up what we built against what RRSI prescribes, says where the evidence from our own runs supports each piece, and lists the gaps in the order I think they should be closed.
+The Disciplined Hillclimber (`agent/hillclimb_harness.py`, `agent/gepa_runbook_optimizer.py`) was designed in late September 2026 from Anthropic's hillclimbing guides, Lance Martin's invariants, and our own failures with naive GEPA. RRSI (Xia et al., arXiv:2609.24972) was published around the same time and names the same problem more precisely: a harness evolution loop is a statistical estimation procedure, and without regularization on both the proposer and the selector it overfits the evolve set, inflates cost, and loses out of distribution. Shortly afterward, Xu et al. (2026) introduced $\text{Harness}^2$ (*Recursive Agent Harnessing for an Open World*, arXiv:2610.14224), extending harness evolution with contrastive task-level `Propose-Probe-Compose` (`INV` workflow vs. `DOM` domain rules) and harnessing-level `Experience Reflector` attribution (`helped | hurt | no observed effect | confounded` stored in `EXPERIENCE.md`). This document lines up what we built against what RRSI and $\text{Harness}^2$ prescribe, says where the evidence from our own runs supports each piece, and tracks which gaps have been closed through the October 2026 DSPy context-hygiene and $\text{Harness}^2$ campaigns.
 
 Companion documents:
 
+- [HARNESS2_CAMPAIGN_REPORT.md](soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md) for the October 2026 $\text{Harness}^2$ $k=2$ recursive evolution and 228-trajectory cross-model transfer results.
+- [MORNING_REPORT.md](soc_eval_results/dspy_overnight/MORNING_REPORT.md) for the 29-experiment DSPy context-hygiene campaign.
 - [DISCIPLINED_HILLCLIMBER_RUN_ANALYSIS.md](soc_eval_results/DISCIPLINED_HILLCLIMBER_RUN_ANALYSIS.md) for the 2026-10-02 run artifacts.
 - [references_agent_harness_literature.md](references_agent_harness_literature.md) for the annotated bibliography.
 - [blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md](blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md) for the narrative.
@@ -138,11 +141,27 @@ Ordered by expected value given the evidence above, not by implementation effort
 8. A section-level edit budget per proposal, annealed per round, so that credit assignment has units to work with.
 9. A stall detector on the noise band with budget reserved for untouched runbooks.
 
+## How DSPy Context Hygiene and $\text{Harness}^2$ (Xu et al., 2026) closed the crosswalk gaps
+
+Between October 13 and October 20, 2026, two major upgrades closed the structural gaps identified in the October 4 crosswalk above:
+
+1. **Structural pruning and intrinsic context-debt regularization (PR #14, `dspy__context-engineering`)**:
+   - `strip_runbook_scaffolding()` (`agent/hierarchical_soc_agent.py`) removes non-executable Mermaid `sequenceDiagram` blocks, interactive Cline pseudo-tools (`ask_followup_question`, `attempt_completion`, `write_to_file`), and shell `${VAR_NAME}` placeholders (`-> <angle_bracket>` slots), compressing the 4 seed runbooks from `3,648` to `2,376` words (`-34.9%`).
+   - `WordLimitReflectionLM`, `validate_runbook_candidate(..., max_words=350)`, and `_compute_context_debt_penalty()` (`0.008` per un-cleaned/over-budget component) provide RRSI's Lasso/Ridge-style complexity regularization inside GEPA, breaking minibatch score ties in favor of `<350`-word runbooks (`1,260` to `1,743` total words across all 4 runbooks).
+
+2. **$\text{Harness}^2$ Contrastive `Propose-Probe-Compose` & `ExperienceLibrary` (PR #15, `harness2__recursive-runbook-evolution`, `arXiv:2610.14224`)**:
+   - **Role-Scoped Contrastive Probing (`Harness2ProposeProbeComposeProposer`)**: Replaces single-shot whole-file rewrites with two scoped editors—**`INVARIANT` (`INV`)** for workflow/tool-ordering procedures and **`DOMAIN` (`DOM`)** for SecOps practitioner decision boundaries—probed on component-matched training cases (`_select_probe_batch(comp_name)`) and selectively merged via `build_compose_prompt()` (`COMPOSED` / `INV` / `DOM` / `KEEP_BASE`).
+   - **Categorical-Gated Inner Probing (`_probe_score()`)**: Captures trajectory telemetry (`capture_traces=True`) and runs `evaluate_candidate_acceptance()` categorical checks (`REVERTED_CATEGORICAL_ZERO_TOOLS`, `REVERTED_CATEGORICAL_INERT`, `REVERTED_CATEGORICAL_SAFETY`, `REVERTED_CATEGORICAL_TAXONOMY`, `REVERTED_REGRESSION`) on the inner probe batch (including a cross-runbook benign/duplicate guard case), penalizing unsafe edits with `-1.0` before they ever reach GEPA's outer loop.
+   - **Component-Stratified Outer Minibatches (`ComponentStratifiedBatchSampler` + `NonFrozenRoundRobinSelector`)**: Closes the RRSI structured-exploration gap. In Gen 5 `trainset` (`40` cases), `basic_ioc_enrichment.md` accounts for `22/40` cases while `malware_triage.md` is `8/40` and `lateral_movement_hunt_psexec_wmi.md` is `4/40` (giving uniform `minibatch_size=3` sampling a $51.2\%$ and $72.9\%$ probability of drawing zero matched cases). `ComponentStratifiedBatchSampler` (`minibatch_size=4`) guarantees 3 family-interleaved matched cases plus 1 cross-runbook guard case whenever an unfrozen component is scheduled.
+   - **Evidence-Aware Credit Assignment (`attribute_candidate_edits()` + `ExperienceLibrary`)**: Closes the write-only ledger gap. After each validation pass, touched components receive a 4-state attribution label (`helped | hurt | no_observed_effect | confounded`), and verified `helped`/`hurt` lessons are written to `EXPERIENCE.md` (`experience_library.jsonl`) and injected back into subsequent `INV`, `DOM`, and `COMPOSE` prompts as well as Round $r+1$ warm-starts (`--rounds 2`).
+   - **Empirical Outcome ([`HARNESS2_CAMPAIGN_REPORT.md`](soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md))**: On Gen 5 (`run_id=20261020T055127Z-64c54d88`), $k=2$ $\text{Harness}^2$ evolution cleared the noise-floor gate (`mean_spread=0.0008 <= 0.02`) and promoted Candidate 2 (`0.9252 -> 0.9642`, `+0.0390 = 2.6x tau_accept`, 20/20 cases passed, lifting `lateral_movement_hunt_psexec_wmi.md` by `+0.2187` and `malware_triage.md` by `+0.2171`). Across `180` 3-model validation transfer trajectories (`run_id=20261020T092042Z-88248e1f`), `harness2_k2_evolved` achieved `0.9804` mean Harbor reward and reduced 3-model mean operational financial loss to `\$1,834.24` (`-89.1%` vs. seed `\$16,834.40` and `-94.5%` vs. single-proposer GEPA `\$33,417.74`).
+
 ## References
 
 Annotated entries, links, and knowledge-base pages are in [references_agent_harness_literature.md](references_agent_harness_literature.md).
 
-- Xia, P., Han, R., Wang, Z., Chen, Y., Zhuang, Y., Lee, Y., Huang, C., Yu, H., CuiZhu, Z., Ming, Y., Yao, H., Gokturk, B., Pfister, T., Lee, C.-Y. (2026). RRSI: Regularized Recursive Self-Improvement of Agent Harnesses. arXiv:2609.24972.
+- Xu, R., Chen, Y., CuiZhu, Z., Dalvi Mishra, B., Ming, Y., Yu, H., Han, R., Lee, C.-Y., Pfister, T. (2026). Harness^2: Recursive Agent Harnessing for an Open World. Northwestern University & Google Cloud AI Research. arXiv:2610.14224.
+- Xia, P., Han, R., Wang, Z., Chen, Y., Zhuang, Y., Lee, Y., Huang, C., Yu, H., CuiZhu, Z., Ming, Y., Yao, H., Gokturk, B., Pfister, T., Lee, C.-Y. (2026). RRSI: Regularized Recursive Self-Improvement of Agent Harnesses. Google Cloud AI Research. arXiv:2609.24972.
 - Ding, W., Lu, Q., Yu, C., Li, S., Jin, S., Liu, X., Durrett, G. (2026). Harness-Delta Attribution: What Evolves When We Talk About Harness Evolution? UT Austin.
 - Zhang, A. L., Khattab, O. (2026). Language Model Harnesses Are Compositional Generalizers.
 - Agrawal, L. A., et al. (2025). GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning. arXiv:2507.19457.

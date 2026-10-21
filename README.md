@@ -2,10 +2,41 @@
 
 **Documentation Site**: [https://dandye.github.io/open-model-deploy-gcp/](https://dandye.github.io/open-model-deploy-gcp/)
 
-Automated deployment scripts, Terraform modules, and Justfile recipes for deploying the entire Google Gemma family (Gemma 2 2B/9B/27B, Gemma 3 1B/4B/12B/27B, Gemma 4 E2B/E4B/31B, FP8, and Speculative Decoding variants), Meta Llama models (Llama 4, Llama 3.x, Llama Guard), and frontier open-weight partner models (Thinking Machines Inkling, NVIDIA Nemotron, Qwen 3.8 / 2.5, Zhipu GLM, DeepSeek V4, Moonshot Kimi) across Vertex AI Online Prediction and Cloud Run with GPU, alongside managed Gemini comparative evaluation benchmarks.
+Automated deployment scripts, Terraform modules, Justfile recipes, and **Disciplined Agentic SOC Evaluation & Recursive Runbook Evolution ($\text{Harness}^2$, GEPA, and DSPy Context Hygiene)** for the Google Gemma family (Gemma 2 2B/9B/27B, Gemma 3 1B/4B/12B/27B, Gemma 4 E2B/E4B/31B, FP8, and Speculative Decoding variants), Meta Llama models (Llama 4, Llama 3.x, Llama Guard), frontier open-weight partner models (Thinking Machines Inkling, NVIDIA Nemotron, Qwen 3.8 / 2.5, Zhipu GLM, DeepSeek V4, Moonshot Kimi), and managed Gemini models across Vertex AI Online Prediction and Cloud Run with GPU.
 
+---
 
-<img width="793" height="766" alt="Screenshot 2026-08-27 at 8 32 30 AM" src="https://depot.code.corp.goog/user-attachments/assets/451c3c09-882e-478c-8478-b11555a856b3" />
+## 0. Agentic SOC Runbook Evolution: $\text{Harness}^2$, DSPy Context Hygiene & Disciplined Hillclimbing
+
+Beyond serving infrastructure, this repository implements an end-to-end **Regularized Recursive Self-Improvement (RRSI)** and **$\text{Harness}^2$ Propose-Probe-Compose** (`arXiv:2610.14224`, [google-research/harness2](https://github.com/google-research/harness2)) pipeline for evolving Security Operations Center (SOC) Tier 1 triage and Track 2 proactive threat-hunting runbooks without weight updates or test-set memorization:
+
+- **Cryptographic Evaluation Harness Lock (`.eval_harness_lock.json`)**: `HarnessIntegrityGuard` verifies SHA-256 checksums across all 33 protected dataset, sandbox, verifier, and cost-engine files before every optimization step (`just harness-verify`), keeping the 30-case `final_test` split sealed via `scripts/gen5_exposure.py`.
+- **DSPy Context Hygiene & Structural Linting (`just lint-runbooks`)**: Strips non-executable Mermaid `sequenceDiagram` blocks, interactive IDE pseudo-tools (`ask_followup_question`, `attempt_completion`, `write_to_file`), and shell `${VAR_NAME}` placeholders (`-> <angle_bracket>` slots) while enforcing a `<350`-word per-runbook cap ([`docs/RUNBOOK_AUTHORING_BEST_PRACTICES.md`](docs/RUNBOOK_AUTHORING_BEST_PRACTICES.md)).
+- **$\text{Harness}^2$ Contrastive `INV`/`DOM` Propose-Probe-Compose (`agent/gepa_runbook_optimizer.py`)**:
+  - **Task-Level Recursion**: Separates **`INVARIANT` (`INV`)** workflow/tool-ordering edits from **`DOMAIN` (`DOM`)** SecOps decision-boundary contracts, probes both candidates on component-matched training cases with categorical safety/taxonomy gates (`_probe_score()`), and composes verified improvements (`COMPOSED` / `INV` / `DOM` / `KEEP_BASE`).
+  - **Component-Stratified Outer Minibatches**: `ComponentStratifiedBatchSampler` + `NonFrozenRoundRobinSelector` guarantee that outer GEPA acceptance minibatches include 3 family-interleaved cases targeting the mutated runbook plus 1 cross-runbook benign/duplicate guard case, eliminating the 51.2%–72.9% minority-runbook starvation rate of uniform sampling.
+  - **Harnessing-Level Recursion (`ExperienceLibrary`)**: Computes 4-state component attribution (`helped | hurt | no_observed_effect | confounded`) after every validation pass and persists redacted, contrast-supported rules to [`configs/runbooks/harness2_evolved/EXPERIENCE.md`](configs/runbooks/harness2_evolved/EXPERIENCE.md).
+
+### Gen 5 Tier 1 Cross-Model Transfer Summary (`180` Trajectories across 3 Models $\times$ 3 Arms)
+
+Full report: [`docs/soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md`](docs/soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md) | Scorecard: [`GEN5_TRANSFER_SCORECARD.md`](docs/soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md)
+
+| Runbook Arm | Total Words | Word Reduction vs Seed | Mean Harbor 60/20/20 | Mean GEPA Fitness | Mean $d'$ | Mean Operational Loss ($L$, USD) | Mean Tool Calls | Total Safety Violations |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `seed_runbooks` (`.clinerules`) | `3,648` | `0.0%` | `0.9744` | `0.9584` | `2.91` | `$16,834.40` | `5.53` | `0` |
+| `gepa_single_proposer` | `1,988` | `-45.5%` | `0.9787` | `0.9627` | `2.91` | `$33,417.74` | `5.57` | `0` |
+| **`harness2_k2_evolved`** ([`configs/runbooks/harness2_evolved/`](configs/runbooks/harness2_evolved/)) | **`1,743`** | **`-52.2%`** | **`0.9804`** | **`0.9804`** | `2.89` | **`$1,834.24`** (**`-89.1%`** vs seed, **`-94.5%`** vs single-proposer) | **`5.30`** | **`0`** |
+
+### Track 2 Proactive Threat Hunting (`ThreatHuntEnvironment`) Transfer Summary (`48` Trajectories across 3 Models $\times$ 4 Arms)
+
+Scorecard: [`THREAT_HUNT_MULTI_MODEL_SCORECARD.md`](docs/soc_eval_results/harness2_8h_campaign/threat_hunt_multi_model/THREAT_HUNT_MULTI_MODEL_SCORECARD.md)
+
+| Runbook Arm | Mean Hunt Composite | Mean Harbor (60/20/20) | Verdict Accuracy | `168h` Widening Rate | LOLBin Safe Rate |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| `no_runbook` | `0.8554` | `0.8673` | `92%` | `56%` | `100%` |
+| `raw_clinerules_hunt` | `0.8295` | `0.8575` | `92%` | `56%` | `100%` |
+| `compressed_track_b_hunt` | `0.9510` | `0.9337` | `100%` | `100%` | `100%` |
+| **`harness2_evolved_hunt`** ([`gti_collection_threat_hunt.md`](configs/runbooks/harness2_evolved/gti_collection_threat_hunt.md)) | **`0.9813`** | **`0.9587`** | **`100%`** | **`100%`** | **`100%`** |
 
 ---
 
@@ -82,6 +113,21 @@ All models evaluated on the un-spoiled SOC Tier 1 Benchmark Suite (expanded 10-c
 # Display categorized help menu
 just
 
+# Verify cryptographic SHA-256 lock on all 33 evaluation harness files
+just harness-verify
+
+# Lint SOC runbooks (<350 words, no ${VAR_NAME}, no Mermaid, no IDE pseudo-tools)
+just lint-runbooks
+
+# Run Harness^2 Propose-Probe-Compose recursive evolution on Gen 5 (train -> validation)
+just gepa-evolve-harness2 gemini-2.5-flash-lite 15 gemini-2.5-pro
+
+# Run Gen 5 SOC evaluation on validation split through the exposure ledger
+just eval-gen5 gemini-2.5-flash-lite validation
+
+# Run Two-Stage AQuA trajectory failure clustering and diagnosis
+just aqua-diagnose
+
 # View models in catalog and Model Registry
 just model-list
 
@@ -135,46 +181,58 @@ just vertex-undeploy
 ```text
 ├── configs/
 │   ├── models.json               # Central multi-model catalog & hardware specifications
-│   └── evals/                    # Declarative SOC Tier 1 evaluation benchmarks
+│   ├── evals/                    # Gen 1-3, Gen 5 family-instanced & Track 2 threat-hunt benchmarks
+│   └── runbooks/
+│       ├── harness2_evolved/     # Harness^2 (k=2) evolved <350w runbooks + EXPERIENCE.md
+│       └── gepa_evolved/         # Single-proposer GEPA runbook artifacts & ledger
 ├── scripts/
 │   ├── lib/
 │   │   └── model_catalog.sh      # Catalog lookup helper library
+│   ├── gen5_instancer.py         # Deterministic 90-case Gen 5 family instancer
+│   ├── gen5_exposure.py          # Exposure ledger & final_test split seal guard
+│   ├── verify_harbor_soc.py      # Unified 60/20/20 Harbor & Python trajectory scorer
+│   ├── evolve_threat_hunt_harness2.py # Track 2 ThreatHuntEnvironment Harness^2 evolution runner
+│   ├── eval_gen5_transfer_harness2.py # 3-model x 3-arm Gen 5 transfer & cost staircase runner
+│   ├── eval_threat_hunt_multi_model.py # Multi-model x 4-arm Track 2 threat-hunt benchmark runner
+│   ├── run_aqua_soc_diagnosis.py # Outer-to-inner AQuA trajectory failure cluster analyzer
 │   ├── overnight_model_sweep.py  # Targeted sweep orchestrator with $0 idle cost teardown
 │   ├── run_overnight_sweep.py    # Master automated benchmark & evaluation sweep runner
 │   ├── deploy_open_model.py      # Vertex AI OpenModel deployment wrapper
-│   ├── vertex_deploy.sh          # Model-aware Vertex AI deployer
-│   ├── vertex_model_register.sh  # Model Registry uploader with metadata
-│   ├── vertex_status.sh          # Deployment status & operation inspector
-│   ├── vertex_undeploy.sh        # Endpoint undeployer & cost cleanup
-│   ├── cloudrun_deploy.sh        # Model-aware Cloud Run deployer
-│   ├── cloudrun_quota_check.sh   # Quota checker
-│   ├── cloudrun_status.sh        # Cloud Run status inspector
-│   ├── model_list.sh             # Interactive catalog list
-│   ├── cost_list.sh              # Terminal pricing matrix
-│   ├── auth_check.sh             # Preflight credentials checker
 │   ├── benchmark.py              # Latency & throughput benchmarking tool (TPS/TTFT/ITL)
-│   └── eval_soc_agent.py         # Automated SOC agent evaluator with LLM judge
+│   └── eval_soc_agent.py         # Automated SOC agent evaluator with Jev / LLM judge
 ├── agent/
+│   ├── gepa_runbook_optimizer.py # Harness^2 Propose-Probe-Compose, Stratified Sampler & GEPA adapter
+│   ├── hillclimb_harness.py      # HarnessIntegrityGuard, Categorical Gates, Attribution & ExperienceLibrary
+│   ├── aqua_diagnostics.py       # Two-stage AQuA trajectory diagnosis & stage localization
+│   ├── hierarchical_soc_agent.py # Supervisor-Worker SOC agent with DSPy context hygiene
+│   ├── threat_hunt_environment.py# Track 2 GTI collection & SIEM horizon-widening sandbox
+│   ├── soc_environment.py        # Interactive Gen 3 / Gen 5 SOC state machine sandbox
+│   ├── jev_evaluator.py          # Jev System-One logprob & GLiNER2.5-Decide inner-loop judge
 │   ├── gemma_agent.py            # Multi-backend unified inference interface
-│   ├── soc_tier1_agent.py        # Tier 1 SOC Analyst agent class
+│   ├── soc_tier1_agent.py        # Tier 1 SOC Analyst ReAct agent class
 │   ├── soc_tools.py              # Mockable local SOC inspection tools
-│   ├── secops_mcp_tools.py       # Live Google SecOps Remote MCP client
-│   └── deploy_soc_tier1.py       # Vertex AI Agent Engine packaging & deployment
+│   └── secops_mcp_tools.py       # Live Google SecOps Remote MCP client
 ├── terraform/
 │   ├── locals.tf                 # Reads configs/models.json via jsondecode()
 │   ├── variables.tf              # Accepts var.model_flavor
 │   ├── vertex.tf                 # Vertex AI endpoint resources
 │   └── cloudrun.tf               # Cloud Run service resources
 └── docs/
+    ├── blog/
+    │   ├── gepa_runbook_evolution_and_disciplined_hillclimbing.md # Full GEPA, RRSI, DSPy & Harness^2 narrative
+    │   ├── gepa_mcp_tool_description_optimization.md             # SecOps MCP tool description optimization
+    │   └── part1_zero_idle_gpu_infrastructure.md                 # Zero-idle GPU serving infrastructure
     ├── soc_eval_results/
-    │   └── OVERNIGHT_SWEEP_SUMMARY.md # Master dynamic benchmark leaderboard
-    ├── llama_model_comparative_evals.md # Detailed Llama & partner comparative scorecards
-    ├── llama_soc_agent_evaluation_plan.md # Evaluation blueprint & methodology
-    ├── speculative_decoding.md   # Speculative decoding & Prompt Lookup (N-gram) guide
-    ├── model_registry_catalog.md # Authoritative Vertex AI Model Registry inventory
-    ├── cost_analysis.md          # Hardware sizing, pricing breakdown & lifecycle analysis
-    ├── cloudrun_deploy.md        # Cloud Run deployment guide
-    └── vertex_deployment_notes.md# Vertex AI deployment guide
+    │   ├── harness2_8h_campaign/
+    │   │   ├── HARNESS2_CAMPAIGN_REPORT.md                       # Complete Harness^2 technical & transfer report
+    │   │   ├── gen5_transfer/GEN5_TRANSFER_SCORECARD.md          # 180-trajectory Gen 5 3-model x 3-arm scorecard
+    │   │   └── threat_hunt_multi_model/THREAT_HUNT_MULTI_MODEL_SCORECARD.md # 48-trajectory Track 2 scorecard
+    │   ├── dspy_overnight/MORNING_REPORT.md                      # 29-experiment DSPy context-hygiene report
+    │   └── OVERNIGHT_SWEEP_SUMMARY.md                            # Master dynamic benchmark leaderboard
+    ├── RUNBOOK_AUTHORING_BEST_PRACTICES.md # 10 rules for agentic SOC runbooks & 4-way disposition matrix
+    ├── hillclimber_rrsi_crosswalk.md       # Disciplined Hillclimber vs RRSI & Harness^2 mechanism crosswalk
+    ├── references_agent_harness_literature.md # Annotated bibliography (Harness^2, RRSI, HDA, GEPA)
+    └── evals_gen5.md                       # Gen 5 family-instanced SOC suite & measurement gates guide
 ```
 
 ---
@@ -182,6 +240,22 @@ just vertex-undeploy
 ## 5. Documentation Reference
 
 * **Published Static Site (GitHub Pages)**: [https://dandye.github.io/open-model-deploy-gcp/](https://dandye.github.io/open-model-deploy-gcp/)
+
+### Agentic SOC Evaluation & Recursive Harness Evolution ($\text{Harness}^2$, RRSI, GEPA)
+* [$\text{Harness}^2$ Recursive Runbook Evolution Campaign Report (`arXiv:2610.14224`)](docs/soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md)
+* [Gen 5 Cross-Model Transfer & Cost Staircase Scorecard (`180` Trajectories)](docs/soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md)
+* [Track 2 Proactive Threat Hunting Multi-Model Scorecard (`48` Trajectories)](docs/soc_eval_results/harness2_8h_campaign/threat_hunt_multi_model/THREAT_HUNT_MULTI_MODEL_SCORECARD.md)
+* [Blog: Evolving SecOps Runbooks Without Cheating (GEPA, Verbosity Bias, RRSI, DSPy & $\text{Harness}^2$)](docs/blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md)
+* [Blog: Evolving SecOps MCP Tool Descriptions with GEPA](docs/blog/gepa_mcp_tool_description_optimization.md)
+* [10 Rules for Agentic SOC Runbook Authoring (`RUNBOOK_AUTHORING_BEST_PRACTICES.md`)](docs/RUNBOOK_AUTHORING_BEST_PRACTICES.md)
+* [Disciplined Hillclimber vs. RRSI & $\text{Harness}^2$: Mechanism Crosswalk](docs/hillclimber_rrsi_crosswalk.md)
+* [Annotated Bibliography: Agent Harness, Skill Evolution & Evaluation Literature](docs/references_agent_harness_literature.md)
+* [Gen 5 Family-Instanced SOC Evaluation Suite & Measurement Gates](docs/evals_gen5.md)
+* [DSPy Context Engineering 9-Hour Overnight Report (`MORNING_REPORT.md`)](docs/soc_eval_results/dspy_overnight/MORNING_REPORT.md)
+
+### Multi-Model GPU Serving & Benchmarking Infrastructure
+* [Project Overview (`docs/index.md`)](docs/index.md)
+* [Full Documentation Catalog (`docs/catalog.md`)](docs/catalog.md)
 * [Future Work & Strategic Roadmap](docs/future_work.md)
 * [Master Dynamic Benchmark Leaderboard](docs/soc_eval_results/OVERNIGHT_SWEEP_SUMMARY.md)
 * [Gemma SOC Tier 1 Evaluation Plan & Methodology (10-Case Benchmark Suite)](docs/gemma_soc_agent_evaluation_plan.md)

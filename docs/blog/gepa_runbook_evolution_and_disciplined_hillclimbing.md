@@ -545,44 +545,98 @@ I distilled the failure modes and validator checks from those 29 experiments int
 
 ---
 
+## Beyond single-proposer GEPA: $\text{Harness}^2$ contrastive Propose-Probe-Compose and stratified minibatch evolution
+
+Even after the DSPy context-hygiene pass compressed the runbooks and lifted aggregate scores, single-proposer GEPA still suffered from three multi-component credit-assignment bottlenecks on the 90-case Gen 5 benchmark (`40` train, `20` validation, `30` sealed `final_test`):
+
+1. **Minority-runbook outer minibatch starvation.** In the 40-case Gen 5 `trainset`, `basic_ioc_enrichment.md` governs `22/40` cases, whereas `malware_triage.md` governs `8/40`, `suspicious_login_triage.md` governs `6/40`, and `lateral_movement_hunt_psexec_wmi.md` governs only `4/40`. GEPA's default `EpochShuffledBatchSampler` draws its `minibatch_size = 3` acceptance gate uniformly across all 40 cases. A random 3-case draw has a $(32/40)^3 = 51.2\%$ chance of containing zero malware cases and a $(36/40)^3 = 72.9\%$ chance of containing zero lateral-movement cases, causing valid edits to minority runbooks to tie the parent score (`2.8996 vs 2.8996`) and get discarded.
+2. **Entangled workflow vs. domain edits.** A single reflection prompt that rewrites both procedural tool-calling order and SecOps decision boundaries at once makes it impossible to tell which edit helped and which edit hurt when a candidate regresses on a single case.
+3. **Un-gated inner probe scoring.** An edit to `basic_ioc_enrichment.md` or `malware_triage.md` could raise the mean scalar score on a 4-case probe batch while introducing a categorical `OVER_CONTAINMENT_FALSE_ALARM` or `RUNBOOK_PROCEDURAL_VIOLATION` on a benign twin, surviving to fail only at post-loop validation (or worse, causing a `\$50,000` false-alarm isolation when transferred across models).
+
+To solve all three problems, I adapted **$\text{Harness}^2$: Recursive Agent Harnessing for an Open World** by Ruiyao Xu, Yanfei Chen, Zhongying CuiZhu, Bhavana Dalvi Mishra, Yifei Ming, Han Yu, Rujun Han, Chen-Yu Lee, and Tomas Pfister at Northwestern University and Google Cloud AI Research (`arXiv:2610.14224`, [github.com/google-research/harness2](https://github.com/google-research/harness2), [harness2.github.io](https://harness2.github.io)).
+
+In their paper, Xu et al. separate the *execution harness* $\mathcal{H}_0$ (reset cleanly on every task) from a persistent *continual improvement harness* $\mathcal{R}_t$ (an indexed library of adopted harnesses and `EXPERIENCE.md` lessons) and connect two levels of recursion:
+
+- **Task-level recursion (`Propose-Probe-Compose`).** Instead of a single unconstrained rewriter, two role-scoped editors inspect the baseline rollout $e^0$ in parallel: an **`INVARIANT` (`INV`)** editor restricted to general agent workflow, tool ordering, and verification procedures, and a **`DOMAIN` (`DOM`)** editor restricted to practitioner rules and domain decision contracts. Both candidates are probed under matched sandbox execution settings, and a composer selectively merges verified improvements from their behavioral contrast (`COMPOSED` / `INV` / `DOM` / `KEEP_BASE`).
+- **Harnessing-level recursion (`Experience Reflector`).** After each validation step, an Experience Reflector diffs every touched component against $\mathcal{H}_0$, assigns a 4-state attribution label (`helped | hurt | no observed effect | confounded`), and persists contrast-supported lessons (`cue`, `lesson`, `evidence`, `confidence`) to `EXPERIENCE.md` in $\mathcal{R}_{t+1}$.
+
+### Adapting $\text{Harness}^2$ to multi-runbook SecOps evolution (`PR #15`)
+
+In `agent/gepa_runbook_optimizer.py` and `agent/hillclimb_harness.py` (invoked via `--proposal-mode harness2` or `just gepa-evolve-harness2`), I implemented $\text{Harness}^2$'s two-level recursion alongside three domain-specific extensions for SOC runbook optimization:
+
+1. **Contrastive `INV`/`DOM` Propose-Probe-Compose with categorical inner-probe gating (`Harness2ProposeProbeComposeProposer`).** For each scheduled runbook component `comp_name`, `_select_probe_batch(comp_name)` selects component-matched training cases plus a cross-runbook benign/duplicate guard case. `_probe_score()` runs `INV`, `DOM`, and `COMPOSED` with `capture_traces=True` and passes the trajectory telemetry through `evaluate_candidate_acceptance()`. Any candidate that triggers `REVERTED_CATEGORICAL_ZERO_TOOLS`, `REVERTED_CATEGORICAL_INERT`, `REVERTED_CATEGORICAL_SAFETY`, `REVERTED_CATEGORICAL_TAXONOMY`, or `REVERTED_REGRESSION` receives an immediate `-1.0` probe score and is rejected before reaching GEPA's outer loop.
+2. **Component-stratified outer minibatch sampling (`ComponentStratifiedBatchSampler` + `NonFrozenRoundRobinSelector`).** When AQuA trajectory diagnostics freeze 100%-passing runbooks (`--freeze-passing-runbooks`), `NonFrozenRoundRobinSelector` cycles exclusively across the remaining weak runbooks and notifies `ComponentStratifiedBatchSampler` (`minibatch_size = 4`), which guarantees 3 family-interleaved cases where `resolve_implicated_runbook(case) == target_comp` plus 1 cross-runbook guard case.
+3. **4-state attribution and multi-round (`--rounds 2`) recursive warm-start (`ExperienceLibrary`).** After each round, `attribute_candidate_edits()` labels each touched runbook `helped`, `hurt`, `no_observed_effect`, or `confounded`, writes redacted high-confidence lessons to `configs/runbooks/harness2_evolved/EXPERIENCE.md`, and grafts non-confounded `helped` components into the next round's `seed_candidate`.
+
+### Live $k=2$ recursive evolution and 228-trajectory cross-model transfer results
+
+In the live $k=2$ Gen 5 evolution campaign (`run_id=20261020T055127Z-64c54d88`, full report in `docs/soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md`), Step 0 cleared the noise-floor gate (`mean_spread = 0.0008 <= 0.02`, $\tau_{\text{accept}} = 0.0150$), and AQuA froze `basic_ioc_enrichment.md` and `suspicious_login_triage.md`. `NonFrozenRoundRobinSelector` and `Harness2ProposeProbeComposeProposer` then targeted the two weak minority runbooks (`malware_triage.md` and `lateral_movement_hunt_psexec_wmi.md`). Candidate 2 (`COMPOSED`) lifted validation fitness from `0.9252` to **`0.9642`** (`+0.0390`, `2.6x` $\tau_{\text{accept}}$, `20/20` cases passed, zero regressions):
+
+- `lateral_movement_hunt_psexec_wmi.md` compressed from `1,074` raw words to **`281` words** (`-73.8%`, attribution `helped`), lifting `CASE-GEN5-LATERAL-PSEXEC-05` from `0.7501` to `0.9688` (`+0.2187`).
+- `malware_triage.md` compressed from `843` raw words to **`336` words** (`-60.1%`, attribution `helped`), lifting `CASE-GEN5-RANSOMWARE-CRITICAL-05` from `0.7577` to `0.9748` (`+0.2171`).
+
+I then evaluated the resulting `harness2_k2_evolved` runbook suite (`1,743` total words across all 4 core runbooks, `-52.2%` vs. raw `.clinerules`) against the unmodified seed (`3,648` words) and single-proposer GEPA (`1,988` words) across `180` trajectories on the 20-case Gen 5 `validation` split (`3` models $\times$ `3` arms $\times$ `20` cases, `run_id=20261020T092042Z-88248e1f`):
+
+| Model | Runbook Arm | Words | Harbor 60/20/20 | GEPA Fitness | $d'$ | Total Operational Loss ($L$, USD) | Mean Tools | Token Cost (USD) |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `gemini-2.5-flash-lite` | `seed_runbooks` | 3,648 | 0.9684 | 0.9524 | 2.56 | \$50,251.32 | 6.35 | \$0.0990 |
+| `gemini-2.5-flash-lite` | `gepa_single_proposer` | 1,988 | 0.9784 | 0.9624 | 2.56 | \$50,251.37 | 6.50 | \$0.1027 |
+| `gemini-2.5-flash-lite` | **`harness2_k2_evolved`** | **1,743** | **0.9840** | **0.9840** | **2.91** | **\$251.02** | **5.60** | **\$0.0716** |
+| `gemini-2.5-flash` | `seed_runbooks` | 3,648 | 0.9723 | 0.9563 | 2.91 | \$250.94 | 5.00 | \$0.2017 |
+| `gemini-2.5-flash` | `gepa_single_proposer` | 1,988 | 0.9751 | 0.9591 | 2.91 | \$50,000.91 | 4.95 | \$0.1943 |
+| `gemini-2.5-flash` | **`harness2_k2_evolved`** | **1,743** | **0.9723** | **0.9723** | 2.49 | **\$5,250.87** | 5.10 | **\$0.1809** |
+| `gemini-3.5-flash-lite` | `seed_runbooks` | 3,648 | 0.9825 | 0.9665 | 3.27 | \$0.93 | 5.25 | \$0.0568 |
+| `gemini-3.5-flash-lite` | `gepa_single_proposer` | 1,988 | 0.9825 | 0.9665 | 3.27 | \$0.93 | 5.25 | \$0.0587 |
+| `gemini-3.5-flash-lite` | **`harness2_k2_evolved`** | **1,743** | **0.9848** | **0.9848** | **3.27** | **\$0.84** | **5.20** | **\$0.0502** |
+| **3-Model Mean** | **`harness2_k2_evolved`** | **1,743** | **0.9804** | **0.9804** | 2.89 | **\$1,834.24** (**-89.1%** vs seed, **-94.5%** vs single-proposer) | **5.30** | **\$0.1009** |
+
+Applying the same $\text{Harness}^2$ Propose-Probe-Compose loop to Track 2 proactive threat hunting (`configs/runbooks/harness2_evolved/gti_collection_threat_hunt.md`, `347` words, evaluated in `ThreatHuntEnvironment` across `48` trajectories spanning 3 models $\times$ 4 arms) selected a `DOM` refinement (`0.8998 -> 0.9780`) that achieved **`1.0000` Hunt Composite** on `gemini-2.5-flash-lite` and the highest 3-model average Hunt Composite (**`0.9813`** vs. `0.9510` compressed baseline and `0.8295` raw `.clinerules`), with `100%` verdict accuracy, `100%` `72h -> 168h` SIEM horizon widening, and `100%` signed-LOLBin restraint.
+
+---
+
 ## What I learned from breaking the optimizer first
 
 Automated prompt and skill evolution works, but only after you treat the optimizer like an untrusted adversary that will exploit every gap in your measurement rig.
 
-When we let GEPA reflect on raw evaluation traces without guardrails, it memorized the test CIDR blocks and told the analyst to skip enrichment. When we evaluated degraded skills with a generative text judge, `verbose_lore.md` outscored our clean reference skill because small models mimicked the bloat and the judge rewarded shotgun keyword recall. When we audited our own markdown summary tables against the raw JSON reports, we caught unpinned baseline drift and missing provenance metadata.
+When I let GEPA reflect on raw evaluation traces without guardrails, it memorized the test CIDR blocks and told the analyst to skip enrichment. When I evaluated degraded skills with a generative text judge, `verbose_lore.md` outscored my clean reference skill because small models mimicked the bloat and the judge rewarded shotgun keyword recall. When I audited my own markdown summary tables against the raw JSON reports, I caught unpinned baseline drift and missing provenance metadata. And when I ran single-proposer GEPA across an imbalanced multi-runbook suite, uniform 3-case outer minibatches starved minority runbooks while un-gated inner edits introduced cross-model false-alarm regressions.
 
-Fixing those three problems gave us a hillclimber we can actually trust:
+Fixing those problems gave me a hillclimber I can actually trust:
 
 - Use degraded skills (`verbose_lore.md`) inside execution sandboxes as a negative control to catch judge verbosity bias before you start optimizing.
-- Enforce deterministic anti-memorization and anti-bloat filters (`validate_runbook_candidate()` with `max_growth_ratio = 1.35`) so the teacher model has to write variable-driven verification stages instead of lookup tables.
+- Enforce deterministic anti-memorization and context-hygiene filters (`validate_runbook_candidate()` with `forbid_template_vars`, `forbid_mermaid_diagrams`, `forbid_interactive_pseudotools`, and `max_words = 350`) so the teacher model writes compact, variable-driven verification stages instead of lookup tables or IDE scaffolding.
 - Lock the evaluation harness with SHA-256 checksums (`HarnessIntegrityGuard`), measure the Step 0 noise floor ($\tau_{\text{accept}}$) before accepting mutations, and score inner-loop rollouts with calibrated single-pass logprobs (`JevSocJudgeEvaluator`) instead of slow generative essays.
-- Walk the evolved skills down the model cost staircase (`run_cost_staircase_walk`) so you can prove, with an append-only JSONL ledger, exactly how small a model you can deploy on a single L4 GPU without sacrificing containment safety.
-- Treat "nothing accepted" as a result. The 2026-10-02 run rejected both candidates as noise, and the September runbooks that looked like a \$249,950 win in the text-only adapter lost to a human-written skill on all three models once they had to drive a shell in a container. An in-distribution gain is a hypothesis until it survives a different harness, and the loop must not be able to overwrite yesterday's artifact while finding that out.
+- Use $\text{Harness}^2$'s contrastive `INV`/`DOM` Propose-Probe-Compose (`Harness2ProposeProbeComposeProposer`), component-stratified outer minibatches (`ComponentStratifiedBatchSampler`), categorical inner-probe gates (`_probe_score()`), and 4-state component attribution (`ExperienceLibrary`) so minority runbooks get exercised, unsafe mutations die in the inner probe, and verified lessons persist across rounds in `EXPERIENCE.md`.
+- Walk the evolved skills down the model cost staircase (`run_cost_staircase_walk`) so you can prove, with an append-only JSONL ledger, exactly how small a model you can deploy without sacrificing containment safety.
+- Treat "nothing accepted" as a result. The 2026-10-02 run rejected both candidates as noise, and the September runbooks that looked like a \$249,950 win in the text-only adapter lost to a human-written skill on all three models once they had to drive a shell in a container. An in-distribution gain is a hypothesis until it survives a different harness and model family, and the loop must not be able to overwrite yesterday's artifact while finding that out.
 
 ---
 
 ## References
 
-1. Xia, P., Han, R., Wang, Z., Chen, Y., Zhuang, Y., Lee, Y., Huang, C., Yu, H., CuiZhu, Z., Ming, Y., Yao, H., Gokturk, B., Pfister, T., Lee, C.-Y. (2026). RRSI: Regularized Recursive Self-Improvement of Agent Harnesses. arXiv:2609.24972. https://arxiv.org/abs/2609.24972
-2. Ding, W., Lu, Q., Yu, C., Li, S., Jin, S., Liu, X., Durrett, G. (2026). Harness-Delta Attribution: What Evolves When We Talk About Harness Evolution? https://wenwen-d.github.io/blog/harness-delta-attribution/
-3. Zhang, A. L., Khattab, O. (2026). Language Model Harnesses Are Compositional Generalizers. https://alexzhang13.github.io/blog/2026/harness/
-4. Agrawal, L. A., et al. (2025). GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning. arXiv:2507.19457. https://arxiv.org/abs/2507.19457
-5. Oved, T., Pony, R., Naparstek, O., Barzelay, U., Agrawal, L. A. (2026). Optimize Cheap, Deploy Strong: A Recipe for Cost-Efficient GEPA. https://gepa-ai.github.io/gepa/blog/2026/09/29/optimize-cheap-deploy-strong/
-6. Dwork, C., Feldman, V., Hardt, M., Pitassi, T., Reingold, O., Roth, A. (2015). Generalization in Adaptive Data Analysis and Holdout Reuse. Advances in Neural Information Processing Systems 28. arXiv:1506.02629
-7. Anthropic (2026). Hill-Climbing on an Eval: Iteratively Improving Claude Applications. https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/evals/eval-hillclimb.md
-8. Anthropic (2026). Building an Eval for a Claude-Powered Application. https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/evals/build-eval.md
-9. Martin, L. (2026). Automating eval design and hillclimbing with Claude. https://claude.dev/blog/automating-eval-design-and-hillclimbing/
-10. Bennett, J. (2026). Claude's hillclimb loop, with your traces underneath. https://www.linkedin.com/pulse/claudes-hillclimb-loop-your-traces-underneath-jim-bennett-434gc/
-11. Kolesnikov, V. (2026). Your Agent Is Only as Good as the Sandbox You Measured It In. https://medium.com/@vladkol_eqwu/your-agent-is-only-as-good-as-the-sandbox-you-measured-it-in-f391b908418c
-12. Li, X., Liu, Y., Chen, W., et al. (2026). SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks. arXiv:2602.12670. https://arxiv.org/abs/2602.12670
-13. Weng, L. (2026). Harness Engineering for Self-Improvement. https://lilianweng.github.io/posts/2026-07-04-harness/
-14. Niklaus, J. (2026). Don't Train the Model, Evolve the Harness. https://huggingface.co/spaces/joelniklaus/harness-optimization
-15. Yang, C., Zhao, X., Wu, T., et al. (2026). Better Harnesses, Smaller Models: Building 90% Cheaper Agents via Automated Harness Adaptation. arXiv:2607.08938. https://arxiv.org/abs/2607.08938
+1. Xia, P., Han, R., Wang, Z., Chen, Y., Zhuang, Y., Lee, Y., Huang, C., Yu, H., CuiZhu, Z., Ming, Y., Yao, H., Gokturk, B., Pfister, T., Lee, C.-Y. (2026). RRSI: Regularized Recursive Self-Improvement of Agent Harnesses. Google Cloud AI Research. arXiv:2609.24972. https://arxiv.org/abs/2609.24972
+2. Xu, R., Chen, Y., CuiZhu, Z., Dalvi Mishra, B., Ming, Y., Yu, H., Han, R., Lee, C.-Y., Pfister, T. (2026). $\text{Harness}^2$: Recursive Agent Harnessing for an Open World. Northwestern University & Google Cloud AI Research. arXiv:2610.14224. https://arxiv.org/abs/2610.14224 (`https://github.com/google-research/harness2`, `https://harness2.github.io`)
+3. Ding, W., Lu, Q., Yu, C., Li, S., Jin, S., Liu, X., Durrett, G. (2026). Harness-Delta Attribution: What Evolves When We Talk About Harness Evolution? https://wenwen-d.github.io/blog/harness-delta-attribution/
+4. Zhang, A. L., Khattab, O. (2026). Language Model Harnesses Are Compositional Generalizers. https://alexzhang13.github.io/blog/2026/harness/
+5. Agrawal, L. A., et al. (2025). GEPA: Reflective Prompt Evolution Can Outperform Reinforcement Learning. arXiv:2507.19457. https://arxiv.org/abs/2507.19457
+6. Oved, T., Pony, R., Naparstek, O., Barzelay, U., Agrawal, L. A. (2026). Optimize Cheap, Deploy Strong: A Recipe for Cost-Efficient GEPA. https://gepa-ai.github.io/gepa/blog/2026/09/29/optimize-cheap-deploy-strong/
+7. Dwork, C., Feldman, V., Hardt, M., Pitassi, T., Reingold, O., Roth, A. (2015). Generalization in Adaptive Data Analysis and Holdout Reuse. Advances in Neural Information Processing Systems 28. arXiv:1506.02629
+8. Anthropic (2026). Hill-Climbing on an Eval: Iteratively Improving Claude Applications. https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/evals/eval-hillclimb.md
+9. Anthropic (2026). Building an Eval for a Claude-Powered Application. https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/evals/build-eval.md
+10. Martin, L. (2026). Automating eval design and hillclimbing with Claude. https://claude.dev/blog/automating-eval-design-and-hillclimbing/
+11. Bennett, J. (2026). Claude's hillclimb loop, with your traces underneath. https://www.linkedin.com/pulse/claudes-hillclimb-loop-your-traces-underneath-jim-bennett-434gc/
+12. Kolesnikov, V. (2026). Your Agent Is Only as Good as the Sandbox You Measured It In. https://medium.com/@vladkol_eqwu/your-agent-is-only-as-good-as-the-sandbox-you-measured-it-in-f391b908418c
+13. Li, X., Liu, Y., Chen, W., et al. (2026). SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks. arXiv:2602.12670. https://arxiv.org/abs/2602.12670
+14. Weng, L. (2026). Harness Engineering for Self-Improvement. https://lilianweng.github.io/posts/2026-07-04-harness/
+15. Niklaus, J. (2026). Don't Train the Model, Evolve the Harness. https://huggingface.co/spaces/joelniklaus/harness-optimization
+16. Yang, C., Zhao, X., Wu, T., et al. (2026). Better Harnesses, Smaller Models: Building 90% Cheaper Agents via Automated Harness Adaptation. arXiv:2607.08938. https://arxiv.org/abs/2607.08938
 
 Companion documents in the repository:
 
+- `docs/soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md`: the October 2026 $\text{Harness}^2$ ($k=2$) recursive evolution report, 180-trajectory Gen 5 cross-model transfer scorecard, 48-trajectory Track 2 threat-hunt scorecard, and cost staircase walk.
+- `docs/soc_eval_results/dspy_overnight/MORNING_REPORT.md`: the 29-experiment DSPy context-hygiene overnight campaign report.
+- `docs/RUNBOOK_AUTHORING_BEST_PRACTICES.md`: the 10-rule runbook authoring guide and 4-way disposition matrix.
 - `docs/soc_eval_results/DISCIPLINED_HILLCLIMBER_RUN_ANALYSIS.md`: the 2026-10-02 run artifacts, with SHA-256 digests and the list of fixes.
-- `docs/hillclimber_rrsi_crosswalk.md`: mechanism-by-mechanism comparison with RRSI and the prioritized gap list.
+- `docs/hillclimber_rrsi_crosswalk.md`: mechanism-by-mechanism comparison with RRSI and $\text{Harness}^2$, plus the updated gap list.
 - `docs/references_agent_harness_literature.md`: annotated bibliography with knowledge-base pointers.
 - `docs/soc_eval_results/GEPA_EVIDENCE_RECONCILIATION.md`: the September reconciliation audit.
 - Branch `harbor_soc_evals_v0001`, `docs/eval_results/harbor_soc/gepa_evolved_sweep/`: Campaign 5 scorecard, master report, and 90 trial records.
