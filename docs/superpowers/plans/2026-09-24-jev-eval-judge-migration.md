@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, Google GenAI SDK (`google.genai`), Pydantic v2, Pytest, Justfile automation.
 
-**Spec:** [docs/superpowers/specs/2026-09-24-jev-eval-judge-design.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/jev_evals_v0001/docs/superpowers/specs/2026-09-24-jev-eval-judge-design.md)
+**Spec:** [`docs/superpowers/specs/2026-09-24-jev-eval-judge-design.md`](../specs/2026-09-24-jev-eval-judge-design.md)
 
 ## Global Constraints
 

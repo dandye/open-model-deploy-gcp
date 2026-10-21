@@ -74,7 +74,7 @@ Cloud Run GPU currently provides a single GPU per instance (**1x NVIDIA L4, 24GB
   * Verified requirement for `--no-gpu-zonal-redundancy` flag to bypass interactive CLI prompt during automation.
 * **Findings**:
   * Default `gcloud run deploy` prompts for zonal redundancy if only non-zonal quota is requested.
-  * Automation scripts ([scripts/cloudrun_deploy.sh](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/scripts/cloudrun_deploy.sh)) must include `--no-gpu-zonal-redundancy` explicitly.
+  * Automation scripts (`scripts/cloudrun_deploy.sh`) must include `--no-gpu-zonal-redundancy` explicitly.
 * **Status**: Complete.
 
 ---

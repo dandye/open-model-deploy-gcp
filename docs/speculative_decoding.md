@@ -153,13 +153,13 @@ Systematic inspection of the Cloud Logging container output identified two disti
 2. **POSIX `shlex` Parameter Parsing**:
    Used Python `shlex` inside the registration script to safely tokenize multi-word and quoted flags passed via `EXTRA_VLLM_FLAGS`.
 3. **Automated Regression Testing**:
-   Added unit test suite in [`tests/test_optimization_flags.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/tests/test_optimization_flags.py) validating delimiter escaping, argument isolation, and zero-emoji compliance.
+   Added unit test suite in `tests/test_optimization_flags.py` validating delimiter escaping, argument isolation, and zero-emoji compliance.
 
 ---
 
 ## 6. Empirical Benchmarks & Performance Findings (`EXP-08b`)
 
-Once deployed to Endpoint `5532982204503687168` in `us-east1`, we benchmarked the speculative decoding endpoint across two distinct query profiles using [`scripts/benchmark.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/scripts/benchmark.py).
+Once deployed to Endpoint `5532982204503687168` in `us-east1`, we benchmarked the speculative decoding endpoint across two distinct query profiles using `scripts/benchmark.py`.
 
 ### 6.1 Test 1: General Analytical Reasoning Query
 * **Prompt**: *"Explain the mechanics of zero-trust network architectures in enterprise cloud environments."*

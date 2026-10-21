@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+, pytest, pydantic, Google GenAI SDK (Gemini 2.5 Pro as LLM Judge).
 
-**Spec:** [`benchmark_expansion_proposal.md`](file:///usr/local/google/home/dandye/.gemini/jetski/brain/8044d9a1-fda6-4da8-a4ef-ed7881dbe9cd/benchmark_expansion_proposal.md)
+**Spec:** `benchmark_expansion_proposal.md`
 
 ## Global Constraints
 
@@ -91,7 +91,7 @@ def test_ip_report_authorized_scanner():
 
 - [ ] **Step 2: Run pytest to verify new tests fail**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_soc_tools.py`
+Run: `.venv/bin/pytest -v tests/test_soc_tools.py`
 Expected: FAIL on new test functions.
 
 - [ ] **Step 3: Implement new tool behaviors in `agent/soc_tools.py`**
@@ -100,7 +100,7 @@ Update `agent/soc_tools.py` to support the new indicators, borderline calculatio
 
 - [ ] **Step 4: Run pytest to verify all tests pass**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_soc_tools.py`
+Run: `.venv/bin/pytest -v tests/test_soc_tools.py`
 Expected: PASS (all tests green).
 
 - [ ] **Step 5: Commit changes**
@@ -177,7 +177,7 @@ def test_eval_suite_contains_ten_cases():
 
 - [ ] **Step 2: Run pytest to verify schema test fails**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_eval_config_schema.py`
+Run: `.venv/bin/pytest -v tests/test_eval_config_schema.py`
 Expected: FAIL (currently only 5 cases).
 
 - [ ] **Step 3: Add the 5 new evaluation cases to `configs/evals/soc_tier1_triage.json`**
@@ -186,7 +186,7 @@ Append `CASE-06` through `CASE-10` with comprehensive prompt specifications, exp
 
 - [ ] **Step 4: Run pytest to verify schema test passes**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_eval_config_schema.py`
+Run: `.venv/bin/pytest -v tests/test_eval_config_schema.py`
 Expected: PASS.
 
 - [ ] **Step 5: Commit changes**
@@ -231,7 +231,7 @@ def test_react_loop_handles_tool_error_gracefully():
 
 - [ ] **Step 2: Run pytest to verify test behavior**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_soc_tier1_agent.py`
+Run: `.venv/bin/pytest -v tests/test_soc_tier1_agent.py`
 Expected: PASS (or update `_execute_tool_action` error catching if needed).
 
 - [ ] **Step 3: Enhance agent tool execution safety in `agent/soc_tier1_agent.py` if needed**
@@ -240,7 +240,7 @@ Ensure all tool exceptions are wrapped into standard JSON error objects so the a
 
 - [ ] **Step 4: Run pytest across agent tests**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_soc_tier1_agent.py`
+Run: `.venv/bin/pytest -v tests/test_soc_tier1_agent.py`
 Expected: PASS.
 
 - [ ] **Step 5: Commit changes**
@@ -296,7 +296,7 @@ def test_evaluate_assertions_on_new_cases():
 
 - [ ] **Step 2: Run pytest to verify assertion unit tests pass**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_eval_soc_agent.py`
+Run: `.venv/bin/pytest -v tests/test_eval_soc_agent.py`
 Expected: PASS.
 
 - [ ] **Step 3: Update `scripts/eval_soc_agent.py` reporting output formatting**
@@ -305,7 +305,7 @@ Ensure the CLI output and markdown report formatting cleanly display all 10 case
 
 - [ ] **Step 4: Run pytest across the whole repository**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v`
+Run: `.venv/bin/pytest -v`
 Expected: PASS (all unit tests passing).
 
 - [ ] **Step 5: Commit changes**
@@ -334,7 +334,7 @@ Document the 10 evaluation cases in `docs/gemma_soc_agent_evaluation_plan.md` an
 
 - [ ] **Step 2: Run tests to verify zero emoji violations and syntax correctness**
 
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py`
 Expected: PASS.
 
 - [ ] **Step 3: Commit and push changes**

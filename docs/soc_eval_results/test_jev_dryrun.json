@@ -45,31 +45,31 @@
     "evaluator": {
       "files": [
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/scripts/eval_soc_agent.py",
+          "path": "scripts/eval_soc_agent.py",
           "sha256": "43acf4ae81f7e2ff2cb5468b4f36ea76e3c7b050032fede37ac551b9a30d7a3e"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/scripts/eval_cost_engine.py",
+          "path": "scripts/eval_cost_engine.py",
           "sha256": "226218bdc3ed2f563aa0064ee09152730c43d048521a1a59add87de9703fd281"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/scripts/eval_trajectory_verifier.py",
+          "path": "scripts/eval_trajectory_verifier.py",
           "sha256": "da96537710f98ccfed439a107f04e6cba35f0cfb1993906e15b9e428fc8353a2"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/soc_tier1_agent.py",
+          "path": "agent/soc_tier1_agent.py",
           "sha256": "1a81c6488739ab6d9ccb03f69ea2b7765f06bf7f9eff110c0a71d789b45c9333"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/hierarchical_soc_agent.py",
+          "path": "agent/hierarchical_soc_agent.py",
           "sha256": "5a94f961ac32fbd221b687eaf5e67d7e34c0c13a1bc225cd8ef266175a138dba"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/soc_environment.py",
+          "path": "agent/soc_environment.py",
           "sha256": "ccdce9786681ca323220b0d8b82c73a2b32ddbf12edda70b12ab4d344c9550fa"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/agent/gemma_agent.py",
+          "path": "agent/gemma_agent.py",
           "sha256": "56608a1605538c111e2fa2789053b8e4c6bdd17de9f2980d897ec5eee7da950a"
         }
       ]

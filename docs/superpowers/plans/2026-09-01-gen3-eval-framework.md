@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, Pydantic, NumPy/SciPy (Signal Detection Theory), Google Cloud Vertex AI GenAI SDK.
 
-**Spec:** [`docs/superpowers/specs/2026-09-01-gen3-eval-framework-design.md`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gen3_evals_v0001/docs/superpowers/specs/2026-09-01-gen3-eval-framework-design.md)
+**Spec:** [`docs/superpowers/specs/2026-09-01-gen3-eval-framework-design.md`](../specs/2026-09-01-gen3-eval-framework-design.md)
 
 ## Global Constraints
 

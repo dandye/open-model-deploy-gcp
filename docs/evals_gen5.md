@@ -72,7 +72,7 @@ this model. The Harbor tree carries copies of `jev_judge.py`, `jev_evaluator.py`
 Install once into the repo venv (torch and gliner2 are kept out of `agent/requirements.txt` and the
 evaluator image on purpose):
 
-    UV="/usr/local/google/home/dandye/.local/bin/uv"
+    UV="uv"
     $UV pip install --python .venv/bin/python -r requirements-judge-gliner.txt
 
 How it scores. One multi-head classification per evaluation state (cached by state hash) answers

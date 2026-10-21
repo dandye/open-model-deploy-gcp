@@ -18,7 +18,7 @@
 - Address plan: internal IPs come from the ten site `/24`s in `pools-v1.json` (`10.10.0.0/24` to `10.19.0.0/24`), external IPs from `198.18.0.0/15`, documentation IPs (RFC 5737) only through the `doc_ip` slot type. Never `10.0.0.0/16` (Gen 3's range) and never a routable public address.
 - ASCII only in code, tests, docs, templates, and commit messages. No emojis. No em dashes. Family prompts and rubrics are plain prose.
 - Stage files by explicit path. Never `git add .` or `git add -A`.
-- Run tests with `.venv/bin/python -m pytest -q` from the repository root (`pytest.ini` sets `pythonpath = .`). Worktree: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gen5_evals_v0001`, branch `gen5_evals_v0001`.
+- Run tests with `.venv/bin/python -m pytest -q` from the repository root (`pytest.ini` sets `pythonpath = .`). Worktree: `gemma_deploy__worktrees/gen5_evals_v0001`, branch `gen5_evals_v0001`.
 - Do not touch Plan 3 files: `scripts/eval_soc_agent.py`, `agent/gepa_runbook_optimizer.py`, `agent/hillclimb_harness.py`, `scripts/generate_harbor_soc_tasks.py`, `scripts/soc_sandbox_cli.py`, `evals/harbor_soc/**`, `.eval_harness_lock.json`, `docs/experiment_protocol.md`, `docs/index.md`. Importing from `scripts/soc_sandbox_cli.py` is allowed; editing it is not.
 - Owner review gate: the six new families (Task 4) encode SOC judgment. After Task 4 the owner reviews the templates for defensibility of expected and prohibited actions. A template change means rebuild and recommit (Task 4 Step 6 again); never loosen a build gate or a calibration gate to make a template pass.
 

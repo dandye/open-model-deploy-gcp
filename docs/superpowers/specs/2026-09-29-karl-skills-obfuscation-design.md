@@ -23,7 +23,7 @@ A primary constraint governs all degraded variants: **zero introduced technical 
 The project will reside in a dedicated linked git worktree branched from `karl_harbor_evals_v0001`:
 
 ```text
-/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/
+gemma_deploy__worktrees/
 ├── main/
 ├── karl_harbor_evals_v0001/
 └── karl_skills_obfuscation_v0001/

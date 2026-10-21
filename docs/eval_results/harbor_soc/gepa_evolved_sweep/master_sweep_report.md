@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-02
 - **Evaluator:** Jetski Campaign 5 Harbor Runner (`scripts/run_harbor_soc_sweep.py`)
-- **Repository:** `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/harbor_soc_evals_v0001`
+- **Repository:** `gemma_deploy__worktrees/harbor_soc_evals_v0001`
 - **GCP Tenant Isolation:** Argolis Project `dandye-0324-chronicle` (`1002894625780`, Region: `us-central1`)
 - **Cluster Target:** `harbor-eval-cluster` (GKE / Container Sandbox Fallback)
 - **Total Trials Evaluated:** 90 trials (3 models x 3 arms x 10 cases)

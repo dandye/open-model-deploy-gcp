@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+, Kubernetes (`kubectl` / PyYAML), KubeRay Operator, Kueue Batch Scheduler, Ray Serve, vLLM, Google Cloud Storage, Pytest, Justfile.
 
-**Spec:** [docs/benchmarking_gke_ray_serve.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gke_ray_sweep_v0001/docs/benchmarking_gke_ray_serve.md)
+**Spec:** [`docs/benchmarking_gke_ray_serve.md`](../benchmarking_gke_ray_serve.md)
 
 ## Global Constraints
 
@@ -16,7 +16,7 @@
 - Always define environment variables first (e.g. `PROJECT_ID="..."`) before expanding in shell snippets.
 - Worktree-relative path resolution (`ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`).
 - Cost Awareness: Verify Kueue queue draining and GKE Cluster Autoscaler scale-to-zero ($0.00 idle compute).
-- Working Directory: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gke_ray_sweep_v0001`
+- Working Directory: `gemma_deploy__worktrees/gke_ray_sweep_v0001`
 
 ---
 
@@ -43,14 +43,14 @@ def test_kueue_and_ray_templates_exist_and_no_emojis():
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gke_manifest_templates.py`
+Run: `.venv/bin/pytest -v tests/test_gke_manifest_templates.py`
 Expected: FAIL (file not found)
 
 - [ ] **Step 3: Implement `k8s/kueue_queues.yaml` and template manifests**
 Implement Kueue ClusterQueue/LocalQueue, RayCluster vLLM template with configurable GPU requests/limits, shared memory (`dshm`), and evaluation batch Job template with GCS output volume.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gke_manifest_templates.py`
+Run: `.venv/bin/pytest -v tests/test_gke_manifest_templates.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -86,14 +86,14 @@ def test_render_ray_cluster_manifest_for_4x_l4():
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gke_ray_orchestrator.py`
+Run: `.venv/bin/pytest -v tests/test_gke_ray_orchestrator.py`
 Expected: FAIL
 
 - [ ] **Step 3: Implement `scripts/run_gke_ray_sweep.py`**
 Implement data classes, manifest generators, `kubectl` executor, job log streaming, GCS result collection, and CLI argument parsing with `--dry-run` and `--models`.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gke_ray_orchestrator.py`
+Run: `.venv/bin/pytest -v tests/test_gke_ray_orchestrator.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -126,14 +126,14 @@ def test_justfile_contains_gke_ray_recipes(self):
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py::TestJustfileRecipes::test_justfile_contains_gke_ray_recipes`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py::TestJustfileRecipes::test_justfile_contains_gke_ray_recipes`
 Expected: FAIL
 
 - [ ] **Step 3: Add recipes to `Justfile`**
 Add recipes with explicit shell variables and help comments.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**

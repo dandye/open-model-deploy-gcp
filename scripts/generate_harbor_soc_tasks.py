@@ -24,7 +24,7 @@ from scripts.gen5_reference_policies import plan_oracle
 EVALSET_PATH = ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"
 CLEAN_SKILL_PATH = ROOT_DIR / "skills" / "secops-triage" / "SKILL.md"
 NOISY_SKILL_PATH = ROOT_DIR / "skills" / "secops-triage" / "noisy" / "verbose_lore.md"
-DEFAULT_GEPA_RUNBOOKS_DIR = Path("/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/configs/runbooks/gepa_evolved")
+DEFAULT_GEPA_RUNBOOKS_DIR = ROOT_DIR / "configs" / "runbooks" / "gepa_evolved"
 DEFAULT_HARBOR_OUT = ROOT_DIR / "evals" / "harbor_soc"
 DEFAULT_EVALS_JSON_OUT = ROOT_DIR / "skills" / "secops-triage" / "evals" / "evals.json"
 

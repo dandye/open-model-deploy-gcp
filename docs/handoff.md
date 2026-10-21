@@ -20,12 +20,12 @@ This document captures the operational state, active cloud endpoints, PR status,
 
 ## 1. Repository & Branch Status
 
-* **Workspace Directory**: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine`
+* **Workspace Directory**: `gemma_deploy__worktrees/agent_engine`
 * **Active Branch**: `agent_engine`
-* **Pull Request**: [PR #1 (agent_engine -> main)](https://depot.code.corp.goog/personal/gemma_deploy/pull/1)
+* **Pull Request**: [PR #1 (agent_engine -> main)](https://github.com/dandye/open-model-deploy-gcp/pull/1)
 * **Conflict Status**: **0 conflicts** (Fully rebased and merged with `origin/main`).
 * **Test Verification**: **63 / 63 tests passing** (`uv run pytest -v`).
-* **Latest Merge Commit**: [`98c998a`](https://depot.code.corp.goog/personal/gemma_deploy/commit/98c998a)
+* **Latest Merge Commit**: [`98c998a`](https://github.com/dandye/open-model-deploy-gcp/commit/98c998a)
 
 ---
 
@@ -83,7 +83,7 @@ This document captures the operational state, active cloud endpoints, PR status,
 ## 5. Immediate Next Milestones
 
 1. **Merge Pull Request #1**:
-   * Complete review and merge [PR #1](https://depot.code.corp.goog/personal/gemma_deploy/pull/1) into `main`.
+   * Complete review and merge [PR #1](https://github.com/dandye/open-model-deploy-gcp/pull/1) into `main`.
 2. **Model Parameter Sweep with Larger Gemmas**:
    * Evaluate `gemma-2-9b-it` (1x L4) and `gemma-3-27b-it` FP8 (4x L4) under the un-spoiled benchmark to observe where open-weights models achieve frontier-level multi-hop tool chaining.
 3. **Agent Fine-Tuning & Few-Shot Investigation**:
