@@ -1551,6 +1551,27 @@ def build_compose_prompt(
     )
 
 
+def _clean_diff_highlight_line(raw_line: str) -> str:
+    """Strip leading markdown list bullets or numbers without breaking bold spans."""
+    cleaned = re.sub(r"^(?:\d+\.|[*+-])\s+", "", raw_line.strip()).strip()
+    return cleaned
+
+
+def _truncate_at_word_boundary(text: str, max_chars: int = 450) -> str:
+    """Truncate text at a word boundary and close any unbalanced markdown tokens."""
+    if len(text) <= max_chars:
+        return text
+    prefix = text[: max_chars - 3]
+    if " " in prefix:
+        prefix = prefix.rsplit(" ", 1)[0]
+    prefix = prefix.rstrip(".,;:")
+    if prefix.count("`") % 2 == 1:
+        prefix += "`"
+    if prefix.count("**") % 2 == 1:
+        prefix += "**"
+    return prefix + "..."
+
+
 def summarize_runbook_diff_lesson(
     component_name: str,
     base_text: str,
@@ -1563,19 +1584,19 @@ def summarize_runbook_diff_lesson(
     base_lines = {line.strip() for line in (base_text or "").splitlines() if line.strip()}
     workflow_section = (new_text or "").split("## Workflow Steps", 1)[-1]
     candidate_lines = [
-        line.strip().lstrip("*-0123456789. ").strip()
+        _clean_diff_highlight_line(line)
         for line in workflow_section.splitlines()
         if line.strip() and line.strip() not in base_lines and not line.strip().startswith("#")
     ]
+    candidate_lines = [line for line in candidate_lines if line]
     if not candidate_lines:
         candidate_lines = [
-            line.strip().lstrip("*-0123456789. ").strip()
+            _clean_diff_highlight_line(line)
             for line in (new_text or "").splitlines()
             if line.strip() and line.strip() not in base_lines and not line.strip().startswith("#")
         ]
-    highlights = "; ".join(candidate_lines[:2])
-    if len(highlights) > 220:
-        highlights = highlights[:217].rstrip() + "..."
+        candidate_lines = [line for line in candidate_lines if line]
+    highlights = _truncate_at_word_boundary("; ".join(candidate_lines[:2]), max_chars=450)
     word_summary = f"({base_words} -> {new_words} words)"
     if highlights:
         return (

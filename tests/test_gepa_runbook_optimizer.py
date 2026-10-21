@@ -2271,6 +2271,29 @@ def test_gen5_harness2_transfer_helpers():
     assert agg["sdt_metrics"]["correct_rejections"] == 1
 
 
+def test_summarize_runbook_diff_lesson_preserves_bold_and_truncates_cleanly():
+    from agent.gepa_runbook_optimizer import summarize_runbook_diff_lesson
+
+    base_text = "# Malware Triage\n## Workflow Steps\n1. Old step one.\n"
+    new_text = (
+        "# Malware Triage\n"
+        "## Workflow Steps\n"
+        "1. **Get File Reputation:** Call `gti-mcp.get_file_report` with `hash=<file_hash>`.\n"
+        "2. **Check Host & Execution Context:** Call `secops-mcp.lookup_entity` on `<hostname>`.\n"
+    )
+    lesson = summarize_runbook_diff_lesson(
+        component_name="malware_triage.md",
+        base_text=base_text,
+        new_text=new_text,
+        mean_delta=0.0528,
+    )
+    assert "**Get File Reputation:**" in lesson
+    assert "**Check Host & Execution Context:**" in lesson
+    assert lesson.count("`") % 2 == 0
+    assert lesson.count("**") % 2 == 0
+
+
+
 
 
 

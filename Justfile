@@ -440,8 +440,8 @@ harness-verify:
     @.venv/bin/python scripts/harness_lock.py verify
 
 # Validate SOC runbooks against the 10 context hygiene, word-budget, and anti-memorization rules (Usage: just lint-runbooks [dir] [max_words])
-lint-runbooks DIR="docs/soc_eval_results/dspy_overnight/candidates/arena_grafted_all4_w300" MAX_WORDS="350":
-    @.venv/bin/python -c 'from pathlib import Path; import sys; from agent.gepa_runbook_optimizer import load_forbidden_literals, load_seed_runbooks, validate_runbook_candidate; cand = load_seed_runbooks(Path("{{DIR}}")); fl = load_forbidden_literals(Path("configs/evals/gen5/manifest.json")); ok, v = validate_runbook_candidate(cand, forbidden_literals=fl, forbid_template_vars=True, forbid_mermaid_diagrams=True, forbid_interactive_pseudotools=True, max_words=int("{{MAX_WORDS}}")); print(f"[OK] {len(cand)} runbooks in {{DIR}} passed 10-rule lint (total words: {sum(len(t.split()) for t in cand.values())})") if ok else (print("\n".join(v), file=sys.stderr), sys.exit(1))'
+lint-runbooks DIR="configs/runbooks/harness2_evolved" MAX_WORDS="350":
+    @.venv/bin/python -c 'from pathlib import Path; import sys; from agent.gepa_runbook_optimizer import load_forbidden_literals, load_seed_runbooks, validate_runbook_candidate; fl = load_forbidden_literals(Path("configs/evals/gen5/manifest.json")); dirs = [Path("{{DIR}}")] if "{{DIR}}" != "configs/runbooks/harness2_evolved" else [Path("configs/runbooks/harness2_evolved"), Path("docs/soc_eval_results/dspy_overnight/candidates/arena_grafted_all4_w300")]; [((cand := load_seed_runbooks(d)), (cand.__setitem__("gti_collection_threat_hunt.md", (d / "gti_collection_threat_hunt.md").read_text(encoding="utf-8")) if (d / "gti_collection_threat_hunt.md").exists() else None), (res := validate_runbook_candidate(cand, forbidden_literals=fl, forbid_template_vars=True, forbid_mermaid_diagrams=True, forbid_interactive_pseudotools=True, max_words=int("{{MAX_WORDS}}"))), print(f"[OK] {len(cand)} runbooks in {d} passed 10-rule lint (total words: {sum(len(t.split()) for t in cand.values())})") if res[0] else (print("\n".join(res[1]), file=sys.stderr), sys.exit(1))) for d in dirs]'
 
 
 
