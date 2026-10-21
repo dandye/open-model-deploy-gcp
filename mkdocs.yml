@@ -72,8 +72,9 @@ markdown_extensions:
 
 nav:
   - Home & Catalog:
-    - Overview & Catalog Index: index.md
-    - Project Summary: PROJECT_SUMMARY.md
+    - Project Overview: index.md
+    - Executive Project Summary: PROJECT_SUMMARY.md
+    - Full Documentation Catalog: catalog.md
     - Model Registry Catalog: model_registry_catalog.md
     - Deployment Status Matrix: deployment_status.md
     - Cost & Hardware Sizing Analysis: cost_analysis.md
