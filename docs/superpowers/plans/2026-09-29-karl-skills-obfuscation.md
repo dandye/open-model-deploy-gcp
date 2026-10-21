@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, Pytest, Git worktrees, Google Cloud Vertex AI SDK / Google GenAI SDK, Google Cloud CLI (`gcloud`).
 
-**Spec:** [`docs/superpowers/specs/2026-09-29-karl-skills-obfuscation-design.md`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/docs/superpowers/specs/2026-09-29-karl-skills-obfuscation-design.md)
+**Spec:** [`docs/superpowers/specs/2026-09-29-karl-skills-obfuscation-design.md`](../specs/2026-09-29-karl-skills-obfuscation-design.md)
 
 ## Global Constraints
 
@@ -24,18 +24,18 @@
 ### Task 1: Worktree Setup and Baseline Verification
 
 **Files:**
-- Create: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001` (via `git worktree add`)
+- Create: `gemma_deploy__worktrees/karl_skills_obfuscation_v0001` (via `git worktree add`)
 - Test: `tests/test_declarative_evals.py`
 
 **Interfaces:**
-- Consumes: Branch `karl_harbor_evals_v0001` in repository `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main`
-- Produces: Clean, verified linked worktree directory `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001` on branch `karl_skills_obfuscation_v0001`
+- Consumes: Branch `karl_harbor_evals_v0001` in repository `gemma_deploy__worktrees/main`
+- Produces: Clean, verified linked worktree directory `gemma_deploy__worktrees/karl_skills_obfuscation_v0001` on branch `karl_skills_obfuscation_v0001`
 
 - [ ] **Step 1: Check existing worktree status**
 
 Run in terminal:
 ```bash
-git -C /usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main worktree list
+git -C gemma_deploy__worktrees/main worktree list
 ```
 Expected: Verify `karl_skills_obfuscation_v0001` does not already exist.
 
@@ -43,7 +43,7 @@ Expected: Verify `karl_skills_obfuscation_v0001` does not already exist.
 
 Run in terminal:
 ```bash
-CONTAINER_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees"
+CONTAINER_DIR="gemma_deploy__worktrees"
 git -C "$CONTAINER_DIR/main" worktree add -b karl_skills_obfuscation_v0001 "$CONTAINER_DIR/karl_skills_obfuscation_v0001" karl_harbor_evals_v0001
 ```
 Expected: `Preparing worktree (new branch 'karl_skills_obfuscation_v0001')` and `HEAD is now at ...`
@@ -52,7 +52,7 @@ Expected: `Preparing worktree (new branch 'karl_skills_obfuscation_v0001')` and 
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 ln -sf "$WORKTREE_DIR/.env.secops-demo-env" "$WORKTREE_DIR/.env"
 pytest "$WORKTREE_DIR/tests/test_declarative_evals.py" -v
 ```
@@ -78,7 +78,7 @@ Expected: All declarative eval tests pass clean on baseline.
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 mkdir -p "$WORKTREE_DIR/skills/google-cloud-developer/variants"
 ```
 
@@ -107,7 +107,7 @@ Write `skills/google-cloud-developer/variants/composite_degraded.md` combining h
 Verify manually that every command, flag, and role in all 5 variants matches the clean reference.
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 git -C "$WORKTREE_DIR" status
 git -C "$WORKTREE_DIR" add skills/google-cloud-developer/variants/
 git -C "$WORKTREE_DIR" commit -m "feat(skills): add 5 orthogonal degraded variants of google-cloud-developer skill"
@@ -156,7 +156,7 @@ def test_skill_variants_contain_no_project_wide_secret_access_endorsement():
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 pytest "$WORKTREE_DIR/tests/test_declarative_evals.py" -k "variant" -v
 ```
 Expected: PASS
@@ -165,7 +165,7 @@ Expected: PASS
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 git -C "$WORKTREE_DIR" add tests/test_declarative_evals.py
 git -C "$WORKTREE_DIR" commit -m "test: add verification tests for degraded skill variants"
 ```
@@ -224,7 +224,7 @@ eval-skill-obfuscation model="gemini-2.5-flash-lite":
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 pytest "$WORKTREE_DIR/tests/test_declarative_evals.py" -v
 ```
 Expected: All tests pass.
@@ -233,7 +233,7 @@ Expected: All tests pass.
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 python3 "$WORKTREE_DIR/scripts/eval_declarative.py" \
   --dataset "$WORKTREE_DIR/evals/kweinmeister/evals.json" \
   --skills-dir "$WORKTREE_DIR/skills" \
@@ -246,7 +246,7 @@ Expected: Successful dry-run execution generating comparative table for all 7 ar
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 git -C "$WORKTREE_DIR" add scripts/eval_declarative.py Justfile tests/test_declarative_evals.py
 git -C "$WORKTREE_DIR" commit -m "feat(eval): add --skill-variant and --compare-variants support to declarative runner"
 ```
@@ -267,7 +267,7 @@ git -C "$WORKTREE_DIR" commit -m "feat(eval): add --skill-variant and --compare-
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 python3 "$WORKTREE_DIR/scripts/eval_declarative.py" \
   --dataset "$WORKTREE_DIR/evals/kweinmeister/evals.json" \
   --skills-dir "$WORKTREE_DIR/skills" \
@@ -282,7 +282,7 @@ Expected: All 12 scenarios evaluated across all 7 arms (84 evaluations), with pr
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 cat "$WORKTREE_DIR/docs/eval_results/gen4/karl_skills_obfuscation/gemini-2.5-flash-lite_degradation_matrix.md"
 ```
 Expected: A complete comparative Markdown table showing pass rates and assertion matches across all arms.
@@ -291,7 +291,7 @@ Expected: A complete comparative Markdown table showing pass rates and assertion
 
 Run in terminal:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/karl_skills_obfuscation_v0001"
 git -C "$WORKTREE_DIR" add docs/eval_results/gen4/karl_skills_obfuscation/
 git -C "$WORKTREE_DIR" commit -m "docs(eval): record gemini-2.5-flash-lite degradation matrix across 4 obfuscation axes"
 ```

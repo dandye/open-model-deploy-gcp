@@ -54,8 +54,8 @@ from scripts.verify_harbor_soc import evaluate_harbor_soc_trial
 DEFAULT_PROJECT_ID = "dandye-0324-chronicle"
 DEFAULT_LOCATION = "us-central1"
 DEFAULT_CLUSTER_NAME = "harbor-eval-cluster"
-DEFAULT_KUBECONFIG = "/usr/local/google/home/dandye/Projects/vladkol__harbor-gke-ext__worktrees/main/.kube/config"
-DEFAULT_CLOUDSDK_CONFIG = "/usr/local/google/home/dandye/Projects/vladkol__harbor-gke-ext__worktrees/main/.gcloud"
+DEFAULT_KUBECONFIG = os.environ.get("KUBECONFIG", str(Path.home() / ".kube" / "config"))
+DEFAULT_CLOUDSDK_CONFIG = os.environ.get("CLOUDSDK_CONFIG", str(Path.home() / ".config" / "gcloud"))
 
 DEFAULT_MODELS = [
     "gemini-2.5-flash-lite",

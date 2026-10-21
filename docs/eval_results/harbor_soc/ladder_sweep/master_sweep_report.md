@@ -3,7 +3,7 @@
 - **Date:** 2026-10-02
 - **Campaign:** Campaign 1 — Full-Ladder Harbor SOC Sandbox Sweep
 - **Evaluator:** Harbor SOC Tier 1 Runner (`scripts/run_harbor_soc_sweep.py`)
-- **Repository Worktree:** `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/harbor_soc_evals_v0001`
+- **Repository Worktree:** `gemma_deploy__worktrees/harbor_soc_evals_v0001`
 - **GCP Project:** `dandye-0324-chronicle` (`1002894625780`, Region: `us-central1`, Endpoint Location: `us-central1` / `global`)
 - **Execution Target:** Isolated Harbor Container Sandbox Execution Environment
 - **Total Trials Evaluated:** 120 trials (4 models x 3 arms x 10 cases)

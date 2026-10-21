@@ -18,7 +18,7 @@
 - Do not touch `evals/harbor_soc/**` (frozen Gen 3 Harbor artifacts) or `.eval_harness_lock.json` (re-sealed in Plan 3).
 - ASCII only in code, tests, docs, and commit messages. No emojis. No em dashes.
 - Stage files by explicit path. Never `git add .` or `git add -A`.
-- Run tests with `.venv/bin/python -m pytest` from the repository root (`pytest.ini` sets `pythonpath = .`). The worktree is `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gen5_evals_v0001` on branch `gen5_evals_v0001`.
+- Run tests with `.venv/bin/python -m pytest` from the repository root (`pytest.ini` sets `pythonpath = .`). The worktree is `gemma_deploy__worktrees/gen5_evals_v0001` on branch `gen5_evals_v0001`.
 - Keep edits inside `agent/soc_environment.py` and the two test files named below. No other production file changes in this plan.
 
 ---

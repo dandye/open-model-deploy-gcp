@@ -35,7 +35,7 @@
     "configuration_hash": "0c5983db412bf043bbc2912250f29efab33ee4b16e954b39b562941bdaea2de0",
     "launch_configuration_hash": null,
     "dataset": {
-      "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/configs/evals/gen3/soc_tier1_interactive.json",
+      "path": "configs/evals/gen3/soc_tier1_interactive.json",
       "sha256": "cf8ba9a1032ec5546401a56108f74348163a045d19501aecd78bccba05a706a7"
     },
     "runbook": {
@@ -46,31 +46,31 @@
     "evaluator": {
       "files": [
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/scripts/eval_soc_agent.py",
+          "path": "scripts/eval_soc_agent.py",
           "sha256": "57fdd43aff042132bb64d7a642a2ad768d4cd252203f5a498a64537d43a62f0a"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/scripts/eval_cost_engine.py",
+          "path": "scripts/eval_cost_engine.py",
           "sha256": "226218bdc3ed2f563aa0064ee09152730c43d048521a1a59add87de9703fd281"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/scripts/eval_trajectory_verifier.py",
+          "path": "scripts/eval_trajectory_verifier.py",
           "sha256": "b2e8040b47fb619319f978877f12ed3e1a9957aec514dd4938b4b2b771f9ce79"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/agent/soc_tier1_agent.py",
+          "path": "agent/soc_tier1_agent.py",
           "sha256": "1a81c6488739ab6d9ccb03f69ea2b7765f06bf7f9eff110c0a71d789b45c9333"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/agent/hierarchical_soc_agent.py",
+          "path": "agent/hierarchical_soc_agent.py",
           "sha256": "5a94f961ac32fbd221b687eaf5e67d7e34c0c13a1bc225cd8ef266175a138dba"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/agent/soc_environment.py",
+          "path": "agent/soc_environment.py",
           "sha256": "04c4503d41ee57e9db6de37ccad6ebe517bb3aa955ae5d9aaf1a99c734c31584"
         },
         {
-          "path": "/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/nemotron-3.5-super-vl/agent/gemma_agent.py",
+          "path": "agent/gemma_agent.py",
           "sha256": "740e382ea57fa9c159eca6cecfa1926ffa5f29f860bf8fc7ee9b5c22379fc23a"
         }
       ]

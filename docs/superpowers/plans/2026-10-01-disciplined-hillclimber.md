@@ -8,12 +8,12 @@
 
 **Tech Stack:** Python 3.11+, Google GenAI SDK (`google.genai`), `gepa`, Pytest, Justfile.
 
-**Spec:** [docs/superpowers/specs/2026-10-01-disciplined-hillclimber-design.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/docs/superpowers/specs/2026-10-01-disciplined-hillclimber-design.md)
-**Prerequisite / Companion Plan:** [docs/superpowers/plans/2026-09-24-jev-eval-judge-migration.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/docs/superpowers/plans/2026-09-24-jev-eval-judge-migration.md)
+**Spec:** [`docs/superpowers/specs/2026-10-01-disciplined-hillclimber-design.md`](../specs/2026-10-01-disciplined-hillclimber-design.md)
+**Prerequisite / Companion Plan:** [`docs/superpowers/plans/2026-09-24-jev-eval-judge-migration.md`](2026-09-24-jev-eval-judge-migration.md)
 
 ## Global Constraints
 
-- Target Worktree: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001`
+- Target Worktree: `gemma_deploy__worktrees/disciplined_hillclimber_v0001`
 - Target Branch: `disciplined_hillclimber_v0001` (never use `/` in branch names; never use `feat` prefix).
 - Strictly NO EMOJIS anywhere in code, comments, docstrings, commit messages, or documentation.
 - All paths must resolve relative to repository root (`ROOT_DIR`).
@@ -26,7 +26,7 @@
 ### Task 0: Prerequisite Check — Jev System-One Judge Primitives (`agent/jev_judge.py` & `agent/jev_evaluator.py`)
 
 **Files:**
-- Check/Create: `agent/jev_judge.py`, `agent/jev_evaluator.py` (from [2026-09-24-jev-eval-judge-migration.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001/docs/superpowers/plans/2026-09-24-jev-eval-judge-migration.md))
+- Check/Create: `agent/jev_judge.py`, `agent/jev_evaluator.py` (from [`2026-09-24-jev-eval-judge-migration.md`](2026-09-24-jev-eval-judge-migration.md))
 - Test: `tests/test_jev_judge_primitives.py`, `tests/test_jev_evaluator.py`
 
 **Interfaces:**
@@ -38,7 +38,7 @@
 
 Run:
 ```bash
-WORKTREE_DIR="/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/disciplined_hillclimber_v0001"
+WORKTREE_DIR="gemma_deploy__worktrees/disciplined_hillclimber_v0001"
 test -f "${WORKTREE_DIR}/agent/jev_evaluator.py" && echo "Jev present" || echo "Execute Tasks 1-4 of 2026-09-24-jev-eval-judge-migration.md first"
 ```
 If `agent/jev_evaluator.py` is not yet created, execute Tasks 1 through 4 of `docs/superpowers/plans/2026-09-24-jev-eval-judge-migration.md` first so `agent/jev_judge.py` and `agent/jev_evaluator.py` are tested and committed.

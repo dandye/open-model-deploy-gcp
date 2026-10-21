@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, `gepa` (0.1.4), `google-genai`, `pytest`, `Justfile`.
 
-**Spec:** [docs/superpowers/specs/2026-09-04-gepa-runbook-evolution-design.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gen4_runbooks_approach3/docs/superpowers/specs/2026-09-04-gepa-runbook-evolution-design.md)
+**Spec:** [`docs/superpowers/specs/2026-09-04-gepa-runbook-evolution-design.md`](../specs/2026-09-04-gepa-runbook-evolution-design.md)
 
 ## Global Constraints
 

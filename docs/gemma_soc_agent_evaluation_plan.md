@@ -14,11 +14,11 @@
 **Tech Stack:** Python 3.11+, Google ADK 2.x, Vertex AI Agent Engine (`vertexai.preview.reasoning_engines`), `google-genai` SDK, Pydantic v2, Typer/Argparse, Justfile automation.
 
 **Reference Sources:**
-- Submodule: `adk_runbooks` ([`Projects/adk_runbooks`](file:///usr/local/google/home/dandye/Projects/adk_runbooks))
-- Persona: [`rules-bank/personas/soc_analyst_tier_1.md`](file:///usr/local/google/home/dandye/Projects/adk_runbooks/rules-bank/personas/soc_analyst_tier_1.md)
-- Runbooks: [`rules-bank/run_books/basic_ioc_enrichment.md`](file:///usr/local/google/home/dandye/Projects/adk_runbooks/rules-bank/run_books/basic_ioc_enrichment.md), [`rules-bank/run_books/triage_alerts.md`](file:///usr/local/google/home/dandye/Projects/adk_runbooks/rules-bank/run_books/triage_alerts.md)
-- Rubrics: [`evals/rubrics/triage_irp_rubric.py`](file:///usr/local/google/home/dandye/Projects/adk_runbooks__worktrees/promptfoo_v0002/evals/rubrics/triage_irp_rubric.py)
-- Model Catalog: [`configs/models.json`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/configs/models.json)
+- Submodule: `adk_runbooks` (`third_party/adk_runbooks`)
+- Persona: `rules-bank/personas/soc_analyst_tier_1.md`
+- Runbooks: `rules-bank/run_books/basic_ioc_enrichment.md`, `rules-bank/run_books/triage_alerts.md`
+- Rubrics: `evals/rubrics/triage_irp_rubric.py`
+- Model Catalog: `configs/models.json`
 
 ---
 
@@ -36,13 +36,13 @@
 
 | File Path | Responsibility |
 | :--- | :--- |
-| [`agent/soc_tier1_agent.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/agent/soc_tier1_agent.py) | Gemma-powered Tier 1 SOC Analyst agent class with persona injection, tool definitions, and ReasoningEngine lifecycle methods. |
-| [`agent/soc_tools.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/agent/soc_tools.py) | Mockable SOC tools (`lookup_entity`, `get_ip_address_report`, `get_domain_report`, `get_file_report`, `list_cases`, `post_case_comment`) for deterministic local and remote execution. |
-| [`agent/deploy_soc_tier1.py`](../agent/deploy_soc_tier1.py) | Packaging and deployment script to publish `soc_tier1_agent` to Vertex AI Agent Engine. |
-| [`configs/evals/soc_tier1_triage.json`](../configs/evals/soc_tier1_triage.json) | Declarative 10-case benchmark suite covering C2 beaconing, RFC-5737 grounding, phishing triage, duplicate detection, ransomware containment, borderline DNS tunneling, lateral movement, supply chain risks, tool outage resilience, and authorized scanner true negatives. |
-| [`scripts/eval_soc_agent.py`](../scripts/eval_soc_agent.py) | Automated evaluation runner executing cases, querying the LLM Judge (`gemini-2.5-pro`), and computing rubric scorecards. |
-| [`tests/test_soc_tier1_agent.py`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/tests/test_soc_tier1_agent.py) | Unit and integration tests for agent initialization, tool execution, and query routing. |
-| [`Justfile`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/Justfile) | Recipes for testing, evaluating, and deploying the SOC Tier 1 agent. |
+| `agent/soc_tier1_agent.py` | Gemma-powered Tier 1 SOC Analyst agent class with persona injection, tool definitions, and ReasoningEngine lifecycle methods. |
+| `agent/soc_tools.py` | Mockable SOC tools (`lookup_entity`, `get_ip_address_report`, `get_domain_report`, `get_file_report`, `list_cases`, `post_case_comment`) for deterministic local and remote execution. |
+| `agent/deploy_soc_tier1.py` | Packaging and deployment script to publish `soc_tier1_agent` to Vertex AI Agent Engine. |
+| `configs/evals/soc_tier1_triage.json` | Declarative 10-case benchmark suite covering C2 beaconing, RFC-5737 grounding, phishing triage, duplicate detection, ransomware containment, borderline DNS tunneling, lateral movement, supply chain risks, tool outage resilience, and authorized scanner true negatives. |
+| `scripts/eval_soc_agent.py` | Automated evaluation runner executing cases, querying the LLM Judge (`gemini-2.5-pro`), and computing rubric scorecards. |
+| `tests/test_soc_tier1_agent.py` | Unit and integration tests for agent initialization, tool execution, and query routing. |
+| `Justfile` | Recipes for testing, evaluating, and deploying the SOC Tier 1 agent. |
 
 ---
 

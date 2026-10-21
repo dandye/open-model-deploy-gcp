@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.11+, `google-adk>=2.7.1`, `google-cloud-aiplatform>=1.70.0`, `google-genai>=2.19.0`, `opentelemetry-sdk`, `pytest`, `Justfile`.
 
-**Spec:** [`docs/superpowers/specs/2026-08-26-adk-agent-engine-design.md`](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/agent_engine/docs/superpowers/specs/2026-08-26-adk-agent-engine-design.md)
+**Spec:** [`docs/superpowers/specs/2026-08-26-adk-agent-engine-design.md`](../superpowers/specs/2026-08-26-adk-agent-engine-design.md)
 
 ## Global Constraints
 - Do not use emojis in code, commits, comments, or docstrings.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+, Google Cloud Compute Engine (`google-cloud-compute` / `gcloud`), Docker, NVIDIA Container Toolkit, vLLM, Pytest, Justfile.
 
-**Spec:** [docs/benchmarking_gce_ephemeral_spot_vms.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gce_spot_sweep_v0001/docs/benchmarking_gce_ephemeral_spot_vms.md)
+**Spec:** [`docs/benchmarking_gce_ephemeral_spot_vms.md`](../benchmarking_gce_ephemeral_spot_vms.md)
 
 ## Global Constraints
 
@@ -16,7 +16,7 @@
 - Always define environment variables first (e.g. `PROJECT_ID="..."`) before expanding in shell snippets.
 - Worktree-relative path resolution (`ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`).
 - Cost Awareness: Verify Spot VM provisioning (`--provisioning-model=SPOT`) and programmatic self-deletion ($0.00 idle compute).
-- Working Directory: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/gce_spot_sweep_v0001`
+- Working Directory: `gemma_deploy__worktrees/gce_spot_sweep_v0001`
 
 ---
 
@@ -45,14 +45,14 @@ def test_startup_script_syntax_and_self_deletion():
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gce_startup_script.py`
+Run: `.venv/bin/pytest -v tests/test_gce_startup_script.py`
 Expected: FAIL (file not found)
 
 - [ ] **Step 3: Implement `scripts/gce_startup_script.sh` and template**
 Implement startup script with NVMe formatting, Docker vLLM execution, readiness check, evaluation suite execution, GCS sync, and `gcloud compute instances delete $(hostname) --zone=$ZONE --quiet`.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gce_startup_script.py`
+Run: `.venv/bin/pytest -v tests/test_gce_startup_script.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -92,14 +92,14 @@ def test_gce_spot_command_builder_for_4x_l4():
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gce_spot_orchestrator.py`
+Run: `.venv/bin/pytest -v tests/test_gce_spot_orchestrator.py`
 Expected: FAIL
 
 - [ ] **Step 3: Implement `scripts/run_gce_spot_sweep.py`**
 Implement data classes, command generators, Spot retry logic, serial console log streaming, GCS result collection, and CLI argument parsing.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_gce_spot_orchestrator.py`
+Run: `.venv/bin/pytest -v tests/test_gce_spot_orchestrator.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -131,14 +131,14 @@ def test_justfile_contains_gce_spot_recipes(self):
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py::TestJustfileRecipes::test_justfile_contains_gce_spot_recipes`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py::TestJustfileRecipes::test_justfile_contains_gce_spot_recipes`
 Expected: FAIL
 
 - [ ] **Step 3: Add recipes to `Justfile`**
 Add recipes with explicit shell variables and help comments.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10+, Google Cloud Vertex AI (`google-cloud-aiplatform`), vLLM, Docker, Google Cloud Storage (`google-cloud-storage`), Pytest, Justfile.
 
-**Spec:** [docs/benchmarking_vertex_custom_jobs.md](file:///usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/vertex_custom_jobs_v0001/docs/benchmarking_vertex_custom_jobs.md)
+**Spec:** [`docs/benchmarking_vertex_custom_jobs.md`](../benchmarking_vertex_custom_jobs.md)
 
 ## Global Constraints
 
@@ -16,7 +16,7 @@
 - Always define environment variables first (e.g. `PROJECT_ID="..."`) before expanding in shell snippets.
 - Worktree-relative path resolution (`ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`).
 - Cost Awareness: Verify automated compute node termination ($0.00 idle compute).
-- Working Directory: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/vertex_custom_jobs_v0001`
+- Working Directory: `gemma_deploy__worktrees/vertex_custom_jobs_v0001`
 
 ---
 
@@ -44,7 +44,7 @@ def test_entrypoint_script_syntax_and_no_emojis():
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_custom_job_container.py`
+Run: `.venv/bin/pytest -v tests/test_custom_job_container.py`
 Expected: FAIL (file not found)
 
 - [ ] **Step 3: Implement `scripts/custom_job_entrypoint.sh` and `docker/Dockerfile.custom_job`**
@@ -60,7 +60,7 @@ OUTPUT_GCS_PATH="${5:-gs://secops-eval-results/custom_jobs}"
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_custom_job_container.py`
+Run: `.venv/bin/pytest -v tests/test_custom_job_container.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -99,14 +99,14 @@ def test_worker_pool_spec_for_4x_l4_model():
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_vertex_custom_jobs_orchestrator.py`
+Run: `.venv/bin/pytest -v tests/test_vertex_custom_jobs_orchestrator.py`
 Expected: FAIL
 
 - [ ] **Step 3: Implement `scripts/run_vertex_custom_job_sweep.py`**
 Implement data classes, worker pool generators, and job submission logic with `--dry-run`, `--models`, `--project-id`, and `--region` CLI options.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_vertex_custom_jobs_orchestrator.py`
+Run: `.venv/bin/pytest -v tests/test_vertex_custom_jobs_orchestrator.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -138,14 +138,14 @@ def test_justfile_contains_custom_job_recipes(self):
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py::TestJustfileRecipes::test_justfile_contains_custom_job_recipes`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py::TestJustfileRecipes::test_justfile_contains_custom_job_recipes`
 Expected: FAIL
 
 - [ ] **Step 3: Add recipes to `Justfile`**
 Add recipes with explicit shell variables and help comments.
 
 - [ ] **Step 4: Run test to verify it passes**
-Run: `/usr/local/google/home/dandye/Projects/gemma_deploy__worktrees/main/.venv/bin/pytest -v tests/test_justfile_recipes.py`
+Run: `.venv/bin/pytest -v tests/test_justfile_recipes.py`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
