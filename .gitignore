@@ -31,5 +31,6 @@ logs/
 *.log
 .venv
 .venv/
+site/
 trials/
 **/trials/
