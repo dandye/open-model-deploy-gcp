@@ -40,7 +40,7 @@ This document tracks quota increase requests submitted to Google Cloud via the C
 * **Expected Improvement**:
   * **Zero Tensor Parallel Interconnect Latency**: Entire 62 GB BF16 model runs on a single unified memory die.
   * **Projected Generation Speed**: **25 to 35 tokens/second** (~1,500 to 2,100 tokens/minute).
-  * **Cost Efficiency**: Reduces inference cost from **$306.01 / 1M tokens** down to **~$35.00 / 1M tokens**.
+  * **Cost Efficiency**: Reduces inference cost from **\$306.01 / 1M tokens** down to **~\$35.00 / 1M tokens**.
 
 ---
 

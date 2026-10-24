@@ -54,13 +54,13 @@ Cloud Run GPU currently provides a single GPU per instance (**1x NVIDIA L4, 24GB
 
 | Exp ID | Model Flavor | Platform / Hardware | Rubric Score | Pass Rate | Cold Start Latency | Avg Latency | Output TPS | Total Processing TPS | Scale-to-Zero Cost ($/hr) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **EXP-CR-01** | `gemini-3.7-flash` | Managed MaaS | **53.6 / 100** | 40.0% (2/5) | N/A (Serverless) | 19.60 s | **39.91 tok/s** | 248.48 tok/s | $0.00 idle ($0.075/$0.30 per 1M) | **Complete** |
-| **EXP-CR-02** | `gemini-3.5-flash-lite` | Managed MaaS | **0.0 / 100** | 0.0% (0/5) | N/A (Serverless) | 1.74 s | — | — | $0.00 idle ($0.075/$0.30 per 1M) | **Complete** |
-| **EXP-CR-03** | `gemini-2.5-pro` | Managed MaaS | **29.0 / 100** | 0.0% (0/5) | N/A (Serverless) | 22.89 s | **44.25 tok/s** | 197.51 tok/s | $0.00 idle ($1.25/$5.00 per 1M) | **Complete** |
-| **EXP-CR-04** | `gemini-2.5-flash` | Managed MaaS | **66.0 / 100** | 40.0% (2/5) | N/A (Serverless) | 10.84 s | **57.48 tok/s** | 273.55 tok/s | $0.00 idle ($0.075/$0.30 per 1M) | **Complete** |
-| **EXP-CR-05** | `llama-4-scout-17b` | Managed MaaS | **0.0 / 100** | 0.0% (0/5) | N/A (Serverless) | 1.80 s | — | — | $0.00 idle | **Complete** |
-| **EXP-CR-06** | `gemma-3-1b-it` | Cloud Run (1x L4) | **28.0 / 100** | 0.0% (0/5) | **0.87 s** | 25.71 s | **17.35 tok/s** | 103.08 tok/s | **$0.00 idle ($0.65 active)** | **Complete** |
-| **EXP-CR-07** | `gemma-3-4b-it` | Cloud Run (1x L4) | **88.0 / 100** | **80.0% (4/5)** | **8.50 s** | 10.50 s | **55.00 tok/s** | 180.00 tok/s | **$0.00 idle ($0.65 active)** | **Complete** |
+| **EXP-CR-01** | `gemini-3.7-flash` | Managed MaaS | **53.6 / 100** | 40.0% (2/5) | N/A (Serverless) | 19.60 s | **39.91 tok/s** | 248.48 tok/s | \$0.00 idle (\$0.075/\$0.30 per 1M) | **Complete** |
+| **EXP-CR-02** | `gemini-3.5-flash-lite` | Managed MaaS | **0.0 / 100** | 0.0% (0/5) | N/A (Serverless) | 1.74 s | — | — | \$0.00 idle (\$0.075/\$0.30 per 1M) | **Complete** |
+| **EXP-CR-03** | `gemini-2.5-pro` | Managed MaaS | **29.0 / 100** | 0.0% (0/5) | N/A (Serverless) | 22.89 s | **44.25 tok/s** | 197.51 tok/s | \$0.00 idle (\$1.25/\$5.00 per 1M) | **Complete** |
+| **EXP-CR-04** | `gemini-2.5-flash` | Managed MaaS | **66.0 / 100** | 40.0% (2/5) | N/A (Serverless) | 10.84 s | **57.48 tok/s** | 273.55 tok/s | \$0.00 idle (\$0.075/\$0.30 per 1M) | **Complete** |
+| **EXP-CR-05** | `llama-4-scout-17b` | Managed MaaS | **0.0 / 100** | 0.0% (0/5) | N/A (Serverless) | 1.80 s | — | — | \$0.00 idle | **Complete** |
+| **EXP-CR-06** | `gemma-3-1b-it` | Cloud Run (1x L4) | **28.0 / 100** | 0.0% (0/5) | **0.87 s** | 25.71 s | **17.35 tok/s** | 103.08 tok/s | **\$0.00 idle (\$0.65 active)** | **Complete** |
+| **EXP-CR-07** | `gemma-3-4b-it` | Cloud Run (1x L4) | **88.0 / 100** | **80.0% (4/5)** | **8.50 s** | 10.50 s | **55.00 tok/s** | 180.00 tok/s | **\$0.00 idle (\$0.65 active)** | **Complete** |
 | **EXP-CR-08** | Heavy Models (12B–70B) | Cloud Run (1x L4) | N/A | N/A | >240 s | — | — | — | Requires extended startup probe | **Evaluated** |
 
 ---

@@ -180,7 +180,7 @@ Depending on whether sub-minute cold starts or serverless scale-to-zero are requ
 | :--- | :--- | :--- | :--- | :--- |
 | **Vertex AI Dedicated Endpoint** | **$0.00 / hr** (when undeployed) | **10 – 18 minutes** (full GCE cluster spin-up) | All models (1B to 70B, multi-GPU TP=1/2/4) | Low (Fully managed endpoint API) |
 | **Cloud Run GPU (Scale-to-Zero)** | **$0.00 / hr** (automatic when idle) | **30 – 90 seconds** (serverless microVM boot) | Single-GPU only (1B, 2B, 4B, 9B) | Minimal (Fully managed serverless) |
-| **Stopped GCE Compute Instance** | **$0.00 / hr** (pay only ~$0.04/GB/mo disk) | **~45 – 60 seconds** (cached local SSD boot) | All models (1B to 70B, multi-GPU TP=1/2/4) | Moderate (Self-managed VM scripts) |
+| **Stopped GCE Compute Instance** | **\$0.00 / hr** (pay only ~\$0.04/GB/mo disk) | **~45 – 60 seconds** (cached local SSD boot) | All models (1B to 70B, multi-GPU TP=1/2/4) | Moderate (Self-managed VM scripts) |
 
 ---
 

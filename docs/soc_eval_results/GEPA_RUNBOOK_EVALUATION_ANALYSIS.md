@@ -24,10 +24,10 @@ To achieve robust, honest generalization without memorization, we introduced:
 3. **Strict Train/Validation Split:** Held out `CASE-10` (Qualys Scanner) and other edge scenarios in the validation set during evolution, ensuring the optimizer never observed scanner telemetry during mutation proposals.
 
 ### Primary Findings
-1. **99.8% Reduction in Operational Financial Loss:** Total expected operational loss dropped from **$55,050.56** (raw playbooks) to **$100.82** with anti-memorization evolved playbooks.
-2. **Prevention of Mission-Critical Downtime ($50,000 Saved):** In `CASE-10` (Authorized Qualys Scanner targeting mission-critical payment server `SRV-PROD-PAYMENT-01`), the agent avoided disruptive host isolation (`Verified prohibited action avoided: 'isolate_host'`), reducing impact to benign case triage ($50).
-3. **Core Gateway Isolation Suppression ($50,000 Saved):** In `CASE-02` (RFC-5737 documentation subnet test on `GW-CORE-VPN-01`), the agent avoided disruptive host isolation (`Verified prohibited action avoided: 'isolate_host'`), restricting impact to an indicator block ($50).
-4. **Zero Missed Breaches ($0 False Negative Loss):** Achieved a 92.9% hit rate (7/7 real threats detected and contained), ensuring infostealer C2, ransomware, lateral movement, and credential phishing were contained without adversary escape.
+1. **99.8% Reduction in Operational Financial Loss:** Total expected operational loss dropped from **\$55,050.56** (raw playbooks) to **\$100.82** with anti-memorization evolved playbooks.
+2. **Prevention of Mission-Critical Downtime (\$50,000 Saved):** In `CASE-10` (Authorized Qualys Scanner targeting mission-critical payment server `SRV-PROD-PAYMENT-01`), the agent avoided disruptive host isolation (`Verified prohibited action avoided: 'isolate_host'`), reducing impact to benign case triage (\$50).
+3. **Core Gateway Isolation Suppression (\$50,000 Saved):** In `CASE-02` (RFC-5737 documentation subnet test on `GW-CORE-VPN-01`), the agent avoided disruptive host isolation (`Verified prohibited action avoided: 'isolate_host'`), restricting impact to an indicator block (\$50).
+4. **Zero Missed Breaches (\$0 False Negative Loss):** Achieved a 92.9% hit rate (7/7 real threats detected and contained), ensuring infostealer C2, ransomware, lateral movement, and credential phishing were contained without adversary escape.
 5. **Grounded Epistemic Investigation:** Executed 45 real tool calls across the 10 cases, actively querying CMDB assets, GTI reputation reports, and SOAR queues rather than relying on ungrounded zero-tool hallucinations or hardcoded skips.
 
 ---
@@ -102,7 +102,7 @@ The evolved runbook implemented dynamic decision rules:
     - `Verified target entity queried: 'SRV-PROD-PAYMENT-01'`
     - `Verified target entity queried: '10.0.99.50'`
     - `Verified target entity queried: 'Qualys Scanner'`
-  - Financial Loss: **$50.00** (benign triage overhead; **$50,000.00 downtime avoided**).
+  - Financial Loss: **\$50.00** (benign triage overhead; **\$50,000.00 downtime avoided**).
 
 ### 4.2 CASE-01: Lokibot C2 Infostealer Host Containment
 - **Alert:** Host `DESKTOP-FIN-08` connecting repeatedly to `update-service-win32.com`.
