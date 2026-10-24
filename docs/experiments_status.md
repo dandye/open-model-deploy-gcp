@@ -275,8 +275,8 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 * **Findings & Architectural Conclusions**:
   * **Linear Throughput Scaling without Latency Degradation**: Per-stream response time remained steady at **~4.58s** even when scaling from 1 to 8 parallel streams.
   * **System Saturation Throughput**: Under 8 parallel streams, total token throughput reached **4,676 to 5,403 tokens/minute** (**77.9 to 90.1 tok/s**).
-  * **Cost-Per-Token Efficiency**: Under concurrent load, cost per million tokens plummeted from $164.20/1M down to **$26.15 / 1M tokens** ($7.34/hr / 280,560 tokens/hr).
-* **Status**: Benchmark Complete & Validated. Deployed Model `2132397798711099392` and Endpoint `1105462734461337600` **Cleanly Undeployed & Deleted** ($0 active billing).
+  * **Cost-Per-Token Efficiency**: Under concurrent load, cost per million tokens plummeted from \$164.20/1M down to **\$26.15 / 1M tokens** (\$7.34/hr / 280,560 tokens/hr).
+* **Status**: Benchmark Complete & Validated. Deployed Model `2132397798711099392` and Endpoint `1105462734461337600` **Cleanly Undeployed & Deleted** (\$0 active billing).
 
 ---
 
@@ -304,8 +304,8 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 * **Findings & Architectural Conclusions**:
   * **Near-Linear Throughput Scaling Up to 4 Streams**: From 1 to 4 streams, total throughput scaled linearly from **1,538 TPM to 5,647 TPM (+267% gain)** with zero per-stream latency degradation (9.59s $\rightarrow$ 10.11s).
   * **Hardware Saturation Limit on 4x L4**: At $N = 8$ streams, the 4x L4 cluster reached max throughput saturation at **~94–96 tokens/sec (5,614–5,773 TPM)**, with latency increasing to 15.12s due to continuous batch queuing.
-  * **Extremely Cost-Efficient Serving**: At full saturation, serving cost dropped from $36.41 / 1M tokens down to **$9.92 / 1M tokens** ($3.36/hr / 338,820 tokens/hr).
-* **Status**: Benchmark Complete & Validated. Deployed Model `4486576988349267968` and Endpoint `5038993620376485888` **Cleanly Undeployed & Deleted** ($0 active billing).
+  * **Extremely Cost-Efficient Serving**: At full saturation, serving cost dropped from \$36.41 / 1M tokens down to **\$9.92 / 1M tokens** (\$3.36/hr / 338,820 tokens/hr).
+* **Status**: Benchmark Complete & Validated. Deployed Model `4486576988349267968` and Endpoint `5038993620376485888` **Cleanly Undeployed & Deleted** (\$0 active billing).
 
 ---
 
@@ -338,7 +338,7 @@ Each Vertex AI prediction endpoint undergoes 5 distinct lifecycle stages before 
 * **Findings & Architectural Conclusions**:
   * **Massive +143% Single-Stream Speedup**: Single-stream latency dropped from 9.83s in BF16 baseline (`EXP-11`) down to **6.53s** (**-33.6% latency reduction**), with single-user generation speed jumping from 12.2 tok/s to **29.7 tok/s**.
   * **Superior Concurrency Scaling**: Peak aggregate throughput jumped from 96.2 tok/s (5,773 TPM) in BF16 up to **148.8 tok/s (8,926 TPM)** at $N=8$, representing a **+54.6% higher throughput ceiling**.
-  * **Record Low Serving Cost on Dedicated GPUs**: At 8,926 tok/min (535,560 tokens/hr) on a $3.36/hr `g2-standard-48` cluster, serving cost dropped from $9.92 down to **$6.27 per 1M output tokens** (**-36.8% cost reduction**).
+  * **Record Low Serving Cost on Dedicated GPUs**: At 8,926 tok/min (535,560 tokens/hr) on a \$3.36/hr `g2-standard-48` cluster, serving cost dropped from \$9.92 down to **\$6.27 per 1M output tokens** (**-36.8% cost reduction**).
 * **Status**: Benchmark Complete & Validated. Deployed Model `7193024860119891968` and Endpoint `6458471927928324096` **Cleanly Undeployed & Deleted** ($0 active billing).
 
 ---

@@ -27,7 +27,7 @@ Dedicated cloud endpoints (such as Vertex AI Online Prediction) provide persiste
 
 By utilizing **Compute Engine Ephemeral Spot GPU VMs** combined with attached **Local NVMe SSD scratch drives** and **programmatic self-deletion**, this architecture delivers:
 
-* **60% to 80% Cost Reduction**: Spot GPU instances leverage excess Compute Engine capacity at steep discounts (e.g. ~$0.21/hr for 1x L4 Spot vs. ~$0.70/hr on-demand; ~$1.00/hr for 4x L4 Spot vs. ~$3.36/hr on-demand).
+* **60% to 80% Cost Reduction**: Spot GPU instances leverage excess Compute Engine capacity at steep discounts (e.g. ~\$0.21/hr for 1x L4 Spot vs. ~\$0.70/hr on-demand; ~\$1.00/hr for 4x L4 Spot vs. ~\$3.36/hr on-demand).
 * **Extreme Disk I/O**: Local NVMe SSDs provide ultra-high read/write throughput (GB/s), minimizing model weight caching and container startup latency.
 * **Guaranteed Zero Idle Billing ($0.00 Leakage)**: Each virtual machine runs a self-terminating startup script configured with bash exit/signal traps that immediately issues a self-deletion call (`gcloud compute instances delete`) upon evaluation completion or failure.
 

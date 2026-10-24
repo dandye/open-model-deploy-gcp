@@ -13,7 +13,7 @@ We evaluated the effect of using the Model Context Protocol (MCP) tools and Pare
 
 ### Key Findings:
 1. **Zero Missed Threats (100% Threat Recall)**: Under GEPA MCP, the model achieved **7/7 Hits (0 Misses)** on active threats, improving the empirical hit rate from 85.7% to **92.9%** and reducing False Negatives to zero.
-2. **99.0% Reduction in Operational Breach Loss**: Dollar-weighted financial loss dropped from **$5,250.24** to **$50.21** (-$5,200.03). Under baseline, Case 4 missed an adversary threat costing $5,000; with GEPA MCP, Case 4 was caught as a True Positive with $0 breach loss.
+2. **99.0% Reduction in Operational Breach Loss**: Dollar-weighted financial loss dropped from **\$5,250.24** to **\$50.21** (-\$5,200.03). Under baseline, Case 4 missed an adversary threat costing \$5,000; with GEPA MCP, Case 4 was caught as a True Positive with \$0 breach loss.
 3. **Higher Signal Detection Sensitivity ($d'$)**: Sensitivity index $d'$ increased by **+26.7%** (from **1.50** to **1.90**), demonstrating superior discrimination between true threats and benign noise.
 4. **10.6% Token Efficiency & 12.8% Lower Latency**: GEPA Pareto descriptions consumed **11,801 fewer tokens** (100,025 vs 111,826) and reduced average case latency from 24.71s down to **21.54s**.
 

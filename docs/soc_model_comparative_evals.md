@@ -352,7 +352,7 @@ All models were evaluated under identical conditions using the un-spoiled person
 - **Token Footprint:** 88,598 total tokens (8859.8 tok/case)
 
 ### `nemotron-3.5-super-vl-nvfp4` (NVIDIA Nemotron 3.5 Super VL 120B-A12B NVFP4 on 1x RTX PRO 6000)
-- **Hardware & Serving Cost:** `g4-standard-48` (`1x NVIDIA_RTX_PRO_6000` 96 GB Blackwell, 192 GB Host RAM, `100 GB /dev/shm`, **$3.85/hr**, **$4.52 / 1M output tokens** at `236.5 tok/s` benchmark speed)
+- **Hardware & Serving Cost:** `g4-standard-48` (`1x NVIDIA_RTX_PRO_6000` 96 GB Blackwell, 192 GB Host RAM, `100 GB /dev/shm`, **\$3.85/hr**, **\$4.52 / 1M output tokens** at `236.5 tok/s` benchmark speed)
 - **Score:** 83.0 / 100 (Pass Rate: 50.0%, `90–100/100` on 8/10 cases)
 - **Latency & Throughput:** 45.84 s latency | 186.87 gen tok/s (439.65 total tok/s; 236.5 tok/s single-stream and 233.4 tok/s 4-stream aggregate on `BenchmarkRunner`)
 - **Tool Invocations:** 20 total calls across 10 cases (Epistemic Efficiency: 0.85, Pragmatic Action Compliance: 90.0%, Counterfactual Consistency: 100.0%)

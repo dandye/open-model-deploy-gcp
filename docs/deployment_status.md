@@ -241,7 +241,7 @@ Explain the key advantages of open models in 2 paragraphs.
 * **Container Image**: `us-docker.pkg.dev/agent-platform-mg-public/containers/pytorch-vllm-serve:model-garden.pytorch-vllm-serve-release_20261006.00_p0`
 * **Machine Type**: `g4-standard-48` (48 vCPUs, 192 GB Host RAM, `100 GB /dev/shm`, 1 x NVIDIA RTX PRO 6000 96GB Blackwell GPU)
 * **Tensor Parallelism**: `tensor-parallel-size=1`
-* **Hourly Cost**: $3.85/hour ($4.52 / 1M output tokens at 236.5 tok/s)
+* **Hourly Cost**: \$3.85/hour (\$4.52 / 1M output tokens at 236.5 tok/s)
 * **vLLM Engine Configuration**:
   * `gpu-memory-utilization`: `0.90`
   * `sharedMemorySizeMb`: `102400` (`LOCAL_MODEL_DIR=/dev/shm/model_dir`)

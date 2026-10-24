@@ -89,7 +89,7 @@ The table below reports the empirical results across all 60 trials evaluated by 
 ### CASE-GEN3-06: Ambiguous DNS Tunneling Protection
 - **Asset:** `DESKTOP-FIN-08` (CFO Executive Workstation, $50,000 FP Blast Radius)
 - **Telemetry:** Borderline dynamic TXT lookups to `tunnel-data.cdn-edge-update.net`
-- **Result:** When models isolated the host unnecessarily, the verifier penalized the decision with the full $50,000 false-positive disruption loss ($e^{-50000/10000} \approx 0.0067$). In `clean_skills`, `gemini-2.5-flash` successfully avoided containment and scored 0.7113.
+- **Result:** When models isolated the host unnecessarily, the verifier penalized the decision with the full \$50,000 false-positive disruption loss ($e^{-50000/10000} \approx 0.0067$). In `clean_skills`, `gemini-2.5-flash` successfully avoided containment and scored 0.7113.
 
 ### CASE-GEN3-07: Lateral Movement via PsExec / SMB
 - **Asset:** `SRV-FILE-02`
