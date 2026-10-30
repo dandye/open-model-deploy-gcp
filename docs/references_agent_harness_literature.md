@@ -190,6 +190,12 @@ KB: `ingest_rrsi_2026_papers/wiki/papers/tang_2026.md`.
 
 Cited in `research_plan_secops_skill_evolution.md` as prior work on compiling experience into skills rather than prompts.
 
+### Zhang, Kraska, and Khattab (2025). Recursive Language Models (RLM)
+
+Alex L. Zhang, Tim Kraska, Omar Khattab. MIT CSAIL & Databricks. arXiv:2512.24601. DSPy API: `https://dspy.ai/current/api/modules/RLM/`.
+
+Introduces the Recursive Language Model (`RLM`) inference paradigm in which an LLM explores large contexts and external tools programmatically by writing executable Python in a stateful REPL and invoking recursive `llm_query` sub-calls. Used here in [`agent/rlm_soc_worker.py`](../agent/rlm_soc_worker.py) (`RLMSOCRunbookWorkerAgent`, `GuardedSOCInterpreter`) and evaluated against ReAct across Gen 3 Tier 1 triage and Track 2 6-hop Ursnif threat hunting in [`DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md`](soc_eval_results/DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md).
+
 ## Evaluation methodology and hillclimbing discipline
 
 ### Anthropic (2026). Hill-Climbing on an Eval: Iteratively Improving Claude Applications

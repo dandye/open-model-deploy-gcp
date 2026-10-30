@@ -97,6 +97,7 @@ nav:
     - SOC Eval Failure Analysis: soc_eval_failure_analysis.md
   - GEPA, Harness^2, & Runbooks:
     - Runbook Authoring Best Practices: RUNBOOK_AUTHORING_BEST_PRACTICES.md
+    - DSPy RLM SOC Worker Evaluation: soc_eval_results/DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md
     - DSPy Overnight Campaign Report: soc_eval_results/dspy_overnight/MORNING_REPORT.md
     - Harness^2 8-Hour Campaign Report: soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md
     - Gen 5 Cross-Model Transfer Scorecard: soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md
@@ -112,6 +113,7 @@ nav:
     - "Part 1: Zero-Idle GPU Infrastructure": blog/part1_zero_idle_gpu_infrastructure.md
     - Evolving SecOps Runbooks Without Cheating: blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md
     - Evolving SecOps MCP Tool Descriptions: blog/gepa_mcp_tool_description_optimization.md
+    - "Recursive Language Models (dspy.RLM) in the SOC": blog/dspy_rlm_recursive_language_models_for_secops.md
   - Deployment & Infrastructure Guides:
     - Vertex AI Deployment Notes: vertex_deployment_notes.md
     - Vertex AI Cleanup Strategies: vertex_cleanup_strategies.md

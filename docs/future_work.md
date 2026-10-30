@@ -150,3 +150,21 @@ Establish continuous verification and drift detection across model flavors, cont
 ### Planned Deliverables
 - `cloudbuild.yaml`: Multi-stage Cloud Build configuration for linting, test suites, and Docker image builds.
 - `docs/ci_cd_architecture.md`: Architecture guide and alert notification setup.
+
+---
+
+## Track 6: Recursive Language Model (`dspy.RLM`) Worker Scaling & Open-Weight Distillation
+
+### Objective
+Extend `RLMSOCRunbookWorkerAgent` (`agent/rlm_soc_worker.py`, [Issue #23](https://github.com/dandye/open-model-deploy-gcp/issues/23) / [PR #24](https://github.com/dandye/open-model-deploy-gcp/pull/24), grounded in Zhang, Kraska, & Khattab 2025, `arXiv:2512.24601`) from managed Gemini models to heterogeneous root/sub-LM hierarchies, self-hosted Gemma 4 / Qwen 3.8 endpoints, and high-volume live Google SecOps UDM streams. See [`DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md`](soc_eval_results/DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md) and [`blog/dspy_rlm_recursive_language_models_for_secops.md`](blog/dspy_rlm_recursive_language_models_for_secops.md).
+
+### Research & Engineering Sub-Tracks
+1. **Heterogeneous Root-LM + Sub-LM Delegation (`llm_query_batched`)**:
+   - Pair `gemini-2.5-flash` or `gemini-2.5-pro` as the root Python REPL orchestrator with `rlm_sub_model="gemini-2.5-flash-lite"` or a scale-to-zero Cloud Run L4 `gemma-4-e4b-it` endpoint (`dspy.RLM(..., sub_lm=...)`) to classify batches of raw command lines and UDM events in parallel.
+2. **Open-Weight Gemma 4 & Qwen 3.8 RLM Benchmarking + SFT Distillation**:
+   - Benchmark `gemma-4-31b-it` (`2x A100`), `qwen3.8-27b` (`1x RTX PRO 6000`), and `nemotron-3.5-super-vl-nvfp4` under `SOC_WORKER_MODE="rlm"`, and distill verified 5-turn Python REPL threat-hunting trajectories into `datasets/soc_distillation_train.jsonl`.
+3. **Joint $\text{Harness}^2$ (`arXiv:2610.14224`) + `dspy.RLM` Co-Evolution**:
+   - Run `Harness2ProposeProbeComposeProposer` with `SOC_WORKER_MODE="rlm"` so the `INV` and `DOM` editors evolve runbooks tailored for Python REPL batching and set-intersection idioms.
+4. **High-Volume Live `secops-mcp` UDM Stream Filtering**:
+   - Benchmark `GuardedSOCInterpreter` against `50 KB - 500 KB` live Chronicle UDM event payloads where Python REPL filtering prevents LLM context-window overflow.
+
