@@ -97,6 +97,7 @@ nav:
     - SOC Eval Failure Analysis: soc_eval_failure_analysis.md
   - GEPA, Harness^2, & Runbooks:
     - Runbook Authoring Best Practices: RUNBOOK_AUTHORING_BEST_PRACTICES.md
+    - DSPy RLM SOC Worker Evaluation: soc_eval_results/DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md
     - DSPy Overnight Campaign Report: soc_eval_results/dspy_overnight/MORNING_REPORT.md
     - Harness^2 8-Hour Campaign Report: soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md
     - Gen 5 Cross-Model Transfer Scorecard: soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md

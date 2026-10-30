@@ -203,6 +203,7 @@ just vertex-undeploy
   - [Gen 5 Family-Instanced SOC Evaluation Suite](evals_gen5.md)
 - **GEPA, DSPy Context Hygiene, & $\text{Harness}^2$ Evolution**:
   - [Empirical Runbook Authoring Best Practices (`RB-01`..`RB-05`)](RUNBOOK_AUTHORING_BEST_PRACTICES.md)
+  - [DSPy `RLM` (Recursive Language Model) SOC Worker Evaluation (`arXiv:2512.24601`)](soc_eval_results/DSPY_RLM_WORKER_EVALUATION_ANALYSIS.md)
   - [DSPy Context Engineering & 9-Hour Overnight Report](soc_eval_results/dspy_overnight/MORNING_REPORT.md)
   - [$\text{Harness}^2$ 8-Hour Recursive Runbook Evolution Report (`arXiv:2610.14224`)](soc_eval_results/harness2_8h_campaign/HARNESS2_CAMPAIGN_REPORT.md)
   - [Gen 5 Cross-Model Transfer & Cost Staircase Scorecard (`180` Trajectories)](soc_eval_results/harness2_8h_campaign/gen5_transfer/GEN5_TRANSFER_SCORECARD.md)

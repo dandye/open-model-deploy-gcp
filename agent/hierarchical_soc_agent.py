@@ -913,6 +913,12 @@ class SOCSupervisorAgent(GemmaAgent):
         runbooks_dict: Optional[Dict[str, str]] = None,
         use_runbooks: bool = True,
         strip_scaffolding: bool = True,
+        worker_mode: Optional[str] = None,
+        rlm_sub_model: Optional[str] = None,
+        rlm_max_iters: int = 6,
+        rlm_max_llm_calls: int = 10,
+        dspy_lm: Optional[Any] = None,
+        dspy_sub_lm: Optional[Any] = None,
     ):
         super().__init__(
             project_id=project_id,
@@ -929,6 +935,13 @@ class SOCSupervisorAgent(GemmaAgent):
         self.runbooks_dict = runbooks_dict
         self.use_runbooks = use_runbooks
         self.strip_scaffolding = strip_scaffolding
+        resolved_mode = worker_mode if worker_mode is not None else os.environ.get("SOC_WORKER_MODE", "react")
+        self.worker_mode = (resolved_mode or "react").strip().lower()
+        self.rlm_sub_model = rlm_sub_model if rlm_sub_model is not None else os.environ.get("SOC_RLM_SUB_MODEL")
+        self.rlm_max_iters = rlm_max_iters
+        self.rlm_max_llm_calls = rlm_max_llm_calls
+        self.dspy_lm = dspy_lm
+        self.dspy_sub_lm = dspy_sub_lm
         self.name = "hierarchical_soc_supervisor"
         self.last_backend: str = "Unknown"
 
@@ -1639,6 +1652,28 @@ class SOCSupervisorAgent(GemmaAgent):
         ctx_str = "\n".join(f"- {k}: {v}" for k, v in context.items())
         return f"Operational Triage Request:\n{query}\n\nCase Context:\n{ctx_str}\n\nPerform initial investigation and provide the triage report."
 
+    def _resolve_effective_worker_mode(self, classification: str) -> str:
+        """Resolves the per-query worker execution mode ('react' or 'rlm').
+
+        - 'rlm': Always dispatch RLMSOCRunbookWorkerAgent (DSPy RLM Python REPL).
+        - 'auto': Dispatch RLMSOCRunbookWorkerAgent for multi-hop proactive
+          threat hunting (THREAT_HUNT or ThreatHuntEnvironment) and
+          SOCRunbookWorkerAgent ('react') for single-indicator Tier 1 alert
+          categories.
+        - 'react' (default): Always dispatch SOCRunbookWorkerAgent.
+        """
+        mode = (self.worker_mode or "react").strip().lower()
+        if mode == "rlm":
+            return "rlm"
+        if mode == "auto":
+            if (
+                classification == "THREAT_HUNT"
+                or bool(getattr(self.environment, "supports_threat_hunt_tools", False))
+            ):
+                return "rlm"
+            return "react"
+        return "react"
+
     def query(
         self,
         prompt: str,
@@ -1667,28 +1702,62 @@ class SOCSupervisorAgent(GemmaAgent):
             runbook_content = ""
 
         # 3. Worker Dispatch
-        worker = SOCRunbookWorkerAgent(
-            classification=classification,
-            runbook_name=runbook_name,
-            runbook_content=runbook_content,
-            project_id=self.project_id,
-            region=self.region,
-            endpoint_id=self.endpoint_id,
-            cloudrun_url=self.cloudrun_url,
-            managed_model=self.managed_model,
-            use_live_mcp=self.use_live_mcp,
-            environment=self.environment,
-            strip_scaffolding=self.strip_scaffolding,
-        )
-        # Inherit supervisor LLM caller so mocks and configurations apply uniformly
-        worker._call_llm_step = self._call_llm_step
+        effective_worker_mode = self._resolve_effective_worker_mode(classification)
+        rlm_repl_steps: Optional[int] = None
+        if effective_worker_mode == "rlm":
+            try:
+                from agent.rlm_soc_worker import RLMSOCRunbookWorkerAgent
+            except ModuleNotFoundError:
+                from rlm_soc_worker import RLMSOCRunbookWorkerAgent
 
-        worker_report, worker_trajectory, worker_usage = worker.investigate(
-            prompt=prompt,
-            max_iterations=max_iterations,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+            worker = RLMSOCRunbookWorkerAgent(
+                classification=classification,
+                runbook_name=runbook_name,
+                runbook_content=runbook_content,
+                project_id=self.project_id,
+                region=self.region,
+                endpoint_id=self.endpoint_id,
+                cloudrun_url=self.cloudrun_url,
+                managed_model=self.managed_model,
+                use_live_mcp=self.use_live_mcp,
+                environment=self.environment,
+                strip_scaffolding=self.strip_scaffolding,
+                sub_model=self.rlm_sub_model,
+                rlm_max_iters=self.rlm_max_iters,
+                rlm_max_llm_calls=self.rlm_max_llm_calls,
+                dspy_lm=self.dspy_lm,
+                dspy_sub_lm=self.dspy_sub_lm,
+            )
+            worker_report, worker_trajectory, worker_usage = worker.investigate(
+                prompt=prompt,
+                max_iterations=max_iterations,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+            rlm_repl_steps = len(getattr(worker, "last_rlm_repl_trajectory", []) or [])
+        else:
+            worker = SOCRunbookWorkerAgent(
+                classification=classification,
+                runbook_name=runbook_name,
+                runbook_content=runbook_content,
+                project_id=self.project_id,
+                region=self.region,
+                endpoint_id=self.endpoint_id,
+                cloudrun_url=self.cloudrun_url,
+                managed_model=self.managed_model,
+                use_live_mcp=self.use_live_mcp,
+                environment=self.environment,
+                strip_scaffolding=self.strip_scaffolding,
+            )
+            # Inherit supervisor LLM caller so mocks and configurations apply uniformly
+            worker._call_llm_step = self._call_llm_step
+
+            worker_report, worker_trajectory, worker_usage = worker.investigate(
+                prompt=prompt,
+                max_iterations=max_iterations,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
 
         # Enforce the boundary independently of any model-authored report. An
         # incomplete investigation cannot reach synthesis or action dispatch.
@@ -1710,6 +1779,7 @@ class SOCSupervisorAgent(GemmaAgent):
                 trajectory=worker_trajectory, usage=worker_usage, backend=self.last_backend,
                 endpoint_id=self.endpoint_id, classification=classification, runbook=runbook_name,
                 worker_report=incomplete_report, verdict="INCONCLUSIVE",
+                worker_mode=effective_worker_mode, rlm_repl_steps=rlm_repl_steps,
             )
 
         # 4. Supervisor Synthesis
@@ -1753,6 +1823,8 @@ class SOCSupervisorAgent(GemmaAgent):
             runbook=runbook_name,
             worker_report=worker_report,
             verdict=decision.verdict if decision is not None else None,
+            worker_mode=effective_worker_mode,
+            rlm_repl_steps=rlm_repl_steps,
         )
 
 
