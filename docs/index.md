@@ -214,6 +214,7 @@ just vertex-undeploy
   - [Part 1: Zero-Idle GPU Infrastructure for Security Agents](blog/part1_zero_idle_gpu_infrastructure.md)
   - [Evolving SecOps Runbooks Without Cheating: GEPA, Verbosity Bias, & Disciplined Hillclimbing](blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md)
   - [Evolving SecOps MCP Tool Descriptions with GEPA](blog/gepa_mcp_tool_description_optimization.md)
+  - [Recursive Language Models (`dspy.RLM`) in the SOC: When a Python REPL Beats ReAct (and When It Over-Pivots)](blog/dspy_rlm_recursive_language_models_for_secops.md)
 - **Deployment & Ephemeral Sweep Guides**:
   - [Vertex AI Online Prediction Deployment Notes](vertex_deployment_notes.md)
   - [Cloud Run GPU Scale-to-Zero Deployment Guide](cloudrun_deploy.md)

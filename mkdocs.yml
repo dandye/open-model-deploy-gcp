@@ -113,6 +113,7 @@ nav:
     - "Part 1: Zero-Idle GPU Infrastructure": blog/part1_zero_idle_gpu_infrastructure.md
     - Evolving SecOps Runbooks Without Cheating: blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md
     - Evolving SecOps MCP Tool Descriptions: blog/gepa_mcp_tool_description_optimization.md
+    - "Recursive Language Models (dspy.RLM) in the SOC": blog/dspy_rlm_recursive_language_models_for_secops.md
   - Deployment & Infrastructure Guides:
     - Vertex AI Deployment Notes: vertex_deployment_notes.md
     - Vertex AI Cleanup Strategies: vertex_cleanup_strategies.md

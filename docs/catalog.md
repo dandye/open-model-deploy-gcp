@@ -52,6 +52,7 @@ This catalog indexes all architecture specifications, multi-model benchmark repo
 | [`soc_eval_results/GEPA_MCP_EVALUATION_ANALYSIS.md`](soc_eval_results/GEPA_MCP_EVALUATION_ANALYSIS.md) | `analysis` | Default MCP vs. Gusto GEPA-optimized MCP tool descriptions in the Gen 3 interactive suite |
 | [`blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md`](blog/gepa_runbook_evolution_and_disciplined_hillclimbing.md) | `blog` | Evolving SecOps runbooks without cheating: GEPA memorization, judge verbosity bias, five guards & RRSI crosswalk |
 | [`blog/gepa_mcp_tool_description_optimization.md`](blog/gepa_mcp_tool_description_optimization.md) | `blog` | Evolving SecOps MCP tool descriptions with GEPA |
+| [`blog/dspy_rlm_recursive_language_models_for_secops.md`](blog/dspy_rlm_recursive_language_models_for_secops.md) | `blog` | Recursive Language Models (`dspy.RLM`) in the SOC: when a Python REPL beats ReAct, when it over-pivots, and hybrid `worker_mode="auto"` routing |
 | [`blog/part1_zero_idle_gpu_infrastructure.md`](blog/part1_zero_idle_gpu_infrastructure.md) | `blog` | Serving Open Models for Security Agents, Part 1: building a repeatable experiment |
 | [`references_agent_harness_literature.md`](references_agent_harness_literature.md) | `reference` | Annotated bibliography: RRSI, Harness-Delta Attribution, GEPA, hillclimbing guides, sandboxes & benchmarks |
 | [`gemma4_performance_optimization_plan.md`](gemma4_performance_optimization_plan.md) | `plan` | Gemma 4 performance analysis, optimization roadmap & empirical findings |
