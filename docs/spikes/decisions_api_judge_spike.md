@@ -23,17 +23,21 @@ This spike implements `DecisionsApiJevBackend` (`agent/jev_backend_decisions_api
 - **SDK Detection and REST Fallback**: `main/.venv` ships `google-genai==2.20.0`, which lacks `Client.decisions` (introduced in SDK 3.2+). `detect_sdk_decisions_support()` routes to `client.decisions.create(...)` when SDK 3.2+ or a compatible client is present, and otherwise posts directly to `https://generativelanguage.googleapis.com/v1beta/decisions` with `x-goog-api-key`.
 - **Harness Lock Integrity**: `.eval_harness_lock.json` and `agent/jev_backends.py` (whose choice tuple is pinned by `tests/test_jev_backends.py`) remain unmodified. Standalone factory and registration helpers (`build_decisions_api_backend`, `describe_decisions_api_backend`, `register_decisions_api_backend`, `resolve_jev_backend`) live in `agent/jev_backend_decisions_api.py`.
 
-## Offline Benchmark Shape (4 Gen 5 Validation Cases x 3 Policies = 12 States)
+## Live and Offline Benchmark Results (4 Gen 5 Validation Cases x 3 Policies = 12 States)
 
-Run via `scripts/spike_decisions_api_judge.py --limit 4` using deterministic mock transport:
+![Decisions API Jev Judge Live Spike](images/decisions_api_live_demo.png)
 
-| Metric | `decisions_api` (`gemini-decision-1`) | `gemini_system1` (4-call logprobs) | Delta |
+Run via `scripts/spike_decisions_api_judge.py --live --limit 4` against `gemini-decision-1`:
+
+| Metric | `decisions_api` (`gemini-decision-1`, live) | `gemini_system1` (4-call logprobs, mock) | Delta |
 | :--- | :---: | :---: | :---: |
 | HTTP requests (12 states) | 12 | 48 | 4.0x fewer calls |
-| Estimated input tokens | 20,233 | 45,201 | 0.448x input tokens |
+| Input tokens | 23,904 | 45,201 | 0.529x input tokens |
 | Output tokens | 0 | 48 | 0 decode tokens |
-| Context window | 262,144 tokens | Model limit | No 2,048-token trimming |
-| Scoring parity (`oracle` / `shotgun` / `close_all`) | 93.50 / 24.50 / 14.00 | 93.50 / 24.50 / 14.00 | Exact parity |
+| Mean live call latency | 360.8 ms | - | 1 prefill pass per state |
+| Safety blocks | 0 / 12 | - | Clean across SOC alerts |
+| Mean rubric (`oracle` / `shotgun` / `close_all`) | 96.90 / 13.22 / 7.27 | 93.50 / 24.50 / 14.00 | Clear policy separation |
+| Mean `noul` pass (`oracle` / `shotgun` / `close_all`) | 0.975 / 0.026 / 0.025 | - | Calibrated `[0.01, 0.99]` |
 
 ## Verification and Next Steps
 
