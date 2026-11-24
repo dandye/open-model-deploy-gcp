@@ -15,6 +15,25 @@ import subprocess
 import urllib.request
 import urllib.error
 
+try:
+    from agent.gemini4_caching import (
+        extract_usage_metrics,
+        is_gemini_4_model,
+        neon_concurrency_guard,
+        resolve_gemini_location,
+        sanitize_generate_content_config_kwargs,
+        supports_explicit_caching,
+    )
+except ModuleNotFoundError:
+    from gemini4_caching import (
+        extract_usage_metrics,
+        is_gemini_4_model,
+        neon_concurrency_guard,
+        resolve_gemini_location,
+        sanitize_generate_content_config_kwargs,
+        supports_explicit_caching,
+    )
+
 os.environ["GOOGLE_API_USE_CLIENT_CERTIFICATE"] = "false"
 os.environ["GOOGLE_API_USE_MTLS_ENDPOINT"] = "never"
 os.environ["CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE"] = "false"
@@ -161,17 +180,32 @@ class GemmaAgent:
                     pass
         return None
 
-    def query(self, prompt: str, max_tokens: Optional[int] = None, temperature: float = 0.7) -> Dict[str, Any]:
+    def query(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.7,
+        *,
+        system_instruction: Optional[str] = None,
+        thinking_level: Optional[str] = None,
+        cached_content: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Queries the configured or auto-discovered Gemma model backend.
 
         Args:
             prompt: Input user prompt.
             max_tokens: Maximum generated tokens. Defaults to None for unbounded/default headroom.
-            temperature: Sampling temperature.
+            temperature: Sampling temperature (omitted automatically on Gemini 4 models).
+            system_instruction: Optional static system instruction override (keeps token-0 prefix clean).
+            thinking_level: Optional Gemini thinking level (e.g. 'LOW', 'MEDIUM', 'HIGH').
+            cached_content: Optional explicit cache name (gated off on Gemini 4 models).
 
         Returns:
             Dictionary containing the generated response, metadata, and active backend.
         """
+        effective_system_instruction = (
+            self.system_instruction if system_instruction is None else system_instruction
+        )
         # Strategy 1: Cloud Run URL
         if self.cloudrun_url:
             import urllib.request
@@ -214,7 +248,7 @@ class GemmaAgent:
             payload = {
                 "model": model_name,
                 "messages": [
-                    {"role": "system", "content": self.system_instruction},
+                    {"role": "system", "content": effective_system_instruction},
                     {"role": "user", "content": prompt},
                 ],
                 "max_tokens": cloudrun_max_tokens,
@@ -266,7 +300,7 @@ class GemmaAgent:
                     {
                         "@requestFormat": "chatCompletions",
                         "messages": [
-                            {"role": "system", "content": self.system_instruction},
+                            {"role": "system", "content": effective_system_instruction},
                             {"role": "user", "content": prompt},
                         ],
                         "max_tokens": vertex_max_tokens,
@@ -276,7 +310,7 @@ class GemmaAgent:
             else:
                 instances = [
                     {
-                        "prompt": f"<start_of_turn>user\n{self.system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
+                        "prompt": f"<start_of_turn>user\n{effective_system_instruction}\n\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
                         "max_tokens": vertex_max_tokens,
                         "temperature": temperature,
                     }
@@ -382,41 +416,59 @@ class GemmaAgent:
                 target_region = "us-east5"
             else:
                 target_region = "us-central1"
-        elif (
-            "gemini-3.7" in target_managed_model.lower()
-            or "gemini-3.5" in target_managed_model.lower()
-            or "gemini-3.1" in target_managed_model.lower()
-            or "gemini-3-" in target_managed_model.lower()
-            or "gemma-4" in target_managed_model.lower()
-        ) and target_region == "us-central1":
-            target_region = "global"
+        else:
+            target_region = resolve_gemini_location(target_managed_model, target_region)
 
         try:
             from google import genai
             from google.genai import types
+            http_opts = (
+                types.HttpOptions(api_version="v1", timeout=90000)
+                if is_gemini_4_model(target_managed_model)
+                else types.HttpOptions(timeout=90000)
+            )
             client = genai.Client(
                 vertexai=True,
                 project=self.project_id,
                 location=target_region,
-                http_options=types.HttpOptions(timeout=90000),
+                http_options=http_opts,
             )
+            raw_config_kwargs: Dict[str, Any] = {
+                "temperature": temperature,
+                "system_instruction": effective_system_instruction,
+            }
             if max_tokens is not None:
-                config = types.GenerateContentConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_tokens,
-                    system_instruction=self.system_instruction,
+                raw_config_kwargs["max_output_tokens"] = max_tokens
+            if cached_content is not None and supports_explicit_caching(target_managed_model):
+                raw_config_kwargs["cached_content"] = cached_content
+            effective_thinking_level = thinking_level or (
+                os.environ.get("GEMINI_4_THINKING_LEVEL")
+                if is_gemini_4_model(target_managed_model)
+                else None
+            )
+            if effective_thinking_level is not None and hasattr(types, "ThinkingConfig"):
+                raw_config_kwargs["thinking_config"] = types.ThinkingConfig(
+                    thinking_level=effective_thinking_level
                 )
-            else:
-                config = types.GenerateContentConfig(
-                    temperature=temperature,
-                    system_instruction=self.system_instruction,
-                )
+            config_kwargs = sanitize_generate_content_config_kwargs(
+                target_managed_model, raw_config_kwargs
+            )
+            config = types.GenerateContentConfig(**config_kwargs)
             res = None
             last_err = None
+            use_direct_generate = is_gemini_4_model(target_managed_model)
             for attempt in range(5):
                 try:
-                    chat = client.chats.create(model=target_managed_model, config=config)
-                    res = chat.send_message(prompt)
+                    with neon_concurrency_guard(target_managed_model):
+                        if use_direct_generate:
+                            res = client.models.generate_content(
+                                model=target_managed_model,
+                                contents=prompt,
+                                config=config,
+                            )
+                        else:
+                            chat = client.chats.create(model=target_managed_model, config=config)
+                            res = chat.send_message(prompt)
                     break
                 except Exception as call_err:
                     last_err = call_err
@@ -439,28 +491,17 @@ class GemmaAgent:
                             text_out = f"{text_out}\n{action_line}".strip() if text_out else action_line
             except Exception:
                 pass
-            prompt_cnt = int(
-                getattr(res.usage_metadata, "prompt_token_count", None)
-                or int(len(prompt.split()) * 1.3)
-            )
-            comp_cnt = int(
-                getattr(res.usage_metadata, "candidates_token_count", None)
-                or int(len(text_out.split()) * 1.3)
-            )
-            total_cnt = int(
-                getattr(res.usage_metadata, "total_token_count", None)
-                or (prompt_cnt + comp_cnt)
+            usage = extract_usage_metrics(
+                getattr(res, "usage_metadata", None),
+                prompt_fallback=int(len(prompt.split()) * 1.3),
+                completion_fallback=int(len(text_out.split()) * 1.3),
             )
             return {
                 "response": text_out,
                 "backend": f"Vertex AI Model Garden / MaaS ({target_managed_model})",
                 "model": target_managed_model,
                 "region": target_region,
-                "usage": {
-                    "prompt_tokens": prompt_cnt,
-                    "completion_tokens": comp_cnt,
-                    "total_tokens": total_cnt,
-                },
+                "usage": usage,
             }
         except Exception as e:
             return {

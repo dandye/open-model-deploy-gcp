@@ -631,23 +631,23 @@ class SocTier1Agent(GemmaAgent):
         self.last_backend: str = "Unknown"
 
     def _build_tools_description(self) -> str:
-        """Extracts tool docstrings and signatures for ReAct prompt formatting."""
+        """Extracts tool docstrings and signatures in deterministic sorted order for prefix stability."""
         descriptions = []
-        for name, func in self.tools_dict.items():
+        for name in sorted(self.tools_dict.keys()):
+            func = self.tools_dict[name]
             doc = inspect.getdoc(func) or "No description available."
             desc = self.mcp_provider.get_description(name, default_doc=doc)
             sig = inspect.signature(func)
             descriptions.append(f"- {name}{sig}: {desc}")
         if self.environment is not None:
             env_actions = [
-                "- isolate_host(hostname: str): Isolates host from enterprise network to contain active adversary threat.",
-                "- unblock_host(hostname: str): Removes network isolation on benign or remediated host.",
-                "- block_indicator(indicator: str): Adds domain, IP, or file hash to perimeter firewall and EDR blocklist.",
-                "- update_case_comment(case_id: str, comment: str): Posts triage findings and IOC notes to SOAR incident case.",
-                "- close_case(case_id: str, verdict: str): Resolves and closes SOAR case as benign false positive or contained incident.",
+                ("block_indicator", "- block_indicator(indicator: str): Adds domain, IP, or file hash to perimeter firewall and EDR blocklist."),
+                ("close_case", "- close_case(case_id: str, verdict: str): Resolves and closes SOAR case as benign false positive or contained incident."),
+                ("isolate_host", "- isolate_host(hostname: str): Isolates host from enterprise network to contain active adversary threat."),
+                ("unblock_host", "- unblock_host(hostname: str): Removes network isolation on benign or remediated host."),
+                ("update_case_comment", "- update_case_comment(case_id: str, comment: str): Posts triage findings and IOC notes to SOAR incident case."),
             ]
-            for act_line in env_actions:
-                act_name = act_line.split("(")[0].strip("- ")
+            for act_name, act_line in sorted(env_actions, key=lambda pair: pair[0]):
                 if act_name not in self.tools_dict:
                     descriptions.append(act_line)
         return "\n".join(descriptions)
@@ -875,33 +875,67 @@ class SocTier1Agent(GemmaAgent):
         return step
 
 
-    def _call_llm_step(self, prompt: str, max_tokens: Optional[int] = None, temperature: float = 0.2) -> Tuple[str, Dict[str, int]]:
+    def _call_llm_step(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.2,
+        *,
+        system_instruction: Optional[str] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
         """Invokes underlying Gemma LLM backend for a single reasoning step."""
-        res = super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
-        usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        query_kwargs: Dict[str, Any] = {
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if system_instruction is not None:
+            query_kwargs["system_instruction"] = system_instruction
+        res = super().query(**query_kwargs)
+        usage: Dict[str, Any] = {
+            "prompt_tokens": 0,
+            "cached_tokens": 0,
+            "completion_tokens": 0,
+            "thoughts_tokens": 0,
+            "total_tokens": 0,
+            "cache_hit_rate": 0.0,
+        }
         if isinstance(res, dict):
             self.last_backend = res.get("backend", "Unknown")
             usage = res.get("usage", usage)
             return res.get("response", ""), usage
         return str(res), usage
 
-    def format_triage_prompt(self, query: str, context: Optional[Dict[str, Any]] = None) -> str:
-        """Formats an operational triage request with optional case metadata."""
-        if not context:
-            return query
-        ctx_str = "\n".join(f"- {k}: {v}" for k, v in context.items())
-        return f"Operational Triage Request:\n{query}\n\nCase Context:\n{ctx_str}\n\nPerform initial investigation and provide the triage report."
-
-    def query(
+    def _invoke_step(
         self,
         prompt: str,
-        max_iterations: int = 5,
         max_tokens: Optional[int] = None,
         temperature: float = 0.2,
-    ) -> Dict[str, Any]:
-        """Executes multi-step ReAct triage reasoning and executes tools iteratively."""
+        system_instruction: Optional[str] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
+        """Invoke `_call_llm_step` while staying compatible with monkeypatched test doubles."""
+        caller = self._call_llm_step
+        accepts_sys = False
+        try:
+            sig = inspect.signature(caller)
+            accepts_sys = "system_instruction" in sig.parameters or any(
+                p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+            )
+        except (TypeError, ValueError):
+            accepts_sys = False
+        if system_instruction is not None and accepts_sys:
+            return caller(
+                prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system_instruction=system_instruction,
+            )
+        return caller(prompt, max_tokens=max_tokens, temperature=temperature)
+
+    def _build_react_system_instruction(self) -> str:
+        """Build static-first system instruction (persona + sorted tools + ReAct protocol) for token-0 cache stability."""
         tools_doc = self._build_tools_description()
-        react_instructions = (
+        return (
             f"{SOC_TIER1_PERSONA}\n\n"
             f"Available Investigation Tools:\n{tools_doc}\n\n"
             "Interaction Protocol (ReAct):\n"
@@ -950,16 +984,49 @@ class SocTier1Agent(GemmaAgent):
             "```\n"
         )
 
-        current_prompt = f"{react_instructions}\n\nQuestion: {prompt}\n"
+    def format_triage_prompt(self, query: str, context: Optional[Dict[str, Any]] = None) -> str:
+        """Formats an operational triage request with optional case metadata."""
+        if not context:
+            return query
+        ctx_str = "\n".join(f"- {k}: {v}" for k, v in context.items())
+        return f"Operational Triage Request:\n{query}\n\nCase Context:\n{ctx_str}\n\nPerform initial investigation and provide the triage report."
+
+    def query(
+        self,
+        prompt: str,
+        max_iterations: int = 5,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.2,
+    ) -> Dict[str, Any]:
+        """Executes multi-step ReAct triage reasoning and executes tools iteratively."""
+        react_system_instruction = self._build_react_system_instruction()
+
+        # Keep static instructions in system_instruction (token 0) and place dynamic
+        # per-case alert + multi-turn ReAct scratchpad in trailing user contents.
+        current_prompt = f"Question: {prompt}\n"
         trajectory: List[Dict[str, Any]] = []
         final_answer = ""
-        total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        total_usage: Dict[str, Any] = {
+            "prompt_tokens": 0,
+            "cached_tokens": 0,
+            "completion_tokens": 0,
+            "thoughts_tokens": 0,
+            "total_tokens": 0,
+            "cache_hit_rate": 0.0,
+        }
 
         for iteration in range(max_iterations):
-            step_output, step_usage = self._call_llm_step(current_prompt, max_tokens=max_tokens, temperature=temperature)
-            total_usage["prompt_tokens"] += step_usage.get("prompt_tokens", 0)
-            total_usage["completion_tokens"] += step_usage.get("completion_tokens", 0)
-            total_usage["total_tokens"] += step_usage.get("total_tokens", 0)
+            step_output, step_usage = self._invoke_step(
+                current_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system_instruction=react_system_instruction,
+            )
+            total_usage["prompt_tokens"] += int(step_usage.get("prompt_tokens", 0) or 0)
+            total_usage["cached_tokens"] += int(step_usage.get("cached_tokens", 0) or 0)
+            total_usage["completion_tokens"] += int(step_usage.get("completion_tokens", 0) or 0)
+            total_usage["thoughts_tokens"] += int(step_usage.get("thoughts_tokens", 0) or 0)
+            total_usage["total_tokens"] += int(step_usage.get("total_tokens", 0) or 0)
 
             if not step_output:
                 break
@@ -1010,6 +1077,11 @@ class SocTier1Agent(GemmaAgent):
 
         if not final_answer:
             final_answer = "Reached maximum investigation iterations without final triage output."
+
+        if total_usage["prompt_tokens"] > 0:
+            total_usage["cache_hit_rate"] = round(
+                total_usage["cached_tokens"] / total_usage["prompt_tokens"], 4
+            )
 
         return {
             "response": final_answer,

@@ -19,6 +19,10 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_RUNBOOKS_DIR = ROOT_DIR / "third_party" / "ai-runbooks" / ".clinerules" / "run_books"
 
 try:
+    from agent.gemini4_caching import (
+        compute_cache_telemetry,
+        estimate_cached_cost_usd,
+    )
     from agent.gemma_agent import GemmaAgent
     from agent.soc_tier1_agent import (
         LOCAL_CANONICAL_MAP,
@@ -40,6 +44,10 @@ try:
         lookup_entity,
     )
 except ModuleNotFoundError:
+    from gemini4_caching import (
+        compute_cache_telemetry,
+        estimate_cached_cost_usd,
+    )
     from gemma_agent import GemmaAgent
     from soc_tier1_agent import (
         LOCAL_CANONICAL_MAP,
@@ -575,6 +583,7 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         use_live_mcp: bool = False,
         environment: Optional[Any] = None,
         strip_scaffolding: bool = True,
+        static_context_prefix: Optional[str] = None,
     ):
         system_instruction = translate_runbook_to_system_instruction(
             runbook_content,
@@ -592,6 +601,7 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         )
         self.classification = classification
         self.runbook_name = runbook_name
+        self.static_context_prefix = static_context_prefix
         self.system_instruction = system_instruction
         self.name = f"soc_runbook_worker_{classification.lower()}"
 
@@ -650,9 +660,10 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
         )
 
     def _build_tools_description(self) -> str:
-        """Lists only the worker's allowed epistemic tools, never pragmatic containment actions."""
+        """Lists only the worker's allowed epistemic tools in deterministic sorted order."""
         descriptions = []
-        for name, func in self.tools_dict.items():
+        for name in sorted(self.tools_dict.keys()):
+            func = self.tools_dict[name]
             doc = inspect.getdoc(func) or "No description available."
             desc = self.mcp_provider.get_description(name, default_doc=doc)
             sig = inspect.signature(func)
@@ -735,16 +746,16 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             })
         return super()._execute_tool_action(tool_name, args)
 
-    def investigate(
-        self,
-        prompt: str,
-        max_iterations: int = 5,
-        max_tokens: Optional[int] = None,
-        temperature: float = 0.0,
-    ) -> Tuple[WorkerInvestigationReport, List[Dict[str, Any]], Dict[str, int]]:
-        """Executes epistemic investigation loop guided by the translated runbook."""
+    def _build_worker_system_instruction(self) -> str:
+        """Build static-first worker system instruction (token-0 cache stable across turns and cases)."""
         tools_doc = self._build_tools_description()
-        react_instructions = (
+        prefix_block = (
+            f"{self.static_context_prefix.strip()}\n\n"
+            if self.static_context_prefix and self.static_context_prefix.strip()
+            else ""
+        )
+        return (
+            f"{prefix_block}"
             f"{self.system_instruction}\n\n"
             f"Available Investigation Tools:\n{tools_doc}\n\n"
             "Interaction Protocol (ReAct):\n"
@@ -772,16 +783,42 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             "```\n"
         )
 
-        current_prompt = f"{react_instructions}\n\nAlert To Investigate:\n{prompt}\n"
+    def investigate(
+        self,
+        prompt: str,
+        max_iterations: int = 5,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.0,
+    ) -> Tuple[WorkerInvestigationReport, List[Dict[str, Any]], Dict[str, Any]]:
+        """Executes epistemic investigation loop guided by the translated runbook."""
+        worker_system_instruction = self._build_worker_system_instruction()
+
+        # Keep static runbook + sorted tools + ReAct protocol in system_instruction (token 0)
+        # and place per-case alert + growing ReAct scratchpad in trailing user contents.
+        current_prompt = f"Alert To Investigate:\n{prompt}\n"
         trajectory: List[Dict[str, Any]] = []
         final_answer = ""
-        total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        total_usage: Dict[str, Any] = {
+            "prompt_tokens": 0,
+            "cached_tokens": 0,
+            "completion_tokens": 0,
+            "thoughts_tokens": 0,
+            "total_tokens": 0,
+            "cache_hit_rate": 0.0,
+        }
 
         for iteration in range(max_iterations):
-            step_output, step_usage = self._call_llm_step(current_prompt, max_tokens=max_tokens, temperature=temperature)
-            total_usage["prompt_tokens"] += step_usage.get("prompt_tokens", 0)
-            total_usage["completion_tokens"] += step_usage.get("completion_tokens", 0)
-            total_usage["total_tokens"] += step_usage.get("total_tokens", 0)
+            step_output, step_usage = self._invoke_step(
+                current_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system_instruction=worker_system_instruction,
+            )
+            total_usage["prompt_tokens"] += int(step_usage.get("prompt_tokens", 0) or 0)
+            total_usage["cached_tokens"] += int(step_usage.get("cached_tokens", 0) or 0)
+            total_usage["completion_tokens"] += int(step_usage.get("completion_tokens", 0) or 0)
+            total_usage["thoughts_tokens"] += int(step_usage.get("thoughts_tokens", 0) or 0)
+            total_usage["total_tokens"] += int(step_usage.get("total_tokens", 0) or 0)
 
             if not step_output:
                 if _has_investigation_evidence(trajectory):
@@ -886,6 +923,10 @@ class SOCRunbookWorkerAgent(SocTier1Agent):
             )
         else:
             report = extract_worker_report(final_answer, self.classification, self.runbook_name, trajectory)
+        if total_usage["prompt_tokens"] > 0:
+            total_usage["cache_hit_rate"] = round(
+                total_usage["cached_tokens"] / total_usage["prompt_tokens"], 4
+            )
         return report, trajectory, total_usage
 
 
@@ -913,6 +954,8 @@ class SOCSupervisorAgent(GemmaAgent):
         runbooks_dict: Optional[Dict[str, str]] = None,
         use_runbooks: bool = True,
         strip_scaffolding: bool = True,
+        worker_model: Optional[str] = None,
+        static_context_prefix: Optional[str] = None,
     ):
         super().__init__(
             project_id=project_id,
@@ -929,6 +972,8 @@ class SOCSupervisorAgent(GemmaAgent):
         self.runbooks_dict = runbooks_dict
         self.use_runbooks = use_runbooks
         self.strip_scaffolding = strip_scaffolding
+        self.worker_model = worker_model
+        self.static_context_prefix = static_context_prefix
         self.name = "hierarchical_soc_supervisor"
         self.last_backend: str = "Unknown"
 
@@ -1023,10 +1068,26 @@ class SOCSupervisorAgent(GemmaAgent):
         prompt: str,
         max_tokens: Optional[int] = None,
         temperature: float = 0.0,
-    ) -> Tuple[str, Dict[str, int]]:
+        *,
+        system_instruction: Optional[str] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
         """Invokes LLM backend for supervisor reasoning step."""
-        res = super().query(prompt=prompt, max_tokens=max_tokens, temperature=temperature)
-        usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        query_kwargs: Dict[str, Any] = {
+            "prompt": prompt,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if system_instruction is not None:
+            query_kwargs["system_instruction"] = system_instruction
+        res = super().query(**query_kwargs)
+        usage: Dict[str, Any] = {
+            "prompt_tokens": 0,
+            "cached_tokens": 0,
+            "completion_tokens": 0,
+            "thoughts_tokens": 0,
+            "total_tokens": 0,
+            "cache_hit_rate": 0.0,
+        }
         if isinstance(res, dict):
             if "error" in res:
                 import sys
@@ -1035,6 +1096,70 @@ class SOCSupervisorAgent(GemmaAgent):
             usage = res.get("usage", usage)
             return res.get("response", ""), usage
         return str(res), usage
+
+    def _invoke_step(
+        self,
+        prompt: str,
+        max_tokens: Optional[int] = None,
+        temperature: float = 0.0,
+        system_instruction: Optional[str] = None,
+    ) -> Tuple[str, Dict[str, Any]]:
+        """Invoke `_call_llm_step` while staying compatible with monkeypatched test doubles."""
+        caller = self._call_llm_step
+        accepts_sys = False
+        try:
+            sig = inspect.signature(caller)
+            accepts_sys = "system_instruction" in sig.parameters or any(
+                p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+            )
+        except (TypeError, ValueError):
+            accepts_sys = False
+        if system_instruction is not None and accepts_sys:
+            return caller(
+                prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system_instruction=system_instruction,
+            )
+        return caller(prompt, max_tokens=max_tokens, temperature=temperature)
+
+    def build_supervisor_system_instruction(self) -> str:
+        """Build 100% static supervisor system instruction (zero per-case fields at token 0)."""
+        prefix_block = (
+            f"{self.static_context_prefix.strip()}\n\n"
+            if self.static_context_prefix and self.static_context_prefix.strip()
+            else ""
+        )
+        return (
+            f"{prefix_block}"
+            f"{SOC_TIER1_PERSONA}\n\n"
+            "You are the Lead SOC Supervisor Agent conducting final synthesis and containment decision.\n\n"
+            "Supervisor Mission:\n"
+            "1. Synthesize the worker investigation telemetry into an authoritative threat assessment (BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE).\n"
+            "2. Determine containment actions:\n"
+            "   - For MALICIOUS / active threat: recommend isolate_host, block_indicator (when an external C2 domain, IP, or hash is involved), update_case_comment. Avoid close_case, and NEVER isolate a peer server or victim controller outside the alerted endpoint.\n"
+            "   - For BENIGN / false positive (including sanctioned SaaS/business connector traffic with BENIGN domain reputation or change calendar records CHG-..., authorized vulnerability scanners, and RFC-5737 documentation IPs): verdict MUST be BENIGN, recommend close_case and update_case_comment (explicitly citing any CHG-... change ID in the rationale and report), and avoid isolate_host and block_indicator.\n"
+            "   - For SUSPICIOUS / ambiguous: recommend update_case_comment (and block_indicator ONLY when a revoked-certificate binary or confirmed suspicious file hash is identified; NEVER recommend block_indicator on a BENIGN domain or documentation IP, and avoid isolate_host and close_case).\n"
+            "   - For INCONCLUSIVE / upstream tool outage (e.g., HTTP 503 Service Unavailable with unverified intelligence): verdict MUST be INCONCLUSIVE, recommend ONLY update_case_comment (citing HTTP 503), and avoid isolate_host, block_indicator, and close_case.\n"
+            "   - For THREAT_HUNT campaign sweeps: set target_entity to the compromised hostname or confirmed malicious indicator. NEVER recommend blocking a signed OS LOLBin hash (verdict BENIGN / Microsoft Windows Operating System such as rundll32.exe) or benign web server HTML hash.\n"
+            "3. Structure your response into the standard four sections followed by the ```soc_decision block:\n"
+            "[Context & Enrichment]\n"
+            "<entities and enrichment findings>\n\n"
+            "[Analysis & Verdict]\n"
+            "<threat assessment and verdict: BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE>\n\n"
+            "[Action & Escalation]\n"
+            "<containment decisions and mitigation plan>\n\n"
+            "[SOAR Documentation]\n"
+            "<markdown case log comment>\n\n"
+            "```soc_decision\n"
+            "{\n"
+            '  "verdict": "<BENIGN|SUSPICIOUS|MALICIOUS|INCONCLUSIVE>",\n'
+            '  "recommended_actions": ["<action1>", ...],\n'
+            '  "target_entity": "<primary entity>",\n'
+            '  "rationale": "<summary explanation>"\n'
+            "}\n"
+            "```\n"
+        )
 
     def _apply_report_assertion_hygiene(
         self,
@@ -1155,14 +1280,8 @@ class SOCSupervisorAgent(GemmaAgent):
         case_notes_section = (
             f"- Active SOAR Case Notes: {active_case_notes}\n" if active_case_notes else ""
         )
-        hunt_mission_note = (
-            "   - For THREAT_HUNT campaign sweeps: set target_entity to the compromised hostname (e.g., malwaretest-win) or confirmed malicious indicator (e.g., superstarts.top or malicious payload SHA-256). NEVER recommend blocking a signed OS LOLBin hash (verdict BENIGN / Microsoft Windows Operating System such as rundll32.exe) or benign web server HTML hash.\n"
-            if classification == "THREAT_HUNT"
-            else ""
-        )
-        supervisor_instruction = (
-            f"{SOC_TIER1_PERSONA}\n\n"
-            "You are the Lead SOC Supervisor Agent conducting final synthesis and containment decision.\n\n"
+        supervisor_system_instruction = self.build_supervisor_system_instruction()
+        supervisor_user_prompt = (
             f"Original Alert:\n{prompt}\n\n"
             f"Alert Classification: {classification}\n"
             f"{f'Runbook Executed: {runbook_name}' if runbook_name != 'none' else 'Mode: Generic Multi-Agent Investigation (No Procedural Runbook)'}\n\n"
@@ -1171,36 +1290,16 @@ class SOCSupervisorAgent(GemmaAgent):
             f"- Preliminary Risk: {worker_report.risk_level}\n"
             f"- Evidence Observations: {worker_report.evidence}\n"
             f"{case_notes_section}"
-            f"- Worker Findings: {json.dumps(worker_report.findings, indent=2)}\n"
-            f"- Worker Summary:\n{worker_report.raw_response}\n\n"
-            "Supervisor Mission:\n"
-            "1. Synthesize the findings into an authoritative threat assessment (BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE).\n"
-            "2. Determine containment actions:\n"
-            "   - For MALICIOUS / active threat: recommend isolate_host, block_indicator (when an external C2 domain, IP, or hash is involved), update_case_comment. Avoid close_case, and NEVER isolate a peer server or victim controller outside the alerted endpoint.\n"
-            "   - For BENIGN / false positive (including sanctioned SaaS/business connector traffic with BENIGN domain reputation or change calendar records CHG-..., authorized vulnerability scanners, and RFC-5737 documentation IPs): verdict MUST be BENIGN, recommend close_case and update_case_comment (explicitly citing any CHG-... change ID in the rationale and report), and avoid isolate_host and block_indicator.\n"
-            "   - For SUSPICIOUS / ambiguous: recommend update_case_comment (and block_indicator ONLY when a revoked-certificate binary or confirmed suspicious file hash is identified; NEVER recommend block_indicator on a BENIGN domain or documentation IP, and avoid isolate_host and close_case).\n"
-            "   - For INCONCLUSIVE / upstream tool outage (e.g., HTTP 503 Service Unavailable with unverified intelligence): verdict MUST be INCONCLUSIVE, recommend ONLY update_case_comment (citing HTTP 503), and avoid isolate_host, block_indicator, and close_case.\n"
-            f"{hunt_mission_note}"
-            "3. Structure your response into the standard four sections followed by the ```soc_decision block:\n"
-            "[Context & Enrichment]\n"
-            "<entities and enrichment findings>\n\n"
-            "[Analysis & Verdict]\n"
-            "<threat assessment and verdict: BENIGN, SUSPICIOUS, MALICIOUS, or INCONCLUSIVE>\n\n"
-            "[Action & Escalation]\n"
-            "<containment decisions and mitigation plan>\n\n"
-            "[SOAR Documentation]\n"
-            "<markdown case log comment>\n\n"
-            "```soc_decision\n"
-            "{\n"
-            '  "verdict": "<BENIGN|SUSPICIOUS|MALICIOUS|INCONCLUSIVE>",\n'
-            '  "recommended_actions": ["<action1>", ...],\n'
-            '  "target_entity": "<primary entity>",\n'
-            '  "rationale": "<summary explanation>"\n'
-            "}\n"
-            "```\n"
+            f"- Worker Findings: {json.dumps(worker_report.findings, indent=2, sort_keys=True)}\n"
+            f"- Worker Summary:\n{worker_report.raw_response}\n"
         )
 
-        step_output, usage = self._call_llm_step(supervisor_instruction, max_tokens=max_tokens, temperature=temperature)
+        step_output, usage = self._invoke_step(
+            supervisor_user_prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system_instruction=supervisor_system_instruction,
+        )
         decision = extract_soc_decision(step_output)
 
         # Fallback decision construction if LLM omitted structured decision
@@ -1666,7 +1765,9 @@ class SOCSupervisorAgent(GemmaAgent):
             runbook_name = "none"
             runbook_content = ""
 
-        # 3. Worker Dispatch
+        # 3. Worker Dispatch (batched consecutive turns on worker_model to preserve per-model KV cache)
+        effective_worker_model = self.worker_model or self.managed_model
+        effective_supervisor_model = self.managed_model
         worker = SOCRunbookWorkerAgent(
             classification=classification,
             runbook_name=runbook_name,
@@ -1675,13 +1776,15 @@ class SOCSupervisorAgent(GemmaAgent):
             region=self.region,
             endpoint_id=self.endpoint_id,
             cloudrun_url=self.cloudrun_url,
-            managed_model=self.managed_model,
+            managed_model=effective_worker_model,
             use_live_mcp=self.use_live_mcp,
             environment=self.environment,
             strip_scaffolding=self.strip_scaffolding,
+            static_context_prefix=self.static_context_prefix,
         )
-        # Inherit supervisor LLM caller so mocks and configurations apply uniformly
-        worker._call_llm_step = self._call_llm_step
+        # Inherit supervisor LLM caller when models match or when _call_llm_step is monkeypatched in tests
+        if effective_worker_model == effective_supervisor_model or "_call_llm_step" in self.__dict__:
+            worker._call_llm_step = self._call_llm_step
 
         worker_report, worker_trajectory, worker_usage = worker.investigate(
             prompt=prompt,
@@ -1702,12 +1805,32 @@ class SOCSupervisorAgent(GemmaAgent):
                 verdict="INCONCLUSIVE", recommended_actions=[],
                 rationale="Investigation incomplete: no verified tool evidence was obtained.",
             )
+            w_cost = estimate_cached_cost_usd(
+                model=effective_worker_model,
+                prompt_tokens=int(worker_usage.get("prompt_tokens", 0) or 0),
+                cached_tokens=int(worker_usage.get("cached_tokens", 0) or 0),
+                completion_tokens=int(worker_usage.get("completion_tokens", 0) or 0),
+                thoughts_tokens=int(worker_usage.get("thoughts_tokens", 0) or 0),
+            )
+            incomplete_usage = dict(worker_usage)
+            incomplete_usage.setdefault("cached_tokens", 0)
+            incomplete_usage.setdefault("thoughts_tokens", 0)
+            p_tok_inc = int(incomplete_usage.get("prompt_tokens", 0) or 0)
+            c_tok_inc = int(incomplete_usage.get("cached_tokens", 0) or 0)
+            incomplete_usage["cache_hit_rate"] = round(c_tok_inc / p_tok_inc, 4) if p_tok_inc > 0 else 0.0
+            incomplete_usage["cache_hit_pct"] = round(incomplete_usage["cache_hit_rate"] * 100.0, 2)
+            incomplete_usage["worker_model"] = effective_worker_model
+            incomplete_usage["supervisor_model"] = effective_supervisor_model
+            incomplete_usage["worker_usage"] = dict(worker_usage)
+            incomplete_usage["supervisor_usage"] = {}
+            incomplete_usage["estimated_cost_usd"] = round(w_cost, 6)
+            incomplete_usage["estimated_cost_per_1k_runs_usd"] = round(w_cost * 1000.0, 4)
             return SOCTier1Response(
                 response=("Investigation incomplete: no verified tool evidence was obtained. "
                           "Verdict: INCONCLUSIVE. No containment actions were executed. "
                           "Escalate to Tier 2 for investigation.\n\n```soc_decision\n"
                           + json.dumps(decision.to_dict(), indent=2) + "\n```"),
-                trajectory=worker_trajectory, usage=worker_usage, backend=self.last_backend,
+                trajectory=worker_trajectory, usage=incomplete_usage, backend=self.last_backend,
                 endpoint_id=self.endpoint_id, classification=classification, runbook=runbook_name,
                 worker_report=incomplete_report, verdict="INCONCLUSIVE",
             )
@@ -1737,10 +1860,55 @@ class SOCSupervisorAgent(GemmaAgent):
             unified_step["iteration"] = idx + 1
             unified_trajectory.append(unified_step)
 
-        total_usage = {
-            "prompt_tokens": worker_usage.get("prompt_tokens", 0) + supervisor_usage.get("prompt_tokens", 0),
-            "completion_tokens": worker_usage.get("completion_tokens", 0) + supervisor_usage.get("completion_tokens", 0),
-            "total_tokens": worker_usage.get("total_tokens", 0) + supervisor_usage.get("total_tokens", 0),
+        w_prompt = int(worker_usage.get("prompt_tokens", 0) or 0)
+        w_cached = int(worker_usage.get("cached_tokens", 0) or 0)
+        w_comp = int(worker_usage.get("completion_tokens", 0) or 0)
+        w_thoughts = int(worker_usage.get("thoughts_tokens", 0) or 0)
+        s_prompt = int(supervisor_usage.get("prompt_tokens", 0) or 0)
+        s_cached = int(supervisor_usage.get("cached_tokens", 0) or 0)
+        s_comp = int(supervisor_usage.get("completion_tokens", 0) or 0)
+        s_thoughts = int(supervisor_usage.get("thoughts_tokens", 0) or 0)
+
+        tot_prompt = w_prompt + s_prompt
+        tot_cached = w_cached + s_cached
+        tot_comp = w_comp + s_comp
+        tot_thoughts = w_thoughts + s_thoughts
+        tot_tokens = (
+            int(worker_usage.get("total_tokens", 0) or 0)
+            + int(supervisor_usage.get("total_tokens", 0) or 0)
+        )
+        hit_rate = round(tot_cached / tot_prompt, 4) if tot_prompt > 0 else 0.0
+
+        w_cost = estimate_cached_cost_usd(
+            model=effective_worker_model,
+            prompt_tokens=w_prompt,
+            cached_tokens=w_cached,
+            completion_tokens=w_comp,
+            thoughts_tokens=w_thoughts,
+        )
+        s_cost = estimate_cached_cost_usd(
+            model=effective_supervisor_model,
+            prompt_tokens=s_prompt,
+            cached_tokens=s_cached,
+            completion_tokens=s_comp,
+            thoughts_tokens=s_thoughts,
+        )
+        tot_cost = w_cost + s_cost
+
+        total_usage: Dict[str, Any] = {
+            "prompt_tokens": tot_prompt,
+            "cached_tokens": tot_cached,
+            "completion_tokens": tot_comp,
+            "thoughts_tokens": tot_thoughts,
+            "total_tokens": tot_tokens,
+            "cache_hit_rate": hit_rate,
+            "cache_hit_pct": round(hit_rate * 100.0, 2),
+            "worker_model": effective_worker_model,
+            "supervisor_model": effective_supervisor_model,
+            "worker_usage": compute_cache_telemetry(worker_usage, effective_worker_model, runs=1),
+            "supervisor_usage": compute_cache_telemetry(supervisor_usage, effective_supervisor_model, runs=1),
+            "estimated_cost_usd": round(tot_cost, 6),
+            "estimated_cost_per_1k_runs_usd": round(tot_cost * 1000.0, 4),
         }
 
         return SOCTier1Response(
