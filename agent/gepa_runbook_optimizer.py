@@ -22,6 +22,12 @@ if str(ROOT_DIR) not in sys.path:
 import gepa
 
 try:
+    from agent.gemini4_caching import (
+        extract_usage_metrics,
+        neon_concurrency_guard,
+        resolve_gemini_location,
+        sanitize_generate_content_config_kwargs,
+    )
     from agent.hierarchical_soc_agent import (
         HierarchicalSOCTier1Agent,
         strip_runbook_scaffolding,
@@ -65,6 +71,12 @@ try:
         sanitize_payload,
     )
 except ModuleNotFoundError:
+    from gemini4_caching import (
+        extract_usage_metrics,
+        neon_concurrency_guard,
+        resolve_gemini_location,
+        sanitize_generate_content_config_kwargs,
+    )
     from hierarchical_soc_agent import (
         HierarchicalSOCTier1Agent,
         strip_runbook_scaffolding,
@@ -294,17 +306,23 @@ class GoogleGenAILM:
     ):
         self.model = model
         self.project_id = project_id
-        self.location = location
+        self.location = resolve_gemini_location(model, location)
+        self.last_usage: Dict[str, Any] = {}
         if client is not None:
             self.client = client
         else:
             try:
                 from google import genai
-                self.client = genai.Client(
-                    project=self.project_id,
-                    location=self.location,
-                    vertexai=True,
-                )
+                from google.genai import types
+                from agent.gemini4_caching import is_gemini_4_model
+                client_kwargs: Dict[str, Any] = {
+                    "project": self.project_id,
+                    "location": self.location,
+                    "vertexai": True,
+                }
+                if is_gemini_4_model(self.model):
+                    client_kwargs["http_options"] = types.HttpOptions(api_version="v1")
+                self.client = genai.Client(**client_kwargs)
             except Exception:
                 self.client = None
 
@@ -328,12 +346,20 @@ class GoogleGenAILM:
         if self.client is None:
             raise RuntimeError("Google GenAI client is not configured.")
 
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=contents,
-            config={"temperature": 0.2},
+        config = sanitize_generate_content_config_kwargs(self.model, {"temperature": 0.2})
+        with neon_concurrency_guard(self.model):
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=contents,
+                config=config,
+            )
+        text_out = getattr(response, "text", "") or str(response or "")
+        self.last_usage = extract_usage_metrics(
+            getattr(response, "usage_metadata", None),
+            prompt_fallback=int(len(str(contents).split()) * 1.3),
+            completion_fallback=int(len(text_out.split()) * 1.3),
         )
-        return getattr(response, "text", "") or str(response or "")
+        return text_out
 
 
 SHORT_CIRCUIT_PATTERNS: List[str] = [
@@ -434,16 +460,28 @@ class WordLimitReflectionLM:
         raw_out = self.base_lm(augmented)
         cleaned_out = self._clean_response(raw_out)
         if self.budget_ledger is not None:
+            lm_usage = getattr(self.base_lm, "last_usage", None) or {}
             p_str = augmented if isinstance(augmented, str) else json.dumps(augmented)
-            p_tok = int(len(p_str.split()) * 1.3)
-            c_tok = int(len(str(raw_out).split()) * 1.3)
+            p_tok = int(lm_usage.get("prompt_tokens") or int(len(p_str.split()) * 1.3))
+            c_tok = int(lm_usage.get("completion_tokens") or int(len(str(raw_out).split()) * 1.3))
+            cached_tok = int(lm_usage.get("cached_tokens") or 0)
+            thoughts_tok = int(lm_usage.get("thoughts_tokens") or 0)
             cost = estimate_model_cost_usd(
-                self.model_name, prompt_tokens=p_tok, completion_tokens=c_tok
+                self.model_name,
+                prompt_tokens=p_tok,
+                completion_tokens=c_tok,
+                cached_tokens=cached_tok,
+                thoughts_tokens=thoughts_tok,
             )
             self.budget_ledger.record(
                 run_key=f"reflection:{self.model_name}",
                 delta_usd=cost,
-                meta={"prompt_tokens": p_tok, "completion_tokens": c_tok},
+                meta={
+                    "prompt_tokens": p_tok,
+                    "cached_tokens": cached_tok,
+                    "completion_tokens": c_tok,
+                    "thoughts_tokens": thoughts_tok,
+                },
             )
         return cleaned_out
 
@@ -623,8 +661,10 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
         forbid_interactive_pseudotools: bool = False,
         max_words: Optional[int] = None,
         budget_ledger: Optional[BudgetLedger] = None,
+        worker_model: Optional[str] = None,
     ):
         self.task_lm = task_lm
+        self.worker_model = worker_model
         resolved_project_id = (
             project_id
             or os.environ.get("PROJECT_ID")
@@ -802,14 +842,17 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 if not self.use_live_mcp:
                     env = SocEnvironment.from_eval_case(case)
 
-                agent = self.agent_factory(
-                    runbooks_dict=candidate,
-                    environment=env,
-                    managed_model=self.task_lm,
-                    project_id=self.project_id,
-                    region=self.region,
-                    use_live_mcp=self.use_live_mcp,
-                )
+                agent_kwargs: Dict[str, Any] = {
+                    "runbooks_dict": candidate,
+                    "environment": env,
+                    "managed_model": self.task_lm,
+                    "project_id": self.project_id,
+                    "region": self.region,
+                    "use_live_mcp": self.use_live_mcp,
+                }
+                if self.worker_model is not None:
+                    agent_kwargs["worker_model"] = self.worker_model
+                agent = self.agent_factory(**agent_kwargs)
 
                 is_gen5 = int(case.get("generation") or 0) >= 5
                 t_query = time.time()
@@ -818,10 +861,14 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
                 latency_ms = int(round((time.time() - t_query) * 1000))
                 resp_usage = _response_usage(response)
                 if self.budget_ledger is not None:
+                    recorded_cost = resp_usage.get("estimated_cost_usd")
                     self.budget_ledger.record(
                         model=self.task_lm,
+                        delta_usd=float(recorded_cost) if recorded_cost is not None else None,
                         prompt_tokens=int(resp_usage.get("prompt_tokens") or 500),
                         completion_tokens=int(resp_usage.get("completion_tokens") or 200),
+                        cached_tokens=int(resp_usage.get("cached_tokens") or 0),
+                        thoughts_tokens=int(resp_usage.get("thoughts_tokens") or 0),
                         note=f"eval:{cid}",
                     )
 
@@ -1227,19 +1274,10 @@ class RunbookGEPAAdapter(gepa.GEPAAdapter):
 
 
 def build_reflection_prompt_template() -> str:
-    """Build domain-specific reflection prompt template for GEPA mutation."""
+    """Build static-first domain-specific reflection prompt template for GEPA mutation."""
     return (
         "You are an expert Security Operations Center (SOC) engineering teacher tasked with refining\n"
         "cybersecurity incident response runbooks to optimize Tier 1 autonomous agent performance.\n\n"
-        "Here is the active incident response runbook component to improve:\n"
-        "```markdown\n"
-        "<curr_param>\n"
-        "```\n\n"
-        "The following diagnostic evaluation traces contain cases where the autonomous agent underperformed,\n"
-        "including case context, inputs, actual actions, and concrete feedback:\n"
-        "```\n"
-        "<side_info>\n"
-        "```\n\n"
         "Refinement Guidelines and Operational Guardrails:\n"
         "1. Epistemic Evidence Verification Sequence: Refine the runbook into a disciplined 4-stage procedural flow:\n"
         "   - Stage A: Asset Identity, CMDB Context, & SOAR Case Correlation: Query lookup_entity to determine asset business role, criticality, and authorized change records (CHG-...). If the alert asks whether SOAR already tracks the host/IOC or asks to check existing incident records for duplicate cases, query list_cases (and get_case if needed) to correlate the existing SOAR case ID (e.g. CASE-...) and cite it in your findings. (MANDATORY: Terminating with 0 tool calls yields 0.0 reward)\n"
@@ -1257,41 +1295,32 @@ def build_reflection_prompt_template() -> str:
         "6. Output Standards: Output exclusively the refined markdown runbook without conversational preamble.\n"
         "7. Strictly NO EMOJIS: Do not include any emojis anywhere in the runbook content or markdown headings.\n"
         "8. Diagnosis-Guided Surgical Stage Mutation: Modify ONLY the implicated stage indicated in the feedback while preserving all other stages and markdown headings verbatim.\n\n"
-        "Provide the complete revised runbook inside ```markdown blocks."
+        "Provide the complete revised runbook inside ```markdown blocks.\n\n"
+        "Here is the active incident response runbook component to improve:\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "The following diagnostic evaluation traces contain cases where the autonomous agent underperformed,\n"
+        "including case context, inputs, actual actions, and concrete feedback:\n"
+        "```\n"
+        "<side_info>\n"
+        "```"
     )
 
 
 def build_invariant_reflection_prompt_template() -> str:
-    """Build INVARIANT (INV) scoped reflection prompt targeting cross-domain agent procedure."""
+    """Build static-first INVARIANT (INV) scoped reflection prompt targeting cross-domain agent procedure."""
     return (
         "You are the INVARIANT (INV) agent harness editor in a Harness^2 Propose-Probe-Compose loop.\n"
         "Your scope is strictly cross-domain agentic workflow, step-0 enrichment gating, tool-call\n"
         "sequencing, degraded-mode pivot checks, and structural runbook hygiene.\n"
         "Do NOT invent domain-specific threat intelligence rules; focus on procedural execution.\n\n"
-        "Here is the active runbook component (<curr_param>):\n"
-        "```markdown\n"
-        "<curr_param>\n"
-        "```\n\n"
-        "Diagnostic trace feedback and prior experience (<side_info>):\n"
-        "```\n"
-        "<side_info>\n"
-        "```\n\n"
         "INVARIANT (INV) Refinement Rules:\n"
         "1. Step-0 Epistemic Gate & Host Lookup: Require at least 1 enrichment tool call before any triage verdict (0 tool calls yields 0.0 reward). In Stage A, always query `lookup_entity` using the exact alerted `<hostname>` (not only an IP or hash) to establish asset context. Never allow 'skip all enrichment', 'skip step', or 'proceed directly to step'.\n"
         "2. 4-Stage Procedural Skeleton: Keep `# <Title>`, `## Objective`, `## Scope`, `## Inputs`, `## Tools`, and `## Workflow Steps` (`Stage A` -> `Stage B` -> `Stage C` -> `Stage D`) in order.\n"
         "3. Tool Budget, Degraded Mode, & Target Formatting: Gather corroborating evidence in <= 3 epistemic calls. On HTTP 503 / tool unavailability, do not retry the failing endpoint in a loop; pivot once to local lookup_entity. In Stage D, when recommending or executing `isolate_host`, specify only the single canonical `<hostname>` as target entity (never append parenthetical IP addresses).\n"
         "4. Structural Hygiene: Use `<angle_bracket>` input slots, never `${VAR_NAME}` placeholders, never Mermaid `sequenceDiagram` blocks, and never interactive pseudo-tools (`ask_followup_question`, `attempt_completion`, `write_to_file`).\n"
-        "5. Output Standards: Output only the revised markdown runbook inside ```markdown blocks, with zero emojis.\n"
-    )
-
-
-def build_domain_reflection_prompt_template() -> str:
-    """Build DOMAIN (DOM) scoped reflection prompt targeting SecOps practitioner contracts."""
-    return (
-        "You are the DOMAIN (DOM) SecOps practitioner editor in a Harness^2 Propose-Probe-Compose loop.\n"
-        "Your scope is strictly cybersecurity triage contracts, CMDB asset blast-radius checks,\n"
-        "network routing classifications, LOLBin vs payload discrimination, SIEM lookback horizons,\n"
-        "and mutually exclusive Stage D verdict/containment rules.\n\n"
+        "5. Output Standards: Output only the revised markdown runbook inside ```markdown blocks, with zero emojis.\n\n"
         "Here is the active runbook component (<curr_param>):\n"
         "```markdown\n"
         "<curr_param>\n"
@@ -1299,7 +1328,17 @@ def build_domain_reflection_prompt_template() -> str:
         "Diagnostic trace feedback and prior experience (<side_info>):\n"
         "```\n"
         "<side_info>\n"
-        "```\n\n"
+        "```\n"
+    )
+
+
+def build_domain_reflection_prompt_template() -> str:
+    """Build static-first DOMAIN (DOM) scoped reflection prompt targeting SecOps practitioner contracts."""
+    return (
+        "You are the DOMAIN (DOM) SecOps practitioner editor in a Harness^2 Propose-Probe-Compose loop.\n"
+        "Your scope is strictly cybersecurity triage contracts, CMDB asset blast-radius checks,\n"
+        "network routing classifications, LOLBin vs payload discrimination, SIEM lookback horizons,\n"
+        "and mutually exclusive Stage D verdict/containment rules.\n\n"
         "DOMAIN (DOM) SecOps Practitioner Rules:\n"
         "1. Stage A CMDB & SOAR Correlation: Query `lookup_entity` on the alerted `<hostname>` for asset role, criticality (`CRITICAL` vs `STANDARD`), and change tickets (`CHG-...`). Query `list_cases` when checking duplicate SOAR incidents.\n"
         "2. Stage B Network Routing Scope: Classify target IPs/domains as `PUBLIC`, `PRIVATE`, or RFC-5737 documentation space before any containment.\n"
@@ -1310,7 +1349,15 @@ def build_domain_reflection_prompt_template() -> str:
         "   - `INCONCLUSIVE`: 503 outage after local pivot -> `update_case_comment` only (never contain or close).\n"
         "   - `BENIGN`: Verified authorized scanner, change ticket `CHG-...`, or documentation IP -> `update_case_comment` + `close_case`.\n"
         "5. Anti-Memorization & Hygiene: Never hardcode literal IPs, benchmark hostnames, or `CASE-` IDs. Never use `${VAR_NAME}`, Mermaid diagrams, interactive pseudo-tools, or emojis.\n"
-        "Provide the complete revised runbook inside ```markdown blocks.\n"
+        "Provide the complete revised runbook inside ```markdown blocks.\n\n"
+        "Here is the active runbook component (<curr_param>):\n"
+        "```markdown\n"
+        "<curr_param>\n"
+        "```\n\n"
+        "Diagnostic trace feedback and prior experience (<side_info>):\n"
+        "```\n"
+        "<side_info>\n"
+        "```\n"
     )
 
 
@@ -1531,6 +1578,10 @@ def build_compose_prompt(
         "Inspect the clean base runbook, the INVARIANT (INV) candidate, and the DOMAIN (DOM) candidate.\n"
         "Selectively merge the supported, non-conflicting improvements from INV and DOM into one\n"
         "cohesive runbook. If neither candidate offers a safe improvement over Base, output `KEEP_BASE`.\n\n"
+        "COMPOSE Rules:\n"
+        "1. Preserve the 6-section markdown skeleton and 4-stage flow (`Stage A`..`Stage D`).\n"
+        "2. Do not exceed word limits, and never include `${VAR_NAME}`, Mermaid blocks, interactive pseudo-tools, hardcoded IPs/hostnames/CASE IDs, or emojis.\n"
+        "3. Output either `KEEP_BASE` or the merged markdown runbook inside ```markdown blocks.\n\n"
         f"{score_line}"
         "### Base Runbook\n"
         "```markdown\n"
@@ -1543,11 +1594,7 @@ def build_compose_prompt(
         "### DOM Candidate (SecOps Domain Contracts)\n"
         "```markdown\n"
         f"{dom_text}\n"
-        "```\n\n"
-        "COMPOSE Rules:\n"
-        "1. Preserve the 6-section markdown skeleton and 4-stage flow (`Stage A`..`Stage D`).\n"
-        "2. Do not exceed word limits, and never include `${VAR_NAME}`, Mermaid blocks, interactive pseudo-tools, hardcoded IPs/hostnames/CASE IDs, or emojis.\n"
-        "3. Output either `KEEP_BASE` or the merged markdown runbook inside ```markdown blocks.\n"
+        "```\n"
     )
 
 

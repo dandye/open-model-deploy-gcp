@@ -847,6 +847,9 @@ _SECRET_PATTERNS: Tuple[Tuple[re.Pattern, str], ...] = (
 
 # Per-1M-token USD pricing table for Vertex AI Gemini and self-hosted Gemma tiers.
 DEFAULT_MODEL_PRICING_PER_1M: Dict[str, Tuple[float, float]] = {
+    "gemini-4-carbon": (4.00, 20.00),
+    "gemini-4-neon": (3.00, 15.00),
+    "gemini-4-hydrogen": (1.50, 7.50),
     "gemini-2.5-pro": (1.25, 10.00),
     "gemini-2.5-flash": (0.30, 2.50),
     "gemini-2.5-flash-lite": (0.10, 0.40),
@@ -857,6 +860,13 @@ DEFAULT_MODEL_PRICING_PER_1M: Dict[str, Tuple[float, float]] = {
     "gemma-4-e4b-it": (0.00, 0.00),
     "gemma-3-4b-it": (0.00, 0.00),
     "gemma-3-1b-it": (0.00, 0.00),
+}
+
+# Per-1M-token USD cached-input pricing (Gemini 4 implicit caching = 95% off input).
+DEFAULT_MODEL_CACHED_INPUT_PRICING_PER_1M: Dict[str, float] = {
+    "gemini-4-carbon": 0.200,
+    "gemini-4-neon": 0.150,
+    "gemini-4-hydrogen": 0.075,
 }
 
 
@@ -875,22 +885,33 @@ def estimate_model_cost_usd(
     prompt_tokens: int = 0,
     completion_tokens: int = 0,
     pricing_table: Optional[Mapping[str, Tuple[float, float]]] = None,
+    cached_tokens: int = 0,
+    thoughts_tokens: int = 0,
 ) -> float:
-  """Estimate USD cost for a single call or batch from token counts."""
+  """Estimate USD cost for a single call or batch from token counts (including cached input and thoughts)."""
   table = pricing_table or DEFAULT_MODEL_PRICING_PER_1M
   norm_model = (model or "").strip().lower()
   rates = table.get(norm_model)
+  matched_key = norm_model if rates is not None else None
   if rates is None:
     for key, val in table.items():
       if key in norm_model:
         rates = val
+        matched_key = key
         break
   if rates is None:
     rates = (0.30, 2.50)
   in_rate, out_rate = rates
   p_tok = max(0, int(prompt_tokens or 0))
-  c_tok = max(0, int(completion_tokens or 0))
-  return (p_tok * in_rate + c_tok * out_rate) / 1_000_000.0
+  c_hit = min(p_tok, max(0, int(cached_tokens or 0)))
+  uncached_p = max(0, p_tok - c_hit)
+  c_tok = max(0, int(completion_tokens or 0)) + max(0, int(thoughts_tokens or 0))
+  cached_in_rate = (
+      DEFAULT_MODEL_CACHED_INPUT_PRICING_PER_1M.get(matched_key, in_rate * 0.25)
+      if matched_key is not None
+      else in_rate * 0.25
+  )
+  return (uncached_p * in_rate + c_hit * cached_in_rate + c_tok * out_rate) / 1_000_000.0
 
 
 class BudgetLedger:
@@ -951,6 +972,8 @@ class BudgetLedger:
       model: Optional[str] = None,
       prompt_tokens: int = 0,
       completion_tokens: int = 0,
+      cached_tokens: int = 0,
+      thoughts_tokens: int = 0,
       note: str = "",
   ) -> Dict[str, Any]:
     if delta_usd is None:
@@ -958,6 +981,8 @@ class BudgetLedger:
           model=model or run_key or "gemini-2.5-flash",
           prompt_tokens=prompt_tokens,
           completion_tokens=completion_tokens,
+          cached_tokens=cached_tokens,
+          thoughts_tokens=thoughts_tokens,
       )
     effective_key = run_key or note or model or "eval_call"
     sanitized_meta: Dict[str, Any] = {}
