@@ -71,6 +71,48 @@ catalog_get_shared_memory_mb() {
   catalog_get "$1" ".runtime.sharedMemorySizeMb"
 }
 
+catalog_get_deployment_timeout() {
+  catalog_get "$1" ".runtime.deploymentTimeoutSeconds"
+}
+
+catalog_get_maas_model_id() {
+  local model_key="$1"
+  jq -r ".[\"$model_key\"].maasModelId // .[\"$model_key\"].modelId // \"null\"" "$CATALOG_FILE"
+}
+
+catalog_get_container_port() {
+  local model_key="$1"
+  local port
+  port=$(catalog_get "$model_key" ".runtime.containerPort" 2>/dev/null)
+  if [[ "$port" != "null" && -n "$port" ]]; then
+    echo "$port"
+  else
+    echo "8080"
+  fi
+}
+
+catalog_get_predict_route() {
+  local model_key="$1"
+  local route
+  route=$(catalog_get "$model_key" ".runtime.predictRoute" 2>/dev/null)
+  if [[ "$route" != "null" && -n "$route" ]]; then
+    echo "$route"
+  else
+    echo "/generate"
+  fi
+}
+
+catalog_get_health_route() {
+  local model_key="$1"
+  local route
+  route=$(catalog_get "$model_key" ".runtime.healthRoute" 2>/dev/null)
+  if [[ "$route" != "null" && -n "$route" ]]; then
+    echo "$route"
+  else
+    echo "/ping"
+  fi
+}
+
 catalog_get_max_len() {
   catalog_get "$1" ".runtime.maxModelLen"
 }
