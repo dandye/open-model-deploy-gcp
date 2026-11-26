@@ -12,7 +12,7 @@ tags:
   - vertex-ai
   - cloud-run
 created: 2026-08-24
-updated: 2026-08-27
+updated: 2026-11-26
 ---
 
 # Multi-Model Serving Cost Analysis & Sizing Matrix
@@ -64,6 +64,9 @@ This document provides compute specifications, hourly pricing, full/business mon
 | **`qwen3.8-2.4t-a95b-fp8`** | Qwen / Alibaba | 2.4T / A95B MoE FP8 | Dedicated OpenModel | **`g4-standard-48`**| 1x RTX PRO 6000 (96 GB)| 192 GB | **$3.85 / hr** | $616.00 | **$2,810.50** |
 | **`glm-5.3-flash`** | Zhipu AI / THUDM | Dense OpenModel | Dedicated OpenModel | **`g2-standard-12`**| 1x NVIDIA L4 (24 GB) | 48 GB | **$1.01 / hr** | $161.60 | **$737.30** |
 | **`deepseek-v4-pro`** | DeepSeek | MoE / Reasoner OpenModel| Dedicated OpenModel | **`g4-standard-48`**| 1x RTX PRO 6000 (96 GB)| 192 GB | **$3.85 / hr** | $616.00 | **$2,810.50** |
+| **`deepseek-v4.1-flash-1017-maas`** | DeepSeek (`CED` Multimodal MoE, Oct 2026) | `552B` (`8B` prefill / `16B` decode active, `CSA2` FP4 KV, `1M` ctx) | Serverless OpenMaaS (`global`) | Serverless | Serverless GPU Pool | N/A | **Pay-per-token (\$0.00/hr idle)** | Usage-based | Usage-based |
+| **`deepseek-v4.1-flash-maas`** | DeepSeek (`CED` Multimodal MoE, Sept 2026) | `552B` (`8B` prefill / `16B` decode active, `CSA2` FP4 KV, `1M` ctx) | Serverless OpenMaaS (`global`) | Serverless | Serverless GPU Pool | N/A | **Pay-per-token (\$0.00/hr idle)** | Usage-based | Usage-based |
+| **`deepseek-v4.1-flash-1017`** | DeepSeek (`CED` Multimodal MoE) | `552B` (`8B`/`16B` active, `text` + `image`, `1,048,576` ctx) | Curated Model Garden | **`a3-megagpu-8g`** (alts: `a3-ultragpu-8g`, `a4-highgpu-8g`) | 8x H100 Mega 80GB (640 GB; alts: 8x H200 / 8x B200 `dspark`) | 1,872 GB | **\$88.49 / hr** | \$14,158.40 | **\$64,597.70** |
 | **`kimi-k3`** | Moonshot AI | Long-Context OpenModel | Dedicated OpenModel | **`g4-standard-48`**| 1x RTX PRO 6000 (96 GB)| 192 GB | **$3.85 / hr** | $616.00 | **$2,810.50** |
 | **`qwen2.5-coder-32b-instruct`** | Qwen / Alibaba | 32B Code Specialist | Dedicated OpenModel | **`g2-standard-48`**| 4x NVIDIA L4 (96 GB) | 192 GB | **$3.32 / hr** | $531.20 | **$2,423.60** |
 | **`ministral-3b-2410`** | Mistral AI | 3.0B Dense OpenModel | Dedicated OpenModel | **`g2-standard-8`** | 1x NVIDIA L4 (24 GB) | 32 GB | **$0.83 / hr** | $132.80 | **$605.90** |
@@ -126,6 +129,11 @@ The following throughput and unit economic metrics were measured across partner,
 ### B. Microarchitecture FP8 Support (Ada Lovelace vs Ampere)
 * **Ada Lovelace (L4)**: Supports native hardware FP8 (`fp8e4nv` / `fp8e5`).
 * **Ampere (A100)**: Does **not** support standard `fp8e4nv` Tensor Core ops. When compiling on A100, use native **BF16 weights and KV cache** (or BitsAndBytes INT8).
+
+### C. DeepSeek-V4.1-Flash (`552B` `CED` Multimodal MoE): `CSA2` FP4 KV, Engram Offload & 8-GPU Economics
+* **Asymmetric `CED` Execution & `CSA2` KV Compression**: `DeepSeek-V4.1-Flash` combines `552B` total parameters across `text` and `image` modalities with `8B` active prefill parameters and `16B` active decode parameters. Its `CSA2` FP4 KV cache reduces KV memory to `~890 B/tok`, fitting a `1,048,576`-token (`1M`) context window while `--engram-config.cpu_offload=True` places Engram memory tables in `1,872 GB` host DRAM.
+* **Serverless OpenMaaS vs Dedicated 8-GPU Nodes**: Because an `a3-megagpu-8g` (`8x NVIDIA_H100_MEGA_80GB`) node costs **\$88.49/hr** (**\$64,597.70/month** if left running 24/7), bursty Tier 1 SOC triage and Track 2 threat-hunting workloads should default to serverless Vertex OpenMaaS in `global` (`deepseek-v4.1-flash-1017-maas` or `deepseek-v4.1-flash-maas`) at **\$0.00/hr** idle GPU spend.
+* **Validated Self-Hosted Shapes & Staging Safeguards**: When dedicated residency is required, deploy the curated Model Garden artifact (`publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017`) on `a3-megagpu-8g` (`8x H100 80GB`), `a3-ultragpu-8g` (`8x H200 141GB`), or `a4-highgpu-8g` (`8x B200` with `dspark` 5-token speculative decoding `--speculative_config.method=dspark --speculative_config.num_speculative_tokens=5`), setting `sharedMemorySizeMb: 40960` (`40 GB` `/dev/shm`) and `deploymentTimeoutSeconds: 7200` (`7200s`). Naive `g4-standard-384` deployments with a `100 GB` container `overlayfs` root disk and a `900s` startup probe fail when downloading and unpacking `475+ GiB` multi-shard checkpoints.
 
 ---
 

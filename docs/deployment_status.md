@@ -10,7 +10,7 @@ tags:
   - compatibility-matrix
   - gpu
 created: 2026-08-24
-updated: 2026-08-24
+updated: 2026-11-26
 ---
 
 # Gemma Model Deployment Status & Compatibility Matrix
@@ -36,6 +36,9 @@ The table below summarizes the catalog status, compute profile, and environment 
 | `gemma-4-31b-it` | Gemma 4 | 31.0B | ~62.0 GB | `g2-standard-48` | 4x L4 (96GB) | 4 | 8,192 | Compatible | Incompatible (>1 GPU) | **Live & Verified** |
 | `nemotron-3.5-super-vl-nvfp4` | Nemotron 3.5 (Vision MoE) | 12B eff (120B total, NVFP4) | ~80.0 GB | `g4-standard-48` | 1x RTX PRO 6000 (96GB) | 1 | 65,536 | Compatible | Incompatible (Requires 100GB `/dev/shm`) | **Live & Verified** |
 | `nemotron-3.5-super-vl-bf16` | Nemotron 3.5 (Vision MoE) | 12B eff (120B total, BF16) | ~240.0 GB | `g4-standard-192` | 4x RTX PRO 6000 (384GB) | 4 | 65,536 | Compatible | Incompatible (>1 GPU) | **Registered & Ready** |
+| `deepseek-v4.1-flash-1017-maas` | DeepSeek V4.1 (`CED` Vision MoE) | `8B` prefill / `16B` decode (`552B` total) | Serverless | OpenMaaS (`global`) | Serverless GPU Pool | N/A | 1,048,576 | Compatible (`vertex_maas`, \$0.00/hr idle) | N/A (Serverless MaaS) | **Cataloged & Ready** |
+| `deepseek-v4.1-flash-maas` | DeepSeek V4.1 (`CED` Vision MoE) | `8B` prefill / `16B` decode (`552B` total) | Serverless | OpenMaaS (`global`) | Serverless GPU Pool | N/A | 1,048,576 | Compatible (`vertex_maas`, \$0.00/hr idle) | N/A (Serverless MaaS) | **Cataloged & Ready** |
+| `deepseek-v4.1-flash-1017` | DeepSeek V4.1 (`CED` Vision MoE) | `8B` prefill / `16B` decode (`552B` total) | ~475+ GiB | `a3-megagpu-8g` (alts: `a3-ultragpu-8g`, `a4-highgpu-8g`) | 8x H100 Mega 80GB (alts: 8x H200 / 8x B200 `dspark`) | 8 | 1,048,576 | Compatible (`40 GB` `/dev/shm`, `7200s` timeout) | Incompatible (8 GPUs) | **Cataloged & Dry-Run Verified** |
 
 
 ---
@@ -283,6 +286,13 @@ Explain the key advantages of open models in 2 paragraphs.
 
 ### 3. Container Entrypoint Wrapper
 * **Rule**: When registering Model Garden images (`pytorch-vllm-serve`), do **not** override `command` in `gcloud ai models upload`. The default Model Garden wrapper script downloads the weights from Cloud Storage and sets required environment variables before starting vLLM.
+
+### 4. Multi-Shard 475+ GiB Checkpoint Staging, 40 GB `/dev/shm` & 7200s Startup Probe (`deepseek-v4.1-flash-1017`)
+* **Symptom**: Naive `g4-standard-384` deployments with a default `100 GB` container `overlayfs` root disk and a `900s` startup probe fail during shard extraction or get terminated mid-initialization on `DeepSeek-V4.1-Flash` (`552B` Context-Asymmetric Encoder-Decoder Multimodal MoE, `8B` prefill / `16B` decode active parameters, `text` + `image` modalities).
+* **Root Cause**: Unpacking `475+ GiB` of multi-shard safetensors weights overflows a `100 GB` `overlayfs` container layer before vLLM boots. In addition, 8-way expert parallelism (`--enable-expert-parallel`), host DRAM Engram table offloading (`--engram-config.cpu_offload=True`), `CSA2` FP4 KV initialization (`~890 B/tok` for the `1,048,576`-token `1M` context window), and CUDA graph compilation exceed both the default `64 MB` `/dev/shm` NCCL allocation and a `900s` health probe window.
+* **Resolution**:
+  1. For elastic SOC workloads, route directly to serverless Vertex OpenMaaS in `global` (`deepseek-v4.1-flash-1017-maas` or `deepseek-v4.1-flash-maas`) at **\$0.00/hr** idle GPU spend.
+  2. For self-hosted dedicated endpoints (`publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017`), provision `a3-megagpu-8g` (`8x NVIDIA_H100_MEGA_80GB`, `1,872 GB` host RAM, **\$88.49/hr**), `a3-ultragpu-8g` (`8x NVIDIA_H200_141GB`), or `a4-highgpu-8g` (`8x NVIDIA_B200` with `dspark` 5-token speculative decoding `--speculative_config.method=dspark --speculative_config.num_speculative_tokens=5`), set `sharedMemorySizeMb: 40960` (`40 GB` `/dev/shm`) and `deploymentTimeoutSeconds: 7200` (`7200s`), and attach `16x Local NVMe SSD` scratch disks when launching on GCE Spot VMs.
 
 ---
 

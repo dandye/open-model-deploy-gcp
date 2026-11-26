@@ -2,7 +2,7 @@
 
 **Documentation Site**: [https://dandye.github.io/open-model-deploy-gcp/](https://dandye.github.io/open-model-deploy-gcp/)
 
-Automated deployment scripts, Terraform modules, Justfile recipes, and **Disciplined Agentic SOC Evaluation & Recursive Runbook Evolution ($\text{Harness}^2$, GEPA, and DSPy Context Hygiene)** for the Google Gemma family (Gemma 2 2B/9B/27B, Gemma 3 1B/4B/12B/27B, Gemma 4 E2B/E4B/31B, FP8, and Speculative Decoding variants), Meta Llama models (Llama 4, Llama 3.x, Llama Guard), frontier open-weight partner models (Thinking Machines Inkling, NVIDIA Nemotron, Qwen 3.8 / 2.5, Zhipu GLM, DeepSeek V4, Moonshot Kimi), and managed Gemini models across Vertex AI Online Prediction and Cloud Run with GPU.
+Automated deployment scripts, Terraform modules, Justfile recipes, and **Disciplined Agentic SOC Evaluation & Recursive Runbook Evolution ($\text{Harness}^2$, GEPA, and DSPy Context Hygiene)** for the Google Gemma family (Gemma 2 2B/9B/27B, Gemma 3 1B/4B/12B/27B, Gemma 4 E2B/E4B/31B, FP8, and Speculative Decoding variants), Meta Llama models (Llama 4, Llama 3.x, Llama Guard), frontier open-weight partner models (Thinking Machines Inkling, NVIDIA Nemotron, Qwen 3.8 / 2.5, Zhipu GLM, DeepSeek V4 & DeepSeek-V4.1-Flash `552B` `CED` Multimodal MoE, Moonshot Kimi), and managed Gemini models across Vertex AI Online Prediction, Vertex OpenMaaS (`global`), and Cloud Run with GPU.
 
 ---
 
@@ -78,7 +78,15 @@ The repository uses a single declarative source of truth at [`configs/models.jso
 | **`qwen3.8-2.4t-a95b-fp8`** | Qwen / HF | 2.4T / A95B MoE FP8 | `g4-standard-48` | 1x RTX PRO 6000 ($3.85/hr) |
 | **`glm-5.3-flash`** | Zhipu AI / THUDM | OpenModel | `g2-standard-12` | 1x NVIDIA L4 ($1.01/hr) |
 | **`deepseek-v4-pro`** | DeepSeek | OpenModel | `g4-standard-48` | 1x RTX PRO 6000 ($3.85/hr) |
+| **`deepseek-v4.1-flash-1017-maas`** | DeepSeek | `552B` `CED` Multimodal MoE (`8B`/`16B` active, Oct 2026) | Serverless OpenMaaS | `global` (\$0.00/hr idle GPU spend) |
+| **`deepseek-v4.1-flash-maas`** | DeepSeek | `552B` `CED` Multimodal MoE (`8B`/`16B` active, Sept 2026) | Serverless OpenMaaS | `global` (\$0.00/hr idle GPU spend) |
+| **`deepseek-v4.1-flash-1017`** | DeepSeek | `552B` `CED` Multimodal MoE (`CSA2` FP4 KV, `1M` ctx) | `a3-megagpu-8g` (alts: `a3-ultragpu-8g`, `a4-highgpu-8g`) | 8x H100 Mega 80GB (\$88.49/hr; 8x H200 / 8x B200 `dspark` validated) |
 | **`kimi-k3`** | Moonshot AI | OpenModel | `g4-standard-48` | 1x RTX PRO 6000 ($3.85/hr) |
+
+#### DeepSeek-V4.1-Flash (`552B` `CED` Multimodal MoE) Architecture & Serving Notes
+* **Context-Asymmetric Encoder-Decoder (`CED`) Multimodal MoE**: `552B` total parameters with `8B` active parameters during prefill and `16B` active parameters during decode across `text` and `image` inputs.
+* **`CSA2` FP4 KV Cache & Engram DRAM Offload**: `CSA2` compresses the KV cache to `~890 B/tok`, fitting the full `1,048,576`-token (`1M`) context window alongside `--engram-config.cpu_offload=True` on `1,872 GB` host RAM (`a3-megagpu-8g`).
+* **Serverless OpenMaaS vs Curated 8-GPU Shapes**: `deepseek-v4.1-flash-1017-maas` and `deepseek-v4.1-flash-maas` run serverless in `global` at \$0.00/hr idle GPU spend. Self-hosted `deepseek-v4.1-flash-1017` (`publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017`) targets `a3-megagpu-8g` (`8x H100 80GB`, \$88.49/hr), `a3-ultragpu-8g` (`8x H200 141GB`), and `a4-highgpu-8g` (`8x B200` with `dspark` 5-token speculative decoding `--speculative_config.method=dspark --speculative_config.num_speculative_tokens=5`), configured with `40 GB` `/dev/shm` (`sharedMemorySizeMb: 40960`) and a `7200s` deployment timeout (`deploymentTimeoutSeconds: 7200`). Naive `g4-standard-384` deployments with a `100 GB` container `overlayfs` root disk and a `900s` startup probe fail when staging `475+ GiB` multi-shard checkpoints.
 
 ---
 
@@ -166,6 +174,11 @@ python3 scripts/deploy_open_model.py \
   --machine-type g4-standard-48 \
   --accelerator-type NVIDIA_RTX_PRO_6000 \
   --accelerator-count 1
+
+# Validate curated DeepSeek-V4.1-Flash 1017 (8x H100 Mega 80GB, 40 GB /dev/shm, 7200s deploy timeout)
+.venv/bin/python scripts/deploy_open_model.py \
+  --flavor deepseek-v4.1-flash-1017 \
+  --dry-run
 
 # Query the active model endpoint
 just predict "Explain phishing triage in two paragraphs."

@@ -44,12 +44,15 @@ variable "model_flavor" {
       "qwen3.8-2.4t-a95b-fp8",
       "glm-5.3-flash",
       "deepseek-v4-pro",
+      "deepseek-v4.1-flash-1017",
+      "deepseek-v4.1-flash-1017-maas",
+      "deepseek-v4.1-flash-maas",
       "kimi-k3",
       "llama-3.2-3b-instruct",
       "llama-guard-3-8b",
       "llama-3.1-nemotron-70b-instruct"
     ], var.model_flavor)
-    error_message = "The model_flavor must be one of the dedicated compute models defined in configs/models.json."
+    error_message = "The model_flavor must be one of the catalog models defined in configs/models.json."
   }
 }
 

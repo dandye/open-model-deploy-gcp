@@ -77,6 +77,19 @@ class TestTerraformConfig(unittest.TestCase):
                 self.assertIn("acceleratorType", compute, f"{model_key} missing acceleratorType")
                 self.assertIn("acceleratorCount", compute, f"{model_key} missing acceleratorCount")
 
+        # Gate DeepSeek-V4.1-Flash catalog assertions so tests pass before and after sibling branch merge
+        if "deepseek-v4.1-flash-1017" in catalog:
+            ds_dedicated = catalog["deepseek-v4.1-flash-1017"]
+            self.assertEqual(ds_dedicated["compute"]["machineType"], "a3-megagpu-8g")
+            self.assertEqual(ds_dedicated["compute"]["acceleratorType"], "NVIDIA_H100_MEGA_80GB")
+            self.assertEqual(ds_dedicated["compute"]["acceleratorCount"], 8)
+            self.assertNotIn("cloudrun", ds_dedicated.get("supportedTargets", []))
+        for maas_key in ("deepseek-v4.1-flash-1017-maas", "deepseek-v4.1-flash-maas"):
+            if maas_key in catalog:
+                self.assertEqual(catalog[maas_key].get("type"), "maas")
+                self.assertEqual(catalog[maas_key].get("region"), "global")
+                self.assertNotIn("compute", catalog[maas_key])
+
     def test_terraform_locals_file(self):
         """Verify terraform/locals.tf extracts required attributes and handles catalog fields."""
         locals_path = TERRAFORM_DIR / "locals.tf"
@@ -124,6 +137,9 @@ class TestTerraformConfig(unittest.TestCase):
             "qwen3.8-27b",
             "llama-3.2-3b-instruct",
             "deepseek-v4-pro",
+            "deepseek-v4.1-flash-1017",
+            "deepseek-v4.1-flash-1017-maas",
+            "deepseek-v4.1-flash-maas",
             "nemotron-3.5-super-vl-nvfp4",
             "nemotron-3.5-super-vl-bf16",
         ]:

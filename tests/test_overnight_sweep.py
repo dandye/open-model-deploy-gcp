@@ -10,6 +10,11 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from scripts.overnight_model_sweep import (
+    NEW_MODELS_QUEUE,
+    deploy_and_eval_dedicated_model,
+    evaluate_maas_model,
+)
 from scripts.run_overnight_sweep import ModelTarget, SweepOrchestrator
 
 
@@ -55,6 +60,14 @@ def test_model_target_base_flavor_resolution():
         extra_vllm_flags="--quantization=fp8 --speculative-model=[ngram]",
     )
     assert target_spec.get_base_flavor() == "gemma-3-27b-it"
+
+    for ds_flavor in [
+        "deepseek-v4.1-flash-1017",
+        "deepseek-v4.1-flash-1017-maas",
+        "deepseek-v4.1-flash-maas",
+    ]:
+        ds_target = ModelTarget(flavor=ds_flavor, target_type="managed", region="global")
+        assert ds_target.get_base_flavor() == ds_flavor
 
 
 def test_build_model_queue_contains_all_models():
@@ -113,7 +126,107 @@ def test_build_model_queue_contains_all_models():
     assert "nemotron-3.5-super-vl-nvfp4" in flavors
     assert "nemotron-3.5-super-vl-bf16" in flavors
 
-    assert len(queue) == 40
+    # DeepSeek V4.1 Flash (OpenMaaS & Curated Self-Hosted)
+    assert "deepseek-v4.1-flash-1017-maas" in flavors
+    assert "deepseek-v4.1-flash-maas" in flavors
+    assert "deepseek-v4.1-flash-1017" in flavors
+
+    target_by_flavor = {t.flavor: t for t in queue}
+    assert target_by_flavor["deepseek-v4.1-flash-1017-maas"].target_type == "managed"
+    assert target_by_flavor["deepseek-v4.1-flash-1017-maas"].region == "global"
+    assert target_by_flavor["deepseek-v4.1-flash-maas"].target_type == "managed"
+    assert target_by_flavor["deepseek-v4.1-flash-maas"].region == "global"
+
+    ds_vertex = target_by_flavor["deepseek-v4.1-flash-1017"]
+    assert ds_vertex.target_type == "vertex"
+    assert ds_vertex.region == "us-central1"
+    assert ds_vertex.machine_type == "a3-megagpu-8g"
+    assert ds_vertex.gpu_count == 8
+    assert ds_vertex.gpu_type == "NVIDIA_H100_MEGA_80GB"
+    assert ds_vertex.max_model_len == 1048576
+
+    assert len(queue) == 43
+
+
+def test_partner_sweep_queue_maas_routing_and_publisher_timeout():
+    """Verify overnight_model_sweep routes DeepSeek MaaS to global and passes 7200s deploy timeout."""
+    assert "deepseek-v4.1-flash-1017-maas" in NEW_MODELS_QUEUE
+    assert "deepseek-v4.1-flash-maas" in NEW_MODELS_QUEUE
+    assert "deepseek-v4.1-flash-1017" in NEW_MODELS_QUEUE
+
+    maas_spec = {
+        "type": "maas",
+        "maasModelId": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "modelId": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "region": "global",
+        "supportedTargets": ["vertex_maas"],
+    }
+    mock_ok = MagicMock(returncode=0)
+    with patch("scripts.overnight_model_sweep.run_cmd", return_value=mock_ok) as mock_cmd:
+        ok = evaluate_maas_model(
+            "deepseek-v4.1-flash-1017-maas",
+            project_id="secops-demo-env",
+            region="us-central1",
+            dry_run=False,
+            spec=maas_spec,
+        )
+        assert ok is True
+        called_cmd = mock_cmd.call_args[0][0]
+        assert "--managed-model" in called_cmd
+        assert called_cmd[called_cmd.index("--managed-model") + 1] == "deepseek-ai/deepseek-v4.1-flash-1017-maas"
+        assert called_cmd[called_cmd.index("--region") + 1] == "global"
+
+    # Even if deploy_and_eval_dedicated_model is called on a MaaS entry, it must redirect without GPU deploy
+    with patch("scripts.overnight_model_sweep.evaluate_maas_model", return_value=True) as mock_eval_maas:
+        assert deploy_and_eval_dedicated_model(
+            "deepseek-v4.1-flash-1017-maas",
+            maas_spec,
+            project_id="secops-demo-env",
+            region="us-central1",
+            dry_run=False,
+        ) is True
+        mock_eval_maas.assert_called_once()
+
+    # Publisher open_model passes 7200s timeout and 40960 MB shared memory without custom image URI override
+    dedicated_spec = {
+        "type": "open_model",
+        "openModelId": "publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017",
+        "compute": {
+            "machineType": "a3-megagpu-8g",
+            "acceleratorType": "NVIDIA_H100_MEGA_80GB",
+            "acceleratorCount": 8,
+        },
+        "runtime": {
+            "deploymentTimeoutSeconds": 7200,
+            "sharedMemorySizeMb": 40960,
+        },
+    }
+    fake_endpoint = MagicMock()
+    fake_endpoint.resource_name = "projects/secops-demo-env/locations/us-central1/endpoints/987654321"
+    fake_open_model = MagicMock()
+    fake_open_model.deploy.return_value = fake_endpoint
+    fake_mg = MagicMock()
+    fake_mg.OpenModel.return_value = fake_open_model
+    fake_vertexai = MagicMock()
+    fake_vertexai.model_garden = fake_mg
+
+    with patch.dict(sys.modules, {"vertexai": fake_vertexai, "vertexai.model_garden": fake_mg}), \
+         patch("scripts.overnight_model_sweep.run_cmd", return_value=mock_ok):
+        assert deploy_and_eval_dedicated_model(
+            "deepseek-v4.1-flash-1017",
+            dedicated_spec,
+            project_id="secops-demo-env",
+            region="us-central1",
+            dry_run=False,
+        ) is True
+        _, deploy_kwargs = fake_open_model.deploy.call_args
+        assert deploy_kwargs["machine_type"] == "a3-megagpu-8g"
+        assert deploy_kwargs["accelerator_type"] == "NVIDIA_H100_MEGA_80GB"
+        assert deploy_kwargs["accelerator_count"] == 8
+        assert deploy_kwargs["deploy_request_timeout"] == 7200
+        assert deploy_kwargs["serving_container_deployment_timeout"] == 7200
+        assert deploy_kwargs["serving_container_shared_memory_size_mb"] == 40960
+        assert "serving_container_image_uri" not in deploy_kwargs
 
 
 
@@ -314,7 +427,11 @@ def test_update_master_scorecard(tmp_path: Path):
 
 def test_no_emojis_in_overnight_sweep_files():
     """Verify zero emojis in sweep script and test file."""
-    for filename in ["scripts/run_overnight_sweep.py", "tests/test_overnight_sweep.py"]:
+    for filename in [
+        "scripts/overnight_model_sweep.py",
+        "scripts/run_overnight_sweep.py",
+        "tests/test_overnight_sweep.py",
+    ]:
         path = ROOT_DIR / filename
         if not path.exists():
             continue

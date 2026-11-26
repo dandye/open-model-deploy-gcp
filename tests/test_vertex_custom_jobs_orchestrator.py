@@ -219,6 +219,7 @@ def test_all_custom_job_targets_catalog_completeness():
     assert "llama-3.2-3b-instruct" in flavors
     assert "llama-guard-3-8b" in flavors
     assert "llama-3.1-nemotron-70b-instruct" in flavors
+    assert "deepseek-v4.1-flash-1017" in flavors
 
     # Unique flavors check
     assert len(flavors) == len(set(flavors)), "Duplicate flavor detected in ALL_CUSTOM_JOB_TARGETS"
@@ -233,11 +234,38 @@ def test_all_custom_job_targets_catalog_completeness():
             "g4-standard-48",
             "g4-standard-192",
             "a2-highgpu-2g",
+            "a3-megagpu-8g",
         ]
-        assert t.accelerator_type in ["NVIDIA_L4", "NVIDIA_TESLA_A100", "NVIDIA_RTX_PRO_6000"]
-        assert t.accelerator_count in [1, 2, 4]
-        assert t.tensor_parallel_size in [1, 2, 4]
+        assert t.accelerator_type in [
+            "NVIDIA_L4",
+            "NVIDIA_TESLA_A100",
+            "NVIDIA_RTX_PRO_6000",
+            "NVIDIA_H100_MEGA_80GB",
+        ]
+        assert t.accelerator_count in [1, 2, 4, 8]
+        assert t.tensor_parallel_size in [1, 2, 4, 8]
         assert t.hf_repo.strip() != ""
+
+
+def test_build_worker_pool_spec_for_8x_h100_deepseek_v41():
+    """Verifies worker pool dictionary specification for 8x H100 DeepSeek V4.1 Flash target."""
+    target = next(t for t in ALL_CUSTOM_JOB_TARGETS if t.flavor == "deepseek-v4.1-flash-1017")
+    assert target.get_base_flavor() == "deepseek-v4.1-flash-1017"
+    specs = build_worker_pool_spec(
+        target=target,
+        container_image_uri="us-docker.pkg.dev/dandye-0324-chronicle/gemma-benchmarks/runner:latest",
+        output_gcs_uri="gs://secops-eval-results/custom_jobs",
+    )
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec["machine_spec"]["machine_type"] == "a3-megagpu-8g"
+    assert spec["machine_spec"]["accelerator_type"] == "NVIDIA_H100_MEGA_80GB"
+    assert spec["machine_spec"]["accelerator_count"] == 8
+    assert spec["container_spec"]["args"][0] == "deepseek-v4.1-flash-1017"
+    assert spec["container_spec"]["args"][1] == "deepseek-ai/DeepSeek-V4.1-Flash-1017"
+    assert spec["container_spec"]["args"][2] == "8"
+    assert "--engram-config.cpu_offload=True" in spec["container_spec"]["args"][3]
+    assert "--kv-cache-dtype=fp8" in spec["container_spec"]["args"][3]
 
 
 def test_dry_run_orchestrator_execution():
