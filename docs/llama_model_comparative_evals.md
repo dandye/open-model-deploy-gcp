@@ -8,6 +8,7 @@ This document tracks the comparative performance of Meta Llama and partner Model
 
 | Model Architecture | Provider / Serving | Pass Rate | Avg Rubric | Latency | Gen TPS | Total TPS | Tool Calls |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **DeepSeek V4.1 Flash 1017 (552B CED MoE)** | DeepSeek / Serverless Vertex OpenMaaS (`global`, \$0/hr) | **0.0% (0/10)** | **64.6 / 100** | **28.34 s** | **156.11 tok/s** | **674.34 tok/s** | **23** |
 | **Llama 4 Scout 17B-16E** | Meta / Vertex MaaS (`us-east5`) | **40.0% (2/5)** | **77.0 / 100** | **8.93 s** | **82.73 tok/s** | **269.56 tok/s** | **4** |
 | **Nemotron 3.5 Super VL 120B-A12B NVFP4** | NVIDIA / Dedicated 1x RTX PRO 6000 (`g4-48`) | **50.0% (5/10)** | **83.0 / 100** | **45.84 s** | **186.87 tok/s** | **439.65 tok/s** | **20** |
 | **Llama 4 Maverick 17B-128E** | Meta / Vertex MaaS (`us-east5`) | 0.0% (0/5) | 62.0 / 100 | 12.08 s | 61.36 tok/s | 131.51 tok/s | 0 |
@@ -75,6 +76,16 @@ This document tracks the comparative performance of Meta Llama and partner Model
 | `CASE-GEN3-08` | Supply Chain Revoked Cert | FAIL | 0 / 100 | 43.55 s | 188.12 tok/s | 0 | Exhausted 8,192 completion token budget inside `<think>` reasoning at step 0. |
 | `CASE-GEN3-09` | HTTP 503 Outage Resilience | FAIL | 90 / 100 | 29.87 s | 181.39 tok/s | 3 | Gracefully handled HTTP 503 without retry loops; held case as `SUSPICIOUS` (\$250 escalation loss). |
 | `CASE-GEN3-10` | Authorized Scanner Noise | **PASS** | **100 / 100** | **47.58 s** | **183.85 tok/s** | **2** | Verified Qualys Scanner on `SRV-PROD-PAYMENT-01`, avoided \$50k downtime isolation (\$0 loss). |
+
+---
+
+<!-- BEGIN DEEPSEEK_V4_1_FLASH_SECTION -->
+### 2.4 DeepSeek V4.1 Flash (`deepseek-v4.1-flash-1017-maas` & `deepseek-v4.1-flash-maas`)
+* **Hardware & Cost:** Serverless Vertex AI OpenMaaS (`global`, **\$0.00/hr** dedicated GPU spend; `552B` CED Multimodal MoE, `8B` prefill / `16B` decode active)
+* **Streaming Benchmark (`1017`):** `103.0 tok/s` (`c=1`) / `264.6 tok/s` (`c=4`), `TTFT P50=274.1 ms`, `ITL mean=17.40 ms`, multimodal PNG vision `792.9 ms` (`actual` tokens)
+* **Gen 3 10-Case Checkpoint Delta (`1017` vs `0924`):** `0.0% (0/10)` pass rate, `64.6 / 100` rubric, `0.7382` Harbor 60/20/20, SDT $d' = 1.03$, operational loss \$300.41 (vs Sept 2026 `0924` at `0.0%`, `63.2 / 100`, Harbor `0.7359`)
+* **Gen 5 Validation (20 Cases) & Track 2 Threat Hunt (`1017`):** `0.9651` (`clean_skills`) and `0.9744` (`harness2_evolved`) Harbor 60/20/20; `1.0000` Hunt Composite (`100%` `168h` widening, `100%` `malwaretest-win` discovery, `100%` `rundll32.exe` non-blocking safety). Full report: [`soc_eval_results/DEEPSEEK_V4_1_FLASH_EVALUATION_REPORT.md`](soc_eval_results/DEEPSEEK_V4_1_FLASH_EVALUATION_REPORT.md).
+<!-- END DEEPSEEK_V4_1_FLASH_SECTION -->
 
 ---
 

@@ -366,6 +366,17 @@ All models were evaluated under identical conditions using the un-spoiled person
 
 ---
 
+<!-- BEGIN DEEPSEEK_V4_1_FLASH_SECTION -->
+### `deepseek-v4.1-flash-1017-maas` & `deepseek-v4.1-flash-maas` (DeepSeek V4.1 Flash 552B CED Multimodal MoE on Serverless Vertex OpenMaaS `global`)
+- **Hardware & Serving Cost:** Serverless Vertex AI OpenMaaS (`global`, \$0.00/hr idle GPU spend; `552B` CED MoE with `8B` prefill / `16B` decode active parameters, `CSA2` FP4 KV cache, `1M` context window)
+- **Streaming Throughput & Vision Latency (`1017`):** `103.0 tok/s` single-stream and `264.6 tok/s` 4-stream aggregate (`TTFT P50=274.1 ms`, `ITL mean=17.40 ms`, multimodal PNG vision `792.9 ms`, `token_count_source=actual`)
+- **Gen 3 10-Case Interactive Score (`1017` vs `0924`):** `64.6 / 100` rubric (`Pass Rate: 0.0%`, Harbor 60/20/20 `0.7382`, SDT $d' = 1.03$, $c = -0.95$, simulated operational loss \$300.41) vs Sept 2026 `deepseek-v4.1-flash-maas` at `63.2 / 100` (`Pass Rate: 0.0%`, Harbor `0.7359`)
+- **Gen 5 Validation (20 Cases, Hierarchical) & Track 2 Threat Hunt:** `0.9651` Harbor 60/20/20 on `clean_skills` and `0.9744` (`100.0%` pass rate) on `harness2_evolved`; `1.0000` Hunt Composite (`0.9440` Harbor, `100%` `168h` widening, `100%` LOLBin safety) on Ursnif GTI threat hunting
+- **Detailed Campaign Artifact:** [`soc_eval_results/DEEPSEEK_V4_1_FLASH_EVALUATION_REPORT.md`](soc_eval_results/DEEPSEEK_V4_1_FLASH_EVALUATION_REPORT.md)
+<!-- END DEEPSEEK_V4_1_FLASH_SECTION -->
+
+---
+
 ## 4. Key Architectural Takeaways for Gemma Deployments
 
 1. **Benchmark Discriminative Power**:
@@ -432,3 +443,4 @@ All models were evaluated under identical conditions using the un-spoiled person
 - Detailed nemotron-3.5-lightning-bf16 Report: [`soc_eval_results/nemotron-3.5-lightning-bf16_report.md`](soc_eval_results/nemotron-3.5-lightning-bf16_report.md)
 - Detailed nemotron-3.5-super-vl-nvfp4 Report: [`soc_eval_results/nemotron-3.5-super-vl-nvfp4_report.md`](soc_eval_results/nemotron-3.5-super-vl-nvfp4_report.md)
 - Detailed qwen3.8-27b Report: [`soc_eval_results/qwen3.8-27b_report.md`](soc_eval_results/qwen3.8-27b_report.md)
+- Detailed deepseek-v4.1-flash-1017-maas Campaign Report: [`soc_eval_results/DEEPSEEK_V4_1_FLASH_EVALUATION_REPORT.md`](soc_eval_results/DEEPSEEK_V4_1_FLASH_EVALUATION_REPORT.md)
