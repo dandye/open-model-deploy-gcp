@@ -573,6 +573,127 @@ def _dict_to_action(data: Dict[str, Any]) -> Optional[Tuple[str, Dict[str, Any]]
     return tool_name, clean_args
 
 
+_DSML_CONTAINER_RE = re.compile(
+    r"<\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*(?:tool_calls|function_calls)\s*>(.*?)"
+    r"(?:</\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*(?:tool_calls|function_calls)\s*>|\Z)",
+    re.DOTALL | re.IGNORECASE,
+)
+_DSML_INVOKE_RE = re.compile(
+    r"<\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*invoke\s+([^>]*?)>(.*?)"
+    r"</\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*invoke\s*>",
+    re.DOTALL | re.IGNORECASE,
+)
+_DSML_SELF_CLOSING_INVOKE_RE = re.compile(
+    r"<\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*invoke\s+([^>]*?)/\s*>",
+    re.DOTALL | re.IGNORECASE,
+)
+_DSML_PARAM_RE = re.compile(
+    r"<\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*parameter\s+([^>]*?)>(.*?)"
+    r"</\s*[|\uff5c]\s*DSML\s*[|\uff5c]\s*parameter\s*>",
+    re.DOTALL | re.IGNORECASE,
+)
+_DSML_ATTR_RE = re.compile(
+    r'([a-zA-Z_][a-zA-Z0-9_-]*)\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|([^\s"\'>/]+))'
+)
+
+
+def _strip_think_blocks(raw_text: str) -> str:
+    """Strips <think>...</think> blocks when post-think text exists so thoughts never pollute actions."""
+    if not raw_text or not isinstance(raw_text, str):
+        return ""
+    lower = raw_text.lower()
+    if "<think>" in lower and "</think>" in lower:
+        stripped = re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL | re.IGNORECASE).strip()
+        if stripped:
+            return stripped
+    elif "</think>" in lower:
+        after = re.split(r"</think>", raw_text, maxsplit=1, flags=re.IGNORECASE)[1].strip()
+        if after:
+            return after
+    return raw_text
+
+
+def _parse_dsml_attrs(attr_str: str) -> Dict[str, str]:
+    """Parses key=value attributes inside a DSML invoke or parameter tag."""
+    attrs: Dict[str, str] = {}
+    for m in _DSML_ATTR_RE.finditer(attr_str or ""):
+        key = m.group(1).strip().lower()
+        val = (
+            m.group(2)
+            if m.group(2) is not None
+            else (m.group(3) if m.group(3) is not None else (m.group(4) or ""))
+        )
+        attrs[key] = val
+    return attrs
+
+
+def _coerce_dsml_value(raw_val: str, force_string: bool = False) -> Any:
+    """Coerces DSML parameter text into string, JSON dict/list, bool, int, or float."""
+    val = raw_val.strip()
+    if force_string:
+        return val
+    if (val.startswith("{") and val.endswith("}")) or (
+        val.startswith("[") and val.endswith("]")
+    ):
+        try:
+            return json.loads(val)
+        except Exception:
+            return val
+    lower_val = val.lower()
+    if lower_val == "true":
+        return True
+    if lower_val == "false":
+        return False
+    if lower_val == "null":
+        return None
+    if re.fullmatch(r"-?(?:0|[1-9][0-9]*)", val):
+        try:
+            return int(val)
+        except ValueError:
+            return val
+    if re.fullmatch(r"-?(?:0|[1-9][0-9]*)\.[0-9]+", val):
+        try:
+            return float(val)
+        except ValueError:
+            return val
+    return val
+
+
+def parse_dsml_tool_call(raw_text: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """Parses DeepSeek native DSML markup (<|DSML|tool_calls> or <|DSML|function_calls>)."""
+    if not raw_text or not isinstance(raw_text, str) or "dsml" not in raw_text.lower():
+        return None
+
+    container_match = _DSML_CONTAINER_RE.search(raw_text)
+    scope = container_match.group(1) if container_match else raw_text
+
+    invoke_match = _DSML_INVOKE_RE.search(scope)
+    if invoke_match:
+        inv_attrs = _parse_dsml_attrs(invoke_match.group(1))
+        tool_name = inv_attrs.get("name", "").strip().strip("\"'")
+        if not tool_name:
+            return None
+        body = invoke_match.group(2)
+        args: Dict[str, Any] = {}
+        for pm in _DSML_PARAM_RE.finditer(body):
+            p_attrs = _parse_dsml_attrs(pm.group(1))
+            p_name = p_attrs.get("name", "").strip().strip("\"'")
+            if not p_name:
+                continue
+            force_string = p_attrs.get("string", "").strip().lower() == "true"
+            args[p_name] = _coerce_dsml_value(pm.group(2), force_string=force_string)
+        return tool_name, args
+
+    self_closing = _DSML_SELF_CLOSING_INVOKE_RE.search(scope)
+    if self_closing:
+        inv_attrs = _parse_dsml_attrs(self_closing.group(1))
+        tool_name = inv_attrs.get("name", "").strip().strip("\"'")
+        if tool_name:
+            return tool_name, {}
+
+    return None
+
+
 class SocTier1Agent(GemmaAgent):
     """Reasoning Engine compatible Tier 1 SOC Analyst Agent powered by Gemma with ReAct tool execution."""
 
@@ -653,10 +774,19 @@ class SocTier1Agent(GemmaAgent):
         return "\n".join(descriptions)
 
     def _parse_action(self, step_output: str = "", text: Optional[str] = None) -> Optional[Tuple[str, Dict[str, Any]]]:
-        """Parses action calls in ReAct, JSON, and fenced block formats."""
+        """Parses action calls in ReAct, DSML, JSON, and fenced block formats."""
         raw_text = text if text is not None else step_output
         if not raw_text or not isinstance(raw_text, str):
             return None
+
+        raw_text = _strip_think_blocks(raw_text)
+        if not raw_text:
+            return None
+
+        # 0. DeepSeek native DSML markup (<|DSML|tool_calls> / <|DSML|function_calls>)
+        dsml_parsed = parse_dsml_tool_call(raw_text)
+        if dsml_parsed is not None:
+            return dsml_parsed
 
         # 1. Fenced call block format: ```call:<tool_name>\n{ ... }\n```
         fenced_call_match = re.search(r"```call:([a-zA-Z0-9_]+)\s*\n?(.*?)\s*```", raw_text, re.DOTALL)
@@ -995,17 +1125,18 @@ class SocTier1Agent(GemmaAgent):
                     continue
 
             # 3. Check for explicit Final Answer
-            if "Final Answer:" in step_output:
-                final_answer = step_output.split("Final Answer:", 1)[1].strip()
+            cleaned_step = _strip_think_blocks(step_output)
+            if "Final Answer:" in cleaned_step:
+                final_answer = cleaned_step.split("Final Answer:", 1)[1].strip()
                 break
 
             # 4. Check if model produced the full structured triage report directly
-            if "[Context & Enrichment]" in step_output and "[Analysis & Verdict]" in step_output:
-                final_answer = step_output.strip()
+            if "[Context & Enrichment]" in cleaned_step and "[Analysis & Verdict]" in cleaned_step:
+                final_answer = cleaned_step.strip()
                 break
 
             # No action and no final answer tag; treat output as final answer
-            final_answer = step_output.strip()
+            final_answer = cleaned_step.strip()
             break
 
         if not final_answer:

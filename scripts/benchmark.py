@@ -7,11 +7,15 @@ against Vertex AI Endpoints
 with single-stream, concurrent multi-stream, and prefix caching evaluation modes.
 """
 
+import base64
 import os
+from pathlib import Path
+import struct
 import sys
 import json
 import math
 import time
+import zlib
 import subprocess
 import argparse
 import urllib.request
@@ -21,7 +25,19 @@ from typing import List, Dict, Any, Optional, Tuple
 
 
 def get_adc_token() -> str:
-    """Retrieve Google Cloud ADC access token."""
+    """Retrieve and refresh Google Cloud ADC access token with gcloud CLI fallback."""
+    try:
+        import google.auth
+        import google.auth.transport.requests
+        credentials, _ = google.auth.default(
+            scopes=["https://www.googleapis.com/auth/cloud-platform"]
+        )
+        if not getattr(credentials, "valid", False) or not getattr(credentials, "token", None):
+            credentials.refresh(google.auth.transport.requests.Request())
+        if getattr(credentials, "token", None):
+            return str(credentials.token).strip()
+    except Exception:
+        pass
     res = subprocess.run(
         ["gcloud", "auth", "print-access-token"],
         capture_output=True,
@@ -29,6 +45,349 @@ def get_adc_token() -> str:
         check=True,
     )
     return res.stdout.strip()
+
+
+def _load_models_catalog() -> Dict[str, Any]:
+    """Load configs/models.json safely for MaaS flavor auto-detection."""
+    catalog_path = Path(__file__).resolve().parent.parent / "configs" / "models.json"
+    if not catalog_path.exists():
+        return {}
+    try:
+        with open(catalog_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def resolve_open_maas_target(
+    maas_model: Optional[str] = None,
+    flavor: Optional[str] = None,
+    region: str = "us-central1",
+    catalog: Optional[Dict[str, Any]] = None,
+) -> Tuple[Optional[str], str]:
+    """Resolve OpenMaaS model ID and target region from --maas-model or --flavor."""
+    cat = _load_models_catalog() if catalog is None else catalog
+    explicit_maas = (maas_model or "").strip()
+    flavor_key = (flavor or "").strip()
+    resolved_region = (region or "us-central1").strip()
+
+    if explicit_maas:
+        entry = cat.get(explicit_maas) if isinstance(cat.get(explicit_maas), dict) else None
+        if entry is None:
+            for cand in cat.values():
+                if isinstance(cand, dict) and explicit_maas in (
+                    cand.get("maasModelId"),
+                    cand.get("modelId"),
+                ):
+                    entry = cand
+                    break
+        model_id = (
+            str(entry.get("maasModelId") or entry.get("modelId") or explicit_maas).strip()
+            if entry
+            else explicit_maas
+        )
+        if (
+            "/" not in model_id
+            and model_id.lower().startswith("deepseek-")
+            and model_id.lower().endswith("-maas")
+        ):
+            model_id = f"deepseek-ai/{model_id}"
+        cat_region = str(entry.get("region") or "").strip() if entry else ""
+        if cat_region == "global" or resolved_region == "us-central1":
+            resolved_region = cat_region or "global"
+        return model_id, resolved_region
+
+    if flavor_key:
+        entry = cat.get(flavor_key) if isinstance(cat.get(flavor_key), dict) else None
+        if entry is not None and entry.get("type") == "maas":
+            cand_id = str(entry.get("maasModelId") or entry.get("modelId") or "").strip()
+            if entry.get("maasModelId") or ("/" in cand_id and cand_id.lower().endswith("-maas")):
+                cat_region = str(entry.get("region") or "").strip()
+                if cat_region == "global" or resolved_region == "us-central1":
+                    resolved_region = cat_region or "global"
+                return cand_id, resolved_region
+        if flavor_key.lower().startswith("deepseek-") and flavor_key.lower().endswith("-maas"):
+            if resolved_region == "us-central1":
+                resolved_region = "global"
+            return f"deepseek-ai/{flavor_key}", resolved_region
+        if "/" in flavor_key and flavor_key.lower().endswith("-maas"):
+            if resolved_region == "us-central1":
+                resolved_region = "global"
+            return flavor_key, resolved_region
+
+    return None, resolved_region
+
+
+def build_open_maas_url(project_id: str, region: str = "global") -> str:
+    """Build Vertex AI OpenAPI chat completions endpoint URL."""
+    loc = (region or "global").strip()
+    if loc == "global":
+        return (
+            f"https://aiplatform.googleapis.com/v1/projects/{project_id}"
+            "/locations/global/endpoints/openapi/chat/completions"
+        )
+    return (
+        f"https://{loc}-aiplatform.googleapis.com/v1/projects/{project_id}"
+        f"/locations/{loc}/endpoints/openapi/chat/completions"
+    )
+
+
+def build_compact_test_png_data_url(width: int = 16, height: int = 16) -> str:
+    """Build a spec-compliant compact RGB PNG data:image/png;base64,... URL."""
+    def _png_chunk(chunk_type: bytes, chunk_data: bytes) -> bytes:
+        crc = zlib.crc32(chunk_type + chunk_data) & 0xFFFFFFFF
+        return (
+            struct.pack(">I", len(chunk_data))
+            + chunk_type
+            + chunk_data
+            + struct.pack(">I", crc)
+        )
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    scanline = b"\x00" + (b"\x20\x68\xb8" * width)
+    idat = zlib.compress(scanline * height, level=9)
+    png_bytes = sig + _png_chunk(b"IHDR", ihdr) + _png_chunk(b"IDAT", idat) + _png_chunk(b"IEND", b"")
+    return f"data:image/png;base64,{base64.b64encode(png_bytes).decode('ascii')}"
+
+
+def _parse_open_maas_output(
+    res_body: Optional[Dict[str, Any]],
+) -> Tuple[str, int, str, Dict[str, int]]:
+    """Extract text, completion token count, provenance, and usage dict from OpenMaaS response."""
+    empty_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+    if not res_body or not isinstance(res_body, dict):
+        return "", 0, "none", empty_usage
+
+    text_out = ""
+    choices = res_body.get("choices")
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        msg = choices[0].get("message") or choices[0].get("delta") or {}
+        if isinstance(msg, dict):
+            content = msg.get("content")
+            if isinstance(content, str) and content:
+                text_out = content
+            elif isinstance(content, list):
+                text_out = "".join(
+                    p.get("text", "") if isinstance(p, dict) else str(p) for p in content
+                )
+            if not text_out and isinstance(msg.get("reasoning_content"), str):
+                text_out = msg["reasoning_content"]
+            if not text_out and msg.get("tool_calls"):
+                text_out = json.dumps(msg["tool_calls"])
+    elif isinstance(res_body.get("predictions"), list) and res_body["predictions"]:
+        text_out = _prediction_text(res_body["predictions"][0])
+
+    raw_usage = res_body.get("usage")
+    if isinstance(raw_usage, dict) and raw_usage.get("completion_tokens") is not None:
+        prompt_tok = int(raw_usage.get("prompt_tokens") or 0)
+        comp_tok = int(raw_usage.get("completion_tokens") or 0)
+        tot_tok = int(raw_usage.get("total_tokens") or (prompt_tok + comp_tok))
+        usage_out: Dict[str, int] = {
+            "prompt_tokens": prompt_tok,
+            "completion_tokens": comp_tok,
+            "total_tokens": tot_tok,
+        }
+        details = raw_usage.get("completion_tokens_details")
+        if isinstance(details, dict) and details.get("reasoning_tokens") is not None:
+            usage_out["reasoning_tokens"] = int(details["reasoning_tokens"])
+        elif raw_usage.get("reasoning_tokens") is not None:
+            usage_out["reasoning_tokens"] = int(raw_usage["reasoning_tokens"])
+        return text_out.strip(), comp_tok, "actual", usage_out
+
+    if not text_out.strip():
+        return "", 0, "none", empty_usage
+    est = max(1, int(len(text_out) / 3.8))
+    return text_out.strip(), est, "estimated", {
+        "prompt_tokens": 0,
+        "completion_tokens": est,
+        "total_tokens": est,
+    }
+
+
+def send_open_maas_request(
+    url: str,
+    headers: Dict[str, str],
+    payload: Dict[str, Any],
+    max_retries: int = 4,
+) -> Tuple[float, Optional[Dict[str, Any]], Optional[str], int]:
+    """Send non-streaming OpenMaaS chat completions request with fast-fail on 401/403/404."""
+    encoded = json.dumps(payload).encode("utf-8")
+    last_elapsed = 0.0
+    for attempt in range(max_retries):
+        req = urllib.request.Request(url, data=encoded, headers=headers, method="POST")
+        start_time = time.perf_counter()
+        try:
+            with urllib.request.urlopen(req, timeout=300) as response:
+                status = int(getattr(response, "status", 200) or 200)
+                body = json.loads(response.read().decode("utf-8"))
+                elapsed = time.perf_counter() - start_time
+                return elapsed, body, None, status
+        except urllib.error.HTTPError as e:
+            elapsed = time.perf_counter() - start_time
+            last_elapsed = elapsed
+            code = int(getattr(e, "code", 0) or 0)
+            err_body = ""
+            try:
+                raw_err = e.read()
+                err_body = (
+                    raw_err.decode("utf-8", errors="replace").strip()
+                    if isinstance(raw_err, bytes)
+                    else str(raw_err or "").strip()
+                )
+            except Exception:
+                err_body = ""
+            detail = err_body or str(e)
+            if code in (401, 403, 404):
+                return elapsed, None, f"HTTP {code}: {detail}", code
+            if code in (429, 503, 504) and attempt < max_retries - 1:
+                time.sleep((2 ** attempt) * 2)
+                continue
+            return elapsed, None, f"HTTP {code}: {detail}", code
+        except Exception as e:
+            elapsed = time.perf_counter() - start_time
+            return elapsed, None, str(e), 0
+    return last_elapsed, None, "Max retries exceeded", 0
+
+
+def _sse_event_has_delta_token(event: Dict[str, Any]) -> bool:
+    """Return True when an OpenAI SSE event carries non-empty content, reasoning_content, or tool_calls."""
+    choices = event.get("choices")
+    if not isinstance(choices, list) or not choices or not isinstance(choices[0], dict):
+        return False
+    delta = choices[0].get("delta")
+    if not isinstance(delta, dict):
+        return False
+    content = delta.get("content")
+    if isinstance(content, str) and len(content) > 0:
+        return True
+    if isinstance(content, list) and len(content) > 0:
+        return True
+    reasoning = delta.get("reasoning_content")
+    if isinstance(reasoning, str) and len(reasoning) > 0:
+        return True
+    tool_calls = delta.get("tool_calls")
+    if isinstance(tool_calls, list) and len(tool_calls) > 0:
+        return True
+    return False
+
+
+def send_open_maas_streaming_request(
+    url: str,
+    headers: Dict[str, str],
+    payload: Dict[str, Any],
+    max_retries: int = 4,
+) -> Tuple[float, Optional[float], List[float], Optional[Dict[str, Any]], Optional[str], int]:
+    """Send streaming SSE OpenMaaS request, measuring exact delta TTFT, inter-chunk ITL, and usage."""
+    stream_headers = dict(headers)
+    stream_headers["Accept"] = "text/event-stream, application/json"
+    encoded = json.dumps(payload).encode("utf-8")
+
+    for attempt in range(max_retries):
+        req = urllib.request.Request(url, data=encoded, headers=stream_headers, method="POST")
+        start_time = time.perf_counter()
+        ttft_s: Optional[float] = None
+        prev_delta_s: Optional[float] = None
+        itl_chunks_ms: List[float] = []
+        content_parts: List[str] = []
+        reasoning_parts: List[str] = []
+        tool_call_fragments: List[Any] = []
+        merged_usage: Dict[str, Any] = {}
+        stream_error: Optional[str] = None
+        line_buffer = b""
+
+        def _process_sse_data(data_str: str, arrival_s: float) -> None:
+            nonlocal ttft_s, prev_delta_s, stream_error
+            clean = data_str.strip()
+            if not clean or clean == "[DONE]":
+                return
+            try:
+                ev = json.loads(clean)
+            except Exception:
+                return
+            if not isinstance(ev, dict):
+                return
+            err_msg = _stream_error_message(ev)
+            if err_msg and stream_error is None:
+                stream_error = err_msg
+            if _sse_event_has_delta_token(ev):
+                if ttft_s is None:
+                    ttft_s = arrival_s
+                elif prev_delta_s is not None:
+                    itl_chunks_ms.append(max(0.0, (arrival_s - prev_delta_s) * 1000.0))
+                prev_delta_s = arrival_s
+                delta = ev["choices"][0]["delta"]
+                if isinstance(delta.get("content"), str) and delta["content"]:
+                    content_parts.append(delta["content"])
+                if isinstance(delta.get("reasoning_content"), str) and delta["reasoning_content"]:
+                    reasoning_parts.append(delta["reasoning_content"])
+                if isinstance(delta.get("tool_calls"), list) and delta["tool_calls"]:
+                    tool_call_fragments.extend(delta["tool_calls"])
+            usage = ev.get("usage")
+            if isinstance(usage, dict):
+                merged_usage.update(usage)
+
+        try:
+            with urllib.request.urlopen(req, timeout=300) as response:
+                status = int(getattr(response, "status", 200) or 200)
+                read_available = getattr(response, "read1", response.read)
+                while True:
+                    chunk = read_available(64)
+                    if not chunk:
+                        break
+                    now_offset = time.perf_counter() - start_time
+                    line_buffer += chunk
+                    while b"\n" in line_buffer:
+                        raw_line, line_buffer = line_buffer.split(b"\n", 1)
+                        line_txt = raw_line.decode("utf-8", errors="ignore").strip()
+                        if line_txt.startswith("data:"):
+                            _process_sse_data(line_txt[5:].lstrip(), now_offset)
+
+                if line_buffer.strip():
+                    now_offset = time.perf_counter() - start_time
+                    rem_txt = line_buffer.decode("utf-8", errors="ignore").strip()
+                    if rem_txt.startswith("data:"):
+                        _process_sse_data(rem_txt[5:].lstrip(), now_offset)
+
+                elapsed = time.perf_counter() - start_time
+                combined_content = "".join(content_parts)
+                combined_reasoning = "".join(reasoning_parts)
+                msg_out: Dict[str, Any] = {"role": "assistant", "content": combined_content}
+                if combined_reasoning:
+                    msg_out["reasoning_content"] = combined_reasoning
+                if tool_call_fragments:
+                    msg_out["tool_calls"] = tool_call_fragments
+                body_out: Dict[str, Any] = {"choices": [{"message": msg_out}]}
+                if merged_usage:
+                    body_out["usage"] = merged_usage
+                if status >= 400:
+                    stream_error = f"HTTP {status}: {stream_error}" if stream_error else f"HTTP {status}"
+                return elapsed, ttft_s, itl_chunks_ms, body_out, stream_error, status
+        except urllib.error.HTTPError as e:
+            elapsed = time.perf_counter() - start_time
+            code = int(getattr(e, "code", 0) or 0)
+            err_body = ""
+            try:
+                raw_err = e.read()
+                err_body = (
+                    raw_err.decode("utf-8", errors="replace").strip()
+                    if isinstance(raw_err, bytes)
+                    else str(raw_err or "").strip()
+                )
+            except Exception:
+                err_body = ""
+            detail = err_body or str(e)
+            if code in (401, 403, 404):
+                return elapsed, ttft_s, itl_chunks_ms, None, f"HTTP {code}: {detail}", code
+            if code in (429, 503, 504) and attempt < max_retries - 1:
+                time.sleep((2 ** attempt) * 2)
+                continue
+            return elapsed, ttft_s, itl_chunks_ms, None, f"HTTP {code}: {detail}", code
+        except Exception as e:
+            elapsed = time.perf_counter() - start_time
+            return elapsed, ttft_s, itl_chunks_ms, None, str(e), 0
+    return 0.0, None, [], None, "Max retries exceeded", 0
 
 
 def calculate_percentile(data: List[float], percentile: float) -> float:
@@ -743,9 +1102,18 @@ class BenchmarkRunner:
         concurrency: int = 1,
         stream: bool = False,
         prefix_prompt: Optional[str] = None,
+        maas_model: Optional[str] = None,
+        flavor: Optional[str] = None,
+        vision_check: bool = False,
+        output_json: Optional[str] = None,
     ):
         self.project_id = project_id
-        self.region = region
+        resolved_maas, resolved_region = resolve_open_maas_target(
+            maas_model=maas_model, flavor=flavor, region=region
+        )
+        self.maas_model: Optional[str] = resolved_maas
+        self.flavor: Optional[str] = flavor
+        self.region = resolved_region if resolved_maas else region
         self.endpoint_id = endpoint_id or os.environ.get("VERTEX_ENDPOINT_ID", "")
         self.prompt = prompt
         self.max_tokens = max_tokens
@@ -753,14 +1121,44 @@ class BenchmarkRunner:
         self.concurrency = concurrency
         self.stream = stream
         self.prefix_prompt = prefix_prompt
+        self.vision_check = vision_check
+        self.output_json = output_json
         self._token: Optional[str] = None
+        self._token_fetched_at: float = 0.0
+        self._credentials: Any = None
         self.dedicated_endpoint_dns: Optional[str] = os.environ.get("VERTEX_DEDICATED_ENDPOINT_DNS", "").strip() or None
 
-    def get_token(self) -> str:
-        """Get or refresh ADC access token."""
-        if not self._token:
+    def get_token(self, force_refresh: bool = False) -> str:
+        """Get or refresh ADC access token cleanly across runs."""
+        try:
+            import google.auth
+            import google.auth.transport.requests
+            if self._credentials is None:
+                self._credentials, _ = google.auth.default(
+                    scopes=["https://www.googleapis.com/auth/cloud-platform"]
+                )
+            if (
+                force_refresh
+                or not getattr(self._credentials, "valid", False)
+                or not getattr(self._credentials, "token", None)
+            ):
+                self._credentials.refresh(google.auth.transport.requests.Request())
+            if getattr(self._credentials, "token", None):
+                self._token = str(self._credentials.token).strip()
+                self._token_fetched_at = time.monotonic()
+                return self._token
+        except Exception:
+            self._credentials = None
+
+        now = time.monotonic()
+        if not self._token or force_refresh or (now - self._token_fetched_at) > 1800.0:
             self._token = get_adc_token()
+            self._token_fetched_at = now
         return self._token
+
+    def get_open_maas_url(self) -> str:
+        """Resolve Vertex AI OpenMaaS chat completions endpoint URL."""
+        return build_open_maas_url(self.project_id, self.region)
 
     def get_predict_url(self, endpoint_id: str) -> str:
         """Resolve Vertex AI prediction URL, using dedicatedEndpointDns when applicable."""
@@ -933,6 +1331,9 @@ class BenchmarkRunner:
         r = runs or self.runs
         p = prompt or self.prompt
         use_stream = self.stream if stream is None else stream
+
+        if self.maas_model:
+            return self._run_open_maas(c=c, r=r, p=p, use_stream=use_stream)
 
         endpoint_id = self.discover_endpoint_id()
         if not endpoint_id:
@@ -1265,6 +1666,280 @@ Operational Guidelines: Provide concise, technically rigorous, step-by-step diag
 
         return comparison
 
+    def _run_open_maas(
+        self,
+        c: int,
+        r: int,
+        p: str,
+        use_stream: bool,
+    ) -> Optional[Dict[str, Any]]:
+        """Execute single-stream, concurrent, or SSE streaming benchmarks against Vertex OpenMaaS."""
+        url = self.get_open_maas_url()
+        token = self.get_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        payload: Dict[str, Any] = {
+            "model": self.maas_model,
+            "messages": [{"role": "user", "content": p}],
+            "max_tokens": self.max_tokens,
+            "temperature": 0.2,
+        }
+        if use_stream:
+            payload["stream"] = True
+            payload["stream_options"] = {"include_usage": True}
+
+        print("=" * 60, flush=True)
+        print(f" Benchmarking OpenMaaS Model: {self.maas_model} ({self.region})", flush=True)
+        print(f" Max Tokens: {self.max_tokens} | Repetitions: {r} | Concurrency: {c} | Streaming: {use_stream}", flush=True)
+        print("=" * 60, flush=True)
+
+        latencies: List[float] = []
+        token_counts: List[int] = []
+        ttfts: List[float] = []
+        first_token_times: List[Optional[float]] = []
+        all_itl_chunks_ms: List[float] = []
+        token_count_sources: List[str] = []
+        usage_records: List[Dict[str, int]] = []
+        failed_requests = 0
+        wall_clock_s = 0.0
+        sample_output = ""
+        fatal_status: Optional[int] = None
+        fatal_error: Optional[str] = None
+
+        if c == 1:
+            for i in range(r):
+                headers["Authorization"] = f"Bearer {self.get_token()}"
+                if use_stream:
+                    elapsed, ttft_s, itl_ms_list, res_body, err, status_code = (
+                        send_open_maas_streaming_request(url, headers, payload)
+                    )
+                else:
+                    elapsed, res_body, err, status_code = send_open_maas_request(url, headers, payload)
+                    ttft_s = None
+                    itl_ms_list = []
+
+                wall_clock_s += elapsed
+                if status_code in (401, 403, 404):
+                    fatal_status = status_code
+                    fatal_error = err or f"HTTP {status_code}"
+                    failed_requests += 1
+                    print(f"  Run {i+1}: [FATAL {status_code}] {fatal_error}", flush=True)
+                    break
+
+                if err:
+                    failed_requests += 1
+                    print(f"  Run {i+1}: [ERROR] {err}", flush=True)
+                    continue
+
+                out_text, tok_cnt, tok_src, usage_dict = _parse_open_maas_output(res_body)
+                if tok_src == "none":
+                    failed_requests += 1
+                    print(f"  Run {i+1}: [ERROR] Empty OpenMaaS response", flush=True)
+                    continue
+
+                if not sample_output and out_text:
+                    sample_output = out_text
+                latencies.append(elapsed)
+                token_counts.append(tok_cnt)
+                token_count_sources.append(tok_src)
+                usage_records.append(usage_dict)
+                if use_stream:
+                    effective_ttft = ttft_s if ttft_s is not None else elapsed
+                    ttfts.append(effective_ttft)
+                    first_token_times.append(ttft_s)
+                    all_itl_chunks_ms.extend(itl_ms_list)
+        else:
+            for iteration in range(r):
+                headers["Authorization"] = f"Bearer {self.get_token()}"
+                batch_start = time.perf_counter()
+                with ThreadPoolExecutor(max_workers=c) as executor:
+                    if use_stream:
+                        futures = [
+                            executor.submit(send_open_maas_streaming_request, url, dict(headers), payload)
+                            for _ in range(c)
+                        ]
+                    else:
+                        futures = [
+                            executor.submit(send_open_maas_request, url, dict(headers), payload)
+                            for _ in range(c)
+                        ]
+                    for fut in as_completed(futures):
+                        res = fut.result()
+                        if use_stream:
+                            elapsed, ttft_s, itl_ms_list, res_body, err, status_code = res
+                        else:
+                            elapsed, res_body, err, status_code = res
+                            ttft_s = None
+                            itl_ms_list = []
+
+                        if status_code in (401, 403, 404):
+                            fatal_status = status_code
+                            fatal_error = err or f"HTTP {status_code}"
+                            failed_requests += 1
+                            continue
+                        if err:
+                            failed_requests += 1
+                            continue
+                        out_text, tok_cnt, tok_src, usage_dict = _parse_open_maas_output(res_body)
+                        if tok_src == "none":
+                            failed_requests += 1
+                            continue
+                        if not sample_output and out_text:
+                            sample_output = out_text
+                        latencies.append(elapsed)
+                        token_counts.append(tok_cnt)
+                        token_count_sources.append(tok_src)
+                        usage_records.append(usage_dict)
+                        if use_stream:
+                            ttfts.append(ttft_s if ttft_s is not None else elapsed)
+                            first_token_times.append(ttft_s)
+                            all_itl_chunks_ms.extend(itl_ms_list)
+                wall_clock_s += time.perf_counter() - batch_start
+                if fatal_status is not None:
+                    break
+
+        if fatal_status is not None and not latencies:
+            gate_tag = "MAAS_ACCESS_GATED" if fatal_status in (403, 404) else "MAAS_AUTH_ERROR"
+            return {
+                "status": gate_tag,
+                "status_code": fatal_status,
+                "error": fatal_error,
+                "maas_model": self.maas_model,
+                "endpoint_id": self.maas_model or "",
+                "region": self.region,
+                "url": url,
+                "concurrency": c,
+                "total_requests": failed_requests,
+                "successful_requests": 0,
+                "failed_requests": failed_requests,
+                "token_count_source": "none",
+            }
+
+        if not latencies:
+            print("[ERROR] No successful OpenMaaS benchmark runs.", flush=True)
+            return None
+
+        summary = calculate_summary(
+            latencies=latencies,
+            token_counts=token_counts,
+            ttfts=ttfts if use_stream else None,
+            first_token_times=first_token_times if use_stream else None,
+            token_count_sources=token_count_sources,
+            wall_clock_s=wall_clock_s,
+            failed_requests=failed_requests,
+            concurrency=c,
+            endpoint_id=self.maas_model or "",
+            region=self.region,
+            sample_output=sample_output,
+        )
+        summary["status"] = "OK"
+        summary["maas_model"] = self.maas_model
+        summary["url"] = url
+
+        if usage_records:
+            tot_prompt = sum(u.get("prompt_tokens", 0) for u in usage_records)
+            tot_comp = sum(u.get("completion_tokens", 0) for u in usage_records)
+            tot_all = sum(u.get("total_tokens", 0) for u in usage_records)
+            summary["usage_summary"] = {
+                "total_prompt_tokens": tot_prompt,
+                "total_completion_tokens": tot_comp,
+                "total_tokens": tot_all,
+                "avg_prompt_tokens": round(tot_prompt / len(usage_records), 1),
+                "avg_completion_tokens": round(tot_comp / len(usage_records), 1),
+            }
+
+        if use_stream and ttfts:
+            ttft_ms_vals = [t * 1000.0 for t in ttfts]
+            summary["ttft_ms"] = round(sum(ttft_ms_vals) / len(ttft_ms_vals), 1)
+            summary["ttft_p50_ms"] = round(calculate_percentile(ttft_ms_vals, 50), 1)
+            summary["ttft_p95_ms"] = round(calculate_percentile(ttft_ms_vals, 95), 1)
+            summary["ttft_source"] = "sse_first_token_delta"
+            if all_itl_chunks_ms:
+                itl_mean = sum(all_itl_chunks_ms) / len(all_itl_chunks_ms)
+                summary["itl_mean_ms"] = round(itl_mean, 2)
+                summary["itl_ms"] = round(itl_mean, 2)
+                summary["itl_p50_ms"] = round(calculate_percentile(all_itl_chunks_ms, 50), 2)
+                summary["itl_p95_ms"] = round(calculate_percentile(all_itl_chunks_ms, 95), 2)
+                summary["itl_source"] = "sse_inter_chunk_delta"
+            else:
+                fallback_itl = summary.get("itl_ms", 0.0)
+                summary["itl_mean_ms"] = fallback_itl
+                summary["itl_p50_ms"] = fallback_itl
+                summary["itl_p95_ms"] = fallback_itl
+
+        if self.vision_check:
+            summary["vision_check"] = self.run_vision_check()
+
+        print(format_benchmark_table(summary), flush=True)
+        return summary
+
+    def run_vision_check(
+        self,
+        prompt: str = "Describe the color and geometry of this compact test image in one concise sentence.",
+        image_data_url: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Measure multimodal image_url vision latency and actual token usage against OpenMaaS."""
+        target_model = self.maas_model or "deepseek-ai/deepseek-v4.1-flash-1017-maas"
+        url = self.get_open_maas_url()
+        token = self.get_token()
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+        data_url = image_data_url or build_compact_test_png_data_url()
+        payload: Dict[str, Any] = {
+            "model": target_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": data_url}},
+                    ],
+                }
+            ],
+            "max_tokens": min(self.max_tokens, 128),
+            "temperature": 0.1,
+        }
+        elapsed, res_body, err, status_code = send_open_maas_request(url, headers, payload)
+        if status_code in (401, 403, 404):
+            gate_tag = "MAAS_ACCESS_GATED" if status_code in (403, 404) else "MAAS_AUTH_ERROR"
+            return {
+                "status": gate_tag,
+                "status_code": status_code,
+                "latency_s": round(elapsed, 4),
+                "latency_ms": round(elapsed * 1000.0, 1),
+                "maas_model": target_model,
+                "region": self.region,
+                "error": err,
+                "token_count_source": "none",
+            }
+        if err:
+            return {
+                "status": "ERROR",
+                "status_code": status_code,
+                "latency_s": round(elapsed, 4),
+                "latency_ms": round(elapsed * 1000.0, 1),
+                "maas_model": target_model,
+                "region": self.region,
+                "error": err,
+                "token_count_source": "none",
+            }
+        out_text, _, tok_src, usage_dict = _parse_open_maas_output(res_body)
+        return {
+            "status": "OK",
+            "status_code": status_code or 200,
+            "latency_s": round(elapsed, 4),
+            "latency_ms": round(elapsed * 1000.0, 1),
+            "maas_model": target_model,
+            "region": self.region,
+            "response_snippet": out_text[:300],
+            "token_count_source": tok_src,
+            "usage": usage_dict,
+        }
+
 
 def run_benchmark(
     project_id: str,
@@ -1275,6 +1950,8 @@ def run_benchmark(
     runs: int = 3,
     concurrency: int = 1,
     stream: bool = False,
+    maas_model: Optional[str] = None,
+    flavor: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Convenience function maintaining backwards compatibility."""
     runner = BenchmarkRunner(
@@ -1286,21 +1963,27 @@ def run_benchmark(
         runs=runs,
         concurrency=concurrency,
         stream=stream,
+        maas_model=maas_model,
+        flavor=flavor,
     )
     return runner.run()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Gemma Latency & Throughput Benchmark Suite")
+    parser = argparse.ArgumentParser(description="Gemma & OpenMaaS Latency & Throughput Benchmark Suite")
     parser.add_argument("--project", default="dandye-0324-chronicle", help="Google Cloud project ID")
-    parser.add_argument("--region", default="us-central1", help="Vertex AI region")
+    parser.add_argument("--region", default="us-central1", help="Vertex AI region (auto-routes global for OpenMaaS)")
     parser.add_argument("--endpoint", default="", help="Vertex AI Endpoint ID (auto-discovered if omitted)")
+    parser.add_argument("--maas-model", default="", help="Serverless Vertex OpenMaaS model ID (e.g. deepseek-ai/deepseek-v4.1-flash-1017-maas)")
+    parser.add_argument("--flavor", default="", help="Catalog flavor key from configs/models.json (auto-detects type=maas)")
+    parser.add_argument("--vision-check", action="store_true", help="Run multimodal base64 PNG image_url latency check")
+    parser.add_argument("--output-json", default=None, help="Optional file path to persist benchmark JSON report")
     parser.add_argument("--prompt", default="Explain the core principles of quantum computing in 3 concise paragraphs.")
     parser.add_argument("--max-tokens", type=int, default=150, help="Maximum generated tokens")
     parser.add_argument("--runs", type=int, default=3, help="Benchmark repetition count")
     parser.add_argument("--concurrency", "-c", type=int, default=1, help="Concurrent parallel streams count")
     parser.add_argument("--streams", type=str, default="", help="Comma-separated stream counts for sweep, e.g. '1,2,4,8'")
-    parser.add_argument("--stream", "--streaming", action="store_true", help="Measure streaming first-chunk metrics")
+    parser.add_argument("--stream", "--streaming", action="store_true", help="Measure streaming first-chunk / SSE TTFT & ITL metrics")
     parser.add_argument("--prefix-caching-test", action="store_true", help="Run prefix caching evaluation test")
     parser.add_argument("--prefix-prompt", type=str, default=None, help="Custom prefix text for prefix caching test")
     args = parser.parse_args()
@@ -1315,15 +1998,27 @@ def main():
         concurrency=args.concurrency,
         stream=args.stream,
         prefix_prompt=args.prefix_prompt,
+        maas_model=args.maas_model or None,
+        flavor=args.flavor or None,
+        vision_check=args.vision_check,
+        output_json=args.output_json,
     )
 
+    result_payload: Any = None
     if args.prefix_caching_test:
-        runner.run_prefix_caching_test(prefix_prompt=args.prefix_prompt, runs=args.runs)
+        result_payload = runner.run_prefix_caching_test(prefix_prompt=args.prefix_prompt, runs=args.runs)
     elif args.streams:
         stream_counts = tuple(int(x.strip()) for x in args.streams.split(",") if x.strip())
-        runner.run_concurrency_sweep(stream_counts=stream_counts, runs=args.runs, prompt=args.prompt)
+        result_payload = runner.run_concurrency_sweep(stream_counts=stream_counts, runs=args.runs, prompt=args.prompt)
     else:
-        runner.run()
+        result_payload = runner.run()
+
+    if args.output_json and result_payload is not None:
+        out_path = Path(args.output_json)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(result_payload, f, indent=2)
+        print(f"[INFO] Saved benchmark JSON report to {out_path}", flush=True)
 
 
 if __name__ == "__main__":
