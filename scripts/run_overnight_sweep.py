@@ -97,6 +97,9 @@ MODEL_CAPABILITY_ORDER: List[str] = [
     "qwen3.8-2.4t-a95b-fp8",
     "glm-5.3-flash",
     "deepseek-v4-pro",
+    "deepseek-v4.1-flash-maas",
+    "deepseek-v4.1-flash-1017-maas",
+    "deepseek-v4.1-flash-1017",
     "kimi-k3",
 ]
 
@@ -564,6 +567,40 @@ class SweepOrchestrator:
                 gpu_type="NVIDIA_RTX_PRO_6000",
                 max_model_len=32768,
                 notes="NVIDIA Nemotron 3.5 Super VL 120B-A12B BF16 (4x RTX PRO 6000)",
+            ),
+            # Phase 6: DeepSeek-V4.1-Flash Family (552B CED Multimodal MoE: OpenMaaS & Dedicated)
+            ModelTarget(
+                flavor="deepseek-v4.1-flash-1017-maas",
+                target_type="managed",
+                region="global",
+                notes="DeepSeek V4.1 Flash 1017 Oct 2026 Checkpoint (Serverless Vertex OpenMaaS Global)",
+            ),
+            ModelTarget(
+                flavor="deepseek-v4.1-flash-maas",
+                target_type="managed",
+                region="global",
+                notes="DeepSeek V4.1 Flash Sept 2026 Baseline (Serverless Vertex OpenMaaS Global)",
+            ),
+            ModelTarget(
+                flavor="deepseek-v4.1-flash-1017",
+                target_type="vertex",
+                region="us-central1",
+                machine_type="a3-megagpu-8g",
+                gpu_count=8,
+                gpu_type="NVIDIA_H100_MEGA_80GB",
+                extra_vllm_flags=(
+                    "--trust-remote-code "
+                    "--kv-cache-dtype=fp8 "
+                    "--enable-expert-parallel "
+                    "--engram-config.cpu_offload=True "
+                    "--tool-call-parser=deepseek_v41 "
+                    "--reasoning-parser=deepseek_v41 "
+                    "--enable-auto-tool-choice "
+                    "--max-num-seqs=128 "
+                    "--mm-encoder-tp-mode=data"
+                ),
+                max_model_len=1048576,
+                notes="DeepSeek V4.1 Flash 1017 552B CED Multimodal MoE (8x H100 Mega 80GB)",
             ),
         ]
 

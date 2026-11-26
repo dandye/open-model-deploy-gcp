@@ -543,6 +543,17 @@ ALL_GKE_RAY_TARGETS: List[GKERayTarget] = [
         extra_vllm_flags="",
         notes="Llama 3.1 Nemotron 70B (4x L4)",
     ),
+    GKERayTarget(
+        flavor="deepseek-v4.1-flash-1017",
+        hf_repo="deepseek-ai/DeepSeek-V4.1-Flash-1017",
+        gpu_count=8,
+        gpu_type="nvidia-h100-mega-80gb",
+        cpu=192,
+        memory="1536Gi",
+        tensor_parallel_size=8,
+        extra_vllm_flags="--trust-remote-code --kv-cache-dtype=fp8 --enable-expert-parallel --engram-config.cpu_offload=True --tool-call-parser=deepseek_v41 --reasoning-parser=deepseek_v41 --enable-auto-tool-choice --max-num-seqs=128 --mm-encoder-tp-mode=data",
+        notes="DeepSeek V4.1 Flash 1017 552B CED MoE (8x H100 Mega 80GB, 40Gi /dev/shm)",
+    ),
 ]
 
 ALL_GKE_RAY_TARGETS_MAP: Dict[str, GKERayTarget] = {t.flavor: t for t in ALL_GKE_RAY_TARGETS}
@@ -583,6 +594,21 @@ def render_ray_cluster_manifest(
     manifest = yaml.safe_load(content)
     if not isinstance(manifest, dict):
         raise ValueError(f"Failed to parse rendered RayCluster manifest into dictionary: {manifest}")
+
+    if target.gpu_count >= 8 or "deepseek-v4.1" in target.flavor:
+        for group in manifest.get("spec", {}).get("workerGroupSpecs", []):
+            pod_spec = group.setdefault("template", {}).setdefault("spec", {})
+            volumes = pod_spec.setdefault("volumes", [])
+            dshm_vol = next((v for v in volumes if v.get("name") == "dshm"), None)
+            if dshm_vol is None:
+                dshm_vol = {"name": "dshm"}
+                volumes.append(dshm_vol)
+            dshm_vol["emptyDir"] = {"medium": "Memory", "sizeLimit": "40Gi"}
+            for container in pod_spec.get("containers", []):
+                mounts = container.setdefault("volumeMounts", [])
+                if not any(m.get("mountPath") == "/dev/shm" for m in mounts):
+                    mounts.append({"mountPath": "/dev/shm", "name": "dshm"})
+
     return manifest
 
 

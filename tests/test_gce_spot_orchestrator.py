@@ -218,6 +218,50 @@ def test_catalog_completeness():
     assert "llama-3.2-3b-instruct" in flavors
     assert "llama-guard-3-8b" in flavors
     assert "llama-3.1-nemotron-70b-instruct" in flavors
+    assert "deepseek-v4.1-flash-1017" in flavors
+
+
+def test_gce_spot_deepseek_v41_8gpu_safeguards():
+    """Verify 8-GPU DeepSeek V4.1 Flash target and NVMe / shm / timeout safeguards."""
+    target = next(t for t in ALL_GCE_SPOT_TARGETS if t.flavor == "deepseek-v4.1-flash-1017")
+    assert target.hf_repo == "deepseek-ai/DeepSeek-V4.1-Flash-1017"
+    assert target.machine_type == "a3-megagpu-8g"
+    assert target.accelerator_type == "nvidia-h100-mega-80gb"
+    assert target.accelerator_count == 8
+    assert target.local_ssd_count == 16
+    assert target.tensor_parallel_size == 8
+    assert target.get_base_flavor() == "deepseek-v4.1-flash-1017"
+    for required_flag in [
+        "--trust-remote-code",
+        "--kv-cache-dtype=fp8",
+        "--enable-expert-parallel",
+        "--engram-config.cpu_offload=True",
+        "--tool-call-parser=deepseek_v41",
+        "--reasoning-parser=deepseek_v41",
+        "--enable-auto-tool-choice",
+        "--max-num-seqs=128",
+        "--mm-encoder-tp-mode=data",
+    ]:
+        assert required_flag in target.extra_vllm_flags
+    assert "a3-ultragpu-8g" in target.notes
+    assert "a4-highgpu-8g" in target.notes
+    assert "dspark" in target.notes
+
+    cmd = build_gce_spot_create_command(
+        target=target,
+        project_id="secops-demo-env",
+        zone="us-central1-a",
+        output_gcs_uri="gs://secops-demo-env-evals/gce_spot_sweeps",
+    )
+    assert "--machine-type=a3-megagpu-8g" in cmd
+    assert "--accelerator=type=nvidia-h100-mega-80gb,count=8" in cmd
+    assert cmd.count("--local-ssd=interface=NVME") == 16
+    assert "--boot-disk-size=500GB" in cmd
+    metadata_arg = next(a for a in cmd if a.startswith("--metadata="))
+    assert "shm_size=40g" in metadata_arg
+    assert "docker_extra_args=--shm-size=40g" in metadata_arg
+    assert "nvme_mount_dir=/mnt/disks/nvme" in metadata_arg
+    assert "startup_timeout_seconds=7200" in metadata_arg
 
 
 def test_orchestrator_initialization():

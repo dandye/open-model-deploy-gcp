@@ -465,6 +465,16 @@ ALL_CUSTOM_JOB_TARGETS: List[VertexCustomJobTarget] = [
         tensor_parallel_size=4,
         notes="Nemotron Llama 70B (4x L4)",
     ),
+    VertexCustomJobTarget(
+        flavor="deepseek-v4.1-flash-1017",
+        hf_repo="deepseek-ai/DeepSeek-V4.1-Flash-1017",
+        machine_type="a3-megagpu-8g",
+        accelerator_type="NVIDIA_H100_MEGA_80GB",
+        accelerator_count=8,
+        tensor_parallel_size=8,
+        extra_vllm_flags="--trust-remote-code --kv-cache-dtype=fp8 --enable-expert-parallel --engram-config.cpu_offload=True --tool-call-parser=deepseek_v41 --reasoning-parser=deepseek_v41 --enable-auto-tool-choice --max-num-seqs=128 --mm-encoder-tp-mode=data",
+        notes="DeepSeek V4.1 Flash 1017 552B CED MoE (8x H100 Mega 80GB)",
+    ),
 ]
 
 

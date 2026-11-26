@@ -62,6 +62,9 @@ NEW_MODELS_QUEUE = [
     # Advanced Frontier & OpenModels (DeepSeek, GLM, Moonshot, xAI)
     "deepseek-r1-distill-qwen-32b",
     "deepseek-v4-pro",
+    "deepseek-v4.1-flash-1017-maas",
+    "deepseek-v4.1-flash-maas",
+    "deepseek-v4.1-flash-1017",
     "glm-5.3-flash",
     "kimi-k3",
     "grok-4.6",
@@ -87,8 +90,37 @@ def run_cmd(cmd, check=True, capture=True):
     return res
 
 
-def evaluate_maas_model(flavor: str, project_id: str, region: str, dry_run: bool = False):
-    logger.info(f">>> Evaluating MaaS model: {flavor}")
+def _resolve_maas_target(flavor: str, region: str, spec: dict | None = None) -> tuple[str, str]:
+    resolved_spec = spec if spec is not None else load_catalog().get(flavor, {})
+    managed_model = resolved_spec.get("maasModelId") or resolved_spec.get("modelId")
+    if not managed_model:
+        if flavor.startswith("deepseek-v4.1-") and flavor.endswith("-maas"):
+            managed_model = f"deepseek-ai/{flavor}"
+        else:
+            managed_model = flavor
+
+    effective_region = resolved_spec.get("region")
+    if not effective_region:
+        if str(managed_model).startswith("deepseek-ai/") or (
+            flavor.startswith("deepseek-v4.1-") and flavor.endswith("-maas")
+        ):
+            effective_region = "global"
+        else:
+            effective_region = region
+    return str(managed_model), str(effective_region)
+
+
+def evaluate_maas_model(
+    flavor: str,
+    project_id: str,
+    region: str,
+    dry_run: bool = False,
+    spec: dict | None = None,
+):
+    managed_model, effective_region = _resolve_maas_target(flavor, region, spec=spec)
+    logger.info(
+        f">>> Evaluating MaaS model: {flavor} (managed_model={managed_model}, region={effective_region})"
+    )
     if dry_run:
         logger.info(f"[DRY RUN] Skipping evaluation for MaaS model {flavor}")
         return True
@@ -96,15 +128,13 @@ def evaluate_maas_model(flavor: str, project_id: str, region: str, dry_run: bool
     output_report = RESULTS_DIR / f"{flavor}_report.md"
     output_json = RESULTS_DIR / f"{flavor}_report.json"
     cmd = [
-        "uv",
-        "run",
-        "python3",
+        sys.executable,
         "-m",
         "scripts.eval_soc_agent",
         "--flavor",
         flavor,
         "--managed-model",
-        flavor,
+        managed_model,
         "--output-report",
         str(output_report),
         "--output-json",
@@ -114,7 +144,7 @@ def evaluate_maas_model(flavor: str, project_id: str, region: str, dry_run: bool
         "--project-id",
         project_id,
         "--region",
-        region,
+        effective_region,
         "--evalset",
         str(ROOT_DIR / "configs" / "evals" / "gen3" / "soc_tier1_interactive.json"),
     ]
@@ -123,6 +153,13 @@ def evaluate_maas_model(flavor: str, project_id: str, region: str, dry_run: bool
 
 
 def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, region: str, dry_run: bool = False):
+    if (
+        spec.get("type") == "maas"
+        or "vertex_maas" in spec.get("supportedTargets", [])
+        or flavor.endswith("-maas")
+    ):
+        return evaluate_maas_model(flavor, project_id, region, dry_run=dry_run, spec=spec)
+
     logger.info(f">>> Processing Dedicated Model Garden / OpenModel: {flavor}")
     if dry_run:
         logger.info(f"[DRY RUN] Skipping dedicated deployment & eval for {flavor}")
@@ -131,11 +168,18 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
     compute = spec.get("compute", {})
     machine_type = compute.get("machineType", "g2-standard-48")
     raw_accel = compute.get("acceleratorType", "NVIDIA_L4")
-    if "l4" in raw_accel.lower():
+    lower_accel = raw_accel.lower()
+    if "l4" in lower_accel:
         accelerator_type = "NVIDIA_L4"
-    elif "a100" in raw_accel.lower():
+    elif "a100" in lower_accel:
         accelerator_type = "NVIDIA_TESLA_A100"
-    elif "6000" in raw_accel.lower() or "rtx" in raw_accel.lower():
+    elif "h100" in lower_accel and "mega" in lower_accel:
+        accelerator_type = "NVIDIA_H100_MEGA_80GB"
+    elif "h200" in lower_accel:
+        accelerator_type = "NVIDIA_H200_141GB"
+    elif "b200" in lower_accel:
+        accelerator_type = "NVIDIA_B200"
+    elif "6000" in lower_accel or "rtx" in lower_accel:
         accelerator_type = "NVIDIA_RTX_PRO_6000"
     else:
         accelerator_type = raw_accel
@@ -145,6 +189,8 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
         "containerImage",
         "us-docker.pkg.dev/vertex-ai/vertex-vision-model-garden-dockers/pytorch-vllm-serve:20250312_0916_RC01",
     )
+    deployment_timeout = runtime.get("deploymentTimeoutSeconds")
+    shared_memory_mb = runtime.get("sharedMemorySizeMb")
     model_type = spec.get("type", "model_garden")
     open_model_id = spec.get("openModelId")
 
@@ -170,8 +216,19 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
                 "use_dedicated_endpoint": True,
                 "reservation_affinity_type": "NO_RESERVATION",
             }
-            if not str(open_model_id).startswith("publishers/"):
+            is_publisher_model = str(open_model_id).startswith("publishers/")
+            if not is_publisher_model:
                 deploy_kwargs["serving_container_image_uri"] = container_image
+
+            effective_timeout = deployment_timeout
+            if effective_timeout is None and is_publisher_model and "deepseek-v4.1" in flavor:
+                effective_timeout = 7200
+            if effective_timeout is not None:
+                timeout_seconds = int(effective_timeout)
+                deploy_kwargs["deploy_request_timeout"] = timeout_seconds
+                deploy_kwargs["serving_container_deployment_timeout"] = timeout_seconds
+            if shared_memory_mb is not None:
+                deploy_kwargs["serving_container_shared_memory_size_mb"] = int(shared_memory_mb)
 
             endpoint = model.deploy(**deploy_kwargs)
             endpoint_id = endpoint.resource_name.split("/")[-1]
@@ -201,9 +258,7 @@ def deploy_and_eval_dedicated_model(flavor: str, spec: dict, project_id: str, re
         output_report = RESULTS_DIR / f"{flavor}_report.md"
         output_json = RESULTS_DIR / f"{flavor}_report.json"
         eval_cmd = [
-            "uv",
-            "run",
-            "python3",
+            sys.executable,
             "-m",
             "scripts.eval_soc_agent",
             "--flavor",
@@ -329,8 +384,13 @@ def main():
         model_type = spec.get("type", "")
 
         try:
-            if "vertex_maas" in target or model_type == "maas" or "gemini" in flavor:
-                evaluate_maas_model(flavor, args.project_id, args.region, dry_run=args.dry_run)
+            if (
+                "vertex_maas" in target
+                or model_type == "maas"
+                or flavor.endswith("-maas")
+                or "gemini" in flavor
+            ):
+                evaluate_maas_model(flavor, args.project_id, args.region, dry_run=args.dry_run, spec=spec)
             else:
                 deploy_and_eval_dedicated_model(flavor, spec, args.project_id, args.region, dry_run=args.dry_run)
         except Exception as e:

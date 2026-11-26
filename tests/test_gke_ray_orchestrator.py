@@ -108,6 +108,7 @@ def test_catalog_completeness_and_shapes() -> None:
         "llama-3.2-3b-instruct",
         "llama-guard-3-8b",
         "llama-3.1-nemotron-70b-instruct",
+        "deepseek-v4.1-flash-1017",
     ]
     for flavor in required_flavors:
         assert flavor in ALL_GKE_RAY_TARGETS_MAP, f"Missing {flavor} in ALL_GKE_RAY_TARGETS"
@@ -116,11 +117,17 @@ def test_catalog_completeness_and_shapes() -> None:
     for target in ALL_GKE_RAY_TARGETS:
         assert target.flavor, "Target flavor must not be empty"
         assert target.hf_repo, f"Target {target.flavor} must have a non-empty hf_repo"
-        assert target.gpu_count in [1, 2, 4], f"Target {target.flavor} has invalid gpu_count: {target.gpu_count}"
-        assert target.gpu_type in ["nvidia-l4", "nvidia-tesla-a100", "nvidia-a100-80gb", "nvidia-rtx-pro-6000"], (
+        assert target.gpu_count in [1, 2, 4, 8], f"Target {target.flavor} has invalid gpu_count: {target.gpu_count}"
+        assert target.gpu_type in [
+            "nvidia-l4",
+            "nvidia-tesla-a100",
+            "nvidia-a100-80gb",
+            "nvidia-rtx-pro-6000",
+            "nvidia-h100-mega-80gb",
+        ], (
             f"Target {target.flavor} has unexpected gpu_type: {target.gpu_type}"
         )
-        assert target.tensor_parallel_size in [1, 2, 4], (
+        assert target.tensor_parallel_size in [1, 2, 4, 8], (
             f"Target {target.flavor} has unexpected tp size: {target.tensor_parallel_size}"
         )
 
@@ -200,6 +207,41 @@ def test_render_ray_cluster_manifest_2x_a100() -> None:
     assert worker_container["resources"]["limits"]["cpu"] == "16"
     assert worker_container["resources"]["limits"]["memory"] == "64Gi"
     assert "--tensor-parallel-size 2" in " ".join(worker_container["command"])
+    dshm_vol = next(v for v in worker_spec["volumes"] if v["name"] == "dshm")
+    assert dshm_vol["emptyDir"]["sizeLimit"] == "32Gi"
+
+
+def test_render_ray_cluster_manifest_8x_h100_deepseek_v41_shm_safeguard() -> None:
+    """Verify RayCluster manifest rendering and 40Gi /dev/shm safeguard for DeepSeek V4.1 Flash."""
+    target = ALL_GKE_RAY_TARGETS_MAP["deepseek-v4.1-flash-1017"]
+    assert target.get_base_flavor() == "deepseek-v4.1-flash-1017"
+    manifest = render_ray_cluster_manifest(
+        target=target,
+        namespace="gemma-benchmarks",
+        queue_name="llm-sweep-queue",
+    )
+
+    assert manifest["metadata"]["name"] == "ray-deepseek-v4.1-flash-1017"
+    worker_group = manifest["spec"]["workerGroupSpecs"][0]
+    worker_spec = worker_group["template"]["spec"]
+    assert worker_spec["nodeSelector"]["cloud.google.com/gke-accelerator"] == "nvidia-h100-mega-80gb"
+
+    worker_container = worker_spec["containers"][0]
+    assert worker_container["resources"]["limits"]["nvidia.com/gpu"] == 8
+    assert worker_container["resources"]["requests"]["nvidia.com/gpu"] == 8
+    assert worker_container["resources"]["limits"]["cpu"] == "192"
+    assert worker_container["resources"]["limits"]["memory"] == "1536Gi"
+    cmd_str = " ".join(worker_container["command"])
+    assert "--tensor-parallel-size 8" in cmd_str
+    assert "--engram-config.cpu_offload=True" in cmd_str
+    assert "--kv-cache-dtype=fp8" in cmd_str
+    assert "--enable-expert-parallel" in cmd_str
+    assert "--tool-call-parser=deepseek_v41" in cmd_str
+    assert "--reasoning-parser=deepseek_v41" in cmd_str
+
+    dshm_vol = next(v for v in worker_spec["volumes"] if v["name"] == "dshm")
+    assert dshm_vol["emptyDir"] == {"medium": "Memory", "sizeLimit": "40Gi"}
+    assert any(m["mountPath"] == "/dev/shm" and m["name"] == "dshm" for m in worker_container["volumeMounts"])
 
 
 def test_render_eval_job_manifest() -> None:

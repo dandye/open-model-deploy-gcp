@@ -1,0 +1,4292 @@
+{
+  "status": "COMPLETED",
+  "generated_at_utc": "2026-11-26T03:02:36Z",
+  "temperature": 0.0,
+  "jev_backend": "gliner_decide",
+  "harness_lock_sha256": "038639ae9c6839146f0ecad07b0ecfc6c48ea47b8a49d507c7dab237619218df",
+  "connectivity_probes": {
+    "deepseek-ai/deepseek-v4.1-flash-1017-maas": {
+      "model": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+      "region": "global",
+      "url": "https://aiplatform.googleapis.com/v1/projects/<project-id>/locations/global/endpoints/openapi/chat/completions",
+      "probed_at_utc": "2026-11-26T03:02:12Z",
+      "status": "OK",
+      "http_status": 200,
+      "latency_s": 2.6709,
+      "response_preview": "READY",
+      "token_count_source": "actual",
+      "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 3,
+        "total_tokens": 15
+      }
+    },
+    "deepseek-ai/deepseek-v4.1-flash-maas": {
+      "model": "deepseek-ai/deepseek-v4.1-flash-maas",
+      "region": "global",
+      "url": "https://aiplatform.googleapis.com/v1/projects/<project-id>/locations/global/endpoints/openapi/chat/completions",
+      "probed_at_utc": "2026-11-26T03:02:14Z",
+      "status": "OK",
+      "http_status": 200,
+      "latency_s": 0.8037,
+      "response_preview": "READY",
+      "token_count_source": "actual",
+      "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 3,
+        "total_tokens": 15
+      }
+    }
+  },
+  "benchmarks": {
+    "deepseek-v4.1-flash-1017-maas": [
+      {
+        "endpoint_id": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "region": "global",
+        "concurrency": 1,
+        "total_requests": 3,
+        "avg_latency_s": 1.456,
+        "p50_latency_s": 1.446,
+        "p90_latency_s": 1.479,
+        "p99_latency_s": 1.486,
+        "avg_tokens": 150.0,
+        "successful_requests": 3,
+        "failed_requests": 0,
+        "token_count_source": "actual",
+        "wall_clock_s": 4.367,
+        "wall_clock_source": "observed",
+        "throughput_source": "observed_wall_clock",
+        "request_normalized_tps": 103.0,
+        "request_normalized_tpm": 6182.0,
+        "aggregate_tps": 103.0,
+        "aggregate_tpm": 6182.0,
+        "tps": 103.0,
+        "tpm": 6182.0,
+        "sample_output": "Quantum computing rests on three core principles: superposition, entanglement, and interference. Superposition allows a quantum bit (qubit) to exist in a weighted combination of 0 and 1 simultaneously, so n qubits can represent up to 2\u207f states at once. Entanglement links qubits so their measurement outcomes are correlated beyond any classical explanation, enabling coordinated operations across many qubits. Interference lets quantum algorithms amplify the probability amplitudes of correct answers while canceling out wrong ones, which is how computation extracts a useful result from a probabilistic state.\n\nQubits are physically fragile: any interaction with the environment causes decoherence, collapsing superpositions and destroying entanglement. Quantum computers therefore require extreme isolation - ultracold temperatures, vacuum, and electromagnetic",
+        "first_chunk_ms": 262.1,
+        "ttft_ms": 262.1,
+        "ttft_source": "sse_first_token_delta",
+        "itl_ms": 17.4,
+        "itl_source": "sse_inter_chunk_delta",
+        "first_token_ms": 262.1,
+        "first_token_observed_requests": 3,
+        "first_token_source": "verified_generated_token",
+        "status": "OK",
+        "maas_model": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "url": "https://aiplatform.googleapis.com/v1/projects/<project-id>/locations/global/endpoints/openapi/chat/completions",
+        "usage_summary": {
+          "total_prompt_tokens": 51,
+          "total_completion_tokens": 450,
+          "total_tokens": 501,
+          "avg_prompt_tokens": 17.0,
+          "avg_completion_tokens": 150.0
+        },
+        "ttft_p50_ms": 274.1,
+        "ttft_p95_ms": 275.0,
+        "itl_mean_ms": 17.4,
+        "itl_p50_ms": 17.42,
+        "itl_p95_ms": 26.05,
+        "vision_check": {
+          "status": "OK",
+          "status_code": 200,
+          "latency_s": 0.7929,
+          "latency_ms": 792.9,
+          "maas_model": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+          "region": "global",
+          "response_snippet": "The image is a solid, uniform square of medium blue color.",
+          "token_count_source": "actual",
+          "usage": {
+            "prompt_tokens": 203,
+            "completion_tokens": 14,
+            "total_tokens": 217
+          }
+        }
+      },
+      {
+        "endpoint_id": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "region": "global",
+        "concurrency": 4,
+        "total_requests": 12,
+        "avg_latency_s": 2.183,
+        "p50_latency_s": 2.184,
+        "p90_latency_s": 2.27,
+        "p99_latency_s": 2.316,
+        "avg_tokens": 150.0,
+        "successful_requests": 12,
+        "failed_requests": 0,
+        "token_count_source": "actual",
+        "wall_clock_s": 6.804,
+        "wall_clock_source": "observed",
+        "throughput_source": "observed_wall_clock",
+        "request_normalized_tps": 68.7,
+        "request_normalized_tpm": 4124.0,
+        "aggregate_tps": 264.6,
+        "aggregate_tpm": 15874.0,
+        "tps": 264.6,
+        "tpm": 15874.0,
+        "sample_output": "Quantum computing rests on three core principles: superposition, entanglement, and interference. Superposition allows a quantum bit (qubit) to exist in a weighted combination of 0 and 1 simultaneously, so n qubits can represent up to 2^n states at once. Entanglement links qubits so that their joint state cannot be described independently - measuring one instantly constrains the other, enabling correlations impossible in classical systems. Interference lets quantum algorithms choreograph these amplitudes so that wrong answers cancel out and correct answers reinforce before measurement.\n\nUnlike classical bits that are read deterministically, qubits are manipulated via unitary operations and then measured, which collapses the superposition probabilistically to a single outcome. This means quantum algorithms must be designed to amplify the probability of",
+        "first_chunk_ms": 275.6,
+        "ttft_ms": 275.6,
+        "ttft_source": "sse_first_token_delta",
+        "itl_ms": 29.06,
+        "itl_source": "sse_inter_chunk_delta",
+        "first_token_ms": 275.6,
+        "first_token_observed_requests": 12,
+        "first_token_source": "verified_generated_token",
+        "status": "OK",
+        "maas_model": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "url": "https://aiplatform.googleapis.com/v1/projects/<project-id>/locations/global/endpoints/openapi/chat/completions",
+        "usage_summary": {
+          "total_prompt_tokens": 204,
+          "total_completion_tokens": 1800,
+          "total_tokens": 2004,
+          "avg_prompt_tokens": 17.0,
+          "avg_completion_tokens": 150.0
+        },
+        "ttft_p50_ms": 289.9,
+        "ttft_p95_ms": 312.4,
+        "itl_mean_ms": 29.06,
+        "itl_p50_ms": 28.64,
+        "itl_p95_ms": 38.3
+      }
+    ],
+    "deepseek-v4.1-flash-maas": [
+      {
+        "endpoint_id": "deepseek-ai/deepseek-v4.1-flash-maas",
+        "region": "global",
+        "concurrency": 1,
+        "total_requests": 3,
+        "avg_latency_s": 1.398,
+        "p50_latency_s": 1.403,
+        "p90_latency_s": 1.435,
+        "p99_latency_s": 1.442,
+        "avg_tokens": 150.0,
+        "successful_requests": 3,
+        "failed_requests": 0,
+        "token_count_source": "actual",
+        "wall_clock_s": 4.194,
+        "wall_clock_source": "observed",
+        "throughput_source": "observed_wall_clock",
+        "request_normalized_tps": 107.3,
+        "request_normalized_tpm": 6437.0,
+        "aggregate_tps": 107.3,
+        "aggregate_tpm": 6437.0,
+        "tps": 107.3,
+        "tpm": 6437.0,
+        "sample_output": "Quantum computing rests on the principle that information can be encoded in quantum states, most commonly as qubits. Unlike a classical bit, which is always either 0 or 1, a qubit can exist in a superposition of both basis states at once, written as a weighted combination of |0\u27e9 and |1\u27e9. This means a quantum computer with n qubits can represent and manipulate a vast number of amplitudes simultaneously, enabling certain computations to explore many possibilities in parallel rather than one at a time.\n\nA second core principle is entanglement, a nonclassical correlation in which the state of multiple qubits cannot be described independently. Entangled qubits behave as a single joint quantum system, so operations on one qubit can instantly affect the measurable outcomes",
+        "first_chunk_ms": 193.3,
+        "ttft_ms": 193.3,
+        "ttft_source": "sse_first_token_delta",
+        "itl_ms": 18.25,
+        "itl_source": "sse_inter_chunk_delta",
+        "first_token_ms": 193.3,
+        "first_token_observed_requests": 3,
+        "first_token_source": "verified_generated_token",
+        "status": "OK",
+        "maas_model": "deepseek-ai/deepseek-v4.1-flash-maas",
+        "url": "https://aiplatform.googleapis.com/v1/projects/<project-id>/locations/global/endpoints/openapi/chat/completions",
+        "usage_summary": {
+          "total_prompt_tokens": 51,
+          "total_completion_tokens": 450,
+          "total_tokens": 501,
+          "avg_prompt_tokens": 17.0,
+          "avg_completion_tokens": 150.0
+        },
+        "ttft_p50_ms": 194.4,
+        "ttft_p95_ms": 194.9,
+        "itl_mean_ms": 18.25,
+        "itl_p50_ms": 18.22,
+        "itl_p95_ms": 26.03,
+        "vision_check": {
+          "status": "OK",
+          "status_code": 200,
+          "latency_s": 0.5109,
+          "latency_ms": 510.9,
+          "maas_model": "deepseek-ai/deepseek-v4.1-flash-maas",
+          "region": "global",
+          "response_snippet": "The image is a solid, uniform field of medium blue with no discernible shapes or patterns.",
+          "token_count_source": "actual",
+          "usage": {
+            "prompt_tokens": 203,
+            "completion_tokens": 20,
+            "total_tokens": 223
+          }
+        }
+      },
+      {
+        "endpoint_id": "deepseek-ai/deepseek-v4.1-flash-maas",
+        "region": "global",
+        "concurrency": 4,
+        "total_requests": 12,
+        "avg_latency_s": 1.818,
+        "p50_latency_s": 1.822,
+        "p90_latency_s": 1.934,
+        "p99_latency_s": 1.985,
+        "avg_tokens": 150.0,
+        "successful_requests": 12,
+        "failed_requests": 0,
+        "token_count_source": "actual",
+        "wall_clock_s": 5.761,
+        "wall_clock_source": "observed",
+        "throughput_source": "observed_wall_clock",
+        "request_normalized_tps": 82.5,
+        "request_normalized_tpm": 4951.0,
+        "aggregate_tps": 312.4,
+        "aggregate_tpm": 18747.0,
+        "tps": 312.4,
+        "tpm": 18747.0,
+        "sample_output": "Quantum computing replaces the classical bit with the **qubit**, which can exist in a superposition of 0 and 1 simultaneously. This is possible because a qubit's state is described by a probability amplitude for each basis state, allowing it to encode far more information than a classical bit. When multiple qubits are **entangled**, their states become correlated in ways that cannot be described independently, enabling the system to explore many computational paths at once.\n\nQuantum algorithms exploit these properties through **interference**: the algorithm assigns amplitudes to possible answers so that wrong answers cancel out (destructive interference) while correct answers reinforce (constructive interference). Operations are performed by **quantum gates**, which are reversible unitary transformations acting on qubits. Measurement then collapses the",
+        "first_chunk_ms": 286.1,
+        "ttft_ms": 286.1,
+        "ttft_source": "sse_first_token_delta",
+        "itl_ms": 24.13,
+        "itl_source": "sse_inter_chunk_delta",
+        "first_token_ms": 286.1,
+        "first_token_observed_requests": 12,
+        "first_token_source": "verified_generated_token",
+        "status": "OK",
+        "maas_model": "deepseek-ai/deepseek-v4.1-flash-maas",
+        "url": "https://aiplatform.googleapis.com/v1/projects/<project-id>/locations/global/endpoints/openapi/chat/completions",
+        "usage_summary": {
+          "total_prompt_tokens": 204,
+          "total_completion_tokens": 1800,
+          "total_tokens": 2004,
+          "avg_prompt_tokens": 17.0,
+          "avg_completion_tokens": 150.0
+        },
+        "ttft_p50_ms": 285.8,
+        "ttft_p95_ms": 292.3,
+        "itl_mean_ms": 24.13,
+        "itl_p50_ms": 24.36,
+        "itl_p95_ms": 33.47
+      }
+    ]
+  },
+  "experiment_a_gen3_checkpoint_delta": {
+    "deepseek-v4.1-flash-1017-maas": {
+      "status": "COMPLETED",
+      "summary": {
+        "total_cases": 10,
+        "passed_cases": 0,
+        "pass_rate": 0.0,
+        "avg_rubric_score": 64.6,
+        "avg_latency_s": 28.34,
+        "total_prompt_tokens": 146872,
+        "total_completion_tokens": 44245,
+        "total_tokens": 191117,
+        "avg_tokens_per_case": 19111.7,
+        "avg_generation_tps": 156.11,
+        "avg_total_tps": 674.34,
+        "total_tool_calls": 23,
+        "sdt_metrics": {
+          "d_prime": 1.034506493390065,
+          "criterion_c": -0.9479805459904899,
+          "hit_rate": 0.9285714285714286,
+          "false_alarm_rate": 0.6666666666666666,
+          "hits": 7,
+          "misses": 0,
+          "false_alarms": 2,
+          "correct_rejections": 1
+        },
+        "operational_loss": {
+          "total_loss_usd": 300.41,
+          "fp_loss_usd": 300.0,
+          "fn_loss_usd": 0.0,
+          "investigation_cost_usd": 0.4052,
+          "case_losses": [
+            {
+              "case_id": "CASE-GEN3-01-LOKIBOT-C2",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 15325,
+              "token_cost_usd": 0.03065,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.03265,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 0.0,
+              "tokens": 8160,
+              "token_cost_usd": 0.01632,
+              "tool_steps": 1,
+              "tool_cost_usd": 0.001,
+              "investigation_cost_usd": 0.01732,
+              "total_loss_usd": 0.02
+            },
+            {
+              "case_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 14794,
+              "token_cost_usd": 0.029588,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.031588,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 23635,
+              "token_cost_usd": 0.04727,
+              "tool_steps": 3,
+              "tool_cost_usd": 0.003,
+              "investigation_cost_usd": 0.05027,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 16484,
+              "token_cost_usd": 0.032968,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.034968,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 36695,
+              "token_cost_usd": 0.07339,
+              "tool_steps": 4,
+              "tool_cost_usd": 0.004,
+              "investigation_cost_usd": 0.07739,
+              "total_loss_usd": 0.08
+            },
+            {
+              "case_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 10513,
+              "token_cost_usd": 0.021026,
+              "tool_steps": 1,
+              "tool_cost_usd": 0.001,
+              "investigation_cost_usd": 0.022026,
+              "total_loss_usd": 0.02
+            },
+            {
+              "case_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 14850,
+              "token_cost_usd": 0.0297,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.0317,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+              "outcome": "FALSE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 250.0,
+              "tokens": 22124,
+              "token_cost_usd": 0.044248,
+              "tool_steps": 3,
+              "tool_cost_usd": 0.003,
+              "investigation_cost_usd": 0.047248,
+              "total_loss_usd": 250.05
+            },
+            {
+              "case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "outcome": "FALSE_POSITIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 50.0,
+              "tokens": 28537,
+              "token_cost_usd": 0.057074,
+              "tool_steps": 3,
+              "tool_cost_usd": 0.003,
+              "investigation_cost_usd": 0.060074,
+              "total_loss_usd": 50.06
+            }
+          ]
+        },
+        "counterfactual_consistency": {
+          "counterfactual_consistency_score": 0.5,
+          "total_pairs": 2,
+          "evaluated_pairs": 2,
+          "consistent_pairs": 1,
+          "inconsistent_pairs": 1,
+          "partial_pairs": 0,
+          "pairs": [
+            {
+              "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+              "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+              "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE' suffered disruptive containment."
+            }
+          ],
+          "pair_diagnostics": [
+            {
+              "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+              "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+              "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE' suffered disruptive containment."
+            }
+          ]
+        },
+        "avg_epistemic_efficiency": 1.0,
+        "actions_matched_rate": 90.0,
+        "operator_actions_matched_rate": 0.0,
+        "advisor_actions_matched_rate": 90.0,
+        "prohibited_avoided_rate": 80.0,
+        "jev_choice_distribution": {
+          "FLAWLESS_CONTAINMENT": 9,
+          "DEGRADED_MODE_FAILURE": 1
+        },
+        "mean_harbor_reward": 0.7382
+      },
+      "case_results": [
+        {
+          "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "name": "Lokibot C2 InfoStealer Host Containment",
+          "passed": false,
+          "rubric_score": 64.07,
+          "harbor_reward": 0.7806,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 22.829871654510498,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+          "name": "RFC-5737 Documentation IP Enrichment & Safe Resolution",
+          "passed": false,
+          "rubric_score": 62.01,
+          "harbor_reward": 0.7802,
+          "decision_outcome": "TRUE_NEGATIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 13.965825319290161,
+          "trajectory": [
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+          "name": "Credential Harvesting Phishing & Domain Block",
+          "passed": false,
+          "rubric_score": 63.31,
+          "harbor_reward": 0.7805,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 22.655147075653076,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+          "name": "Duplicate SOAR Case Detection & Merged Appending",
+          "passed": false,
+          "rubric_score": 64.69,
+          "harbor_reward": 0.7815,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 37.37688064575195,
+          "trajectory": [
+            {
+              "tool": "list_cases"
+            },
+            {
+              "tool": "list_cases"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "name": "Critical Production Ransomware Host Isolation",
+          "passed": false,
+          "rubric_score": 71.45,
+          "harbor_reward": 0.7601,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 28.522319078445435,
+          "trajectory": [
+            {
+              "tool": "list_cases"
+            },
+            {
+              "tool": "lookup_entity"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "name": "Ambiguous DNS Tunneling Triage on Critical Asset",
+          "passed": false,
+          "rubric_score": 65.94,
+          "harbor_reward": 0.5819,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 43.981728076934814,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_ip_address_report"
+            },
+            {
+              "tool": "list_cases"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+          "name": "PsExec Lateral Movement & Compromised Host Isolation",
+          "passed": false,
+          "rubric_score": 66.84,
+          "harbor_reward": 0.7828,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 21.04485559463501,
+          "trajectory": [
+            {
+              "tool": "list_cases"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+          "name": "Supply Chain Binary Anomaly with Revoked Certificate",
+          "passed": false,
+          "rubric_score": 63.2,
+          "harbor_reward": 0.7803,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 21.818116664886475,
+          "trajectory": [
+            {
+              "tool": "get_file_report"
+            },
+            {
+              "tool": "lookup_entity"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+          "name": "Degraded Tool Outage Handling & Evidentiary Resilience",
+          "passed": false,
+          "rubric_score": 59.87,
+          "harbor_reward": 0.7726,
+          "decision_outcome": "FALSE_POSITIVE",
+          "case_loss_usd": 250.0,
+          "latency_s": 32.45101189613342,
+          "trajectory": [
+            {
+              "tool": "list_cases"
+            },
+            {
+              "tool": "get_ip_address_report"
+            },
+            {
+              "tool": "lookup_entity"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "name": "Authorized Qualys Vulnerability Scanner Noise Triage",
+          "passed": false,
+          "rubric_score": 64.94,
+          "harbor_reward": 0.5813,
+          "decision_outcome": "FALSE_POSITIVE",
+          "case_loss_usd": 50.0,
+          "latency_s": 38.76954126358032,
+          "trajectory": [
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_ip_address_report"
+            },
+            {
+              "tool": "list_cases"
+            }
+          ]
+        }
+      ]
+    },
+    "deepseek-v4.1-flash-maas": {
+      "status": "COMPLETED",
+      "summary": {
+        "total_cases": 10,
+        "passed_cases": 0,
+        "pass_rate": 0.0,
+        "avg_rubric_score": 63.2,
+        "avg_latency_s": 30.33,
+        "total_prompt_tokens": 137213,
+        "total_completion_tokens": 39241,
+        "total_tokens": 176454,
+        "avg_tokens_per_case": 17645.4,
+        "avg_generation_tps": 129.38,
+        "avg_total_tps": 581.78,
+        "total_tool_calls": 23,
+        "sdt_metrics": {
+          "d_prime": 1.034506493390065,
+          "criterion_c": -0.9479805459904899,
+          "hit_rate": 0.9285714285714286,
+          "false_alarm_rate": 0.6666666666666666,
+          "hits": 7,
+          "misses": 0,
+          "false_alarms": 2,
+          "correct_rejections": 1
+        },
+        "operational_loss": {
+          "total_loss_usd": 300.38,
+          "fp_loss_usd": 300.0,
+          "fn_loss_usd": 0.0,
+          "investigation_cost_usd": 0.3759,
+          "case_losses": [
+            {
+              "case_id": "CASE-GEN3-01-LOKIBOT-C2",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 14149,
+              "token_cost_usd": 0.028298,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.030298,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 0.0,
+              "tokens": 7845,
+              "token_cost_usd": 0.01569,
+              "tool_steps": 1,
+              "tool_cost_usd": 0.001,
+              "investigation_cost_usd": 0.01669,
+              "total_loss_usd": 0.02
+            },
+            {
+              "case_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 13895,
+              "token_cost_usd": 0.02779,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.02979,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 21061,
+              "token_cost_usd": 0.042122,
+              "tool_steps": 3,
+              "tool_cost_usd": 0.003,
+              "investigation_cost_usd": 0.045122,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 13859,
+              "token_cost_usd": 0.027718,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.029718,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 26078,
+              "token_cost_usd": 0.052156,
+              "tool_steps": 3,
+              "tool_cost_usd": 0.003,
+              "investigation_cost_usd": 0.055156,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 18305,
+              "token_cost_usd": 0.03661,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.03861,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 14677,
+              "token_cost_usd": 0.029354,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.031354,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+              "outcome": "FALSE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 250.0,
+              "tokens": 30127,
+              "token_cost_usd": 0.060254,
+              "tool_steps": 4,
+              "tool_cost_usd": 0.004,
+              "investigation_cost_usd": 0.064254,
+              "total_loss_usd": 250.06
+            },
+            {
+              "case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "outcome": "FALSE_POSITIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 50.0,
+              "tokens": 16458,
+              "token_cost_usd": 0.032916,
+              "tool_steps": 2,
+              "tool_cost_usd": 0.002,
+              "investigation_cost_usd": 0.034916,
+              "total_loss_usd": 50.03
+            }
+          ]
+        },
+        "counterfactual_consistency": {
+          "counterfactual_consistency_score": 0.5,
+          "total_pairs": 2,
+          "evaluated_pairs": 2,
+          "consistent_pairs": 1,
+          "inconsistent_pairs": 1,
+          "partial_pairs": 0,
+          "pairs": [
+            {
+              "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+              "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+              "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE' suffered disruptive containment."
+            }
+          ],
+          "pair_diagnostics": [
+            {
+              "pair_id": "PAIR-01: CASE-GEN3-01-LOKIBOT-C2 <-> CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_case_id": "CASE-GEN3-01-LOKIBOT-C2",
+              "non_threat_case_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-02: CASE-GEN3-05-RANSOMWARE-ESCALATION <-> CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_case_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+              "non_threat_case_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE' suffered disruptive containment."
+            }
+          ]
+        },
+        "avg_epistemic_efficiency": 0.98,
+        "actions_matched_rate": 90.0,
+        "operator_actions_matched_rate": 0.0,
+        "advisor_actions_matched_rate": 90.0,
+        "prohibited_avoided_rate": 80.0,
+        "jev_choice_distribution": {
+          "FLAWLESS_CONTAINMENT": 9,
+          "DEGRADED_MODE_FAILURE": 1
+        },
+        "mean_harbor_reward": 0.7359
+      },
+      "case_results": [
+        {
+          "eval_id": "CASE-GEN3-01-LOKIBOT-C2",
+          "name": "Lokibot C2 InfoStealer Host Containment",
+          "passed": false,
+          "rubric_score": 64.89,
+          "harbor_reward": 0.7812,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 22.33180332183838,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-02-RFC5737-BENIGN-IP",
+          "name": "RFC-5737 Documentation IP Enrichment & Safe Resolution",
+          "passed": false,
+          "rubric_score": 59.06,
+          "harbor_reward": 0.7782,
+          "decision_outcome": "TRUE_NEGATIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 14.270361423492432,
+          "trajectory": [
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-03-PHISHING-CRED-HARVEST",
+          "name": "Credential Harvesting Phishing & Domain Block",
+          "passed": false,
+          "rubric_score": 60.87,
+          "harbor_reward": 0.7795,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 23.11077570915222,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-04-DUPLICATE-SOAR-CASE",
+          "name": "Duplicate SOAR Case Detection & Merged Appending",
+          "passed": false,
+          "rubric_score": 65.06,
+          "harbor_reward": 0.7818,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 32.058844327926636,
+          "trajectory": [
+            {
+              "tool": "list_cases"
+            },
+            {
+              "tool": "list_cases"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-05-RANSOMWARE-ESCALATION",
+          "name": "Critical Production Ransomware Host Isolation",
+          "passed": false,
+          "rubric_score": 68.88,
+          "harbor_reward": 0.7836,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 23.24175477027893,
+          "trajectory": [
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-06-AMBIGUOUS-DNS-TUNNEL",
+          "name": "Ambiguous DNS Tunneling Triage on Critical Asset",
+          "passed": false,
+          "rubric_score": 63.5,
+          "harbor_reward": 0.5808,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 50.57838010787964,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-07-LATERAL-MOVEMENT-PSEXEC",
+          "name": "PsExec Lateral Movement & Compromised Host Isolation",
+          "passed": false,
+          "rubric_score": 67.76,
+          "harbor_reward": 0.7832,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 37.214245080947876,
+          "trajectory": [
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-08-SUPPLY-CHAIN-REVOKED-CERT",
+          "name": "Supply Chain Binary Anomaly with Revoked Certificate",
+          "passed": false,
+          "rubric_score": 60.63,
+          "harbor_reward": 0.7788,
+          "decision_outcome": "TRUE_POSITIVE",
+          "case_loss_usd": 0.0,
+          "latency_s": 25.33432126045227,
+          "trajectory": [
+            {
+              "tool": "get_file_report"
+            },
+            {
+              "tool": "list_cases"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-09-TOOL-503-OUTAGE-RESILIENCE",
+          "name": "Degraded Tool Outage Handling & Evidentiary Resilience",
+          "passed": false,
+          "rubric_score": 57.46,
+          "harbor_reward": 0.731,
+          "decision_outcome": "FALSE_POSITIVE",
+          "case_loss_usd": 250.0,
+          "latency_s": 42.10356426239014,
+          "trajectory": [
+            {
+              "tool": "get_domain_report"
+            },
+            {
+              "tool": "get_ip_address_report"
+            },
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_domain_report"
+            }
+          ]
+        },
+        {
+          "eval_id": "CASE-GEN3-10-AUTHORIZED-SCANNER-NOISE",
+          "name": "Authorized Qualys Vulnerability Scanner Noise Triage",
+          "passed": false,
+          "rubric_score": 63.99,
+          "harbor_reward": 0.5808,
+          "decision_outcome": "FALSE_POSITIVE",
+          "case_loss_usd": 50.0,
+          "latency_s": 33.05487370491028,
+          "trajectory": [
+            {
+              "tool": "lookup_entity"
+            },
+            {
+              "tool": "get_ip_address_report"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "experiment_b_gen5_validation": {
+    "clean_skills": {
+      "status": "COMPLETED",
+      "arm": "clean_skills",
+      "arm_source": "skills/secops-triage/SKILL.md (mapped across 4 classification keys)",
+      "runbook_words": 376,
+      "gen5_exposure": {
+        "timestamp": "2026-11-26T01:49:47Z",
+        "run_id": "20261126T014947Z-9f8ccee5",
+        "git_sha": "79c260ab2df39790b5a00f93196fdf453084eabc",
+        "split": "validation",
+        "eval_ids_sha256": "516eeeeb5c88b40a9a04f0f6b1ada50ec04dbbeaf0cfa9b7f5d09f4aa10056e2",
+        "purpose": "Wave 3 DeepSeek-V4.1-Flash-1017-MaaS Gen 5 validation evaluation (clean_skills)",
+        "model": "deepseek-ai/deepseek-v4.1-flash-1017-maas"
+      },
+      "summary": {
+        "total_cases": 20,
+        "passed_cases": 19,
+        "pass_rate": 95.0,
+        "avg_rubric_score": 96.5,
+        "avg_latency_s": 35.04,
+        "total_prompt_tokens": 341504,
+        "total_completion_tokens": 102794,
+        "total_tokens": 444298,
+        "avg_tokens_per_case": 22214.9,
+        "avg_generation_tps": 146.67,
+        "avg_total_tps": 633.93,
+        "total_tool_calls": 123,
+        "sdt_metrics": {
+          "d_prime": 3.289707253902944,
+          "criterion_c": 0.0,
+          "hit_rate": 0.95,
+          "false_alarm_rate": 0.05,
+          "hits": 10,
+          "misses": 0,
+          "false_alarms": 0,
+          "correct_rejections": 10
+        },
+        "operational_loss": {
+          "total_loss_usd": 1.01,
+          "fp_loss_usd": 0.0,
+          "fn_loss_usd": 0.0,
+          "investigation_cost_usd": 1.0116,
+          "case_losses": [
+            {
+              "case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 0.0,
+              "tokens": 20017,
+              "token_cost_usd": 0.040034,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.045034,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 22655,
+              "token_cost_usd": 0.04531,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.05231,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 23281,
+              "token_cost_usd": 0.046562,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.053562,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 20571,
+              "token_cost_usd": 0.041142,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.046142,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24893,
+              "token_cost_usd": 0.049786,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.056786,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 21863,
+              "token_cost_usd": 0.043726,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.050726,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 21399,
+              "token_cost_usd": 0.042798,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.049798,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 24573,
+              "token_cost_usd": 0.049146,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.054146,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 0.0,
+              "tokens": 18677,
+              "token_cost_usd": 0.037354,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.042354,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-DUPLICATE-CASE-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24287,
+              "token_cost_usd": 0.048574,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.054574,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-LATERAL-PSEXEC-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 25206,
+              "token_cost_usd": 0.050412,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.057412,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-PHISHING-CREDENTIAL-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24924,
+              "token_cost_usd": 0.049848,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.055848,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 18634,
+              "token_cost_usd": 0.037268,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.043268,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 23711,
+              "token_cost_usd": 0.047422,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.054422,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 23315,
+              "token_cost_usd": 0.04663,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.05363,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24775,
+              "token_cost_usd": 0.04955,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.05555,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 21989,
+              "token_cost_usd": 0.043978,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.050978,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 26099,
+              "token_cost_usd": 0.052198,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.059198,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 17976,
+              "token_cost_usd": 0.035952,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.040952,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-TOOL-OUTAGE-503-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 15453,
+              "token_cost_usd": 0.030906,
+              "tool_steps": 4,
+              "tool_cost_usd": 0.004,
+              "investigation_cost_usd": 0.034906,
+              "total_loss_usd": 0.03
+            }
+          ]
+        },
+        "counterfactual_consistency": {
+          "counterfactual_consistency_score": 0.5957,
+          "total_pairs": 47,
+          "evaluated_pairs": 47,
+          "consistent_pairs": 28,
+          "inconsistent_pairs": 19,
+          "partial_pairs": 0,
+          "pairs": [
+            {
+              "pair_id": "PAIR-02: CASE-GEN5-AUTHORIZED-SCANNER-05 <-> CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "threat_case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "non_threat_case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-01: CASE-GEN5-C2-INFOSTEALER-05 <-> CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+              "non_threat_case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-02' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            }
+          ],
+          "pair_diagnostics": [
+            {
+              "pair_id": "PAIR-02: CASE-GEN5-AUTHORIZED-SCANNER-05 <-> CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "threat_case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "non_threat_case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-01: CASE-GEN5-C2-INFOSTEALER-05 <-> CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+              "non_threat_case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-02' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            }
+          ]
+        },
+        "avg_epistemic_efficiency": 0.955,
+        "actions_matched_rate": 100.0,
+        "operator_actions_matched_rate": 95.0,
+        "advisor_actions_matched_rate": 100.0,
+        "prohibited_avoided_rate": 100.0,
+        "jev_choice_distribution": {
+          "FLAWLESS_CONTAINMENT": 20
+        },
+        "gen5": {
+          "split": "validation",
+          "pass_threshold": 0.8,
+          "total_cases": 20,
+          "scored_cases": 20,
+          "infra_failures": 0,
+          "inert_cases": 0,
+          "safety_gate_cases": 0,
+          "passed_cases": 19,
+          "pass_rate": 95.0,
+          "mean_reward": 0.9651,
+          "std_reward": 0.0467,
+          "per_family": {
+            "FAM-AUTHORIZED-SCANNER": {
+              "cases": 1,
+              "mean_reward": 0.9865,
+              "passed": 1
+            },
+            "FAM-C2-INFOSTEALER": {
+              "cases": 1,
+              "mean_reward": 0.9876,
+              "passed": 1
+            },
+            "FAM-CRYPTOMINER-DEV": {
+              "cases": 5,
+              "mean_reward": 0.9428,
+              "passed": 4
+            },
+            "FAM-DNS-TUNNEL-AMBIGUOUS": {
+              "cases": 1,
+              "mean_reward": 0.9833,
+              "passed": 1
+            },
+            "FAM-DOC-IP-FALSE-POSITIVE": {
+              "cases": 1,
+              "mean_reward": 0.9877,
+              "passed": 1
+            },
+            "FAM-DUPLICATE-CASE": {
+              "cases": 1,
+              "mean_reward": 0.9672,
+              "passed": 1
+            },
+            "FAM-LATERAL-PSEXEC": {
+              "cases": 1,
+              "mean_reward": 0.9883,
+              "passed": 1
+            },
+            "FAM-PHISHING-CREDENTIAL": {
+              "cases": 1,
+              "mean_reward": 0.9818,
+              "passed": 1
+            },
+            "FAM-RANSOMWARE-CRITICAL": {
+              "cases": 1,
+              "mean_reward": 0.9925,
+              "passed": 1
+            },
+            "FAM-SAAS-BEACON-BENIGN": {
+              "cases": 5,
+              "mean_reward": 0.9687,
+              "passed": 5
+            },
+            "FAM-SUPPLYCHAIN-REVOKED-CERT": {
+              "cases": 1,
+              "mean_reward": 0.9874,
+              "passed": 1
+            },
+            "FAM-TOOL-OUTAGE-503": {
+              "cases": 1,
+              "mean_reward": 0.882,
+              "passed": 1
+            }
+          },
+          "per_difficulty": {
+            "1": {
+              "cases": 2,
+              "mean_reward": 0.9871,
+              "passed": 2
+            },
+            "2": {
+              "cases": 13,
+              "mean_reward": 0.9611,
+              "passed": 12
+            },
+            "3": {
+              "cases": 5,
+              "mean_reward": 0.9667,
+              "passed": 5
+            }
+          }
+        },
+        "per_verdict_harbor_reward": {
+          "MALICIOUS": 0.9627,
+          "BENIGN": 0.9739,
+          "SUSPICIOUS": 0.9793,
+          "INCONCLUSIVE": 0.882
+        }
+      }
+    },
+    "harness2_evolved": {
+      "status": "COMPLETED",
+      "arm": "harness2_evolved",
+      "arm_source": "configs/runbooks/harness2_evolved",
+      "runbook_words": 1256,
+      "gen5_exposure": {
+        "timestamp": "2026-11-26T02:09:57Z",
+        "run_id": "20261126T020957Z-f787ded1",
+        "git_sha": "79c260ab2df39790b5a00f93196fdf453084eabc",
+        "split": "validation",
+        "eval_ids_sha256": "516eeeeb5c88b40a9a04f0f6b1ada50ec04dbbeaf0cfa9b7f5d09f4aa10056e2",
+        "purpose": "Wave 3 DeepSeek-V4.1-Flash-1017-MaaS Gen 5 validation evaluation (harness2_evolved)",
+        "model": "deepseek-ai/deepseek-v4.1-flash-1017-maas"
+      },
+      "summary": {
+        "total_cases": 20,
+        "passed_cases": 20,
+        "pass_rate": 100.0,
+        "avg_rubric_score": 97.4,
+        "avg_latency_s": 48.67,
+        "total_prompt_tokens": 340911,
+        "total_completion_tokens": 96077,
+        "total_tokens": 436988,
+        "avg_tokens_per_case": 21849.4,
+        "avg_generation_tps": 98.7,
+        "avg_total_tps": 448.94,
+        "total_tool_calls": 135,
+        "sdt_metrics": {
+          "d_prime": 3.289707253902944,
+          "criterion_c": 0.0,
+          "hit_rate": 0.95,
+          "false_alarm_rate": 0.05,
+          "hits": 10,
+          "misses": 0,
+          "false_alarms": 0,
+          "correct_rejections": 10
+        },
+        "operational_loss": {
+          "total_loss_usd": 1.01,
+          "fp_loss_usd": 0.0,
+          "fn_loss_usd": 0.0,
+          "investigation_cost_usd": 1.009,
+          "case_losses": [
+            {
+              "case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 0.0,
+              "tokens": 22760,
+              "token_cost_usd": 0.04552,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.05152,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 27407,
+              "token_cost_usd": 0.054814,
+              "tool_steps": 8,
+              "tool_cost_usd": 0.008,
+              "investigation_cost_usd": 0.062814,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 22999,
+              "token_cost_usd": 0.045998,
+              "tool_steps": 8,
+              "tool_cost_usd": 0.008,
+              "investigation_cost_usd": 0.053998,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24065,
+              "token_cost_usd": 0.04813,
+              "tool_steps": 8,
+              "tool_cost_usd": 0.008,
+              "investigation_cost_usd": 0.05613,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 23554,
+              "token_cost_usd": 0.047108,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.054108,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 23046,
+              "token_cost_usd": 0.046092,
+              "tool_steps": 8,
+              "tool_cost_usd": 0.008,
+              "investigation_cost_usd": 0.054092,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24521,
+              "token_cost_usd": 0.049042,
+              "tool_steps": 8,
+              "tool_cost_usd": 0.008,
+              "investigation_cost_usd": 0.057042,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 22869,
+              "token_cost_usd": 0.045738,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.051738,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-DOC-IP-FALSE-POSITIVE-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "LOW",
+              "decision_loss_usd": 0.0,
+              "tokens": 18851,
+              "token_cost_usd": 0.037702,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.042702,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-DUPLICATE-CASE-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 24177,
+              "token_cost_usd": 0.048354,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.054354,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-LATERAL-PSEXEC-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 19206,
+              "token_cost_usd": 0.038412,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.044412,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-PHISHING-CREDENTIAL-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 21390,
+              "token_cost_usd": 0.04278,
+              "tool_steps": 8,
+              "tool_cost_usd": 0.008,
+              "investigation_cost_usd": 0.05078,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "CRITICAL",
+              "decision_loss_usd": 0.0,
+              "tokens": 18180,
+              "token_cost_usd": 0.03636,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.04236,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 19779,
+              "token_cost_usd": 0.039558,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.046558,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 20677,
+              "token_cost_usd": 0.041354,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.048354,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 20101,
+              "token_cost_usd": 0.040202,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.047202,
+              "total_loss_usd": 0.05
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 12970,
+              "token_cost_usd": 0.02594,
+              "tool_steps": 5,
+              "tool_cost_usd": 0.005,
+              "investigation_cost_usd": 0.03094,
+              "total_loss_usd": 0.03
+            },
+            {
+              "case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 18168,
+              "token_cost_usd": 0.036336,
+              "tool_steps": 7,
+              "tool_cost_usd": 0.007,
+              "investigation_cost_usd": 0.043336,
+              "total_loss_usd": 0.04
+            },
+            {
+              "case_id": "CASE-GEN5-SUPPLYCHAIN-REVOKED-CERT-05",
+              "outcome": "TRUE_POSITIVE",
+              "criticality": "HIGH",
+              "decision_loss_usd": 0.0,
+              "tokens": 25916,
+              "token_cost_usd": 0.051832,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.057832,
+              "total_loss_usd": 0.06
+            },
+            {
+              "case_id": "CASE-GEN5-TOOL-OUTAGE-503-05",
+              "outcome": "TRUE_NEGATIVE",
+              "criticality": "STANDARD",
+              "decision_loss_usd": 0.0,
+              "tokens": 26352,
+              "token_cost_usd": 0.052704,
+              "tool_steps": 6,
+              "tool_cost_usd": 0.006,
+              "investigation_cost_usd": 0.058704,
+              "total_loss_usd": 0.06
+            }
+          ]
+        },
+        "counterfactual_consistency": {
+          "counterfactual_consistency_score": 0.5745,
+          "total_pairs": 47,
+          "evaluated_pairs": 47,
+          "consistent_pairs": 27,
+          "inconsistent_pairs": 20,
+          "partial_pairs": 0,
+          "pairs": [
+            {
+              "pair_id": "PAIR-02: CASE-GEN5-AUTHORIZED-SCANNER-05 <-> CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "threat_case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "non_threat_case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-01: CASE-GEN5-C2-INFOSTEALER-05 <-> CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+              "non_threat_case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-02' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-02' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            }
+          ],
+          "pair_diagnostics": [
+            {
+              "pair_id": "PAIR-02: CASE-GEN5-AUTHORIZED-SCANNER-05 <-> CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "threat_case_id": "CASE-GEN5-RANSOMWARE-CRITICAL-05",
+              "non_threat_case_id": "CASE-GEN5-AUTHORIZED-SCANNER-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-01: CASE-GEN5-C2-INFOSTEALER-05 <-> CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_case_id": "CASE-GEN5-C2-INFOSTEALER-05",
+              "non_threat_case_id": "CASE-GEN5-DNS-TUNNEL-AMBIGUOUS-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "SUSPICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-02' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-01",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-03' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-04' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "MALICIOUS",
+              "threat_contained": true,
+              "non_threat_avoided_containment": false,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Non-threat 'CASE-GEN5-CRYPTOMINER-DEV-05' suffered disruptive containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-CRYPTOMINER-DEV-05 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-CRYPTOMINER-DEV-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_label": "MALICIOUS",
+              "non_threat_label": "BENIGN",
+              "threat_contained": true,
+              "non_threat_avoided_containment": true,
+              "consistent": true,
+              "status": "EVALUATED",
+              "details": "Threat correctly contained and non-threat avoided disruptive isolation."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-02' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-01 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-01",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-03' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-02 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-02",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-04' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-03 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-03",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            },
+            {
+              "pair_id": "PAIR-03: CASE-GEN5-SAAS-BEACON-BENIGN-04 <-> CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-05",
+              "non_threat_case_id": "CASE-GEN5-SAAS-BEACON-BENIGN-04",
+              "threat_label": "BENIGN",
+              "non_threat_label": "BENIGN",
+              "threat_contained": false,
+              "non_threat_avoided_containment": true,
+              "consistent": false,
+              "status": "EVALUATED",
+              "details": "Threat 'CASE-GEN5-SAAS-BEACON-BENIGN-05' missed containment."
+            }
+          ]
+        },
+        "avg_epistemic_efficiency": 0.948,
+        "actions_matched_rate": 100.0,
+        "operator_actions_matched_rate": 100.0,
+        "advisor_actions_matched_rate": 100.0,
+        "prohibited_avoided_rate": 100.0,
+        "jev_choice_distribution": {
+          "FLAWLESS_CONTAINMENT": 20
+        },
+        "gen5": {
+          "split": "validation",
+          "pass_threshold": 0.8,
+          "total_cases": 20,
+          "scored_cases": 20,
+          "infra_failures": 0,
+          "inert_cases": 0,
+          "safety_gate_cases": 0,
+          "passed_cases": 20,
+          "pass_rate": 100.0,
+          "mean_reward": 0.9744,
+          "std_reward": 0.0095,
+          "per_family": {
+            "FAM-AUTHORIZED-SCANNER": {
+              "cases": 1,
+              "mean_reward": 0.984,
+              "passed": 1
+            },
+            "FAM-C2-INFOSTEALER": {
+              "cases": 1,
+              "mean_reward": 0.9732,
+              "passed": 1
+            },
+            "FAM-CRYPTOMINER-DEV": {
+              "cases": 5,
+              "mean_reward": 0.9745,
+              "passed": 5
+            },
+            "FAM-DNS-TUNNEL-AMBIGUOUS": {
+              "cases": 1,
+              "mean_reward": 0.9667,
+              "passed": 1
+            },
+            "FAM-DOC-IP-FALSE-POSITIVE": {
+              "cases": 1,
+              "mean_reward": 0.9873,
+              "passed": 1
+            },
+            "FAM-DUPLICATE-CASE": {
+              "cases": 1,
+              "mean_reward": 0.9623,
+              "passed": 1
+            },
+            "FAM-LATERAL-PSEXEC": {
+              "cases": 1,
+              "mean_reward": 0.9873,
+              "passed": 1
+            },
+            "FAM-PHISHING-CREDENTIAL": {
+              "cases": 1,
+              "mean_reward": 0.9643,
+              "passed": 1
+            },
+            "FAM-RANSOMWARE-CRITICAL": {
+              "cases": 1,
+              "mean_reward": 0.9907,
+              "passed": 1
+            },
+            "FAM-SAAS-BEACON-BENIGN": {
+              "cases": 5,
+              "mean_reward": 0.9685,
+              "passed": 5
+            },
+            "FAM-SUPPLYCHAIN-REVOKED-CERT": {
+              "cases": 1,
+              "mean_reward": 0.9884,
+              "passed": 1
+            },
+            "FAM-TOOL-OUTAGE-503": {
+              "cases": 1,
+              "mean_reward": 0.9697,
+              "passed": 1
+            }
+          },
+          "per_difficulty": {
+            "1": {
+              "cases": 2,
+              "mean_reward": 0.9856,
+              "passed": 2
+            },
+            "2": {
+              "cases": 13,
+              "mean_reward": 0.9703,
+              "passed": 13
+            },
+            "3": {
+              "cases": 5,
+              "mean_reward": 0.9806,
+              "passed": 5
+            }
+          }
+        },
+        "per_verdict_harbor_reward": {
+          "MALICIOUS": 0.9764,
+          "BENIGN": 0.9734,
+          "SUSPICIOUS": 0.9725,
+          "INCONCLUSIVE": 0.9697
+        }
+      }
+    }
+  },
+  "gen5_reference_baselines": {
+    "gemini-2.5-flash": {
+      "harbor_clean_skills": 0.9612,
+      "seed_runbooks": 0.9723,
+      "harness2_evolved": 0.9723,
+      "gepa_promoted_best": 0.9898
+    },
+    "gemini-2.5-flash-lite": {
+      "seed_runbooks": 0.9684,
+      "harness2_evolved": 0.984,
+      "arena_grafted_w300": 0.9869
+    },
+    "gemini-3.5-flash-lite": {
+      "seed_runbooks": 0.9825,
+      "harness2_evolved": 0.9848
+    }
+  },
+  "experiment_c_threat_hunt": {
+    "status": "COMPLETED",
+    "scenario_count": 4,
+    "arms": [
+      "compressed_track_b_hunt",
+      "harness2_evolved_hunt"
+    ],
+    "arm_aggregates": [
+      {
+        "model": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "arm": "compressed_track_b_hunt",
+        "case_count": 4,
+        "mean_hunt_composite": 0.9812,
+        "mean_harbor_reward": 0.94,
+        "verdict_accuracy": 1.0,
+        "widening_168h_rate": 1.0,
+        "patient_zero_discovery_rate": 1.0,
+        "lolbin_safe_rate": 1.0,
+        "lolbin_hash_verified_rate": 1.0,
+        "rel_loop_rate": 0.0,
+        "mean_epistemic_steps": 7.75,
+        "mean_latency_s": 86.28
+      },
+      {
+        "model": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+        "arm": "harness2_evolved_hunt",
+        "case_count": 4,
+        "mean_hunt_composite": 1.0,
+        "mean_harbor_reward": 0.944,
+        "verdict_accuracy": 1.0,
+        "widening_168h_rate": 1.0,
+        "patient_zero_discovery_rate": 1.0,
+        "lolbin_safe_rate": 1.0,
+        "lolbin_hash_verified_rate": 1.0,
+        "rel_loop_rate": 0.0,
+        "mean_epistemic_steps": 7.5,
+        "mean_latency_s": 85.31
+      }
+    ],
+    "overall_by_arm": [
+      {
+        "arm": "compressed_track_b_hunt",
+        "run_count": 4,
+        "mean_hunt_composite": 0.9812,
+        "mean_harbor_reward": 0.94,
+        "verdict_accuracy": 1.0,
+        "widening_168h_rate": 1.0,
+        "patient_zero_discovery_rate": 1.0,
+        "lolbin_safe_rate": 1.0,
+        "rel_loop_rate": 0.0
+      },
+      {
+        "arm": "harness2_evolved_hunt",
+        "run_count": 4,
+        "mean_hunt_composite": 1.0,
+        "mean_harbor_reward": 0.944,
+        "verdict_accuracy": 1.0,
+        "widening_168h_rate": 1.0,
+        "patient_zero_discovery_rate": 1.0,
+        "lolbin_safe_rate": 1.0,
+        "rel_loop_rate": 0.0
+      }
+    ]
+  },
+  "zero_gpu_audit": {
+    "audited_at_utc": "2026-11-26T03:02:15Z",
+    "method": "python_google_auth_rest",
+    "regions_checked": [
+      "us-central1",
+      "us-east1",
+      "us-west1",
+      "europe-west4"
+    ],
+    "vertex_endpoints_by_region": {
+      "us-central1": {
+        "registered_endpoints": 3,
+        "active_deployed_endpoints": 0
+      },
+      "us-east1": {
+        "registered_endpoints": 0,
+        "active_deployed_endpoints": 0
+      },
+      "us-west1": {
+        "registered_endpoints": 0,
+        "active_deployed_endpoints": 0
+      },
+      "europe-west4": {
+        "registered_endpoints": 0,
+        "active_deployed_endpoints": 0
+      }
+    },
+    "active_vertex_gpu_endpoints": 0,
+    "active_gce_spot_or_gpu_vms": 0,
+    "active_vm_details": [],
+    "hourly_dedicated_gpu_cost_usd": 0.0,
+    "zero_gpu_verified": true
+  },
+  "budget": {
+    "limit_usd": 10.0,
+    "spent_usd": 0.857337,
+    "remaining_usd": 9.142663,
+    "pricing_estimate_per_1m_usd": {
+      "prompt_tokens": 0.3,
+      "completion_tokens": 1.2,
+      "local_gliner_decide_judge": 0.0
+    },
+    "entry_count": 375
+  }
+}

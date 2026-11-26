@@ -798,6 +798,107 @@
       ]
     },
     "supportedTargets": ["vertex", "vertex_open_model"]
+  },
+  "deepseek-v4.1-flash-1017-maas": {
+    "displayName": "DeepSeek V4.1 Flash 1017 (Vertex MaaS)",
+    "family": "deepseek-v4.1",
+    "provider": "deepseek-ai",
+    "type": "maas",
+    "maasModelId": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+    "modelId": "deepseek-ai/deepseek-v4.1-flash-1017-maas",
+    "region": "global",
+    "modalities": ["text", "image"],
+    "params": "552B CED Multimodal MoE (8B prefill / 16B decode active, CSA2 FP4 KV, 1M context)",
+    "hfRepo": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "hourlyCostUsd": 0.0,
+    "supportedTargets": ["vertex_maas"]
+  },
+  "deepseek-v4.1-flash-maas": {
+    "displayName": "DeepSeek V4.1 Flash (Vertex MaaS)",
+    "family": "deepseek-v4.1",
+    "provider": "deepseek-ai",
+    "type": "maas",
+    "maasModelId": "deepseek-ai/deepseek-v4.1-flash-maas",
+    "modelId": "deepseek-ai/deepseek-v4.1-flash-maas",
+    "region": "global",
+    "modalities": ["text", "image"],
+    "params": "552B CED Multimodal MoE (8B prefill / 16B decode active, CSA2 FP4 KV, 1M context)",
+    "hfRepo": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "hourlyCostUsd": 0.0,
+    "supportedTargets": ["vertex_maas"]
+  },
+  "deepseek-v4.1-flash-1017": {
+    "displayName": "DeepSeek V4.1 Flash 1017 (Model Garden)",
+    "family": "deepseek-v4.1",
+    "provider": "deepseek-ai",
+    "type": "open_model",
+    "modalities": ["text", "image"],
+    "params": "552B CED Multimodal MoE (8B prefill / 16B decode active, CSA2 FP4 KV, 1M context)",
+    "publisherModel": "publishers/deepseek-ai/models/deepseek-v4.1",
+    "openModelId": "publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017",
+    "version": "deepseek-v4.1-flash-1017",
+    "hfRepo": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+    "compute": {
+      "machineType": "a3-megagpu-8g",
+      "acceleratorType": "NVIDIA_H100_MEGA_80GB",
+      "acceleratorCount": 8,
+      "hostRamGb": 1872,
+      "hourlyCostUsd": 88.49,
+      "validatedAlternatives": [
+        {
+          "machineType": "a3-ultragpu-8g",
+          "acceleratorType": "NVIDIA_H200_141GB",
+          "acceleratorCount": 8,
+          "speculativeDecoding": "dspark",
+          "numSpeculativeTokens": 5,
+          "speculativeArgs": [
+            "--speculative_config.method=dspark",
+            "--speculative_config.num_speculative_tokens=5"
+          ],
+          "notes": "8x NVIDIA_H200_141GB with dspark 5-token speculative decoding"
+        },
+        {
+          "machineType": "a4-highgpu-8g",
+          "acceleratorType": "NVIDIA_B200",
+          "acceleratorCount": 8,
+          "speculativeDecoding": "dspark",
+          "numSpeculativeTokens": 5,
+          "speculativeArgs": [
+            "--speculative_config.method=dspark",
+            "--speculative_config.num_speculative_tokens=5"
+          ],
+          "notes": "8x NVIDIA_B200 with dspark 5-token speculative decoding (--speculative_config.method=dspark --speculative_config.num_speculative_tokens=5)"
+        }
+      ]
+    },
+    "runtime": {
+      "containerImage": "us-docker.pkg.dev/agent-platform-mg-public/containers/pytorch-vllm-serve:model-garden.pytorch-vllm-serve-release_20260922.00_p0",
+      "containerPort": 7080,
+      "predictRoute": "/generate",
+      "healthRoute": "/ping",
+      "tensorParallelSize": 8,
+      "swapSpaceGb": 0,
+      "sharedMemorySizeMb": 40960,
+      "deploymentTimeoutSeconds": 7200,
+      "gpuMemoryUtilization": 0.90,
+      "maxModelLen": 1048576,
+      "extraArgs": [
+        "--trust-remote-code",
+        "--kv-cache-dtype=fp8",
+        "--enable-expert-parallel",
+        "--engram-config.cpu_offload=True",
+        "--tool-call-parser=deepseek_v41",
+        "--reasoning-parser=deepseek_v41",
+        "--enable-auto-tool-choice",
+        "--max-num-seqs=128",
+        "--mm-encoder-tp-mode=data"
+      ],
+      "speculativeArgsDspark": [
+        "--speculative_config.method=dspark",
+        "--speculative_config.num_speculative_tokens=5"
+      ]
+    },
+    "supportedTargets": ["vertex", "vertex_open_model"]
   }
 }
 

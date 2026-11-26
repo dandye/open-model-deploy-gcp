@@ -31,6 +31,21 @@ if ! catalog_model_exists "$MODEL_FLAVOR"; then
   exit 1
 fi
 
+MODEL_TYPE=$(catalog_get "$MODEL_FLAVOR" ".type")
+if [[ "$MODEL_TYPE" == "maas" ]]; then
+  MAAS_MODEL_ID=$(catalog_get_maas_model_id "$MODEL_FLAVOR")
+  MAAS_REGION=$(catalog_get "$MODEL_FLAVOR" ".region")
+  if [[ -z "$MAAS_REGION" || "$MAAS_REGION" == "null" ]]; then
+    MAAS_REGION="global"
+  fi
+  echo "[ERROR] Model flavor '$MODEL_FLAVOR' is a serverless Vertex OpenMaaS model (type='maas', maasModelId='$MAAS_MODEL_ID', region='$MAAS_REGION')." >&2
+  echo "Do not register or deploy dedicated GPU endpoints for serverless MaaS models." >&2
+  echo "Evaluate directly via serverless Vertex OpenMaaS:" >&2
+  echo "  .venv/bin/python scripts/benchmark.py --maas-model $MAAS_MODEL_ID --region $MAAS_REGION" >&2
+  echo "  .venv/bin/python scripts/eval_soc_agent.py --flavor $MODEL_FLAVOR" >&2
+  exit 2
+fi
+
 # Check if model already registered with this display name in the target region
 EXISTING_MODEL_ID=$(gcloud ai models list \
   --project="$PROJECT_ID" \
@@ -48,22 +63,41 @@ fi
 # Load parameters from catalog
 SOURCE_URI=$(catalog_get_source_uri "$MODEL_FLAVOR")
 HF_REPO=$(catalog_get_hf_repo "$MODEL_FLAVOR")
+OPEN_MODEL_ID=$(catalog_get "$MODEL_FLAVOR" ".openModelId")
 TP_SIZE=$(catalog_get_tp_size "$MODEL_FLAVOR")
 SWAP_SPACE=$(catalog_get_swap_space "$MODEL_FLAVOR")
 SHARED_MEM_MB=$(catalog_get_shared_memory_mb "$MODEL_FLAVOR")
+DEPLOYMENT_TIMEOUT=$(catalog_get_deployment_timeout "$MODEL_FLAVOR")
+CONTAINER_PORT=$(catalog_get_container_port "$MODEL_FLAVOR")
+PREDICT_ROUTE=$(catalog_get_predict_route "$MODEL_FLAVOR")
+HEALTH_ROUTE=$(catalog_get_health_route "$MODEL_FLAVOR")
 GPU_MEM_UTIL=$(catalog_get_gpu_mem_util "$MODEL_FLAVOR")
 MAX_LEN=$(catalog_get_max_len "$MODEL_FLAVOR")
 EXTRA_ARGS_JSON=$(catalog_get "$MODEL_FLAVOR" ".runtime.extraArgs")
 
 MODEL_FAMILY=$(catalog_get_family "$MODEL_FLAVOR")
 
+if [[ -n "$SOURCE_URI" && "$SOURCE_URI" != "null" ]]; then
+  MODEL_SOURCE="$SOURCE_URI"
+elif [[ -n "$HF_REPO" && "$HF_REPO" != "null" ]]; then
+  MODEL_SOURCE="$HF_REPO"
+elif [[ -n "$OPEN_MODEL_ID" && "$OPEN_MODEL_ID" != "null" ]]; then
+  MODEL_SOURCE="${OPEN_MODEL_ID%%@*}"
+else
+  MODEL_SOURCE="google/${MODEL_FLAVOR}"
+fi
+
+if [[ "$OPEN_MODEL_ID" == publishers/* ]]; then
+  echo "[INFO] Curated Model Garden publisher model detected ($OPEN_MODEL_ID). Prefer scripts/deploy_open_model.py --flavor $MODEL_FLAVOR for one-click deployment." >&2
+fi
+
 ARGS_ARRAY=(
   "python"
   "-m"
   "vllm.entrypoints.api_server"
   "--host=0.0.0.0"
-  "--port=8080"
-  "--model=${SOURCE_URI}"
+  "--port=${CONTAINER_PORT}"
+  "--model=${MODEL_SOURCE}"
   "--tensor-parallel-size=${TP_SIZE}"
   "--gpu-memory-utilization=${GPU_MEM_UTIL}"
 )
@@ -125,6 +159,8 @@ fi
 
 if [[ -n "$HF_REPO" && "$HF_REPO" != "null" ]]; then
   CONTAINER_MODEL_ID="$HF_REPO"
+elif [[ -n "$OPEN_MODEL_ID" && "$OPEN_MODEL_ID" != "null" ]]; then
+  CONTAINER_MODEL_ID="${OPEN_MODEL_ID%%@*}"
 else
   CONTAINER_MODEL_ID="google/${MODEL_FLAVOR}"
 fi
@@ -135,6 +171,9 @@ if [[ -n "$SHARED_MEM_MB" && "$SHARED_MEM_MB" != "null" && "$SHARED_MEM_MB" -gt 
   ENV_VARS="${ENV_VARS},LOCAL_MODEL_DIR=/dev/shm/model_dir"
   UPLOAD_EXTRA_FLAGS+=("--container-shared-memory-size-mb=${SHARED_MEM_MB}")
 fi
+if [[ -n "$DEPLOYMENT_TIMEOUT" && "$DEPLOYMENT_TIMEOUT" != "null" && "$DEPLOYMENT_TIMEOUT" -gt 0 ]]; then
+  UPLOAD_EXTRA_FLAGS+=("--container-deployment-timeout-seconds=${DEPLOYMENT_TIMEOUT}")
+fi
 
 gcloud ai models upload \
   --project="$PROJECT_ID" \
@@ -144,9 +183,9 @@ gcloud ai models upload \
   --container-image-uri="$CONTAINER_IMAGE" \
   --container-args="$CONTAINER_ARGS" \
   --container-env-vars="$ENV_VARS" \
-  --container-ports="8080" \
-  --container-predict-route="/generate" \
-  --container-health-route="/ping" \
+  --container-ports="${CONTAINER_PORT}" \
+  --container-predict-route="${PREDICT_ROUTE}" \
+  --container-health-route="${HEALTH_ROUTE}" \
   "${UPLOAD_EXTRA_FLAGS[@]}" >/dev/null 2>&1 || true
 
 gcloud ai models list \

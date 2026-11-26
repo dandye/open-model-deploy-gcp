@@ -505,6 +505,17 @@ ALL_GCE_SPOT_TARGETS: List[GCESpotTarget] = [
         tensor_parallel_size=4,
         notes="NVIDIA Llama 3.1 Nemotron 70B (4x L4, 4x NVMe SSD)",
     ),
+    GCESpotTarget(
+        flavor="deepseek-v4.1-flash-1017",
+        hf_repo="deepseek-ai/DeepSeek-V4.1-Flash-1017",
+        machine_type="a3-megagpu-8g",
+        accelerator_type="nvidia-h100-mega-80gb",
+        accelerator_count=8,
+        local_ssd_count=16,
+        tensor_parallel_size=8,
+        extra_vllm_flags="--trust-remote-code --kv-cache-dtype=fp8 --enable-expert-parallel --engram-config.cpu_offload=True --tool-call-parser=deepseek_v41 --reasoning-parser=deepseek_v41 --enable-auto-tool-choice --max-num-seqs=128 --mm-encoder-tp-mode=data",
+        notes="DeepSeek V4.1 Flash 1017 552B CED MoE (8x H100 Mega 80GB, 16x NVMe SSD, --shm-size=40g; validated alternatives: a3-ultragpu-8g 8x H200 141GB and a4-highgpu-8g 8x B200 with dspark 5-token speculative decoding)",
+    ),
 ]
 
 
@@ -561,8 +572,14 @@ def build_gce_spot_create_command(
     if target.accelerator_count > 0 and target.accelerator_type:
         cmd.append(f"--accelerator=type={target.accelerator_type},count={target.accelerator_count}")
 
+    is_eight_gpu_target = target.accelerator_count >= 8 or "deepseek-v4.1" in target.flavor
+    effective_local_ssd_count = max(target.local_ssd_count, 16) if is_eight_gpu_target else target.local_ssd_count
+    effective_boot_disk_size = (
+        "500GB" if (is_eight_gpu_target and boot_disk_size == "100GB") else boot_disk_size
+    )
+
     # Local NVMe SSD scratch disks
-    for _ in range(target.local_ssd_count):
+    for _ in range(effective_local_ssd_count):
         cmd.append("--local-ssd=interface=NVME")
 
     # A pinned serving configuration names the exact boot image. Legacy launches
@@ -572,7 +589,7 @@ def build_gce_spot_create_command(
     else:
         cmd.append(f"--image-family={image_family}")
         cmd.append(f"--image-project={image_project}")
-    cmd.append(f"--boot-disk-size={boot_disk_size}")
+    cmd.append(f"--boot-disk-size={effective_boot_disk_size}")
     cmd.append(f"--boot-disk-type={boot_disk_type}")
     cmd.append("--scopes=cloud-platform")
 
@@ -586,6 +603,13 @@ def build_gce_spot_create_command(
         f"tp_size={target.tensor_parallel_size}",
         f"output_bucket={output_gcs_uri}",
     ]
+    if is_eight_gpu_target:
+        metadata_items.extend([
+            "shm_size=40g",
+            "docker_extra_args=--shm-size=40g",
+            "nvme_mount_dir=/mnt/disks/nvme",
+            "startup_timeout_seconds=7200",
+        ])
     if run_id is not None or configuration_hash is not None:
         if not re.fullmatch(r"[0-9a-f]{32}", run_id or "") or not re.fullmatch(r"[0-9a-f]{64}", configuration_hash or ""):
             raise ValueError("A valid run ID and configuration hash are required together")

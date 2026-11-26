@@ -11,7 +11,8 @@ Configurations dynamically resolve compute, accelerator count, VRAM, context len
 Supported dedicated GPU models:
 * **Google Gemma**: `gemma-2-2b-it` (1x L4), `gemma-2-9b-it` (1x L4), `gemma-2-27b-it` (4x L4), `gemma-3-1b-it` (1x L4), `gemma-3-4b-it` (1x L4), `gemma-3-12b-it` (4x L4), `gemma-3-27b-it` (4x L4), `gemma-4-e2b-it` (1x L4), `gemma-4-e4b-it` (1x L4), `gemma-4-31b-it` (2x A100 80GB)
 * **Meta Llama**: `llama-3.2-3b-instruct` (1x L4), `llama-guard-3-8b` (1x L4), `llama-3.1-nemotron-70b-instruct` (4x L4)
-* **OpenModels & Partner Model Garden**: `qwen3.8-27b` (1x RTX 6000), `qwen2.5-coder-32b-instruct` (4x L4), `qwen3.8-flash-next` (1x L4), `qwen3.8-flash-next-fp8` (1x L4), `qwen3.8-2.4t-a95b-fp8` (1x RTX 6000), `glm-5.3-flash` (1x L4), `deepseek-v4-pro` (1x RTX 6000), `deepseek-r1-distill-qwen-32b` (4x L4), `kimi-k3` (1x RTX 6000), `inkling-small` (4x L4), `nemotron-3.5-lightning-bf16` (4x L4), `nemotron-3.5-super-vl-nvfp4` (1x RTX 6000), `nemotron-3.5-super-vl-bf16` (4x RTX 6000), `ministral-3b-2410` (1x L4), `phi-4` (1x L4)
+* **OpenModels & Partner Model Garden**: `qwen3.8-27b` (1x RTX 6000), `qwen2.5-coder-32b-instruct` (4x L4), `qwen3.8-flash-next` (1x L4), `qwen3.8-flash-next-fp8` (1x L4), `qwen3.8-2.4t-a95b-fp8` (1x RTX 6000), `glm-5.3-flash` (1x L4), `deepseek-v4-pro` (1x RTX 6000), `deepseek-v4.1-flash-1017` (8x H100 Mega 80GB on `a3-megagpu-8g`, with validated alternatives `a3-ultragpu-8g` 8x H200 141GB and `a4-highgpu-8g` 8x B200 using `dspark` 5-token speculative decoding), `deepseek-r1-distill-qwen-32b` (4x L4), `kimi-k3` (1x RTX 6000), `inkling-small` (4x L4), `nemotron-3.5-lightning-bf16` (4x L4), `nemotron-3.5-super-vl-nvfp4` (1x RTX 6000), `nemotron-3.5-super-vl-bf16` (4x RTX 6000), `ministral-3b-2410` (1x L4), `phi-4` (1x L4)
+* **Serverless Vertex OpenMaaS (`global`)**: `deepseek-v4.1-flash-1017-maas` (Oct 2026 checkpoint) and `deepseek-v4.1-flash-maas` (Sept 2026 baseline). These flavors run on serverless Vertex OpenMaaS at \$0.00/hr idle GPU spend; set `enable_vertex_endpoint = false` and `enable_cloudrun_service = false` when validating catalog outputs via Terraform.
 
 ---
 
@@ -19,8 +20,9 @@ Supported dedicated GPU models:
 
 | Target Environment | Supported Models | GPU Scaling | Notes |
 | :--- | :--- | :--- | :--- |
-| **Vertex AI Prediction** | All 28 dedicated compute models | 1x to 4x GPUs | Dedicated VM serving; requires undeploy to stop billing. |
-| **Cloud Run with GPU** | Single-GPU models (1B to 9B, E2B, E4B) | 1x NVIDIA L4 | Scale-to-zero (`--min-instances=0`) for $0 idle cost. Multi-GPU models are automatically skipped. |
+| **Vertex AI Prediction** | All 29 dedicated compute models | 1x to 8x GPUs | Dedicated VM serving (`g2`, `g4`, `a2`, `a3-megagpu-8g`, `a3-ultragpu-8g`, `a4-highgpu-8g`); requires undeploy to stop billing. |
+| **Vertex OpenMaaS (`global`)** | `deepseek-v4.1-flash-1017-maas`, `deepseek-v4.1-flash-maas` | Serverless | Pay-per-token OpenAI-compatible endpoint in `global` with \$0.00/hr idle GPU spend; disable dedicated endpoint creation. |
+| **Cloud Run with GPU** | Single-GPU models (1B to 9B, E2B, E4B) | 1x NVIDIA L4 | Scale-to-zero (`--min-instances=0`) for \$0.00 idle cost. Multi-GPU and MaaS models are automatically skipped. |
 
 ---
 
@@ -39,6 +41,7 @@ Pass extra runtime optimization flags via the `extra_vllm_flags` variable:
 * Prompt Lookup (N-gram) Speculative Decoding: `extra_vllm_flags = "--speculative-model=[ngram] --num-speculative-tokens=5"`
 * Prefix Caching: `extra_vllm_flags = "--enable-prefix-caching"`
 * Chunked Prefill: `extra_vllm_flags = "--enable-chunked-prefill"`
+* DeepSeek-V4.1-Flash B200 `dspark` Speculative Decoding: `extra_vllm_flags = "--speculative_config.method=dspark --speculative_config.num_speculative_tokens=5"`
 
 ---
 

@@ -9,7 +9,7 @@ tags:
   - catalog
   - deployment
 created: 2026-08-25
-updated: 2026-08-25
+updated: 2026-11-26
 ---
 
 # Vertex AI Model Registry Catalog & Construction Guide
@@ -52,6 +52,16 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
 | **`540441301133295616`**  | `gemma-2-9b-it-model-garden` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct in Native BF16 with 4k Context Length on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
 | **`5242199312108093440`**  | `gemma-2-9b-it-model-garden-v3` | `gemma-2-9b-it` | `g2-standard-12` (1x L4) | Gemma 2 9B Instruct v3 in Native BF16 on 1x NVIDIA L4 GPU (g2-standard-12). | 2026-08-24 23:35 |
 | **`nvidia-nemotron-3-5-nemotron-3-5-super-vl-nvfp4-1792530823`** | `nemotron_3_5_super_vl_nvfp4-1792530822704` | `nemotron-3.5-super-vl-nvfp4` | `g4-standard-48` (1x RTX PRO 6000) | NVIDIA Nemotron 3.5 Super VL (120B-A12B NVFP4) with FlashInfer Mamba and MTP=3 Speculative Decoding on 1x RTX PRO 6000 96GB (`secops-demo-env`). | 2026-10-20 21:13 |
+| **`publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017`** | `deepseek_v4_1_flash_1017-mg-one-click-deploy` | `deepseek-v4.1-flash-1017` | `a3-megagpu-8g` (8x H100 Mega 80GB) | Curated Model Garden One-Click `552B` `CED` Multimodal MoE (`8B` prefill / `16B` decode active, `CSA2` FP4 KV `~890 B/tok`, `1,048,576` context, `40 GB` `/dev/shm`, `7200s` deploy timeout; validated alternatives: `a3-ultragpu-8g` 8x H200 141GB and `a4-highgpu-8g` 8x B200 with `dspark` 5-token speculative decoding). | Cataloged |
+
+---
+
+### Region: `global` (Serverless Vertex OpenMaaS)
+
+| OpenMaaS Model ID | Display Name | Catalog Flavor | Serving Tier | Architecture & Context | Idle GPU Cost |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`deepseek-ai/deepseek-v4.1-flash-1017-maas`** | `DeepSeek V4.1 Flash 1017 (Vertex MaaS)` | `deepseek-v4.1-flash-1017-maas` | Serverless OpenMaaS (`global`) | Oct 2026 checkpoint, `552B` `CED` Multimodal MoE (`8B` prefill / `16B` decode active, `text` + `image`), `CSA2` FP4 KV (`~890 B/tok`), `1,048,576` (`1M`) context. | **\$0.00 / hr** |
+| **`deepseek-ai/deepseek-v4.1-flash-maas`** | `DeepSeek V4.1 Flash (Vertex MaaS)` | `deepseek-v4.1-flash-maas` | Serverless OpenMaaS (`global`) | Sept 2026 initial baseline, `552B` `CED` Multimodal MoE (`8B` prefill / `16B` decode active, `text` + `image`), `CSA2` FP4 KV (`~890 B/tok`), `1,048,576` (`1M`) context. | **\$0.00 / hr** |
 
 
 ---
@@ -221,6 +231,41 @@ It details the **Model IDs**, **Display Names**, **Container Image URIs**, **GCS
   ```
 * **Active Status**:
   * Actively deployed to Endpoint `4868079485641031680` supporting the live `SocTier1Agent` evaluation suite in `agent_engine`.
+
+---
+
+### DeepSeek-V4.1-Flash (`deepseek-v4.1-flash-1017`, `deepseek-v4.1-flash-1017-maas`, `deepseek-v4.1-flash-maas`)
+* **Publisher Model / OpenModel ID**: `publishers/deepseek-ai/models/deepseek-v4.1@deepseek-v4.1-flash-1017`
+* **Hugging Face Repository**: `deepseek-ai/DeepSeek-V4.1-Flash-1017` (Sept 2026 baseline: `deepseek-ai/DeepSeek-V4.1-Flash`)
+* **Serverless OpenMaaS Endpoints (`region: "global"`)**:
+  * `deepseek-v4.1-flash-1017-maas` -> `deepseek-ai/deepseek-v4.1-flash-1017-maas` (Oct 2026 checkpoint, \$0.00/hr idle GPU spend)
+  * `deepseek-v4.1-flash-maas` -> `deepseek-ai/deepseek-v4.1-flash-maas` (Sept 2026 baseline for checkpoint delta comparison, \$0.00/hr idle GPU spend)
+* **Architecture**: `552B` Context-Asymmetric Encoder-Decoder (`CED`) Multimodal MoE (`8B` prefill active / `16B` decode active parameters, `text` and `image` modalities) with `CSA2` FP4 KV cache (`~890 B/tok`, `1,048,576`-token `1M` context window).
+* **Dedicated Hardware Shapes (`us-central1`)**:
+  * **Default**: `a3-megagpu-8g` (`8x NVIDIA_H100_MEGA_80GB`, `1,872 GB` host RAM, \$88.49/hr)
+  * **Validated Alternatives**: `a3-ultragpu-8g` (`8x NVIDIA_H200_141GB`) and `a4-highgpu-8g` (`8x NVIDIA_B200`) with `dspark` 5-token speculative decoding (`--speculative_config.method=dspark --speculative_config.num_speculative_tokens=5`)
+* **Container Safeguards & Runtime Flags**:
+  * `sharedMemorySizeMb`: `40960` (`40 GB` `/dev/shm` for 8-GPU NCCL / expert-parallel buffers)
+  * `deploymentTimeoutSeconds`: `7200` (`7200s` deploy and startup probe window; naive `g4-standard-384` setups with a `100 GB` `overlayfs` root disk and `900s` startup probe fail on `475+ GiB` multi-shard checkpoints)
+  * `maxModelLen`: `1048576`
+  * **vLLM Arguments**:
+    ```text
+    --trust-remote-code \
+      --kv-cache-dtype=fp8 \
+      --enable-expert-parallel \
+      --engram-config.cpu_offload=True \
+      --tool-call-parser=deepseek_v41 \
+      --reasoning-parser=deepseek_v41 \
+      --enable-auto-tool-choice \
+      --max-num-seqs=128 \
+      --mm-encoder-tp-mode=data
+    ```
+* **Dry-Run Verification Command**:
+  ```bash
+  .venv/bin/python scripts/deploy_open_model.py \
+    --flavor deepseek-v4.1-flash-1017 \
+    --dry-run
+  ```
 
 ---
 
